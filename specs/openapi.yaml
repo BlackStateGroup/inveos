@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: INVEOS API foundation (draft contract)
+  version: 0.1.0-draft
+  description: Proposed API boundaries, not a deployed implementation.
+servers:
+  - url: https://api.example.invalid/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Cases
+  - name: Evidence
+  - name: Analysis
+  - name: Releases
+paths:
+  /cases:
+    get:
+      tags: [Cases]
+      summary: List cases permitted to the current identity
+      responses:
+        '200':
+          description: Case list with cursor, strictly tenant filtered
+        '401':
+          description: Unauthenticated
+    post:
+      tags: [Cases]
+      summary: Create a case in intake, subject to validation
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseCreate'
+      responses:
+        '201':
+          description: Case created in intake state
+        '422':
+          description: Schema or scope error
+  /cases/{caseId}/authority:
+    post:
+      tags: [Cases]
+      summary: Record human-reviewed case processing authority
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Versioned mandate/approval recorded and audited
+        '403':
+          description: Approval authority missing
+  /evidence/uploads:
+    post:
+      tags: [Evidence]
+      summary: Reserve scoped, bounded upload session
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadReservation'
+      responses:
+        '201':
+          description: Pending upload with scoped chunk grants
+        '403':
+          description: Insufficient case/scope authorisation
+  /evidence/uploads/{uploadId}/complete:
+    post:
+      tags: [Evidence]
+      summary: Verify original bytes and issue durable evidence receipt
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Server-verified receipt with digest and custody ID
+        '409':
+          description: Corrupt/missing/inconsistent upload or idempotency conflict
+  /cases/{caseId}/claims/{claimId}/review:
+    post:
+      tags: [Analysis]
+      summary: Human accept/reject/supersede claim with reason and source gate
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Review recorded with actor and version
+        '422':
+          description: Citation or evidence integrity gate failed
+  /cases/{caseId}/releases:
+    post:
+      tags: [Releases]
+      summary: Publish a reviewed immutable client release snapshot
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Approved report and selected manifests published
+        '403':
+          description: Insufficient release authority
+        '422':
+          description: Unverified claim, file, hold or redaction gate
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    CaseCreate:
+      type: object
+      required: [title, clientId, purpose, jurisdiction]
+      additionalProperties: false
+      properties:
+        title: {type: string, minLength: 3, maxLength: 255}
+        clientId: {type: string, format: uuid}
+        purpose: {type: string, minLength: 10, maxLength: 5000}
+        jurisdiction: {type: string, minLength: 2, maxLength: 128}
+    UploadReservation:
+      type: object
+      required: [caseId, filename, byteLength, expectedSha256, sourceRecordId]
+      additionalProperties: false
+      properties:
+        caseId: {type: string, format: uuid}
+        filename: {type: string, maxLength: 255}
+        byteLength: {type: integer, minimum: 1, maximum: 2147483648}
+        expectedSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        sourceRecordId: {type: string, format: uuid}

@@ -1,0 +1,71 @@
+repository,url,category,priority,disposition,github_spdx_metadata,licence_review,archived,last_checked_utc,research_use
+dfir-iris/iris-web,https://github.com/dfir-iris/iris-web,Case / incident workflow,P1,study,LGPL-3.0,metadata_only_not_cleared,False,2026-10-26,"Case management, tasking and collaboration; specialist incident-response design"
+OpenCTI-Platform/opencti,https://github.com/OpenCTI-Platform/opencti,Case / incident workflow,P1,review,NOASSERTION,manual_required,False,2026-10-26,"Structured sources, knowledge graph and traceable threat-intelligence patterns"
+MISP/MISP,https://github.com/MISP/MISP,Case / incident workflow,P2,study,AGPL-3.0,metadata_only_not_cleared,False,2026-10-26,Threat information exchange model and intelligence taxonomies
+TheHive-Project/TheHive,https://github.com/TheHive-Project/TheHive,Case / incident workflow,P2,avoid,AGPL-3.0,metadata_only_not_cleared,True,2026-10-26,Historical case workflow reference; archived repository and commercial product
+intelowlproject/IntelOwl,https://github.com/intelowlproject/IntelOwl,Case / incident workflow,P2,study,AGPL-3.0,metadata_only_not_cleared,False,2026-10-26,Asynchronous enrichment workers and source adapters
+alephdata/aleph,https://github.com/alephdata/aleph,Investigation / documents,P1,study,MIT,metadata_only_not_cleared,False,2026-10-26,Document-led investigations and entity searches
+openaleph/openaleph,https://github.com/openaleph/openaleph,Investigation / documents,P1,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Large-scale investigation document indexing and source-linked search
+OpenOSINT/OpenOSINT,https://github.com/OpenOSINT/OpenOSINT,OSINT adapters,P1,study,MIT,metadata_only_not_cleared,False,2026-10-26,Modular passive source adapters with tool provenance; privacy/ToS review
+thunderstornX/forenix-oss,https://github.com/thunderstornX/forenix-oss,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Experimental source-to-case audit and verifiable custody ideas; low validation base
+smicallef/spiderfoot,https://github.com/smicallef/spiderfoot,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Modular OSINT framework; avoid bulk personal reconnaissance
+google/timesketch,https://github.com/google/timesketch,Timeline / forensics,P1,study,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,"Investigation timeline, annotations and source filtering"
+log2timeline/plaso,https://github.com/log2timeline/plaso,Timeline / forensics,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Timestamped events extraction and forensic timeline import
+sleuthkit/autopsy,https://github.com/sleuthkit/autopsy,Timeline / forensics,P2,review,NOASSERTION,manual_required,False,2026-10-26,Specialist disk forensic UI and evidence workflow; not a core engine
+Velocidex/velociraptor,https://github.com/Velocidex/velociraptor,Timeline / forensics,P2,review,NOASSERTION,manual_required,False,2026-10-26,"Endpoint forensic collection, only for authorised internal investigations"
+osquery/osquery,https://github.com/osquery/osquery,Timeline / forensics,P2,review,NOASSERTION,manual_required,False,2026-10-26,Authorised endpoint telemetry reference; not default investigator tooling
+sigstore/cosign,https://github.com/sigstore/cosign,Supply chain / signing,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Signing provenance/packaging; distinguish evidence signature use cases
+anchore/syft,https://github.com/anchore/syft,Supply chain / signing,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Software Bill of Materials to review shipped dependencies
+FFmpeg/FFmpeg,https://github.com/FFmpeg/FFmpeg,Media processing,P1,review,NOASSERTION,manual_required,False,2026-10-26,Media transcode/preview; build-time LGPL/GPL and codec patent review
+MediaArea/MediaInfo,https://github.com/MediaArea/MediaInfo,Media processing,P1,candidate,BSD-2-Clause,metadata_only_not_cleared,False,2026-10-26,Media format and technical metadata inspection
+exiftool/exiftool,https://github.com/exiftool/exiftool,Media processing,P1,study,GPL-3.0,metadata_only_not_cleared,False,2026-10-26,Metadata parsing behaviour; copyleft and packaging review
+tesseract-ocr/tesseract,https://github.com/tesseract-ocr/tesseract,Media processing,P0,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,OCR baseline for image/scanned document processing
+opencv/opencv,https://github.com/opencv/opencv,Media processing,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Image processing utilities; no surveillance recognition by default
+apache/tika,https://github.com/apache/tika,Document processing,P0,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,"Document type detection, text and metadata extraction"
+Unstructured-IO/unstructured,https://github.com/Unstructured-IO/unstructured,Document processing,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Document parsing alternatives and benchmarking
+py-pdf/pypdf,https://github.com/py-pdf/pypdf,Document processing,P1,review,NOASSERTION,manual_required,False,2026-10-26,PDF operations; manually inspect actual licence files
+ocrmypdf/OCRmyPDF,https://github.com/ocrmypdf/OCRmyPDF,Document processing,P0,candidate,MPL-2.0,metadata_only_not_cleared,False,2026-10-26,Searchable scan derivatives; component/worker boundary review
+openai/whisper,https://github.com/openai/whisper,Speech / transcription,P1,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,ASR reference implementation; model weights reviewed separately
+ggml-org/whisper.cpp,https://github.com/ggml-org/whisper.cpp,Speech / transcription,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Offline/local speech recognition candidate for field use
+SYSTRAN/faster-whisper,https://github.com/SYSTRAN/faster-whisper,Speech / transcription,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,"Server transcription candidate, benchmark on realistic audio"
+pikepdf/pikepdf,https://github.com/pikepdf/pikepdf,Document processing,P1,candidate,MPL-2.0,metadata_only_not_cleared,False,2026-10-26,"PDF structure repair and redaction preparation, verify outputs"
+cytoscape/cytoscape.js,https://github.com/cytoscape/cytoscape.js,Graph / visualisation,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Case-specific evidence-backed entity relationship visualisation
+jacomyal/sigma.js,https://github.com/jacomyal/sigma.js,Graph / visualisation,P1,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,High-density network graph rendering alternative
+graphology/graphology,https://github.com/graphology/graphology,Graph / visualisation,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Graph traversal/algorithms for relational intelligence views
+xyflow/xyflow,https://github.com/xyflow/xyflow,Graph / visualisation,P1,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,"Node/link editing workflows, not primary evidence graph"
+apache/echarts,https://github.com/apache/echarts,Graph / visualisation,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Operational charts and trends
+maplibre/maplibre-gl-js,https://github.com/maplibre/maplibre-gl-js,Mapping / geo,P1,review,NOASSERTION,manual_required,False,2026-10-26,"Case location visualisation; inspect licence, tile source terms"
+Leaflet/Leaflet,https://github.com/Leaflet/Leaflet,Mapping / geo,P1,candidate,BSD-2-Clause,metadata_only_not_cleared,False,2026-10-26,Lightweight interactive case map with approved geodata
+getodk/collect,https://github.com/getodk/collect,Mobile / offline,P1,study,NOASSERTION,manual_required,False,2026-10-26,"Offline field form workflows; native Android patterns, licence review"
+getodk/central,https://github.com/getodk/central,Mobile / offline,P1,study,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Field submission/receipt and audit API concepts
+Nozbe/WatermelonDB,https://github.com/Nozbe/WatermelonDB,Mobile / offline,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Local-first offline database candidate for React Native
+electric-sql/electric,https://github.com/electric-sql/electric,Mobile / offline,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Selective sync concepts; security and data isolation validation
+Kozea/WeasyPrint,https://github.com/Kozea/WeasyPrint,Reporting,P0,candidate,BSD-3-Clause,metadata_only_not_cleared,False,2026-10-26,HTML/CSS to professional PDF report generation
+gotenberg/gotenberg,https://github.com/gotenberg/gotenberg,Reporting,P1,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Isolated document conversion service
+python-openxml/python-docx,https://github.com/python-openxml/python-docx,Reporting,P1,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Editable DOCX report/export templates
+typst/typst,https://github.com/typst/typst,Reporting,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,High-quality document typesetting alternative
+keycloak/keycloak,https://github.com/keycloak/keycloak,Identity / access,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,"OIDC/SSO, enterprise identity option"
+ory/kratos,https://github.com/ory/kratos,Identity / access,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Managed headless identity alternative
+pgvector/pgvector,https://github.com/pgvector/pgvector,Search / database,P1,review,NOASSERTION,manual_required,False,2026-10-26,Case-scoped vector retrieval; review licence and operational fit
+meilisearch/meilisearch,https://github.com/meilisearch/meilisearch,Search / database,P1,review,NOASSERTION,manual_required,False,2026-10-26,Search alternative; deploy/enterprise licence caveats
+qdrant/qdrant,https://github.com/qdrant/qdrant,Search / database,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Vector retrieval alternative if Postgres insufficient
+deepset-ai/haystack,https://github.com/deepset-ai/haystack,AI orchestration,P1,candidate,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Retrieval pipelines with source grounding and evaluation
+langchain-ai/langgraph,https://github.com/langchain-ai/langgraph,AI orchestration,P2,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,"Controlled, auditable analyst workflows; no autonomous intrusive tools"
+sigstore/rekor,https://github.com/sigstore/rekor,Supply chain / signing,P2,study,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Transparency log patterns; avoid exposing confidential case hashes publicly
+minio/minio,https://github.com/minio/minio,Object storage,P2,avoid,AGPL-3.0,metadata_only_not_cleared,True,2026-10-26,Archived upstream and copyleft constraints; do not adopt by default
+alephdata/followthemoney,https://github.com/alephdata/followthemoney,Investigation / entities,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Case-scoped investigative data model for people/companies/relations
+webrecorder/browsertrix-crawler,https://github.com/webrecorder/browsertrix-crawler,Web archiving,P1,study,AGPL-3.0,metadata_only_not_cleared,False,2026-10-26,High-fidelity browser archiving; explicit capture authorisation and copyleft
+webrecorder/pywb,https://github.com/webrecorder/pywb,Web archiving,P2,study,GPL-3.0,metadata_only_not_cleared,False,2026-10-26,WARC playback and archival ideas; copyleft review
+sherlock-project/sherlock,https://github.com/sherlock-project/sherlock,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Username presence checks; privacy and platform ToS restrict application
+soxoj/maigret,https://github.com/soxoj/maigret,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Username research workflow; risk of unjustified personal profiling
+laramies/theHarvester,https://github.com/laramies/theHarvester,OSINT adapters,P2,study,GPL-2.0,metadata_only_not_cleared,False,2026-10-26,OSINT contact/domain discovery; GPL and scope review
+owasp-amass/amass,https://github.com/owasp-amass/amass,OSINT adapters,P2,review,NOASSERTION,manual_required,False,2026-10-26,Domain surface discovery; authorised defensive domain operations only
+projectdiscovery/subfinder,https://github.com/projectdiscovery/subfinder,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Passive subdomain pattern; not core PI functionality
+docling-project/docling,https://github.com/docling-project/docling,Document processing,P0,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,PDF and office document extraction with layout preservation
+bellingcat/auto-archiver,https://github.com/bellingcat/auto-archiver,Web archiving,P1,study,MIT,metadata_only_not_cleared,False,2026-10-26,Capture and preservation workflows with time/source provenance
+projectdiscovery/httpx,https://github.com/projectdiscovery/httpx,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Web inspection for authorised domain scopes only
+projectdiscovery/katana,https://github.com/projectdiscovery/katana,OSINT adapters,P2,study,MIT,metadata_only_not_cleared,False,2026-10-26,Crawling framework; ToS/proportionality/personal data protections
+netbox-community/netbox,https://github.com/netbox-community/netbox,Operations / workflows,P2,study,Apache-2.0,metadata_only_not_cleared,False,2026-10-26,Asset/role/process patterns rather than direct investigation adoption
+osm-search/Nominatim,https://github.com/osm-search/Nominatim,Mapping / geo,P2,study,GPL-3.0,metadata_only_not_cleared,False,2026-10-26,Geocoding/search; service ToS and OSM ODbL obligations
+timescale/timescaledb,https://github.com/timescale/timescaledb,Search / database,P2,review,NOASSERTION,manual_required,False,2026-10-26,Time-series storage option; edition/packaging licence audit
+evidence-dev/evidence,https://github.com/evidence-dev/evidence,Reports / analytics,P2,candidate,MIT,metadata_only_not_cleared,False,2026-10-26,Structured data dashboard/report design; not evidence chain of custody

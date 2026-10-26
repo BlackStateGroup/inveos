@@ -1,0 +1,160 @@
+{
+  "observed_on": "2026-10-26",
+  "status": "reference_commits_only_no_embedded_source",
+  "repositories": [
+    {
+      "repository": "openaleph/openaleph",
+      "url": "https://github.com/openaleph/openaleph",
+      "commit": "ef41665db5e8c8e9b563ba61036ea9842f8c4dec",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "alephdata/followthemoney",
+      "url": "https://github.com/alephdata/followthemoney",
+      "commit": "c70a89ffa59ea785956f6095643310da3735b7fb",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "google/timesketch",
+      "url": "https://github.com/google/timesketch",
+      "commit": "8f86c29f1fa86c5c0fb016f51fc76959f8e2ced6",
+      "github_spdx_metadata": "Apache-2.0",
+      "disposition": "study"
+    },
+    {
+      "repository": "log2timeline/plaso",
+      "url": "https://github.com/log2timeline/plaso",
+      "commit": "dc06d91c4494126ac5022021332dbc0f5d9863b4",
+      "github_spdx_metadata": "Apache-2.0",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "dfir-iris/iris-web",
+      "url": "https://github.com/dfir-iris/iris-web",
+      "commit": "37c5521ac009bd018a2fac7bc01d70735d130c6c",
+      "github_spdx_metadata": "LGPL-3.0",
+      "disposition": "study"
+    },
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "url": "https://github.com/OpenOSINT/OpenOSINT",
+      "commit": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "github_spdx_metadata": "MIT",
+      "disposition": "study"
+    },
+    {
+      "repository": "thunderstornX/forenix-oss",
+      "url": "https://github.com/thunderstornX/forenix-oss",
+      "commit": "cba2711eafa564e14655b599757588168dd79b0f",
+      "github_spdx_metadata": "MIT",
+      "disposition": "study"
+    },
+    {
+      "repository": "smicallef/spiderfoot",
+      "url": "https://github.com/smicallef/spiderfoot",
+      "commit": "0f815a203afebf05c98b605dba5cf0475a0ee5fd",
+      "github_spdx_metadata": "MIT",
+      "disposition": "study"
+    },
+    {
+      "repository": "bellingcat/auto-archiver",
+      "url": "https://github.com/bellingcat/auto-archiver",
+      "commit": "37917e2e56b92cb7243d21d92ec93b6e44258461",
+      "github_spdx_metadata": "MIT",
+      "disposition": "study"
+    },
+    {
+      "repository": "docling-project/docling",
+      "url": "https://github.com/docling-project/docling",
+      "commit": "90234a71b16785d08fd2f46ec62668dd2396db76",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "tesseract-ocr/tesseract",
+      "url": "https://github.com/tesseract-ocr/tesseract",
+      "commit": "f139e578a37c5c18717195c7d603ddb357717e23",
+      "github_spdx_metadata": "Apache-2.0",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "ocrmypdf/OCRmyPDF",
+      "url": "https://github.com/ocrmypdf/OCRmyPDF",
+      "commit": "b457e9efa68c3a46be2470ffb222ed1bccc4dcbc",
+      "github_spdx_metadata": "MPL-2.0",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "ggml-org/whisper.cpp",
+      "url": "https://github.com/ggml-org/whisper.cpp",
+      "commit": "231638a0717b7822784297e5980965ffcec05810",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "SYSTRAN/faster-whisper",
+      "url": "https://github.com/SYSTRAN/faster-whisper",
+      "commit": "9e472ae9de8bb374552f531f752654554b76b2d6",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "cytoscape/cytoscape.js",
+      "url": "https://github.com/cytoscape/cytoscape.js",
+      "commit": "9aab1b4489645c15e82fce71fdce738f58d8165d",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "graphology/graphology",
+      "url": "https://github.com/graphology/graphology",
+      "commit": "65e278f0075de97bee3fce12d10e423752ed395a",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "Nozbe/WatermelonDB",
+      "url": "https://github.com/Nozbe/WatermelonDB",
+      "commit": "5c463222ecd79928861385bac94b486fcc7623d4",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "getodk/collect",
+      "url": "https://github.com/getodk/collect",
+      "commit": "83b94a1396cbb37322240e7b0b37a819f315a344",
+      "github_spdx_metadata": "NOASSERTION",
+      "disposition": "study"
+    },
+    {
+      "repository": "Kozea/WeasyPrint",
+      "url": "https://github.com/Kozea/WeasyPrint",
+      "commit": "920a04d283d697ff50b88617bdaae7f5b756e033",
+      "github_spdx_metadata": "BSD-3-Clause",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "gotenberg/gotenberg",
+      "url": "https://github.com/gotenberg/gotenberg",
+      "commit": "764c7f2c256af9100787d40d2306c2bd0d7b2990",
+      "github_spdx_metadata": "MIT",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "sigstore/cosign",
+      "url": "https://github.com/sigstore/cosign",
+      "commit": "ef56e6999cdad185e5e155cccf1223951abfc77a",
+      "github_spdx_metadata": "Apache-2.0",
+      "disposition": "candidate"
+    },
+    {
+      "repository": "webrecorder/browsertrix-crawler",
+      "url": "https://github.com/webrecorder/browsertrix-crawler",
+      "commit": "e582608a06c5aea74ce6aa307f514fefab07cd7c",
+      "github_spdx_metadata": "AGPL-3.0",
+      "disposition": "study"
+    }
+  ]
+}

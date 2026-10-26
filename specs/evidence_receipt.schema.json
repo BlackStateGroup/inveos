@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/inveos/schemas/evidence-receipt-v0.1.json",
+  "title": "INVEOS durable original evidence receipt, proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt_id", "case_id", "evidence_id", "sha256", "byte_length", "server_verified_at", "custody_event_id", "state"],
+  "properties": {
+    "receipt_id": {"type": "string", "format": "uuid"},
+    "case_id": {"type": "string", "format": "uuid"},
+    "evidence_id": {"type": "string", "format": "uuid"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "byte_length": {"type": "integer", "minimum": 0},
+    "server_verified_at": {"type": "string", "format": "date-time"},
+    "captured_at_claimed": {"type": ["string", "null"], "format": "date-time"},
+    "custody_event_id": {"type": "string", "format": "uuid"},
+    "state": {"const": "server_verified"}
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/inveos/schemas/claim-v0.1.json",
+  "title": "INVEOS source-grounded claim, proposal schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["claim_id", "case_id", "kind", "text", "status", "source_spans", "generated_by"],
+  "properties": {
+    "claim_id": {"type": "string", "format": "uuid"},
+    "case_id": {"type": "string", "format": "uuid"},
+    "kind": {"enum": ["extracted_statement", "allegation", "hypothesis", "observation", "analyst_interpretation"]},
+    "text": {"type": "string", "minLength": 1},
+    "status": {"enum": ["extracted", "proposed", "review_pending", "accepted", "rejected", "superseded"]},
+    "source_spans": {"type": "array", "items": {"type": "object", "additionalProperties": false,
+      "required": ["evidence_id", "derivative_id", "span_type", "span_ref"],
+      "properties": {
+        "evidence_id": {"type": "string", "format": "uuid"},
+        "derivative_id": {"type": "string", "format": "uuid"},
+        "span_type": {"enum": ["pdf_page", "text_offset", "audio_ms", "video_ms", "field_observation"]},
+        "span_ref": {"type": "string", "minLength": 1}
+      }}},
+    "generated_by": {"enum": ["analyst", "ocr", "transcription", "ai_extraction"]},
+    "model_ref": {"type": ["string", "null"]},
+    "reviewer_id": {"type": ["string", "null"]},
+    "review_reason": {"type": ["string", "null"]}
+  }
+}

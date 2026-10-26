@@ -1,0 +1,24 @@
+# Local research clones, not redistributed or added automatically
+.research-cache/
+research/mirrors/
+research/downloads/
+# Credentials and operational material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+private-data/
+*.sqlite
+*.sqlite3
+# Local build/test output
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+dist/
+build/
+coverage/
+*.log
+.DS_Store

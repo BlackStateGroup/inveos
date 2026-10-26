@@ -1,0 +1,26 @@
+name: Implementation slice
+description: Feature work derived from an engineering workpackage
+labels: []
+body:
+  - type: textarea
+    id: requirement
+    attributes:
+      label: Outcome and acceptance gates
+      description: Reference exact PRD requirement, workpackage and acceptance test.
+      placeholder: "WP-02: immutable original verification and receipts"
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, security and privacy impact
+      description: Record tenant, evidence, data classification, source licences and negative cases.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Actual test evidence
+      description: Commands and results, or explicitly not run.
+    validations:
+      required: true
