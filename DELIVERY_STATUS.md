@@ -2,9 +2,13 @@
 
 **Repository target:** https://github.com/BlackStateGroup/inveos
 
-**Actual GitHub status:** Not pushed. Repository was verified **public, empty** and readable. The connected GitHub integration listed only the personal `EmotiveImpact` installation. An attempted `README.md` commit was rejected `403 Resource not accessible by integration`. There is therefore **no commit SHA, PR, CI run or deployment to report**.
+**Actual GitHub status:** Published to `main` on **26 October 2026**. The BlackStateGroup organisation installation is now visible, and successful file creation, commit creation and branch updates confirm write access. The repository is public.
 
-## Local foundation delivered
+**Original foundation snapshot:** [ac0fa52a1df37549a61abc16c29b465ae0e840d6](https://github.com/BlackStateGroup/inveos/commit/ac0fa52a1df37549a61abc16c29b465ae0e840d6). Its tree is `271ed0f73e8467356264c154a4ddad4a779cae7a`. All **51 remote files** match the recovered archive's file paths, contents and Git file modes. Later publication-note updates refresh the README, this receipt, the GitHub handoff and their manifest entries.
+
+**Recovered archive:** `inveos-foundation-2026-10-26.zip`, version 2, SHA-256 `07b06d71ee71ddf4336eeb76cba4bd47150961915a8bac9da5c0f4d2fadee4d6`. The separately saved roadmap and engineering work packages were byte-identical to the archive copies.
+
+## Foundation published
 
 - Original product definition, workflows, case templates, user interface/navigation and design system
 - Proposed modular-monolith architecture, case/tenant data model, API/events and example JSON schemas
@@ -18,7 +22,15 @@
 - A synthetic, in-memory evidence/claim/review/report demonstration with 10 passing unit tests
 - SHA-256 manifest of all included files and local validation/publishing helper
 
-## Verification at packaging
+## Verification repeated before publication
+
+- Foundation validator: passed, including the 50 manifest entries, JSON, local Markdown links, 70 research candidates and 22 revision pins.
+- Reference unit tests: **10 passed**.
+- Synthetic evidence-flow example: ran successfully; original-byte and event-chain verification returned true.
+- Publication shell script: syntax check passed.
+- GitHub original foundation tree: all 51 file paths, blob hashes and modes matched the local package; response was complete and untruncated.
+
+These are local and repository-publication checks. No GitHub Actions workflow, live application, client release or deployment is claimed.
 
 Run:
 
@@ -31,6 +43,8 @@ bash -n tools/publish_to_github.sh
 
 The package is a **foundation**, not an operational product. It has no authentic private investigation records, production database, encryption service, full legal review, third-party cloned code, deployed API or mobile app. Reference models and external software have not been installed or cleared for commercial distribution.
 
-## Blocking action for online GitHub publication
+## Previous access blocker resolved
 
-An organisation owner must install or approve the connected ChatGPT GitHub app in **BlackStateGroup** with repository **Contents read/write** access to **inveos**, then recheck that the integration can write. See `docs/22_GITHUB_HANDOFF.md`. An authorised local Git operator can alternatively use `tools/publish_to_github.sh` after inspecting the files; it refuses to overwrite any existing remote `main`.
+The earlier archive correctly recorded a `403 Resource not accessible by integration` failure while only the EmotiveImpact personal installation was visible. Following the user's organisation-access change, the BlackStateGroup installation appeared and publication succeeded. The completed first publication used ordinary commits and non-force branch updates; no existing branch history was overwritten.
+
+The next engineering work remains the documented work packages, starting with WP-00 and the first integrated case/evidence workflow. See `docs/22_GITHUB_HANDOFF.md` for the published-repository workflow.

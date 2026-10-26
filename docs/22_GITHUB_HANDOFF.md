@@ -1,43 +1,49 @@
-# 22 — GitHub repository handoff and publishing checklist
+# 22: GitHub publication and engineering handoff
 
-## Target
+## Published repository
 
-- Intended public repository: **https://github.com/BlackStateGroup/inveos**
+- Public repository: **https://github.com/BlackStateGroup/inveos**
 - Project: INVEOS, investigation operating system.
-- Planned state of this foundation: documentation, research catalogue, pinned reference commits, source-acquisition tooling and a synthetic-only demonstration; no shipped application.
+- Branch: `main`.
+- Original 51-file foundation: [ac0fa52a1df37549a61abc16c29b465ae0e840d6](https://github.com/BlackStateGroup/inveos/commit/ac0fa52a1df37549a61abc16c29b465ae0e840d6).
+- Original foundation tree: `271ed0f73e8467356264c154a4ddad4a779cae7a`.
+- Scope: documentation, research catalogue, pinned reference commits, source-acquisition tooling and a synthetic-only demonstration. The full INVEOS application is still to be built.
 
-## Access diagnosis (26 October 2026)
+## Access and publication record, 26 October 2026
 
-The repository was verified as existing, empty and public. Connected GitHub app installation list returned only **EmotiveImpact** (personal account), not BlackStateGroup organisation. An attempt to create `README.md` returned **403 Resource not accessible by integration**. Therefore the push has **not** happened. The packaged foundation is ready to commit when organisation access is granted. Do not report a commit SHA or PR that does not exist.
+At archive preparation, the connected GitHub installation list showed only the EmotiveImpact personal account. A README creation attempt returned `403 Resource not accessible by integration`, so the original package recorded an unpushed state.
 
-### Preferred fix
+After the user enabled organisation access, the BlackStateGroup installation appeared and the repository reported push permission. A successful README commit established actual write access. The full foundation was then committed and `main` advanced with a non-force update tied to its expected previous head. No existing repository history was replaced.
 
-A BlackStateGroup organisation administrator can open GitHub organisation settings, then GitHub Apps / installed apps and install/approve the connected ChatGPT GitHub app with **Contents: read and write** access to `BlackStateGroup/inveos`. Select the exact repository or authorise an appropriate set of organisation repos. Ensure organisational security policies allow GitHub app writes. Recheck installation visibility and retry the commit. No credentials or personal access tokens should be pasted into chat.
+The complete remote tree was retrieved and compared with the recovered archive: all 51 paths, blob hashes and file modes matched. The recovered roadmap and engineering work packages were also compared with their separately saved copies and were identical. The README, delivery receipt and this handoff were subsequently updated to reflect successful publication, and the SHA-256 manifest was regenerated.
 
-### Alternate manual publication
+See [DELIVERY_STATUS.md](../DELIVERY_STATUS.md) for the archive checksum, verification results and limitations. The original foundation snapshot retains the original packaging notes as historical evidence of the earlier access failure.
 
-From a trusted local development machine with approved GitHub credentials, extract the supplied foundation archive and run:
+## Work from the published foundation
+
+From a trusted development machine with approved GitHub access:
 
 ```bash
 git clone https://github.com/BlackStateGroup/inveos.git
-cp -R path/to/extracted/inveos/. ./inveos/
 cd inveos
 python3 tools/validate_foundation.py
-git add .
-git commit -m 'docs: establish INVEOS product, architecture and open-source research foundation'
-git push origin main
+python3 -m unittest discover -s tests -v
+python3 -m examples.evidence_flow_demo
+git switch -c feat/wp00-scaffold
 ```
 
-If repository is still empty and `git clone` does not set a default branch, run `git init -b main`, `git remote add origin https://github.com/BlackStateGroup/inveos.git`, then add/commit/push as above. Never force-push into an existing branch. Public repo warning: review all documents before publishing; no secrets, private customer data or proprietary private-repo source is included in the prepared package.
+Read `AGENTS.md` and its required documents before implementation. Follow the work packages in `docs/21_ENGINEERING_WORKPACKAGES.md`. Future changes should use scoped feature branches and draft pull requests, with test evidence and clear limitations. Do not force-push or assume permission to merge or deploy from permission to develop.
 
-## Verify after any successful publication
+`tools/publish_to_github.sh` is retained as the original empty-repository publication helper. It deliberately refuses to overwrite a non-empty remote `main` and is no longer the update workflow for this repository.
 
-1. `git status` clean and `git rev-parse HEAD` match intended commit; no accidental changes to existing remote data.
-2. GitHub file tree includes product docs, research JSON, pinned revisions, specs, tools, examples and unit tests.
-3. GitHub Actions optional, lightweight only; avoid large workflow artifact uploads.
-4. Review repository visibility and decide whether proprietary app code will live here or in a private development repository.
-5. Record explicit branch/commit URL, count of files and validation results in delivery receipt.
+## Verification for subsequent changes
+
+1. Run the foundation validator and the tests relevant to the change.
+2. Regenerate `MANIFEST.sha256` whenever an included file changes; do not include the manifest itself, Git metadata, bytecode or the ignored research cache.
+3. Verify the intended commit and branch on GitHub, retaining an exact commit URL in the delivery report.
+4. Keep any future CI lightweight. This foundation contains no GitHub Actions workflow or deployment.
+5. Preserve public/private boundaries: no credentials, actual client records, private NOIR/Recon source, model weights or unreviewed third-party source copies.
 
 ## Scope of executable demonstration
 
-The package includes `examples/evidence_flow_demo.py` and `tests/test_evidence_flow_demo.py`. This is deliberately in-memory reference code, not field-ready functionality; it is not a basis for collecting genuine private investigation data. Run the 10 tests locally before publishing.
+`examples/evidence_flow_demo.py` and `tests/test_evidence_flow_demo.py` provide an in-memory reference with 10 passing unit tests at publication. Those tests do not verify production identity, access control, durable evidence custody, mobile capture or legal readiness. No live API, mobile application or deployed service is represented as complete.

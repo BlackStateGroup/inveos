@@ -11,7 +11,7 @@ INVEOS is a case-centred operating environment for lawful private, corporate, le
 
 | Document | Purpose |
 |---|---|
-| [Foundation delivery status](DELIVERY_STATUS.md) | Precisely what has been assembled, verified and not pushed |
+| [Foundation delivery status](DELIVERY_STATUS.md) | Publication receipt, original foundation commit and verification results |
 | [Documentation index](docs/INDEX.md) | All plans, specifications, architecture and decisions |
 | [Product requirements](docs/02_PRODUCT_REQUIREMENTS.md) | Scope and acceptance requirements for all modules |
 | [System architecture](docs/06_ARCHITECTURE.md) | Data flows, deployment, tenancy and services |
@@ -58,4 +58,6 @@ This foundation is intended for the public GitHub repository `BlackStateGroup/in
 
 ## Publishing to the target repository
 
-The connected GitHub app lacks installation access to the BlackStateGroup organisation at preparation time, so this archive has **not** been pushed. See [GitHub handoff](docs/22_GITHUB_HANDOFF.md). Once you have authorised GitHub access, a local operator can run `bash tools/publish_to_github.sh` from this extracted folder; the script deliberately refuses to overwrite a non-empty remote `main`.
+The complete 51-file foundation was published to `main` on **26 October 2026** after BlackStateGroup organisation access was enabled. The [original foundation commit](https://github.com/BlackStateGroup/inveos/commit/ac0fa52a1df37549a61abc16c29b465ae0e840d6) preserves the recovered archive exactly; every remote file was checked against its local Git blob hash. Subsequent publication-note updates record the resolved access issue.
+
+See the [delivery receipt](DELIVERY_STATUS.md) and [GitHub handoff](docs/22_GITHUB_HANDOFF.md) for verification and next steps. Future engineering should use feature branches and draft pull requests. The bundled `tools/publish_to_github.sh` remains an initial-publication helper for an empty target and deliberately refuses to overwrite the now-populated remote `main`.
