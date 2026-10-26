@@ -1,0 +1,5 @@
+SYNTHETIC FIXTURE — FICTIONAL ONLY
+
+Northstar Paperworks Ltd is a fictional supplier created for local INVEOS testing.
+The fictional dispatch note states that batch NW-104 was packed on 2026-01-12.
+This text contains no real person, customer, or investigation data.
