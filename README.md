@@ -3,7 +3,7 @@
 **Investigation Operating System**  
 **Black State Group** | Product and research foundation, 26 October 2026
 
-> **Status:** Comprehensive research and engineering blueprint plus one synthetic-only, independently tested evidence-flow demonstration. There is no deployed or operational INVEOS application yet. The plans, timelines and commercial assumptions remain hypotheses to validate.
+> **Status:** Research and engineering foundation with a local interactive web prototype and a working persistent synthetic lab. There is no production INVEOS application or client release. The plans, timelines and commercial assumptions remain hypotheses to validate.
 
 INVEOS is a case-centred operating environment for lawful private, corporate, legal and insurance investigations. It combines six workspaces in one system: **Cases, Field, Research, Intelligence, Evidence and Results**, plus a restricted **Client Portal** and administrative controls. The product connects assignment through collection, analysis, human verification and report delivery.
 
@@ -12,6 +12,7 @@ INVEOS is a case-centred operating environment for lawful private, corporate, le
 | Document | Purpose |
 |---|---|
 | [Foundation delivery status](DELIVERY_STATUS.md) | Publication receipt, original foundation commit and verification results |
+| [Local application](docs/23_LOCAL_APPLICATION.md) | Implemented visual surfaces, synthetic-lab architecture and explicit limitations |
 | [Documentation index](docs/INDEX.md) | All plans, specifications, architecture and decisions |
 | [Product requirements](docs/02_PRODUCT_REQUIREMENTS.md) | Scope and acceptance requirements for all modules |
 | [System architecture](docs/06_ARCHITECTURE.md) | Data flows, deployment, tenancy and services |
@@ -45,6 +46,8 @@ python3 tools/mine_sources.py --list --priority P0
 ```
 
 The example is **not** a production evidential service and must never be used with real people or client data; see [its limitations](examples/README.md).
+
+The validator now checks repository sources and excludes local dependencies, build output and lab storage. `MANIFEST.sha256` remains the historical foundation-archive inventory, not a checksum of the developing application. Use `python3 tools/validate_foundation.py --verify-archive` only when checking an unchanged foundation archive; it deliberately reports mismatches on developed sources. Source validation does not claim that original archive hashes still match.
 
 ## Work order
 

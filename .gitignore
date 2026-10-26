@@ -6,6 +6,7 @@ research/downloads/
 .env
 .env.*
 !.env.example
+.local-data/
 *.pem
 *.key
 secrets/

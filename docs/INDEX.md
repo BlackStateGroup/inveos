@@ -30,6 +30,7 @@
 - `20_LANDSCAPE.md` — competing products and market research.
 - `21_ENGINEERING_WORKPACKAGES.md` — vertical slices with exit criteria.
 - `22_GITHUB_HANDOFF.md` — repository write-access finding and publication steps.
+- [Local application and scope decision](23_LOCAL_APPLICATION.md) — visual prototype, persistent synthetic lab and non-production boundaries.
 
 ## Open-source mining
 
