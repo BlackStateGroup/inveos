@@ -3,7 +3,7 @@ import {Panel,Notice} from './ui';
 type PendingUpload={id:string;byteLength:number;authorityVersion:number;expiresAt:string;owned:boolean;expired:boolean};
 type Listing={canManage:boolean;items:PendingUpload[]};
 /** Pending staging only. Successful cancellation never means deletion of received evidence. */
-export function UploadMaintenance({caseId,csrf,transferring}:{caseId:string;csrf:string;transferring:boolean}){
+export function UploadMaintenance({caseId,csrf,transferring,onBusyChange}:{caseId:string;csrf:string;transferring:boolean;onBusyChange:(busy:boolean)=>void}){
  const [listing,setListing]=useState<Listing|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[receipt,setReceipt]=useState(''),[reason,setReason]=useState('');
  const alive=useRef(true),locked=useRef(false),controller=useRef<AbortController|null>(null);
  const base=`/api/cases/${caseId}/uploads`;
@@ -12,7 +12,7 @@ export function UploadMaintenance({caseId,csrf,transferring}:{caseId:string;csrf
   const body=await response.json();if(!response.ok)throw new Error(body.error||'Upload maintenance failed.');return body;
  }
  async function run(action?:{id:string;reviewer:boolean}|'expire'){
-  if(locked.current||transferring)return;locked.current=true;controller.current=new AbortController();setBusy(true);setError('');setReceipt('');
+  if(locked.current||transferring)return;locked.current=true;onBusyChange(true);controller.current=new AbortController();setBusy(true);setError('');setReceipt('');
   try{
    if(action==='expire'){
     const result=await send(base+'/expire',{limit:10});
@@ -23,7 +23,7 @@ export function UploadMaintenance({caseId,csrf,transferring}:{caseId:string;csrf
     if(alive.current)setReceipt(`Reservation ${action.id} cancelled. Staging removed; history retained.`);
    }
    const value=await send(base) as Listing;if(alive.current)setListing(value);
-  }catch(e){if(alive.current)setError((e as Error).message);}finally{locked.current=false;if(alive.current)setBusy(false);}
+  }catch(e){if(alive.current)setError((e as Error).message);}finally{locked.current=false;if(alive.current){setBusy(false);onBusyChange(false);}}
  }
  // Parent keys this panel by case and sign-in; abort prevents old responses crossing contexts.
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;controller.current?.abort();};},[]);
