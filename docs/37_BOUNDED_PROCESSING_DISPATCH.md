@@ -28,14 +28,16 @@ Stdout is one bounded JSON receipt: selected count, `limit`/`empty`/`aborted`, a
 
 ## Verification
 
-Local lint, type checks, build, dispatch input guard and all 42 Python tests pass. Four new real-PostgreSQL scenarios are included in the existing API suite; their hosted result must be recorded in `BUILD_HANDOFF.md` before claiming verification:
+Local lint, type checks, build, dispatch input guard and all 42 Python tests pass. Six new real-PostgreSQL scenarios are included in the existing API suite; their hosted result must be recorded in `BUILD_HANDOFF.md` before claiming verification:
 
 - A held row lock is skipped; concurrent passes consume six jobs once with unique attempts/events and three immutable text outputs. Incorrect tenant/case scopes and an aborted pass leave queued work untouched.
 - Actual CLI subprocess invocation with the restricted application role and no administrator URL produces one result, leaves the next queued job, and supplies a derivative verified through actual TCP HTTP and the client verifier. Unsafe configurations and malformed limits fail without leaking the fake credential fixture or claiming that next job.
 - A real child process commits a claim, is killed with SIGKILL and leaves a live lease. Dispatch skips it until the test administrator advances expiry, then completes attempt 2 and rejects the old token. Also checks attempt exhaustion, authority replacement and membership revocation.
+- Actual SIGTERM while a CLI is blocked in its authority check permits that in-flight job to finish, returns an aborted receipt and leaves the next queued job untouched.
+- A separate held authority lock exceeds the two-second timeout; its claim/event transaction rolls back. Recorded digest failures subsequently consume their bounded pass without aborting it.
 - A database trigger deliberately rejects derivative persistence. Dispatch stops, success/event/output roll back together, another queued job remains untouched, and expiry/retry yields exactly one immutable derivative and successful event.
 
-The expiry tests alter only the fictional lease clock using the test administrator, rather than waiting 60 seconds. They prove PostgreSQL/process recovery, not host reboot, infrastructure outage or restore. A pre-aborted signal is tested; actual operating-system graceful-signal timing remains unrun. No browser change or new browser acceptance is claimed. Parser sandbox, licence/runtime approval, page/region review, native/offline/device/restore and production gates remain open.
+The expiry tests alter only the fictional lease clock using the test administrator, rather than waiting 60 seconds. They prove PostgreSQL/process recovery, not host reboot, infrastructure outage or restore. A pre-aborted signal and actual operating-system graceful SIGTERM are exercised; host reboot and supervisor restart remain unrun. No browser change or new browser acceptance is claimed. Parser sandbox, licence/runtime approval, page/region review, native/offline/device/restore and production gates remain open.
 
 ```bash
 npm run lint

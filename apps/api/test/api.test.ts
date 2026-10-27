@@ -2059,3 +2059,49 @@ test('dispatcher fails closed on transactional output failure and resumes expire
   assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM text_derivatives WHERE case_id=$1',[scope.caseId])).rows[0].n,1);
   const ended=await context.pool!.query("SELECT status FROM integrity_job_events WHERE job_id=$1 AND status='succeeded'",[text]);assert.equal(ended.rowCount,1);
 });
+
+test('dispatcher CLI finishes its in-flight claim on SIGTERM and leaves the next job queued',async()=>{
+  const {scope,enqueue}=await dispatchFixture();const first=await enqueue(),second=await enqueue();
+  const blocker=await context.pool!.connect();
+  await blocker.query('BEGIN');await blocker.query('SELECT id FROM cases WHERE id=$1 FOR UPDATE',[scope.caseId]);
+  const applicationName=`fictional_dispatch_${randomUUID()}`,connection=new URL(databaseUrl!);connection.searchParams.set('application_name',applicationName);
+  const execution=promisify(execFile)(process.execPath,['--import','tsx',dispatcherPath,scope.tenantId,scope.caseId,'2'],
+    {env:{...dispatchEnvironment(),INVEOS_DATABASE_URL:connection.toString()},timeout:15000});
+  // Attach a rejection handler immediately; assertion below still sees the original rejection.
+  void execution.catch(()=>{});
+  try {
+    const deadline=Date.now()+10000;let waiting=false;
+    while(Date.now()<deadline){
+      const activity=await context.adminPool!.query("SELECT 1 FROM pg_stat_activity WHERE application_name=$1 AND wait_event_type='Lock'",[applicationName]);
+      if(activity.rowCount){waiting=true;break;}
+      await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.ok(waiting,'CLI must be inside its authority check before sending the real signal');
+    assert.ok(execution.child.kill('SIGTERM'));
+    // Keep the lock briefly so the Node signal handler runs before this claim completes.
+    await new Promise(resolve=>setTimeout(resolve,100));
+    await blocker.query('ROLLBACK');
+    const output=await execution;assert.equal(output.stderr,'');
+    assert.deepEqual(JSON.parse(output.stdout),{selected:1,stopReason:'aborted',results:[{jobId:first,status:'succeeded',attempt:1,failureCode:null}]});
+    const row=(await context.pool!.query('SELECT status,attempt FROM integrity_jobs WHERE id=$1',[second])).rows[0];assert.deepEqual(row,{status:'queued',attempt:0});
+  }finally{
+    await blocker.query('ROLLBACK');blocker.release();execution.child.kill('SIGKILL');await execution.catch(()=>{});
+  }
+});
+
+test('dispatch authority lock timeout rolls back the claim and recorded source failures do not stop the pass',async()=>{
+  const {scope,enqueue,evidence}=await dispatchFixture();const first=await enqueue();
+  const blocker=await context.pool!.connect();
+  try {
+    await blocker.query('BEGIN');await blocker.query('SELECT id FROM cases WHERE id=$1 FOR UPDATE',[scope.caseId]);
+    await assert.rejects(dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope),error=>{assert.equal((error as {code:string}).code,'55P03');return true;});
+  }finally{await blocker.query('ROLLBACK');blocker.release();}
+  const row=(await context.pool!.query('SELECT status,attempt,lease_token FROM integrity_jobs WHERE id=$1',[first])).rows[0];
+  assert.deepEqual(row,{status:'queued',attempt:0,lease_token:null});
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM integrity_job_events WHERE job_id=$1',[first])).rows[0].n,1);
+  const second=await enqueue();
+  const source=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0];
+  await writeFile(join(context.storageRoot!,source.object_path),'Fictional corrupted dispatch original');
+  const outcomes=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,2);
+  assert.deepEqual(outcomes.results.map(r=>[r.jobId,r.status,r.failureCode]),[[first,'failed','digest_mismatch'],[second,'failed','digest_mismatch']]);
+});
