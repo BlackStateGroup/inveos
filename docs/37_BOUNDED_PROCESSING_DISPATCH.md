@@ -28,7 +28,7 @@ Stdout is one bounded JSON receipt: selected count, `limit`/`empty`/`aborted`, a
 
 ## Verification
 
-Local lint, type checks, build, dispatch input guard and all 42 Python tests pass. Six new real-PostgreSQL scenarios are included in the existing API suite; their hosted result must be recorded in `BUILD_HANDOFF.md` before claiming verification:
+Local lint, type checks, build, dispatch input guard and all 42 Python tests pass. Six new real-PostgreSQL scenarios are included in the existing API suite; all six passed in hosted [Checks run #43](https://github.com/BlackStateGroup/inveos/actions/runs/40570072370) at `3e5ccf93cf2c1a4491b9b3e840d9cea4948ccc05` (57 PostgreSQL tests, eighteen helpers and 42 Python tests; exact tree in `BUILD_HANDOFF.md`):
 
 - A held row lock is skipped; concurrent passes consume six jobs once with unique attempts/events and three immutable text outputs. Incorrect tenant/case scopes and an aborted pass leave queued work untouched.
 - Actual CLI subprocess invocation with the restricted application role and no administrator URL produces one result, leaves the next queued job, and supplies a derivative verified through actual TCP HTTP and the client verifier. Unsafe configurations and malformed limits fail without leaking the fake credential fixture or claiming that next job.
