@@ -1353,6 +1353,24 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     const actor=request.actor!,{caseId}=request.params as {caseId:string};
     return reportTransaction(async client=>{await reportAccess(client,actor,caseId);return buildReport(client,actor,caseId);});
   });
+  app.get('/api/cases/:caseId/report-revisions',{preHandler:authenticate,schema:{params:caseParamsSchema,
+    querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
+    const actor=request.actor!,{caseId}=request.params as {caseId:string};
+    const {before,limit=25}=request.query as {before?:string;limit?:number};
+    const page=await reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);
+      if(before) {
+        const cursor=await client.query('SELECT 1 FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,before]);
+        if(!cursor.rowCount) notFound();
+      }
+      const rows=await client.query(`SELECT id,digest,created_at FROM report_revisions
+        WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR (created_at,id)<(
+          SELECT created_at,id FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3))
+        ORDER BY created_at DESC,id DESC LIMIT $4`,[actor.tenantId,caseId,before??null,limit+1]);
+      return {items:rows.rows.slice(0,limit).map(row=>revisionReceipt(row,caseId)),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+    });
+    return reply.header('Cache-Control','no-store').send(page);
+  });
   app.post('/api/cases/:caseId/report-revisions',{preHandler:requireCsrf,schema:{params:caseParamsSchema,
     body:{type:'object',required:['idempotencyKey'],additionalProperties:false,properties:{idempotencyKey:uuidSchema}}}},async request=>{
     const actor=request.actor!,{caseId}=request.params as {caseId:string},{idempotencyKey}=request.body as {idempotencyKey:string};

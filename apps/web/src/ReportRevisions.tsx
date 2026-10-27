@@ -1,0 +1,61 @@
+import {useEffect, useRef, useState} from 'react';
+import {verifyRevisionDownload} from './reportDownload';
+import {Panel, Notice} from './ui';
+
+type Receipt={id:string;caseId:string;status:string;sha256:string;createdAt:string};
+type Page={items:Receipt[];nextBefore:string|null};
+async function json<T>(url:string,signal?:AbortSignal,body?:object,csrf?:string):Promise<T>{
+  const response=await fetch(url,{signal,credentials:'same-origin',method:body?'POST':'GET',
+    headers:body?{'Content-Type':'application/json','X-CSRF-Token':csrf||''}:{},...(body?{body:JSON.stringify(body)}:{})});
+  const result=await response.json();if(!response.ok)throw new Error(result.error||'Report request failed.');return result;
+}
+export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
+  const [rows,setRows]=useState<Receipt[]>([]),[next,setNext]=useState<string|null>(null);
+  const [busy,setBusy]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
+  const retryKey=useRef<string>(),inFlight=useRef(false),alive=useRef(true);
+  const base=`/api/cases/${caseId}/report-revisions`;
+  useEffect(()=>{
+    alive.current=true;const controller=new AbortController();
+    void json<Page>(base,controller.signal).then(page=>{setRows(page.items);setNext(page.nextBefore);})
+      .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
+    return()=>{alive.current=false;controller.abort();};
+  },[base]);
+  async function act(operation:()=>Promise<void>){
+    if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');setMessage('');
+    try{await operation();}catch(e){if(alive.current)setError((e as Error).message);}finally{inFlight.current=false;if(alive.current)setBusy(false);}
+  }
+  async function load(older=false){
+    const page=await json<Page>(`${base}${older&&next?`?before=${encodeURIComponent(next)}`:''}`);
+    if(!alive.current)return;setRows(old=>older?[...old,...page.items.filter(row=>!old.some(x=>x.id===row.id))]:page.items);setNext(page.nextBefore);
+  }
+  async function freeze(){
+    retryKey.current??=crypto.randomUUID();
+    const receipt=await json<Receipt>(base,undefined,{idempotencyKey:retryKey.current},csrf);
+    retryKey.current=undefined;if(!alive.current)return;
+    setRows(old=>[receipt,...old.filter(row=>row.id!==receipt.id)]);
+    setMessage('Internal revision saved. Download it below and retain its fingerprint separately.');
+  }
+  async function download(row:Receipt){
+    const response=await fetch(`${base}/${row.id}`,{credentials:'same-origin'});
+    if(!response.ok){const body=await response.json();throw new Error(body.error||'Download failed.');}
+    const bytes=await response.arrayBuffer();
+    await verifyRevisionDownload(bytes,row.sha256,response.headers.get('X-INVEOS-Report-SHA256'));
+    if(!alive.current)return;
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download=`inveos-report-${row.id}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setMessage('Exact revision bytes verified and downloaded. This remains an internal draft.');
+  }
+  return <Panel title="Saved internal report revisions"><div className="panel-body">
+    <Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
+    <div className="report-export-actions"><button className="primary" disabled={busy} onClick={()=>void act(freeze)}>Freeze current internal draft</button>
+      <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh revisions</button></div>
+    {error&&<p className="form-error" role="alert">{error} Retry the action when ready.</p>}
+    <p role="status">{busy?'Loading report revisions…':message||(!rows.length?'No saved revisions yet.':'')}</p>
+    <ul>{rows.map(row=><li key={row.id}>
+      <p><strong>Internal draft · {new Date(row.createdAt).toLocaleString('en-GB',{timeZone:'UTC'})} UTC</strong></p>
+      <label className="form-label">SHA-256 for revision {row.id}<input readOnly value={row.sha256}/></label>
+      <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
+    </li>)}</ul>
+    {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Load older revisions</button>}
+  </div></Panel>;
+}

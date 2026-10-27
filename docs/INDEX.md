@@ -38,6 +38,8 @@
 - [Internal exhibit packages](26_INTERNAL_EXHIBIT_PACKAGE.md) — versioned manifest, original exhibits and bounded offline package verification.
 - [Complete workspace delivery plan](24_DELIVERY_PLAN.md) — reconciled capability states, five-stage build sequence, next slices and the fictional supplier acceptance milestone.
 
+- [Report revision history](32_REPORT_REVISION_HISTORY.md) — saved draft controls, scoped pagination and verified downloads.
+
 ## Open-source mining
 
 - [`research/CATALOGUE.md`](../research/CATALOGUE.md) — candidate projects and comparison table.

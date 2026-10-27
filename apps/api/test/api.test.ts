@@ -1172,7 +1172,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1648,4 +1648,42 @@ test('report freeze keeps one real database snapshot when a case edit commits be
   } finally {await app.close();}
   const current=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);
   assert.equal(JSON.parse(current.body).case.scope,'Fictional scope edited during report assembly');
+});
+
+test('revision history paginates scoped receipts without report content and survives a newer insertion',async()=>{
+  const {url}=await reportFixture();const ids:string[]=[];
+  for(let i=0;i<5;i++){const r=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200,r.body);ids.unshift(JSON.parse(r.body).id);}
+  const first=await request('GET',`${url}?limit=2`,context.demo!);assert.equal(first.statusCode,200,first.body);
+  const page=JSON.parse(first.body);assert.deepEqual(page.items.map((x:{id:string})=>x.id),ids.slice(0,2));assert.equal(page.nextBefore,ids[1]);
+  assert.equal(first.headers['cache-control'],'no-store');
+  for(const item of page.items)assert.deepEqual(Object.keys(item).sort(),['caseId','createdAt','id','sha256','status'].sort());
+  const newer=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(newer.statusCode,200,newer.body);
+  const second=JSON.parse((await request('GET',`${url}?limit=2&before=${page.nextBefore}`,context.demo!)).body);
+  const third=JSON.parse((await request('GET',`${url}?limit=2&before=${second.nextBefore}`,context.demo!)).body);
+  assert.deepEqual([...page.items,...second.items,...third.items].map((x:{id:string})=>x.id),ids);assert.equal(third.nextBefore,null);
+  const refreshed=JSON.parse((await request('GET',`${url}?limit=1`,context.demo!)).body);assert.equal(refreshed.items[0].id,JSON.parse(newer.body).id);
+  const app=await createAppInstance();try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const overHttp=await fetch(`${address}${url}?limit=2`,{headers:{cookie:context.demo!.cookie}});assert.equal(overHttp.status,200);assert.equal(((await overHttp.json()) as {items:unknown[]}).items.length,2);
+  }finally{await app.close();}
+});
+
+test('revision listing rejects foreign cursors, invalid pagination, client and revoked access',async()=>{
+  const {kase,url}=await reportFixture();
+  const own=JSON.parse((await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).body);
+  const other=await reportFixture();
+  const foreign=JSON.parse((await request('POST',other.url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).body);
+  assertError(await request('GET',`${url}?before=${foreign.id}`,context.demo!),404);
+  for(const suffix of ['?limit=0','?limit=51','?limit=1.5','?before=invalid','?tenantId=x'])assertError(await request('GET',url+suffix,context.demo!),422);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional history outsider');
+  assertError(await request('GET',url,await issueTestSession(outsider)),404);
+  const client=await createMember(demoTenantId,'client','Fictional history client');
+  assertError(await request('GET',url,await issueTestSession(client)),403);
+  const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[tenant,'Fictional history foreign tenant']);
+  const foreignUser=await createMember(tenant,'reviewer','Fictional foreign history reviewer');
+  assertError(await request('GET',`${url}?before=${own.id}`,await issueTestSession(foreignUser,tenant)),404);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
+  assertError(await request('GET',url,context.demo!),404);
+  const empty=await createCase();const emptyPage=await request('GET',`/api/cases/${empty.id}/report-revisions`,context.demo!);
+  assert.deepEqual(JSON.parse(emptyPage.body),{items:[],nextBefore:null});
 });

@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: report revision history and studio controls
+
+Based on PR #12 receipt `c573f959bcc0d2eae60d8d960e97a60bfeb08fdf`; main remains PR #1 and open PR #12 has no feedback. Implemented scoped bounded keyset listing (migration 008 index), a saved-revisions panel with freeze/retry/refresh/older-page controls and exact-byte downloads verified against the receipt. Existing working preview, immutable server revisions and review/evidence controls remain. Two PostgreSQL/HTTP scenarios added for pagination under inserts and scope/role/cursor/revocation boundaries. See docs/32_REPORT_REVISION_HISTORY.md.
+
+Local lint/type/build and 42 Python tests pass. Hosted database tests pending; UI compilation is not fresh browser acceptance. Browser freeze/download/race/accessibility checks, parser isolation/runtime approvals and device/offline/restore remain unrun. No new dependency/source, collection, merge or deployment.
+
+Next: use this draft after verification/review; obtain real browser acceptance of revision controls, improve persistence of ambiguous creation retries across navigation, and bound report assembly before allocation. Continue release controls or recoverable uploads independently of blocked PDF/parser work. The complete product remains unfinished; no essential user decision.
+
 ## 27 October: frozen internal report revisions
 
 Based on PR #11 receipt `b9592a573ee07bcbbfc33cc64f830ff159dd50ba`; main remains PR #1 and PR #11 has no review feedback. Added migration 007, consistent repeatable-read report assembly, idempotent immutable revision creation with atomic audit, and scoped integrity-checked exact-byte download. Reuses existing original/review verification and offline report/package tools. Added four PostgreSQL scenarios covering concurrent retry, restart, independent verification, access/revocation, corruption, audit rollback and a real second-connection edit between assembler queries with actual TCP download. See docs/31_FROZEN_REPORT_REVISIONS.md.
