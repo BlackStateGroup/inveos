@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: bounded report assembly and verified-original reads
+
+Based on PR #13 receipt `d9f6c91e2f7f4f03bc491576ae48bc23561f76f9`; main remains `95b5c35`, PRs #2–#13 remain open, and #13 has no review feedback. Added exact incremental 32 MiB JSON accounting before original encoding, batches of 32 database rows, 1,000-item fail-closed caps for findings and disclosed working context, and SQL exclusion of private/unreported casework. Verified-original paths reuse the bounded regular-file reader; no schema, dependency or report-format changes. Existing snapshots, revisions, human-review and case/authority controls are retained. See docs/33_BOUNDED_REPORT_ASSEMBLY.md.
+
+Local lint/types/build, two new byte-budget tests, foundation validation and 42 Python tests passed. Four PostgreSQL scenarios added for actual HTTP oversized export, repeated-original counting, boundary counts, excluded notes, rollback/retry/recovery and invalid replacement files. Hosted database execution is pending publication; no database pass is claimed yet. Namespace isolation was rechecked and is still denied (`Operation not permitted`); no upstream parser or dependency execution followed. No browser/device/offline/restore/production result, merge or deployment.
+
+Next: verify hosted database checks, retain the exact receipt here, then continue the combined stack after fresh main/review checks. Remaining dependency-ready work includes persistent ambiguous-freeze recovery, actual browser report controls when supported, durable job UI/recovery and resumable original uploads. Report budgets are per output, not process/concurrency quotas or streaming; database/admin metadata limits and load evidence remain open. Parser runtime/licence/isolation, original-page review, signatures/redaction/release, real identity/encrypted storage and wider product gates remain incomplete. No essential user decision.
+
 ## 27 October: report revision history and studio controls
 
 Based on PR #12 receipt `c573f959bcc0d2eae60d8d960e97a60bfeb08fdf`; main remains PR #1 and open PR #12 has no feedback. Implemented scoped bounded keyset listing (migration 008 index), a saved-revisions panel with freeze/retry/refresh/older-page controls and exact-byte downloads verified against the receipt. Existing working preview, immutable server revisions and review/evidence controls remain. Two PostgreSQL/HTTP scenarios added for pagination under inserts and scope/role/cursor/revocation boundaries. See docs/32_REPORT_REVISION_HISTORY.md.

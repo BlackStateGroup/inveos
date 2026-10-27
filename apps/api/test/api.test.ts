@@ -1616,14 +1616,14 @@ test('report freeze keeps one real database snapshot when a case edit commits be
   const pool=context.pool!;
   const originals=new Map<import('pg').PoolClient,import('pg').PoolClient['query']>();
   let edited=false;
-  // Coordinate an actual second PostgreSQL connection after the findings SELECT.
+  // Commit on a second connection after access establishes the snapshot, before assembly.
   // No query results are mocked; restore the instrumented client before returning it to the pool.
   const instrument=(client: import('pg').PoolClient)=>{
     if(originals.has(client)) return;
     const query=client.query.bind(client);originals.set(client,query);
     client.query=((...args: unknown[])=>{
       const result=(query as (...args:unknown[])=>Promise<unknown>)(...args);
-      if(!edited && typeof args[0]==='string' && args[0].includes('SELECT f.id AS finding_id')) {
+      if(!edited && typeof args[0]==='string' && args[0].includes("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role")) {
         edited=true;
         return result.then(async rows=>{
           await context.schemaAdminPool!.query('UPDATE cases SET scope=$2 WHERE id=$1',[kase.id,'Fictional scope edited during report assembly']);
@@ -1686,4 +1686,104 @@ test('revision listing rejects foreign cursors, invalid pagination, client and r
   assertError(await request('GET',url,context.demo!),404);
   const empty=await createCase();const emptyPage=await request('GET',`/api/cases/${empty.id}/report-revisions`,context.demo!);
   assert.deepEqual(JSON.parse(emptyPage.body),{items:[],nextBefore:null});
+});
+
+// Administrative bulk fixture only: clone a real API-created reviewed finding's
+// lineage with fresh claim/review/finding IDs. Never amend its accepted provenance.
+async function duplicateReportFinding(caseId: string, copies: number) {
+  const ids = Array.from({length: copies}, () => randomUUID());
+  await context.schemaAdminPool!.query(`INSERT INTO claims
+    (tenant_id,case_id,id,evidence_id,authority_id,authority_version,text,quote,source_start_byte,source_end_byte,source_digest,status,reason,created_by)
+    SELECT c.tenant_id,c.case_id,new_id,c.evidence_id,c.authority_id,c.authority_version,c.text,c.quote,c.source_start_byte,c.source_end_byte,c.source_digest,c.status,c.reason,c.created_by
+    FROM (SELECT * FROM claims WHERE case_id=$1 ORDER BY created_at,id LIMIT 1) c CROSS JOIN unnest($2::uuid[]) new_id`,[caseId,ids]);
+  await context.schemaAdminPool!.query(`INSERT INTO reviews
+    (tenant_id,case_id,id,claim_id,accepted,reason,reviewed_by,source_digest,source_start_byte,source_end_byte)
+    SELECT tenant_id,case_id,gen_random_uuid(),id,true,'Fictional bulk regression review',created_by,source_digest,source_start_byte,source_end_byte
+    FROM claims WHERE case_id=$1 AND id=ANY($2::uuid[])`,[caseId,ids]);
+  await context.schemaAdminPool!.query(`INSERT INTO findings
+    (tenant_id,case_id,id,claim_id,review_id,text,reviewer_user_id,reviewed_at)
+    SELECT r.tenant_id,r.case_id,gen_random_uuid(),r.claim_id,r.id,c.text,r.reviewed_by,r.reviewed_at
+    FROM reviews r JOIN claims c ON c.tenant_id=r.tenant_id AND c.case_id=r.case_id AND c.id=r.claim_id
+    WHERE r.case_id=$1 AND r.claim_id=ANY($2::uuid[])`,[caseId,ids]);
+}
+
+async function assertNoFrozenReport(caseId: string) {
+  const rows=await context.pool!.query(`SELECT
+    (SELECT count(*)::int FROM report_revisions WHERE case_id=$1) AS revisions,
+    (SELECT count(*)::int FROM audit_events WHERE case_id=$1 AND action='report.frozen') AS audits`,[caseId]);
+  assert.deepEqual(rows.rows[0],{revisions:0,audits:0});
+}
+
+test('report byte budget counts repeated originals and rejects live and frozen exports without partial receipts',async()=>{
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const text=sourceText()+'F'.repeat(262144-Buffer.byteLength(sourceText()));
+  const upload=await uploadEvidence(kase.id,context.demo!,evidenceInput({text,expectedSha256:digest(text)}));
+  assert.equal(upload.statusCode,200,upload.body);
+  const claim=JSON.parse((await createClaim(kase.id,JSON.parse(upload.body).id)).body);
+  const review=await request('POST',`/api/cases/${kase.id}/claims/${claim.id}/review`,context.demo!,{payload:{accepted:true,reason:'Reviewed fictional large source.'}});
+  assert.equal(review.statusCode,200,review.body);
+  await duplicateReportFinding(kase.id,100);
+  const url=`/api/cases/${kase.id}/report-revisions`,key=randomUUID();
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const live=await fetch(`${address}/api/cases/${kase.id}/report`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(live.status,422);assert.match(await live.text(),/Report byte limit exceeded/);
+  } finally {await app.close();}
+  for(let i=0;i<2;i++) {
+    const frozen=await request('POST',url,context.demo!,{payload:{idempotencyKey:key}});
+    assertError(frozen,422);assert.match(frozen.body,/Report byte limit exceeded/);
+  }
+  await assertNoFrozenReport(kase.id);
+  // A failed cursor/budget transaction must not poison the next request's connection.
+  const small=await reportFixture();
+  assert.equal((await request('POST',small.url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).statusCode,200);
+});
+
+test('report finding cap crosses cursor batches and rejects 1001 without silently truncating',async()=>{
+  const {kase,url}=await reportFixture();
+  await duplicateReportFinding(kase.id,999);
+  const valid=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);
+  assert.equal(valid.statusCode,200,valid.body);assert.equal(JSON.parse(valid.body).findings.length,1000);
+  await duplicateReportFinding(kase.id,1);
+  const invalid=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});
+  assertError(invalid,422);assert.match(invalid.body,/Report finding limit exceeded/);
+  await assertNoFrozenReport(kase.id);
+});
+
+test('report context cap includes only disclosed working items and fails closed without partial revisions',async()=>{
+  const {kase,url}=await reportFixture();
+  // Excluded private notes must never be materialised into the report or consume its item cap.
+  await context.schemaAdminPool!.query(`INSERT INTO case_work_items
+    (tenant_id,case_id,id,kind,title,body,status,request_hash,created_by)
+    SELECT $1,$2,gen_random_uuid(),'note','Fictional private note',repeat('N',12000),'Recorded',$3,$4 FROM generate_series(1,1001)`,[demoTenantId,kase.id,'a'.repeat(64),demoUserId]);
+  const work=await createWork(kase.id,workInput({title:'Fictional "quoted" question',body:'Multilingual á😀\nSecond line'}));assert.equal(work.statusCode,200,work.body);
+  await context.schemaAdminPool!.query(`INSERT INTO case_work_items
+    (tenant_id,case_id,id,kind,title,body,status,request_hash,created_by)
+    SELECT $1,$2,gen_random_uuid(),'question','Fictional bounded question','Fictional only','Open',$3,$4 FROM generate_series(1,999)`,[demoTenantId,kase.id,'b'.repeat(64),demoUserId]);
+  const valid=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);
+  assert.equal(valid.statusCode,200,valid.body);
+  assert.equal(JSON.parse(valid.body).investigation.questions.length,1000);
+  assert.ok(!valid.body.includes('Fictional private note'));
+  assert.equal((await createWork(kase.id)).statusCode,200);
+  for(const response of [await request('GET',`/api/cases/${kase.id}/report`,context.demo!),await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}})]) {
+    assertError(response,422);assert.match(response.body,/Report working-context limit exceeded/);
+  }
+  await assertNoFrozenReport(kase.id);
+});
+
+test('report assembly rejects oversized and symlink replacement originals with no frozen receipt',async()=>{
+  const {kase,evidence,url}=await reportFixture();
+  const row=await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id]);
+  const path=join(context.storageRoot!,row.rows[0].object_path);
+  const original=await readFile(path);
+  await writeFile(path,Buffer.alloc(262145,65));
+  assertError(await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}}),409);
+  const target=join(context.storageRoot!,`fictional-replacement-${randomUUID()}.txt`);await writeFile(target,original);
+  await rm(path);await symlink(target,path);
+  assertError(await request('GET',`/api/cases/${kase.id}/report`,context.demo!),409);
+  await assertNoFrozenReport(kase.id);
+  await rm(path);await writeFile(path,original);
+  assert.equal((await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).statusCode,200);
 });

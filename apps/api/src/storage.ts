@@ -88,7 +88,7 @@ export async function removeOriginal(root: string, objectPath: string): Promise<
   await unlink(resolveObjectPath(root, objectPath));
 }
 
-/** Bounded worker read: never allocate based on an untrusted replacement file. */
+/** Bounded original read: never allocate based on an untrusted replacement file. */
 export async function readOriginalBounded(root: string, objectPath: string, maximum: number): Promise<Buffer> {
   const handle = await open(resolveObjectPath(root, objectPath), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {

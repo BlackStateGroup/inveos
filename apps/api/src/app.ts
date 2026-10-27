@@ -19,11 +19,12 @@ import type {
   ReviewInput,
   Workspace,
 } from '@inveos/contracts';
+import { ReportBudget, REPORT_MAX_BYTES, REPORT_MAX_ITEMS } from './report-budget.js';
 import { exactSpan, selectSourceSpan } from './source-span.js';
 import { registerIntegrityJobs } from './integrity-jobs.js';
 import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
-import { readOriginal, writeOriginal, type StoredOriginal } from './storage.js';
+import { readOriginal, readOriginalBounded, writeOriginal, type StoredOriginal } from './storage.js';
 import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
@@ -441,7 +442,7 @@ async function findClaim(
 async function verifiedBytes(storageRoot: string, evidence: EvidenceRow): Promise<Buffer> {
   let bytes: Buffer;
   try {
-    bytes = await readOriginal(storageRoot, evidence.object_path);
+    bytes = await readOriginalBounded(storageRoot, evidence.object_path, 262144);
   } catch {
     throw new ApiError(409, 'The cited original is unavailable.');
   }
@@ -1220,9 +1221,60 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
+  // Cursor names are fixed application constants. Transaction end also closes them on failure.
+  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work', sql: string, values: string[], message: string) {
+    await client.query(`DECLARE ${name} NO SCROLL CURSOR FOR ${sql}`, values);
+    let count = 0;
+    for (;;) {
+      const batch = await client.query(`FETCH FORWARD 32 FROM ${name}`);
+      if (!batch.rows.length) break;
+      for (const row of batch.rows) {
+        if (++count > REPORT_MAX_ITEMS) throw new ApiError(422, message);
+        yield row;
+      }
+    }
+    await client.query(`CLOSE ${name}`);
+  }
+
   async function buildReport(client: PoolClient, actor: Actor, caseId: string): Promise<ReportDraft> {
       await findCase(client,actor,caseId);
-      const result = await client.query(
+      const caseResult = await client.query<CaseRow>(
+        `SELECT c.*, u.display_name AS owner_name
+           FROM cases c
+           JOIN case_memberships cm
+             ON cm.tenant_id = c.tenant_id AND cm.case_id = c.id
+           JOIN users u ON u.id = c.owner_user_id
+          WHERE c.tenant_id = $1 AND c.id = $2 AND cm.user_id = $3`,
+        [actor.tenantId, caseId, actor.userId],
+      );
+      const caseRow = caseResult.rows[0];
+      if (!caseRow) {
+        notFound();
+      }
+
+      const report: ReportDraft = {
+        status: 'draft_not_released',
+        case: {
+          id: caseRow.id,
+          ref: caseRow.ref,
+          title: caseRow.title,
+          client: caseRow.client,
+          scope: caseRow.scope,
+          jurisdiction: caseRow.jurisdiction,
+        },
+        findings: [],
+        investigation: {
+          status: 'working_context_not_findings',
+          objectives: [],
+          questions: [],
+          hypotheses: [],
+          blockers: [],
+        },
+        limitations: 'Internal synthetic-lab JSON draft only. Working questions and hypotheses are not findings. Verify cited bytes/spans offline with tools/verify_report.py; authenticate the whole draft using a separately trusted fingerprint. Not a signed custody certificate, production PDF, or client release.',
+      };
+      const budget = new ReportBudget();
+      budget.add(report);
+      for await (const row of reportRows(client, 'report_findings',
         `SELECT f.id AS finding_id, f.text AS finding_text, f.reviewed_at, reviewer.display_name AS reviewer,
                 cl.id AS claim_id, cl.evidence_id, cl.quote, cl.source_start_byte, cl.source_end_byte, cl.source_digest,
                 r.claim_id AS review_claim_id, r.accepted AS review_accepted, r.source_digest AS review_digest,
@@ -1244,42 +1296,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           WHERE f.tenant_id = $1 AND f.case_id = $2
           ORDER BY f.reviewed_at, f.id LIMIT 1001`,
         [actor.tenantId, caseId],
-      );
-      if (result.rows.length>1000) throw new ApiError(422,'Report finding limit exceeded.');
-      if (!result.rows.length) {
-        throw new ApiError(422, 'A report draft requires at least one accepted finding.');
-      }
-      const caseResult = await client.query<CaseRow>(
-        `SELECT c.*, u.display_name AS owner_name
-           FROM cases c
-           JOIN case_memberships cm
-             ON cm.tenant_id = c.tenant_id AND cm.case_id = c.id
-           JOIN users u ON u.id = c.owner_user_id
-          WHERE c.tenant_id = $1 AND c.id = $2 AND cm.user_id = $3`,
-        [actor.tenantId, caseId, actor.userId],
-      );
-      const caseRow = caseResult.rows[0];
-      if (!caseRow) {
-        notFound();
-      }
-
-      const sources = new Map<string, ReportDraft['findings'][number]['source']>();
-      const findings: ReportDraft['findings'] = [];
-      for (const row of result.rows) {
+        'Report finding limit exceeded.')) {
         const evidence = row as EvidenceRow;
         requireTextOriginal(evidence);
-        const bytes = await verifiedBytes(options.storageRoot, evidence);
-
-        if (
-          row.source_digest.trim() !== evidence.digest.trim()
-          || !exactSpan(bytes,row.quote,row.source_start_byte,row.source_end_byte)
-          || !row.review_accepted || row.review_claim_id!==row.claim_id
-          || row.review_digest.trim()!==row.source_digest.trim()
-          || row.review_start_byte!==row.source_start_byte || row.review_end_byte!==row.source_end_byte
-        ) {
-          throw new ApiError(409, 'A cited source link no longer verifies.');
+        if (!Number.isSafeInteger(evidence.byte_length) || evidence.byte_length < 1 || evidence.byte_length > 262144) {
+          throw new ApiError(409, 'The cited original size is invalid.');
         }
-        sources.set(row.evidence_id, {
+        const source: ReportDraft['findings'][number]['source'] = {
           id: row.evidence_id,
           filename: row.filename,
           sha256: row.digest.trim(),
@@ -1288,7 +1311,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           quote: row.quote,
           startByte: row.source_start_byte,
           endByte: row.source_end_byte,
-          contentBase64: bytes.toString('base64'),
+          contentBase64: '',
           policy: {
             authorityId: row.authority_id,
             authorityVersion: row.authority_version,
@@ -1298,40 +1321,41 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
             retentionDays: row.retention_days,
             minimisation: row.minimisation,
           },
-        });
-        findings.push({
-          id: row.finding_id,
-          text: row.finding_text,
-          reviewer: row.reviewer,
-          reviewedAt: iso(row.reviewed_at),
-          source: sources.get(row.evidence_id)!,
-        });
+        };
+        const finding = {
+          id: row.finding_id, text: row.finding_text, reviewer: row.reviewer,
+          reviewedAt: iso(row.reviewed_at), source,
+        };
+        // Reject before reading or base64-encoding this original. Count every occurrence:
+        // the export embeds a source per finding even when several share an evidence ID.
+        budget.add(finding, 4 * Math.ceil(evidence.byte_length / 3), report.findings.length > 0);
+        const bytes = await verifiedBytes(options.storageRoot, evidence);
+        if (
+          row.source_digest.trim() !== evidence.digest.trim()
+          || !exactSpan(bytes,row.quote,row.source_start_byte,row.source_end_byte)
+          || !row.review_accepted || row.review_claim_id!==row.claim_id
+          || row.review_digest.trim()!==row.source_digest.trim()
+          || row.review_start_byte!==row.source_start_byte || row.review_end_byte!==row.source_end_byte
+        ) {
+          throw new ApiError(409, 'A cited source link no longer verifies.');
+        }
+        source.contentBase64 = bytes.toString('base64');
+        report.findings.push(finding);
       }
-      const workResult = await client.query(
+      if (!report.findings.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
+      for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
-          WHERE tenant_id=$1 AND case_id=$2 ORDER BY created_at, id`, [actor.tenantId, caseId],
-      );
-      const work = workResult.rows.map(displayWork);
-      return {
-        status: 'draft_not_released',
-        case: {
-          id: caseRow.id,
-          ref: caseRow.ref,
-          title: caseRow.title,
-          client: caseRow.client,
-          scope: caseRow.scope,
-          jurisdiction: caseRow.jurisdiction,
-        },
-        findings,
-        investigation: {
-          status: 'working_context_not_findings',
-          objectives: work.filter(w => w.kind === 'objective'),
-          questions: work.filter(w => w.kind === 'question'),
-          hypotheses: work.filter(w => w.kind === 'hypothesis'),
-          blockers: work.filter(w => w.kind === 'task' && w.status === 'Blocked'),
-        },
-        limitations: 'Internal synthetic-lab JSON draft only. Working questions and hypotheses are not findings. Verify cited bytes/spans offline with tools/verify_report.py; authenticate the whole draft using a separately trusted fingerprint. Not a signed custody certificate, production PDF, or client release.',
-      };
+          WHERE tenant_id=$1 AND case_id=$2
+          AND (kind IN ('objective','question','hypothesis') OR (kind='task' AND status='Blocked'))
+          ORDER BY created_at, id LIMIT 1001`, [actor.tenantId, caseId], 'Report working-context limit exceeded.')) {
+        const item = displayWork(row);
+        const context = report.investigation!;
+        const target = item.kind === 'objective' ? context.objectives : item.kind === 'question' ? context.questions
+          : item.kind === 'hypothesis' ? context.hypotheses : context.blockers;
+        budget.add(item, 0, target.length > 0);
+        target.push(item);
+      }
+      return report;
   }
   async function reportTransaction<T>(operation: (client: PoolClient)=>Promise<T>): Promise<T> {
     for(let attempt=0;;attempt++) {
@@ -1380,7 +1404,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(old.rows[0]) {checkRevision(old.rows[0]);return revisionReceipt(old.rows[0],caseId);}
       const report=await buildReport(client,actor,caseId);
       const bytes=Buffer.from(JSON.stringify(report),'utf8');
-      if(bytes.length>33554432) throw new ApiError(422,'Report byte limit exceeded.');
+      if(bytes.length>REPORT_MAX_BYTES) throw new ApiError(422,'Report byte limit exceeded.');
       const digest=createHash('sha256').update(bytes).digest('hex'),id=randomUUID();
       const inserted=await client.query(`INSERT INTO report_revisions (tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest)
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);

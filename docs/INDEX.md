@@ -59,3 +59,5 @@
 - [Foundation validator](../tools/validate_foundation.py): JSON, links, licence flags, source locks, file inventory.
 
 - [Delivery status and GitHub access](../DELIVERY_STATUS.md).
+
+- [Bounded report assembly](33_BOUNDED_REPORT_ASSEMBLY.md) — incremental JSON budgets, database batches, bounded verified-original reads and failure tests.
