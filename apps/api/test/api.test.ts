@@ -1612,25 +1612,29 @@ test('freezing requires reviewed findings and rolls back its revision when audit
 
 test('report freeze keeps one real database snapshot when a case edit commits between assembler queries',async()=>{
   const {kase,url}=await reportFixture();
-  const pool=context.pool!,connect=pool.connect.bind(pool);
+  const pool=context.pool!;
+  const originals=new Map<import('pg').PoolClient,import('pg').PoolClient['query']>();
   let edited=false;
   // Coordinate an actual second PostgreSQL connection after the findings SELECT.
   // No query results are mocked; restore the instrumented client before returning it to the pool.
-  pool.connect=(async()=>{
-    const client=await connect(),query=client.query.bind(client),release=client.release.bind(client);
-    client.query=(async(sql:string,values?:unknown[])=>{
-      const result=await query(sql,values);
-      if(!edited && sql.includes('SELECT f.id AS finding_id')) {
+  const instrument=(client: import('pg').PoolClient)=>{
+    if(originals.has(client)) return;
+    const query=client.query.bind(client);originals.set(client,query);
+    client.query=((...args: unknown[])=>{
+      const result=(query as (...args:unknown[])=>Promise<unknown>)(...args);
+      if(!edited && typeof args[0]==='string' && args[0].includes('SELECT f.id AS finding_id')) {
         edited=true;
-        await context.schemaAdminPool!.query('UPDATE cases SET scope=$2 WHERE id=$1',[kase.id,'Fictional scope edited during report assembly']);
+        return result.then(async rows=>{
+          await context.schemaAdminPool!.query('UPDATE cases SET scope=$2 WHERE id=$1',[kase.id,'Fictional scope edited during report assembly']);
+          return rows;
+        });
       }
       return result;
     }) as typeof client.query;
-    client.release=()=>{client.query=query;client.release=release;release();};
-    return client;
-  }) as typeof pool.connect;
+  };
+  pool.on('acquire',instrument);
   let frozen;
-  try {frozen=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});} finally {pool.connect=connect;}
+  try {frozen=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});} finally {pool.off('acquire',instrument);for(const [client,query] of originals) client.query=query;}
   assert.equal(frozen.statusCode,200,frozen.body);assert.equal(edited,true);
   const id=JSON.parse(frozen.body).id;
   const app=await createAppInstance();
