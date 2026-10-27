@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { claimIntegrityJob, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
+import { recoverableReportFreeze, reportRecoveryScope, type RecoveryStore } from '../../web/src/reportRecovery.js';
 import { createPool, runMigrations } from '../src/db.js';
 import type { Case, Evidence, ReportDraft, Workspace, WorkInput, WorkItem, WorkEdit, WorkLink, WorkRevision } from '@inveos/contracts';
 
@@ -1786,4 +1787,35 @@ test('report assembly rejects oversized and symlink replacement originals with n
   await assertNoFrozenReport(kase.id);
   await rm(path);await writeFile(path,original);
   assert.equal((await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).statusCode,200);
+});
+
+
+test('client freeze recovery retries a committed but unacknowledged HTTP request after local remount and case edit',async()=>{
+  const {kase,url}=await reportFixture();
+  const scope=await reportRecoveryScope(context.demo!.csrf,kase.id);
+  const records=new Map<string,string>();
+  const store=():RecoveryStore=>({getItem:key=>records.get(key)??null,setItem:(key,value)=>{records.set(key,value);},removeItem:key=>{records.delete(key);}});
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const send=async(key:string)=>{
+      const response=await fetch(`${address}${url}`,{method:'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},body:JSON.stringify({idempotencyKey:key})});
+      assert.equal(response.status,200);return await response.json();
+    };
+    let committed:unknown;
+    await assert.rejects(recoverableReportFreeze(store(),scope,kase.id,async key=>{
+      committed=await send(key);throw new Error('Fictional receipt lost after server commit');
+    }),/receipt lost/);
+    assert.equal(records.size,1);
+    await context.schemaAdminPool!.query('UPDATE cases SET title=$2 WHERE id=$1',[kase.id,'Fictional title changed before retry']);
+    // Fresh client helper/store wrapper; only the saved UUID survives, not component state.
+    const recovered=await recoverableReportFreeze(store(),await reportRecoveryScope(context.demo!.csrf,kase.id),kase.id,send);
+    assert.deepEqual(recovered,committed);assert.equal(records.size,0);
+    const download=await fetch(`${address}${url}/${recovered.id}`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(download.status,200);
+    const bytes=await download.text();assert.equal(digest(bytes),recovered.sha256);
+    assert.equal(JSON.parse(bytes).case.title,kase.title);
+    const count=await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='report.frozen'",[kase.id]);assert.equal(count.rows[0].n,1);
+    const fresh=await recoverableReportFreeze(store(),scope,kase.id,send);assert.notEqual(fresh.id,recovered.id);
+  } finally {await app.close();}
 });

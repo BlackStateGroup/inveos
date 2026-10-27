@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: recoverable report freezes across navigation
+
+Based on PR #14 receipt `bb832b73fc813cbd66f8767587422d9b38571677` (implementation already verified in run #28). Added a session/case-scoped pending UUID in tab storage before sending a freeze, receipt validation, replay after lost acknowledgement, safe delayed completion and explicit recovery controls. Existing server idempotency, snapshots, scope checks and immutable revisions are reused; no API/schema/dependency change. See docs/34_REPORT_FREEZE_RECOVERY.md.
+
+Four actual client-helper protocol tests pass locally under Node Web Crypto with a storage double; lint/types pass. Added a real HTTP/PostgreSQL scenario that discards a committed receipt, edits the case, reconstructs client helper state and requires the same historical receipt/bytes with one audit, followed by a fresh revision. Hosted execution is pending; no browser reload/network-outage result is claimed. Browser storage/navigation/race/accessibility acceptance remains unrun; tab/session recovery is not native durable offline storage. No new dependency, third-party source, collection, deployment or merge.
+
+Next: verify and record the hosted receipt, then continue from the newest draft after main/review checks. Obtain browser report/source acceptance on a supported sandboxed host; other dependency-ready work remains durable job UI/recovery and resumable original intake. Parser runtime/licence/isolation, page/region citations, release/redaction/signatures, production identity/encrypted storage, native/offline/restore and remaining requirements stay open. No essential user input.
+
 ## 27 October: bounded report assembly and verified-original reads
 
 Based on PR #13 receipt `d9f6c91e2f7f4f03bc491576ae48bc23561f76f9`; main remains `95b5c35`, PRs #2–#13 remain open, and #13 has no review feedback. Added exact incremental 32 MiB JSON accounting before original encoding, batches of 32 database rows, 1,000-item fail-closed caps for findings and disclosed working context, and SQL exclusion of private/unreported casework. Verified-original paths reuse the bounded regular-file reader; no schema, dependency or report-format changes. Existing snapshots, revisions, human-review and case/authority controls are retained. See docs/33_BOUNDED_REPORT_ASSEMBLY.md.

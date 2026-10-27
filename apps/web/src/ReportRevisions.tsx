@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import {verifyRevisionDownload} from './reportDownload';
+import {pendingReportFreeze, recoverableReportFreeze, reportRecoveryScope} from './reportRecovery';
 import {Panel, Notice} from './ui';
 
 type Receipt={id:string;caseId:string;status:string;sha256:string;createdAt:string};
@@ -12,14 +13,18 @@ async function json<T>(url:string,signal?:AbortSignal,body?:object,csrf?:string)
 export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   const [rows,setRows]=useState<Receipt[]>([]),[next,setNext]=useState<string|null>(null);
   const [busy,setBusy]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
-  const retryKey=useRef<string>(),inFlight=useRef(false),alive=useRef(true);
+  const [pending,setPending]=useState(false);
+  const inFlight=useRef(false),alive=useRef(true);
   const base=`/api/cases/${caseId}/report-revisions`;
   useEffect(()=>{
     alive.current=true;const controller=new AbortController();
-    void json<Page>(base,controller.signal).then(page=>{setRows(page.items);setNext(page.nextBefore);})
+    void Promise.all([json<Page>(base,controller.signal),reportRecoveryScope(csrf,caseId)]).then(([page,scope])=>{
+      if(controller.signal.aborted)return;
+      setRows(page.items);setNext(page.nextBefore);setPending(!!pendingReportFreeze(window.sessionStorage,scope));
+    })
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
     return()=>{alive.current=false;controller.abort();};
-  },[base]);
+  },[base,csrf,caseId]);
   async function act(operation:()=>Promise<void>){
     if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');setMessage('');
     try{await operation();}catch(e){if(alive.current)setError((e as Error).message);}finally{inFlight.current=false;if(alive.current)setBusy(false);}
@@ -29,9 +34,15 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     if(!alive.current)return;setRows(old=>older?[...old,...page.items.filter(row=>!old.some(x=>x.id===row.id))]:page.items);setNext(page.nextBefore);
   }
   async function freeze(){
-    retryKey.current??=crypto.randomUUID();
-    const receipt=await json<Receipt>(base,undefined,{idempotencyKey:retryKey.current},csrf);
-    retryKey.current=undefined;if(!alive.current)return;
+    const scope=await reportRecoveryScope(csrf,caseId);
+    const store=window.sessionStorage;
+    let receipt:Receipt;
+    try {
+      receipt=await recoverableReportFreeze(store,scope,caseId,key=>json<Receipt>(base,AbortSignal.timeout(30000),{idempotencyKey:key},csrf));
+    } finally {
+      if(alive.current)setPending(!!pendingReportFreeze(store,scope));
+    }
+    if(!alive.current)return;
     setRows(old=>[receipt,...old.filter(row=>row.id!==receipt.id)]);
     setMessage('Internal revision saved. Download it below and retain its fingerprint separately.');
   }
@@ -47,8 +58,10 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   }
   return <Panel title="Saved internal report revisions"><div className="panel-body">
     <Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
-    <div className="report-export-actions"><button className="primary" disabled={busy} onClick={()=>void act(freeze)}>Freeze current internal draft</button>
+    <div className="report-export-actions"><button className="primary" disabled={busy} onClick={()=>void act(freeze)}>{pending?'Recover pending freeze':'Freeze current internal draft'}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh revisions</button></div>
+    {pending&&<p role="status">A previous freeze has no confirmed receipt. Recover it before starting another revision.</p>}
+    <p className="small muted">Retry recovery lasts for this tab and sign-in. After signing out or closing the tab, check saved revisions before freezing again.</p>
     {error&&<p className="form-error" role="alert">{error} Retry the action when ready.</p>}
     <p role="status">{busy?'Loading report revisions…':message||(!rows.length?'No saved revisions yet.':'')}</p>
     <ul>{rows.map(row=><li key={row.id}>
