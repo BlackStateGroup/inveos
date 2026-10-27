@@ -43,7 +43,7 @@ npm run test:foundation
 npm test --workspace @inveos/api
 ```
 
-`runMigrations` now applies `001_foundation.sql` then idempotent `002_binary_originals.sql` in the existing transaction. The new migration adds an immutable original-kind discriminator, enforces the kind/status pair and installs the claim guard. No original bytes or existing digest/pointer/authority values are rewritten.
+`runMigrations` reuses the ordered, checksummed migration ledger from concurrent draft PR #6 (`1e3992a9a04d607a93ab09a4e13b25197b4f3d97`), under its transaction/advisory lock. The binary migration is `003_binary_originals.sql`, reserving PR #6's `002_casework.sql` rather than duplicating its sequence number. PR #6 casework tables/UI are not incorporated in this branch. The new migration adds an immutable original-kind discriminator, enforces the kind/status pair and installs the claim guard. No original bytes or existing digest/pointer/authority values are rewritten.
 
 ## Tests and limits
 

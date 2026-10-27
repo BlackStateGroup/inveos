@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Pool, type PoolClient, type PoolConfig } from 'pg';
 
@@ -24,12 +25,24 @@ export async function runMigrations(pool: Pool, schema = 'inveos'): Promise<void
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1), 492716)', [schema]);
     await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}" AUTHORIZATION CURRENT_USER`);
     await client.query(`SET LOCAL search_path TO "${schema}", public`);
-    for (const filename of ['001_foundation.sql', '002_binary_originals.sql']) {
-      const migrationPath = fileURLToPath(new URL(`../migrations/${filename}`, import.meta.url));
-      const migration = await readFile(migrationPath, 'utf8');
+    await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
+      filename text PRIMARY KEY, sha256 char(64) NOT NULL, applied_at timestamptz NOT NULL DEFAULT now()
+    )`);
+    const directory = new URL('../migrations/', import.meta.url);
+    const names = (await readdir(directory)).filter((name) => /^\d{3}_[a-z_]+\.sql$/.test(name)).sort();
+    for (const name of names) {
+      const migration = await readFile(fileURLToPath(new URL(name, directory)), 'utf8');
+      const digest = createHash('sha256').update(migration).digest('hex');
+      const applied = await client.query('SELECT sha256 FROM schema_migrations WHERE filename = $1', [name]);
+      if (applied.rows[0]) {
+        if (applied.rows[0].sha256 !== digest) throw new Error(`Applied migration was modified: ${name}`);
+        continue;
+      }
       await client.query(migration);
+      await client.query('INSERT INTO schema_migrations (filename, sha256) VALUES ($1, $2)', [name, digest]);
     }
     await client.query('COMMIT');
   } catch (error) {
