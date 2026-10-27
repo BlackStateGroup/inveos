@@ -135,7 +135,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       if(after && !(await client.query('SELECT 1 FROM integrity_job_events WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND id=$4',[actor.tenantId,caseId,jobId,after])).rowCount) notFound();
       const result=await client.query(`SELECT id::text,status,attempt,failure_code AS "failureCode",recorded_at AS "recordedAt"
         FROM integrity_job_events WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND ($4::bigint IS NULL OR id>$4)
-        ORDER BY id LIMIT $5`,[actor.tenantId,caseId,jobId,after??null,limit+1]);
+        ORDER BY integrity_job_events.id LIMIT $5`,[actor.tenantId,caseId,jobId,after??null,limit+1]);
       return {items:result.rows.slice(0,limit),nextAfter:result.rows.length>limit?result.rows[limit-1].id:null};
     });
     return reply.header('Cache-Control','no-store').send(page);

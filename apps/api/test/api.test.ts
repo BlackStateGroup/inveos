@@ -1676,6 +1676,9 @@ test('revision listing rejects foreign cursors, invalid pagination, client and r
   const foreign=JSON.parse((await request('POST',other.url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).body);
   assertError(await request('GET',`${url}?before=${foreign.id}`,context.demo!),404);
   for(const suffix of ['?limit=0','?limit=51','?limit=1.5','?before=invalid','?tenantId=x'])assertError(await request('GET',url+suffix,context.demo!),422);
+  const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[foreignTenant,'Fictional processing history agency']);
+  const foreign=await createMember(foreignTenant,'reviewer','Fictional history foreign reviewer');
+  for(const path of [url,events])assertError(await request('GET',path,await issueTestSession(foreign,foreignTenant)),404);
   const outsider=await createMember(demoTenantId,'investigator','Fictional history outsider');
   assertError(await request('GET',url,await issueTestSession(outsider)),404);
   const client=await createMember(demoTenantId,'client','Fictional history client');
@@ -1863,4 +1866,17 @@ test('job and attempt histories deny foreign cursors, invalid queries, clients, 
   for(const [session,code] of [[await issueTestSession(outsider),404],[await issueTestSession(client),403]] as const)for(const path of [url,events])assertError(await request('GET',path,session),code);
   await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
   for(const path of [url,events])assertError(await request('GET',path,context.demo!),404);
+});
+
+
+test('attempt pagination preserves numeric sequence order beyond JavaScript safe integers',async()=>{
+  const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
+  const job=JSON.parse((await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}})).body);
+  // Explicit administrative append-only fixture; no sequence reset or history rewrite.
+  for(const id of ['9999999999999999','10000000000000000'])await context.schemaAdminPool!.query(`INSERT INTO integrity_job_events
+    (tenant_id,case_id,job_id,id,status,attempt) OVERRIDING SYSTEM VALUE VALUES ($1,$2,$3,$4,'queued',0)`,[demoTenantId,kase.id,job.id,id]);
+  const first=JSON.parse((await request('GET',`${url}/${job.id}/events?limit=2`,context.demo!)).body);
+  assert.equal(first.items[1].id,'9999999999999999');assert.equal(first.nextAfter,'9999999999999999');
+  const second=JSON.parse((await request('GET',`${url}/${job.id}/events?after=${first.nextAfter}`,context.demo!)).body);
+  assert.deepEqual(second.items.map((x:{id:string})=>x.id),['10000000000000000']);
 });
