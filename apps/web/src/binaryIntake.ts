@@ -7,8 +7,8 @@ const hash=async(bytes:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtl
 export async function binaryIntakeScope(csrf:string,caseId:string){return (await jobRequestScope(csrf,caseId)).replace('job-request','binary-intake');}
 export async function prepareBinary(file:Pick<File,'name'|'size'|'arrayBuffer'>,sourceTime:string,method:string):Promise<BinaryInput>{
   if(!Number.isInteger(file.size)||file.size<1||file.size>262144)throw new Error('Choose a file between 1 byte and 256 KiB.');
-  if(file.name.length<5||file.name.length>128||file.name.trim()!==file.name||/[\\/\u0000-\u001f\u007f-\u009f]/u.test(file.name))throw new Error('Use a safe original filename (5–128 characters).');
-  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/i.test(sourceTime)||!Number.isFinite(Date.parse(sourceTime))||new Date(sourceTime.slice(0,10)+'T00:00:00Z').toISOString().slice(0,10)!==sourceTime.slice(0,10)||method.trim().length<5||method.length>500)throw new Error('Supply the original source timestamp with timezone and an acquisition method.');
+  if(new TextDecoder().decode(new TextEncoder().encode(file.name))!==file.name||file.name.length<5||file.name.length>128||file.name.trim()!==file.name||/[\\/\u0000-\u001f\u007f-\u009f]/u.test(file.name))throw new Error('Use a safe original filename (5–128 characters).');
+  if(sourceTime.length>64||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/i.test(sourceTime)||!Number.isFinite(Date.parse(sourceTime))||new Date(sourceTime.slice(0,10)+'T00:00:00Z').toISOString().slice(0,10)!==sourceTime.slice(0,10)||method.trim().length<5||method.length>500)throw new Error('Supply the original source timestamp with timezone and an acquisition method.');
   const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.length!==file.size)throw new Error('File size changed during reading.');
   let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);
   return {filename:file.name,contentBase64:btoa(binary),expectedSha256:await hash(bytes),sourceTime,method};

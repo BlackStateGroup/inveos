@@ -13,7 +13,7 @@ export function BinaryIntake({caseId,csrf,onSaved}:{caseId:string;csrf:string;on
       const scope=await binaryIntakeScope(csrf,caseId);
       try{
         const result=await sendBinaryRecoverably(sessionStorage,scope,caseId,input,async body=>{
-          const response=await fetch(`/api/cases/${caseId}/evidence/binary`,{method:'POST',credentials:'same-origin',signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});
+          const response=await fetch(`/api/cases/${caseId}/evidence/binary`,{method:'POST',cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});
           const value=await response.json();if(!response.ok)throw new Error(value.error||'Intake failed.');return value;
         });
         if(alive.current){setReceipt(`Original ${result.id} confirmed in quarantine. SHA-256: ${result.digest}`);await onSaved();}
@@ -22,6 +22,6 @@ export function BinaryIntake({caseId,csrf,onSaved}:{caseId:string;csrf:string;on
   }
   return <Panel title="Register a binary original"><div className="panel-body"><Notice>Fictional files only, up to 256 KiB. Originals remain quarantined: no malware scan, OCR, preview or findings are implied. Keep your original file.</Notice>
     {pending&&<p role="status">Unconfirmed intake: reselect the same file and enter its exact original timestamp and method to recover the receipt.</p>}
-    <form onSubmit={e=>void submit(e)}><fieldset disabled={busy}><label>Original file<input name="file" type="file" required/></label><label>Source timestamp including timezone<input name="sourceTime" placeholder="2026-01-12T09:00:00Z" required maxLength={64}/></label><label>Acquisition method<input name="method" required minLength={5} maxLength={500}/></label><button className="primary" type="submit">{busy?'Confirming intake…':pending?'Recover original receipt':'Register in quarantine'}</button></fieldset></form>
+    <form className="work-form" onSubmit={e=>void submit(e)}><fieldset disabled={busy}><label className="form-label">Original file<input name="file" type="file" required/></label><label className="form-label">Source timestamp including timezone<input name="sourceTime" placeholder="2026-01-12T09:00:00Z" required maxLength={64}/></label><label className="form-label">Acquisition method<input name="method" required minLength={5} maxLength={500}/></label><button className="primary" type="submit">{busy?'Confirming intake…':pending?'Recover original receipt':'Register in quarantine'}</button></fieldset></form>
     {error&&<p role="alert">{error}</p>}{receipt&&<p role="status">{receipt}</p>}<p>Only a retry key and request fingerprint are stored in this tab. Recovery requires the same sign-in, file and metadata; this is not resumable chunk transfer or offline storage.</p></div></Panel>;
 }
