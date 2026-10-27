@@ -10,7 +10,8 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { claimIntegrityJob, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
-import { inspectTextDerivative } from '../../web/src/derivativeInspection.js';
+import {jobRequestScope,queueRecoverably} from '../../web/src/jobRequest.js';
+import { inspectTextDerivative, type InspectionJob } from '../../web/src/derivativeInspection.js';
 import { recoverableReportFreeze, reportRecoveryScope, type RecoveryStore } from '../../web/src/reportRecovery.js';
 import { createPool, runMigrations } from '../src/db.js';
 import type { Case, Evidence, ReportDraft, Workspace, WorkInput, WorkItem, WorkEdit, WorkLink, WorkRevision } from '@inveos/contracts';
@@ -1911,5 +1912,26 @@ test('actual HTTP derivative inspection binds processed bytes to the selected jo
     assert.equal(denied.status,409);assert.equal(denied.headers.get('cache-control'),'no-store');
     const findings=await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[kase.id]);
     assert.equal(findings.rows[0].n,1); // The existing reviewed fixture only; inspection creates no finding.
+  }finally{await app.close();}
+});
+
+
+test('queue helper recovers one committed HTTP job after response loss and feeds the real worker and inspector',async()=>{
+  await context.app!.close();context.app=await createAppInstance();
+  const {kase,evidence}=await reportFixture(),base=`/api/cases/${kase.id}/integrity-jobs`,scope=await jobRequestScope(context.demo!.csrf,kase.id);
+  const entries=new Map<string,string>(),storage={getItem:(k:string)=>entries.get(k)??null,setItem:(k:string,v:string)=>{entries.set(k,v);},removeItem:(k:string)=>{entries.delete(k);}};
+  const app=await createAppInstance();
+  try{
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const send=async(payload:unknown)=>{const r=await fetch(address+base,{method:'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},body:JSON.stringify(payload)});assert.equal(r.status,200);return r.json();};
+    const input={evidenceId:evidence.id,kind:'utf8_line_index_v1' as const};let committed:unknown;
+    await assert.rejects(queueRecoverably(storage,scope,kase.id,input,async p=>{committed=await send(p);throw new Error('Fictional receipt discarded');}));
+    const recovered=await queueRecoverably({...storage},scope,kase.id,{evidenceId:randomUUID(),kind:'original_sha256_v1'},send);
+    assert.deepEqual(recovered,committed);assert.equal(entries.size,0);
+    const count=await context.pool!.query('SELECT count(*)::int AS n FROM integrity_jobs WHERE case_id=$1',[kase.id]);assert.equal(count.rows[0].n,1);
+    assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,{tenantId:demoTenantId,caseId:kase.id,jobId:recovered.id}))?.status,'succeeded');
+    const job=await (await fetch(`${address}${base}/${recovered.id}`,{headers:{cookie:context.demo!.cookie}})).json() as InspectionJob;
+    const derivative=await (await fetch(`${address}${base}/${recovered.id}/derivative`,{headers:{cookie:context.demo!.cookie}})).json();
+    assert.equal((await inspectTextDerivative(derivative,job)).sourceDigest,evidence.digest);
   }finally{await app.close();}
 });
