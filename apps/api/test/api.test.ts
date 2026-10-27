@@ -2250,6 +2250,7 @@ test('upload scope, actor ownership, CSRF, expiry and bounded reservation quota 
  assertError(await request('GET',url,await issueTestSession(other)),404);
  const client=await createMember(demoTenantId,'client','Fictional upload client');assertError(await request('GET',url,await issueTestSession(client)),403);
  const wrong=await createCase();assertError(await request('GET',`/api/cases/${wrong.id}/uploads/${id}`,context.demo!),404);
+ const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[foreignTenant,'Fictional upload foreign agency']);const foreign=await createMember(foreignTenant,'reviewer','Fictional foreign uploader');assertError(await request('GET',url,await issueTestSession(foreign,foreignTenant)),404);
  await context.schemaAdminPool!.query('ALTER TABLE upload_reservations DISABLE TRIGGER upload_identity');try{await context.schemaAdminPool!.query("UPDATE upload_reservations SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE upload_reservations ENABLE TRIGGER upload_identity');}
  assertError(await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}}),409);
  for(let i=0;i<9;i++)assert.equal((await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}})).statusCode,200);
