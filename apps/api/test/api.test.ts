@@ -1,3 +1,4 @@
+import {prepareBinary,binaryIntakeScope,sendBinaryRecoverably} from '../../web/src/binaryIntake.js';
 import { fileURLToPath } from 'node:url';
 import { execFile, spawn, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -2185,4 +2186,21 @@ test('original delivery fails closed on audit failure, corruption and revoked or
   await writeFile(join(context.storageRoot!,path),'Fictional corruption after successful read');
   const corrupt=await request('GET',url,context.demo!);assertError(corrupt,409);assert.equal(corrupt.headers['cache-control'],'no-store');
   assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='evidence.original_read'",[kase.id])).rows[0].n,1);
+});
+
+test('binary file intake recovers a committed HTTP receipt after response loss with one immutable quarantined original',async()=>{
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+ const kase=await createCase();await approveAuthority(kase.id);const bytes=new Uint8Array([0,255,13,10,60,62]);
+ const input=await prepareBinary({name:'fictional-recovered.bin',size:bytes.length,arrayBuffer:async()=>bytes.buffer},'2026-01-12T09:00:00Z','Fictional file supplied for recovery');
+ const scope=await binaryIntakeScope(context.demo.csrf,kase.id),entries=new Map<string,string>(),store={getItem:(k:string)=>entries.get(k)??null,setItem:(k:string,v:string)=>{entries.set(k,v);},removeItem:(k:string)=>{entries.delete(k);}};
+ const app=await createAppInstance();try{
+  const address=await app.listen({host:'127.0.0.1',port:0});let committed:unknown;
+  const send=async(body:unknown)=>{const r=await fetch(`${address}/api/cases/${kase.id}/evidence/binary`,{method:'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},body:JSON.stringify(body)});assert.equal(r.status,200);return r.json();};
+  await assert.rejects(sendBinaryRecoverably(store,scope,kase.id,input,async body=>{committed=await send(body);throw Error('Fictional response deliberately lost');}));
+  await assert.rejects(sendBinaryRecoverably({...store},scope,kase.id,{...input,filename:'different.bin'},send),/same file/);
+  const recovered=await sendBinaryRecoverably({...store},scope,kase.id,input,send);assert.deepEqual(recovered,committed);assert.equal(entries.size,0);
+  const counts=await context.pool!.query("SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM audit_events WHERE case_id=$1 AND action='evidence.received') AS receipts",[kase.id]);assert.deepEqual(counts.rows[0],{originals:1,receipts:1});
+  const original=await fetch(`${address}/api/cases/${kase.id}/evidence/${recovered.id}/original`,{headers:{cookie:context.demo!.cookie}});assert.equal(original.status,200);assert.deepEqual(new Uint8Array(await original.arrayBuffer()),bytes);assert.equal(original.headers.get('x-inveos-original-state'),'Quarantined');
+  assertError(await createClaim(kase.id,recovered.id),409);
+ }finally{await app.close();}
 });

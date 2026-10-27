@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: recoverable binary file intake
+
+Baseline PR #19 receipt `9fb50886c30856390e88ff39393c5dcc52dee6ef`; main remains PR #1, PRs #2–#19 open and #19 has no feedback. Connected the existing quarantined binary endpoint to the evidence workspace with bounded file selection, Web Crypto SHA-256, explicit source metadata and tab-scoped recovery of unconfirmed requests. Reuses immutable originals, authority, idempotency and quarantine. This is whole-request recovery, not resumable chunk transfer. No schema, dependency or parser addition. See docs/39_RECOVERABLE_BINARY_INTAKE.md.
+
+Local lint/types/build, three new helper tests and 42 Python tests pass. Added actual PostgreSQL/HTTP helper-to-intake recovery, exact original download and claim-denial coverage; hosted result pending. Browser file/reload/accessibility and actual network/device/restore acceptance remain unrun. No merge or deployment.
+
+Next: start from this draft after fresh main/review checks. Server-side reservation/chunks/finalisation and lifecycle cleanup remain the next WP-02 dependency; retain 256 KiB limits until downstream contracts change coherently. Browser acceptance, dedicated worker credentials/storage isolation, parser runtime/licence approvals and page/region citations, releases and native/offline/restore remain open. No essential user action.
+
 ## 27 October: bounded previews and audited original access
 
 Based on PR #18 receipt `25944fc6d3565fe2b4e38554b8fd78c56fc26be7`; its six dispatcher scenarios passed hosted run #43 and #18 has no feedback. Continued into an independent original-access gap: workspace previews still used unbounded readFile, while explicit original downloads had no access event. Reused the existing bounded regular-file reader, removed the unused unbounded original helper, added no-store/nosniff to workspace/download handlers and committed minimal prepared-download audit metadata before delivery. Preserve exact text/binary bytes, acquisition authority and quarantine. No new schema or dependency. See docs/38_ORIGINAL_ACCESS_HARDENING.md.

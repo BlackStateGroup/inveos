@@ -71,3 +71,5 @@
 - [Bounded processing dispatch](37_BOUNDED_PROCESSING_DISPATCH.md) — case-scoped queue consumption, lease recovery and actual CLI tests.
 
 - [Original access hardening](38_ORIGINAL_ACCESS_HARDENING.md) — bounded workspace previews and audited, verified original downloads.
+
+- [Recoverable binary file intake](39_RECOVERABLE_BINARY_INTAKE.md) — bounded file selection, fingerprints and acknowledgement recovery.

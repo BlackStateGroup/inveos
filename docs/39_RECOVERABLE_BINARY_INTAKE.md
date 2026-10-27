@@ -1,0 +1,19 @@
+# Recoverable binary file intake
+
+27 October 2026. Synthetic lab only, stacked on original-access hardening. The evidence workspace now accepts an explicitly chosen file through the existing quarantined binary endpoint. No new storage, parser, dependency or schema.
+
+The client rejects empty or oversized files before reading, preserves exact arbitrary bytes, computes SHA-256 using Web Crypto and sends canonical base64 with the original filename, source timestamp (explicit timezone) and acquisition method. The existing API independently verifies bytes/digest, current authority, membership and idempotency. All file types, including text selected here, remain opaque binary originals in quarantine; the existing text intake remains separate. No scanning, parsing or findings follow from registration.
+
+Before POST, tab session storage receives a random retry key and fingerprint of the complete request. It contains no original bytes, filename, timestamp, method or raw authentication token. The storage namespace binds case and a hashed sign-in discriminator. Read-back failure blocks submission. An unconfirmed operation must be recovered with the same file and exact metadata; mismatches cannot silently create another original. Recovery reuses existing server idempotency. The helper validates returned case, original identity, digest, length, filename, source time, method, binary kind, quarantine and empty preview before clearing its matching key. A late response cannot clear a newer key. A confirmed receipt remains visible if workspace refresh subsequently fails.
+
+This is whole-request acknowledgement recovery, **not resumable chunks**, durable offline storage or cross-device recovery. Reselecting a file requires user action after navigation/reload, and exact metadata must be re-entered. Preserve your original file and metadata. Tab loss or a new sign-in loses the recoverable namespace; inspect evidence inventory before submitting again. A definitive server validation error currently retains the key too: inspect history before clearing invalid tab state. No automatic deletion/abandonment can discard a potentially committed operation. Concurrent actions across separately duplicated tabs are not coordinated. No browser acceptance is claimed.
+
+## Run and verify
+
+Start the existing synthetic lab per `23_LOCAL_APPLICATION.md`, approve case authority, open Evidence and use Register a binary original. Supply fictional bytes, the actual source timestamp with timezone and acquisition method. Confirm the receipt and retained Quarantined state; binary originals cannot support original-text claims.
+
+Local commands: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:foundation`, `node --import tsx --test apps/api/test/binary-intake.test.ts`. Run `npm test --workspace @inveos/api` with the documented disposable PostgreSQL URLs.
+
+Three new Node helper tests exercise arbitrary bytes, pre-read limits, invalid metadata, changed-file/metadata denial, lost acknowledgement, storage failure, invalid receipts and stale completion. These use a storage double, not a browser. One added PostgreSQL/TCP test uses the actual helper and binary endpoint, deliberately discards a committed receipt, reconstructs client state, recovers one original/one receipt audit, downloads identical bytes and rejects a text claim. Hosted result pending; see BUILD_HANDOFF.md for exact receipts. Browser file chooser/reload/accessibility, actual network outage, mobile/device, parser and restore tests remain unrun.
+
+Rollback removes the UI/helper; retain immutable evidence and audit records. No database migration, evidence rewrite, third-party source incorporation, merge or deployment. Next WP-02 gate remains bounded server upload reservation/chunks/finalisation with interrupted-transfer and cleanup evidence, followed by browser acceptance on a supported host.
