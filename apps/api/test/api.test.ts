@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
+import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
@@ -1184,4 +1185,31 @@ test('case work rejects a Unicode citation pointing into the middle of a UTF-8 c
   assertError(await request('POST', `/api/cases/${kase.id}/work/${question.id}/links`, context.demo!, {
     payload: {id: randomUUID(), claimId: claim.id, relation: 'context', reason: 'A corrupted Unicode byte range must not be accepted.'},
   }), 409);
+});
+
+
+test('combined casework flow runs over TCP HTTP and its exported report verifies offline', async () => {
+  const app = await createAppInstance();
+  try {
+    const address = await app.listen({host: '127.0.0.1', port: 0});
+    const output = join(context.storageRoot!, 'http-integration');
+    const script = fileURLToPath(new URL('../../../tools/verify_casework.py', import.meta.url));
+    // Async child execution keeps the actual HTTP server event loop responsive.
+    const {stdout} = await promisify(execFile)('python3', [script, '--base-url', address, '--output', output],
+      {timeout: 60000, maxBuffer: 65536});
+    const receipt = JSON.parse(stdout);
+    assert.equal(receipt.checks, 32);
+    assert.equal(receipt.passed, 32);
+    const report = await readFile(join(output, 'draft.json'), 'utf8');
+    assert.equal(digest(report), receipt.report_sha256);
+    const packager = fileURLToPath(new URL('../../../tools/report_package.py', import.meta.url));
+    const archive = join(output, 'exhibits.zip');
+    const built = await promisify(execFile)('python3', [packager, 'build', join(output, 'draft.json'), archive,
+      '--expected-report-sha256', receipt.report_sha256], {timeout: 10000});
+    const checked = await promisify(execFile)('python3', [packager, 'verify', archive,
+      '--expected-manifest-sha256', JSON.parse(built.stdout).manifestSha256], {timeout: 10000});
+    assert.equal(JSON.parse(checked.stdout).originalsChecked, 2);
+  } finally {
+    await app.close();
+  }
 });
