@@ -31,6 +31,7 @@
 - `21_ENGINEERING_WORKPACKAGES.md` — vertical slices with exit criteria.
 - `22_GITHUB_HANDOFF.md` — repository write-access finding and publication steps.
 - [Local application and scope decision](23_LOCAL_APPLICATION.md) — visual prototype, persistent synthetic lab and non-production boundaries.
+- [Immutable text derivatives](29_IMMUTABLE_TEXT_DERIVATIVES.md) — durable first-party UTF-8 processing and immutable, reverified lineage.
 - [Offline report verification](25_OFFLINE_REPORT_VERIFIER.md) — standalone verification of the current internal JSON draft.
 - [Quarantined binary intake](27_QUARANTINED_BINARY_INTAKE.md) — bounded opaque-original API storage with authority, integrity and claim guards.
 - [Internal exhibit packages](26_INTERNAL_EXHIBIT_PACKAGE.md) — versioned manifest, original exhibits and bounded offline package verification.

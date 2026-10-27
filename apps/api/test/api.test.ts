@@ -1164,7 +1164,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1315,4 +1315,139 @@ test('jobs recheck authority and membership and fail safely on missing or corrup
   await symlink('/dev/zero',path);
   assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'original_unavailable');
   await rm(path);
+});
+
+test('durable text extraction commits immutable lineage and serves reverified derivatives over HTTP', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const text='\uFEFFFictional supplier á😀\r\nRepeated\nRepeated\rمورد';
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,evidenceInput({text,expectedSha256:digest(text)})));
+  await approveAuthority(kase.id); // Processing authority is separate from acquisition authority.
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  const input={evidenceId:evidence.id,idempotencyKey:randomUUID(),kind:'utf8_line_index_v1'};
+  const queued=await request('POST',url,context.demo!,{payload:input});assert.equal(queued.statusCode,200,queued.body);
+  const job=JSON.parse(queued.body);assert.equal(job.authorityVersion,2);
+  assertError(await request('GET',`${url}/${job.id}/derivative`,context.demo!),404);
+  assertError(await request('POST',url,context.demo!,{payload:{...input,kind:'original_sha256_v1'}}),409);
+  const scope={tenantId:demoTenantId,caseId:kase.id,jobId:job.id};
+  const outcomes=await Promise.all([runIntegrityJob(context.pool!,context.storageRoot!,scope),runIntegrityJob(context.pool!,context.storageRoot!,scope)]);
+  assert.equal(outcomes.filter(x=>x?.status==='succeeded').length,1);
+  assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,scope),null);
+  await context.app!.close();context.app=await createAppInstance();
+  const response=await request('GET',`${url}/${job.id}/derivative`,context.demo!);assert.equal(response.statusCode,200,response.body);
+  const result=JSON.parse(response.body);
+  assert.equal(result.status,'unreviewed_derivative');assert.equal(result.sourceDigest,digest(text));
+  assert.equal(result.authorityVersion,2);assert.equal(evidence.authorityVersion,1);
+  assert.equal(result.derivative.text,text);assert.equal(result.derivative.lines.length,4);
+  assert.equal(result.sourceTime,evidence.sourceTime);assert.equal(result.receivedAt,evidence.receivedTime);
+  assert.equal(result.derivativeDigest,digest(JSON.stringify(result.derivative)));
+  assert.equal(result.processorDigest,createHash('sha256').update(await readFile(new URL('../src/text-derivative.ts',import.meta.url))).digest('hex'));
+  assert.equal('object_path' in result,false);assert.equal('lease_token' in result,false);
+  const rows=await context.pool!.query('SELECT * FROM text_derivatives WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3',[demoTenantId,kase.id,job.id]);
+  assert.equal(rows.rowCount,1);assert.equal(rows.rows[0].attempt,1);
+  await assert.rejects(context.pool!.query('UPDATE text_derivatives SET runtime=$2 WHERE job_id=$1',[job.id,'forged']),/permission denied/);
+  await assert.rejects(context.schemaAdminPool!.query('DELETE FROM text_derivatives WHERE job_id=$1',[job.id]),/append-only/);
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const overHttp=await fetch(`${address}${url}/${job.id}/derivative`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(overHttp.status,200);assert.deepEqual(await overHttp.json(),result);
+  } finally {await app.close();}
+  const workspace=JSON.parse((await request('GET','/api/workspace',context.demo!)).body);
+  assert.equal(workspace.findings.filter((f:{caseId:string})=>f.caseId===kase.id).length,0);
+  const original=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0];
+  assert.equal((await readFile(resolve(context.storageRoot!,original.object_path))).toString('utf8'),text);
+  const audit=await context.pool!.query("SELECT count(*)::int AS count FROM audit_events WHERE case_id=$1 AND action='derivative.read'",[kase.id]);
+  assert.equal(audit.rows[0].count,2);
+});
+
+test('text derivation rejects binary inputs, scope changes, cancellation and invalid job kinds', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  const input={evidenceId:evidence.id,idempotencyKey:randomUUID(),kind:'utf8_line_index_v1'};
+  assertError(await request('POST',url,context.demo!,{payload:{...input,kind:'docling'}}),422);
+  assertError(await request('POST',url,context.demo!,{payload:{...input,processorDigest:'f'.repeat(64)}}),422);
+  const binary=await request('POST',`/api/cases/${kase.id}/evidence/binary`,context.demo!,{payload:{filename:'fictional.bin',contentBase64:'YQ==',expectedSha256:digest('a'),sourceTime:'2026-01-01T00:00:00Z',method:'Fictional binary fixture',idempotencyKey:randomUUID()}});
+  assert.equal(binary.statusCode,200,binary.body);
+  assertError(await request('POST',url,context.demo!,{payload:{...input,evidenceId:JSON.parse(binary.body).id}}),409);
+  const queued=await request('POST',url,context.demo!,{payload:input});assert.equal(queued.statusCode,200,queued.body);
+  const scope={tenantId:demoTenantId,caseId:kase.id,jobId:JSON.parse(queued.body).id};
+  await approveAuthority(kase.id);
+  assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,scope),null);
+  assertError(await request('GET',`${url}/${scope.jobId}/derivative`,context.demo!),404);
+  const next=await request('POST',url,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}});
+  assert.equal(next.statusCode,200,next.body);const nextId=JSON.parse(next.body).id;
+  assert.equal((await request('POST',`${url}/${nextId}/cancel`,context.demo!,{payload:{}})).statusCode,200);
+  assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,{...scope,jobId:nextId}),null);
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS count FROM text_derivatives WHERE case_id=$1',[kase.id])).rows[0].count,0);
+});
+
+test('derivative publication is atomic with successful jobs and failures leave no result', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  async function enqueue(evidenceId=evidence.id) {
+    const r=await request('POST',url,context.demo!,{payload:{evidenceId,idempotencyKey:randomUUID(),kind:'utf8_line_index_v1'}});
+    assert.equal(r.statusCode,200,r.body);return {tenantId:demoTenantId,caseId:kase.id,jobId:JSON.parse(r.body).id};
+  }
+  const scope=await enqueue(),lease=await claimIntegrityJob(context.pool!,scope);assert.ok(lease);
+  await assert.rejects(finishIntegrityJob(context.pool!,scope,lease.token,null),/requires immutable derivative/);
+  assert.equal(JSON.parse((await request('GET',`${url}/${scope.jobId}`,context.demo!)).body).status,'running');
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[scope.jobId]);
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,scope))?.status,'succeeded');
+  assert.equal(await finishIntegrityJob(context.pool!,scope,lease.token,null),null);
+  assert.equal((await context.pool!.query('SELECT attempt FROM text_derivatives WHERE job_id=$1',[scope.jobId])).rows[0].attempt,2);
+  const large='Fictional lines\n'+'\n'.repeat(4096);
+  const many=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,evidenceInput({text:large,expectedSha256:digest(large)})));
+  const failed=await enqueue(many.id);
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,failed))?.failureCode,'text_limits');
+  assertError(await request('GET',`${url}/${failed.jobId}/derivative`,context.demo!),404);
+  // Force a storage failure after terminal update; transaction must retain the lease and omit its success event.
+  const rollback=await enqueue();
+  await context.schemaAdminPool!.query(`CREATE FUNCTION deny_derivative_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fictional derivative failure'; END $$`);
+  await context.schemaAdminPool!.query('CREATE TRIGGER deny_derivative_test BEFORE INSERT ON text_derivatives FOR EACH ROW EXECUTE FUNCTION deny_derivative_test()');
+  try {await assert.rejects(runIntegrityJob(context.pool!,context.storageRoot!,rollback),/fictional derivative failure/);} finally {
+    await context.schemaAdminPool!.query('DROP TRIGGER deny_derivative_test ON text_derivatives');await context.schemaAdminPool!.query('DROP FUNCTION deny_derivative_test()');
+  }
+  assert.equal(JSON.parse((await request('GET',`${url}/${rollback.jobId}`,context.demo!)).body).status,'running');
+  const events=await context.pool!.query('SELECT status FROM integrity_job_events WHERE job_id=$1 ORDER BY id',[rollback.jobId]);
+  assert.deepEqual(events.rows.map(r=>r.status),['queued','running']);
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[rollback.jobId]);
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,rollback))?.status,'succeeded');
+});
+
+test('derivative reads deny foreign scopes and revoked access and fail closed on original or output tampering', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const queued=await request('POST',`/api/cases/${kase.id}/integrity-jobs`,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID(),kind:'utf8_line_index_v1'}});
+  assert.equal(queued.statusCode,200,queued.body);const jobId=JSON.parse(queued.body).id;
+  await runIntegrityJob(context.pool!,context.storageRoot!,{tenantId:demoTenantId,caseId:kase.id,jobId});
+  const url=`/api/cases/${kase.id}/integrity-jobs/${jobId}/derivative`;
+  const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/integrity-jobs/${jobId}/derivative`,context.demo!),404);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional derivative outsider');
+  assertError(await request('GET',url,await issueTestSession(outsider)),404);
+  const client=await createMember(demoTenantId,'client','Fictional derivative client');
+  assertError(await request('GET',url,await issueTestSession(client)),403);
+  const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[foreignTenant,'Fictional derivative foreign agency']);
+  const foreign=await createMember(foreignTenant,'reviewer','Fictional foreign reviewer');
+  assertError(await request('GET',url,await issueTestSession(foreign,foreignTenant)),404);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
+  assertError(await request('GET',url,context.demo!),404);
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)',[demoTenantId,kase.id,demoUserId]);
+  const row=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0];
+  const path=resolve(context.storageRoot!,row.object_path),original=await readFile(path);
+  await writeFile(path,'corrupt');assertError(await request('GET',url,context.demo!),409);await writeFile(path,original);
+  // Deliberate administrator corruption fixture: prove re-verification even when both output and its digest change.
+  await context.schemaAdminPool!.query('ALTER TABLE text_derivatives DISABLE TRIGGER text_derivatives_append_only');
+  try {
+    const d=(await context.pool!.query('SELECT output_bytes FROM text_derivatives WHERE job_id=$1',[jobId])).rows[0];
+    const forged=JSON.parse(d.output_bytes.toString());forged.lines[0].endByte=1;
+    const raw=JSON.stringify(forged);
+    await context.schemaAdminPool!.query('UPDATE text_derivatives SET output_bytes=$2,output_digest=$3 WHERE job_id=$1',[jobId,Buffer.from(raw),digest(raw)]);
+  } finally {await context.schemaAdminPool!.query('ALTER TABLE text_derivatives ENABLE TRIGGER text_derivatives_append_only');}
+  assertError(await request('GET',url,context.demo!),409);
 });

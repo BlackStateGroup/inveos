@@ -1,4 +1,4 @@
-/** One scoped original-byte integrity check; no parser or automatic collection. */
+/** One scoped integrity/text-index job; no upstream parser or automatic collection. */
 import { loadRuntimeConfig } from './config.js';
 import { createPool } from './db.js';
 import { runIntegrityJob } from './integrity-jobs.js';

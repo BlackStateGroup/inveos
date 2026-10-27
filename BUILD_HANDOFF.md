@@ -1,5 +1,15 @@
 # INVEOS engineering handoff
 
+## 27 October: immutable text derivative lineage
+
+Baseline: main remains PR #1 (`95b5c35`); PRs #2–#9 remain open with no new PR #9 feedback. Branch is stacked on PR #9 receipt `628fb3dc76c4428555ba613912a8a6c27b0ef468`. Reused the durable scoped job consumer, authority snapshots, migration ledger, binary quarantine and existing casework/report stack.
+
+Implemented an actual first-party bounded UTF-8 line processor, immutable per-attempt derivative bytes/provenance, atomic job-success/result persistence, and scoped audited retrieval that re-verifies the original and reconstructs exact byte ranges. No fabricated pages or automatic findings. Added migration 005 without changing prior migrations, four processor tests and four real-PostgreSQL/HTTP scenarios. See docs/29_IMMUTABLE_TEXT_DERIVATIVES.md for schema, API/CLI use, limits and rollback.
+
+Local lint/types, four executable processor tests, source validation and 42 Python tests pass. Hosted PostgreSQL results pending publication; no database pass claimed yet. Namespace probe remains denied, so no upstream parser/dependency execution followed. No new runtime dependency/source, browser/device/restore result, deployment or merge. This is text derivative lineage, not PDF extraction or completed WP-05.
+
+Next: use this branch after its verified receipt/review, preserving #9 and the combined stack. Add original-page/region review and generic multi-stage extraction provenance only alongside an approved isolated parser runtime/contract. Independent unblocked work includes scoped job UI/recovery, frozen report revisions/audit exports and recoverable uploads. Parser licence/runtime/isolation gates and the wider product requirements remain incomplete. No user decision is required for further independent engineering.
+
 ## 27 October: durable scoped integrity jobs
 
 Based on PR #8 receipt commit `3234f22f434bdd2cfe643bc15b2692b75cc81da2`; main still PR #1 and open PR #8 has no review comments. Implemented migration 004, authenticated idempotent enqueue/status/cancel, immutable scoped identity, append-only attempts, exclusive expiring/fenced leases, bounded retries and an actual bounded SHA-256 worker/CLI. Authority and requester membership are rechecked at dispatch and completion. Binary quarantine and human findings are unchanged. No parser/dependency/source incorporation. See docs/28_DURABLE_INTEGRITY_JOBS.md for use and failure/rollback limits.

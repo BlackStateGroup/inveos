@@ -5,10 +5,11 @@ import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
 import { readOriginalBounded } from './storage.js';
+import { makeTextDerivative, sha256, textConfiguration, textProcessor, verifyTextDerivative, type DerivativeOutput } from './text-derivative.js';
 
 type Scope = {tenantId: string; caseId: string; jobId: string};
 type Services = {
-  pool: Pool; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
+  pool: Pool; storageRoot: string; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
   audit: (c: PoolClient, a: Actor, caseId: string, action: string, entityType: string, id: string, summary: string) => Promise<void>;
   findCase: (c: PoolClient, a: Actor, id: string, lock?: boolean) => Promise<unknown>;
 };
@@ -56,57 +57,100 @@ export async function claimIntegrityJob(pool: Pool, s: Scope) {
     const updated = await client.query(`UPDATE integrity_jobs SET status='running',attempt=attempt+1,lease_token=$4,
       lease_until=clock_timestamp()+interval '60 seconds' WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *`, [...values(s),randomUUID()]);
     await event(client,s,updated.rows[0]);
-    return {token: updated.rows[0].lease_token as string, evidenceId: row.evidence_id as string, digest: row.source_digest.trim() as string};
+    return {token: updated.rows[0].lease_token as string, evidenceId: row.evidence_id as string, digest: row.source_digest.trim() as string, kind: row.kind as string};
   });
 }
 export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'digest_mismatch' | null) {
+  return finishProcessingJob(pool,s,token,failure);
+}
+type Failure = 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits';
+async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure: Failure | null, output?: DerivativeOutput) {
   return inTransaction(pool, async client => {
     const r = await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until > clock_timestamp() FOR UPDATE`, [...values(s),token]);
     if (!r.rows[0]) return null; // Expired, cancelled or superseded worker cannot commit.
     if (!await permitted(client,r.rows[0])) return terminal(client,s,'cancelled','scope_changed',token);
-    return terminal(client,s,failure ? 'failed' : 'succeeded',failure,token);
+    const completed=await terminal(client,s,failure ? 'failed' : 'succeeded',failure,token);
+    if (completed?.status==='succeeded' && output && r.rows[0].kind==='utf8_line_index_v1') {
+      const row=r.rows[0];
+      await client.query(`INSERT INTO text_derivatives (tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,
+        processor,processor_digest,configuration,configuration_digest,runtime,output_bytes,output_digest)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+      [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,
+        textProcessor,output.processorDigest,textConfiguration,sha256(textConfiguration),output.runtime,output.bytes,output.digest]);
+    }
+    return completed;
   });
 }
 export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {
   const lease = await claimIntegrityJob(pool,s);
   if (!lease) return null;
-  let failure: 'original_unavailable' | 'digest_mismatch' | null = null;
+  let failure: Failure | null = null;
+  let output: DerivativeOutput | undefined;
   try {
-    const result = await pool.query(`SELECT object_path,byte_length,digest FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3`, [s.tenantId,s.caseId,lease.evidenceId]);
+    const result = await pool.query(`SELECT object_path,byte_length,digest,original_kind FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3`, [s.tenantId,s.caseId,lease.evidenceId]);
     const source = result.rows[0];
     if (!source) throw new Error('Missing original');
     const bytes = await readOriginalBounded(root,source.object_path,262144);
     if (bytes.length !== source.byte_length || createHash('sha256').update(bytes).digest('hex') !== lease.digest
         || source.digest.trim() !== lease.digest) failure = 'digest_mismatch';
+    if (!failure && lease.kind==='utf8_line_index_v1') {
+      if (source.original_kind!=='original_utf8') failure='unsupported_original';
+      else { try { output=await makeTextDerivative(bytes); } catch { failure='text_limits'; } }
+    }
   } catch { failure = 'original_unavailable'; }
-  return finishIntegrityJob(pool,s,lease.token,failure);
+  return finishProcessingJob(pool,s,lease.token,failure,output);
 }
 
 export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   app.post('/api/cases/:caseId/integrity-jobs', {preHandler: svc.requireCsrf, schema: {
     params: {type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
-    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid}},
+    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1']}}},
   }}, async request => {
     const actor = request.actor!;
     const {caseId} = request.params as {caseId:string};
-    const input = request.body as {evidenceId:string;idempotencyKey:string};
+    const input = request.body as {evidenceId:string;idempotencyKey:string;kind?:string};
     return inTransaction(svc.pool,async client => {
       await svc.findCase(client,actor,caseId,true);
       const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
       if (old.rows[0]) {
-        if (old.rows[0].evidence_id !== input.evidenceId) throw new ApiError(409,'Idempotency key already used.');
+        if (old.rows[0].evidence_id !== input.evidenceId || old.rows[0].kind !== (input.kind ?? 'original_sha256_v1')) throw new ApiError(409,'Idempotency key already used.');
         return dto(old.rows[0]);
       }
-      const source = await client.query(`SELECT e.digest,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
+      const source = await client.query(`SELECT e.digest,e.original_kind,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
         WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active'`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
+      if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
       const id = randomUUID();
-      const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey]);
+      const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
       await event(client,{tenantId:actor.tenantId,caseId,jobId:id},inserted.rows[0]);
-      await svc.audit(client,actor,caseId,'integrity_job.queued','integrity_job',id,'Original-byte integrity check requested');
+      await svc.audit(client,actor,caseId,'integrity_job.queued','integrity_job',id,'Scoped original processing requested');
       return dto(inserted.rows[0]);
+    });
+  });
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/derivative', {preHandler:svc.authenticate,schema:{params}}, async request => {
+    const actor=request.actor!;
+    if (actor.role==='client') throw new ApiError(403,'Internal derivatives only.');
+    const {caseId,jobId}=request.params as {caseId:string;jobId:string};
+    return inTransaction(svc.pool,async client => {
+      await svc.findCase(client,actor,caseId,true);
+      const result=await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time
+        FROM text_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
+        WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId]);
+      const row=result.rows[0];if (!row) notFound();
+      let derivative;
+      try {
+        const original=await readOriginalBounded(svc.storageRoot,row.object_path,262144);
+        if (original.length!==row.byte_length || sha256(original)!==row.source_digest.trim() || row.digest.trim()!==row.source_digest.trim()
+          || row.original_kind!=='original_utf8' || row.configuration!==textConfiguration || sha256(row.configuration)!==row.configuration_digest.trim()) throw new Error('Lineage mismatch');
+        derivative=verifyTextDerivative(original,row.output_bytes,row.output_digest.trim());
+      } catch { throw new ApiError(409,'Original or derivative integrity verification failed.'); }
+      await svc.audit(client,actor,caseId,'derivative.read','integrity_job',jobId,'Verified unreviewed text derivative read');
+      return {jobId,evidenceId:row.evidence_id,caseId,status:'unreviewed_derivative',sourceDigest:row.source_digest.trim(),
+        authorityVersion:row.authority_version,attempt:row.attempt,processor:row.processor,processorDigest:row.processor_digest.trim(),
+        configuration:JSON.parse(row.configuration),configurationDigest:row.configuration_digest.trim(),runtime:row.runtime,
+        derivativeDigest:row.output_digest.trim(),processedAt:row.processed_at,sourceTime:row.source_time,receivedAt:row.received_time,derivative};
     });
   });
   for (const cancel of [false,true]) {
