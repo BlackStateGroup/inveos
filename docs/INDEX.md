@@ -63,3 +63,5 @@
 - [Bounded report assembly](33_BOUNDED_REPORT_ASSEMBLY.md) — incremental JSON budgets, database batches, bounded verified-original reads and failure tests.
 
 - [Report freeze recovery](34_REPORT_FREEZE_RECOVERY.md) — pending request persistence, receipt checks and acknowledgement-loss tests.
+
+- [Processing job history](35_PROCESSING_JOB_HISTORY.md) — scoped processing receipts, attempts and cancellation controls.

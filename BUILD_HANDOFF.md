@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: scoped processing history and evidence-workspace controls
+
+Based on PR #15 receipt `722360ea34a5abead3466c7c5accd8011b997385`; main remains PR #1, PRs #2–#15 open and #15 has no feedback. Implemented bounded case/job and append-only attempt-history APIs, migration 009 indexes and evidence-workspace refresh/pagination/attempt/cancel controls. Reuses existing workers, CSRF/audit cancellation, authority and immutable evidence records. No public worker completion, parser execution or automatic retry. See docs/35_PROCESSING_JOB_HISTORY.md.
+
+Local lint/build/types and 42 Python tests passed after fixing a test-only optional array access. Added two PostgreSQL/HTTP scenarios; hosted execution pending. Namespace isolation rechecked and still denied. Browser interaction/accessibility/race tests remain unrun. No dependency/source incorporation, merge, deployment or live collection.
+
+Next: verify hosted results and record exact receipt, then continue this stack after fresh main/review checks. Add explicit queue controls with recoverable requests and verified unreviewed derivative inspection; keep binary quarantine and human approval distinct. Actual browser acceptance, parser runtime/licence/isolation, page/region citations, worker dispatch/credentials, resumable intake, release and device/offline/restore gates remain open. Useful authorised work remains; no essential user decision.
+
 ## 27 October: recoverable report freezes across navigation
 
 Based on PR #14 receipt `bb832b73fc813cbd66f8767587422d9b38571677` (implementation already verified in run #28). Added a session/case-scoped pending UUID in tab storage before sending a freeze, receipt validation, replay after lost acknowledgement, safe delayed completion and explicit recovery controls. Existing server idempotency, snapshots, scope checks and immutable revisions are reused; no API/schema/dependency change. See docs/34_REPORT_FREEZE_RECOVERY.md.

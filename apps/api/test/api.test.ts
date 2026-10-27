@@ -1173,7 +1173,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1818,4 +1818,49 @@ test('client freeze recovery retries a committed but unacknowledged HTTP request
     const count=await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='report.frozen'",[kase.id]);assert.equal(count.rows[0].n,1);
     const fresh=await recoverableReportFreeze(store(),scope,kase.id,send);assert.notEqual(fresh.id,recovered.id);
   } finally {await app.close();}
+});
+
+test('job history paginates stable case receipts and actual worker attempts over HTTP without worker credentials',async()=>{
+  const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
+  const queue=async()=>{const r=await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200,r.body);return JSON.parse(r.body);};
+  const jobs=[];for(let i=0;i<4;i++)jobs.unshift(await queue());
+  const first=await request('GET',`${url}?limit=2`,context.demo!);assert.equal(first.statusCode,200,first.body);assert.equal(first.headers['cache-control'],'no-store');
+  const page=JSON.parse(first.body);assert.deepEqual(page.items.map((x:{id:string})=>x.id),jobs.slice(0,2).map(x=>x.id));
+  assert.ok(!first.body.includes('lease_token'));assert.ok(!first.body.includes('idempotency_key'));assert.ok(!first.body.includes('requested_by'));
+  await queue();
+  const older=JSON.parse((await request('GET',`${url}?limit=2&before=${page.nextBefore}`,context.demo!)).body);
+  assert.deepEqual(older.items.map((x:{id:string})=>x.id),jobs.slice(2).map(x=>x.id));assert.equal(older.nextBefore,null);
+  const scope={tenantId:demoTenantId,caseId:kase.id,jobId:jobs[0].id};
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,scope))?.status,'succeeded');
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const response=await fetch(`${address}${url}/${scope.jobId}/events?limit=2`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');
+    const events=await response.json() as {items:{id:string;status:string;attempt:number}[];nextAfter:string};
+    assert.deepEqual(events.items.map(x=>[x.status,x.attempt]),[['queued',0],['running',1]]);
+    assert.equal(typeof events.items[0]!.id,'string');
+    const last=JSON.parse((await request('GET',`${url}/${scope.jobId}/events?after=${events.nextAfter}`,context.demo!)).body);
+    assert.deepEqual(last.items.map((x:{status:string})=>x.status),['succeeded']);assert.equal(last.nextAfter,null);
+  }finally{await app.close();}
+  await request('POST',`${url}/${jobs[1].id}/cancel`,context.demo!,{payload:{}});
+  const cancelled=JSON.parse((await request('GET',`${url}/${jobs[1].id}/events`,context.demo!)).body);
+  assert.deepEqual(cancelled.items.map((x:{status:string})=>x.status),['queued','cancelled']);
+});
+
+test('job and attempt histories deny foreign cursors, invalid queries, clients, outsiders and revoked assignments',async()=>{
+  const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
+  const ids=[];for(let i=0;i<2;i++)ids.push(JSON.parse((await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}})).body).id);
+  const events=`${url}/${ids[0]}/events`;
+  for(const suffix of ['?limit=0','?limit=51','?limit=1.5','?unknown=yes','?before=invalid'])assertError(await request('GET',url+suffix,context.demo!),400);
+  for(const suffix of ['?after=-1','?after=1.5','?after=9999999999999999999','?limit=51','?unknown=yes'])assertError(await request('GET',events+suffix,context.demo!),400);
+  const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/integrity-jobs?before=${ids[0]}`,context.demo!),404);
+  assertError(await request('GET',`/api/cases/${other.id}/integrity-jobs/${ids[0]}/events`,context.demo!),404);
+  const foreignEvent=JSON.parse((await request('GET',`${url}/${ids[1]}/events`,context.demo!)).body).items[0].id;
+  assertError(await request('GET',`${events}?after=${foreignEvent}`,context.demo!),404);
+  assertError(await request('GET',`${url}?before=${randomUUID()}`,context.demo!),404);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional history outsider'),client=await createMember(demoTenantId,'client','Fictional history client');
+  for(const [session,code] of [[await issueTestSession(outsider),404],[await issueTestSession(client),403]] as const)for(const path of [url,events])assertError(await request('GET',path,session),code);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
+  for(const path of [url,events])assertError(await request('GET',path,context.demo!),404);
 });

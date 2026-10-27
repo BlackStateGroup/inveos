@@ -103,6 +103,43 @@ export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {
 }
 
 export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
+  app.get('/api/cases/:caseId/integrity-jobs', {preHandler:svc.authenticate,schema:{
+    params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
+    querystring:{type:'object',additionalProperties:false,properties:{before:uuid,limit:{type:'integer',minimum:1,maximum:50,default:25}}},
+  }},async(request,reply)=>{
+    const actor=request.actor!;
+    if(actor.role==='client') throw new ApiError(403,'Internal jobs only.');
+    const {caseId}=request.params as {caseId:string}, {before,limit=25}=request.query as {before?:string;limit?:number};
+    const page=await inTransaction(svc.pool,async client=>{
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+      await svc.findCase(client,actor,caseId);
+      if(before && !(await client.query('SELECT 1 FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,before])).rowCount) notFound();
+      const result=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2
+        AND ($3::uuid IS NULL OR (created_at,id)<(SELECT created_at,id FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3))
+        ORDER BY created_at DESC,id DESC LIMIT $4`,[actor.tenantId,caseId,before??null,limit+1]);
+      return {items:result.rows.slice(0,limit).map(dto),nextBefore:result.rows.length>limit?result.rows[limit-1].id:null};
+    });
+    return reply.header('Cache-Control','no-store').send(page);
+  });
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/events', {preHandler:svc.authenticate,schema:{params,
+    querystring:{type:'object',additionalProperties:false,properties:{after:{type:'string',pattern:'^[0-9]{1,18}$'},limit:{type:'integer',minimum:1,maximum:50,default:25}}},
+  }},async(request,reply)=>{
+    const actor=request.actor!;
+    if(actor.role==='client') throw new ApiError(403,'Internal jobs only.');
+    const {caseId,jobId}=request.params as {caseId:string;jobId:string};
+    const {after,limit=25}=request.query as {after?:string;limit?:number};
+    const page=await inTransaction(svc.pool,async client=>{
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+      await svc.findCase(client,actor,caseId);
+      if(!(await client.query('SELECT 1 FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,jobId])).rowCount) notFound();
+      if(after && !(await client.query('SELECT 1 FROM integrity_job_events WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND id=$4',[actor.tenantId,caseId,jobId,after])).rowCount) notFound();
+      const result=await client.query(`SELECT id::text,status,attempt,failure_code AS "failureCode",recorded_at AS "recordedAt"
+        FROM integrity_job_events WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND ($4::bigint IS NULL OR id>$4)
+        ORDER BY id LIMIT $5`,[actor.tenantId,caseId,jobId,after??null,limit+1]);
+      return {items:result.rows.slice(0,limit),nextAfter:result.rows.length>limit?result.rows[limit-1].id:null};
+    });
+    return reply.header('Cache-Control','no-store').send(page);
+  });
   app.post('/api/cases/:caseId/integrity-jobs', {preHandler: svc.requireCsrf, schema: {
     params: {type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
     body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1']}}},
