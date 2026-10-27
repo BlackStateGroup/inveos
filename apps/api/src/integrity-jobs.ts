@@ -166,7 +166,8 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       return dto(inserted.rows[0]);
     });
   });
-  app.get('/api/cases/:caseId/integrity-jobs/:jobId/derivative', {preHandler:svc.authenticate,schema:{params}}, async request => {
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/derivative', {preHandler:svc.authenticate,schema:{params}}, async (request,reply) => {
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
     const actor=request.actor!;
     if (actor.role==='client') throw new ApiError(403,'Internal derivatives only.');
     const {caseId,jobId}=request.params as {caseId:string;jobId:string};

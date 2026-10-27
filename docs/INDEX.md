@@ -65,3 +65,5 @@
 - [Report freeze recovery](34_REPORT_FREEZE_RECOVERY.md) — pending request persistence, receipt checks and acknowledgement-loss tests.
 
 - [Processing job history](35_PROCESSING_JOB_HISTORY.md) — scoped processing receipts, attempts and cancellation controls.
+
+- [Verified derivative inspection](36_VERIFIED_DERIVATIVE_INSPECTION.md) — client lineage, byte-range verification and unreviewed line display.

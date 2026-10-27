@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { claimIntegrityJob, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
+import { inspectTextDerivative } from '../../web/src/derivativeInspection.js';
 import { recoverableReportFreeze, reportRecoveryScope, type RecoveryStore } from '../../web/src/reportRecovery.js';
 import { createPool, runMigrations } from '../src/db.js';
 import type { Case, Evidence, ReportDraft, Workspace, WorkInput, WorkItem, WorkEdit, WorkLink, WorkRevision } from '@inveos/contracts';
@@ -1885,4 +1886,30 @@ test('attempt pagination preserves numeric sequence order beyond JavaScript safe
   assert.equal(first.items[1].id,'9999999999999999');assert.equal(first.nextAfter,'9999999999999999');
   const second=JSON.parse((await request('GET',`${url}/${job.id}/events?after=${first.nextAfter}`,context.demo!)).body);
   assert.deepEqual(second.items.map((x:{id:string})=>x.id),['10000000000000000']);
+});
+
+
+test('actual HTTP derivative inspection binds processed bytes to the selected job and fails after original corruption',async()=>{
+  await context.app!.close();context.app=await createAppInstance();
+  const {kase,evidence}=await reportFixture(),base=`/api/cases/${kase.id}/integrity-jobs`;
+  const queued=await request('POST',base,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID(),kind:'utf8_line_index_v1'}});
+  assert.equal(queued.statusCode,200,queued.body);const jobId=JSON.parse(queued.body).id;
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,{tenantId:demoTenantId,caseId:kase.id,jobId}))?.status,'succeeded');
+  const job=JSON.parse((await request('GET',`${base}/${jobId}`,context.demo!)).body);
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const response=await fetch(`${address}${base}/${jobId}/derivative`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+    const raw=await response.json();const inspected=await inspectTextDerivative(raw,job);
+    assert.equal(inspected.evidenceId,evidence.id);assert.equal(inspected.sourceDigest,evidence.digest);
+    assert.ok(inspected.lines.some(line=>line.text.includes('NW-104')));
+    await assert.rejects(inspectTextDerivative(raw,{...job,caseId:randomUUID()}));
+    const file=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0].object_path;
+    await writeFile(join(context.storageRoot!,file),'Fictional corrupt original');
+    const denied=await fetch(`${address}${base}/${jobId}/derivative`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(denied.status,409);assert.equal(denied.headers.get('cache-control'),'no-store');
+    const findings=await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[kase.id]);
+    assert.equal(findings.rows[0].n,1); // The existing reviewed fixture only; inspection creates no finding.
+  }finally{await app.close();}
 });
