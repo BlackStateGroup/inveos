@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { execFile, spawnSync } from 'node:child_process';
+import { execFile, spawn, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
-import { claimIntegrityJob, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
+import { claimIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
 import {jobRequestScope,queueRecoverably} from '../../web/src/jobRequest.js';
 import { inspectTextDerivative, type InspectionJob } from '../../web/src/derivativeInspection.js';
@@ -1175,7 +1175,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1934,4 +1934,128 @@ test('queue helper recovers one committed HTTP job after response loss and feeds
     const derivative=await (await fetch(`${address}${base}/${recovered.id}/derivative`,{headers:{cookie:context.demo!.cookie}})).json();
     assert.equal((await inspectTextDerivative(derivative,job)).sourceDigest,evidence.digest);
   }finally{await app.close();}
+});
+
+async function dispatchFixture() {
+  await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const base=`/api/cases/${kase.id}/integrity-jobs`,scope={tenantId:demoTenantId,caseId:kase.id};
+  const enqueue=async(kind='original_sha256_v1')=>{
+    const r=await request('POST',base,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID(),kind}});
+    assert.equal(r.statusCode,200,r.body);return JSON.parse(r.body).id as string;
+  };
+  return {kase,evidence,base,scope,enqueue};
+}
+
+test('bounded dispatch skips locked rows and concurrent consumers complete each scoped job once',async()=>{
+  const {scope,enqueue,base}=await dispatchFixture();
+  const ids=[];for(let n=0;n<6;n++)ids.push(await enqueue(n%2?'utf8_line_index_v1':'original_sha256_v1'));
+  const locked=await context.pool!.connect();
+  try {
+    await locked.query('BEGIN');await locked.query('SELECT id FROM integrity_jobs WHERE id=$1 FOR UPDATE',[ids[0]]);
+    const next=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,1);
+    assert.equal(next.selected,1);assert.equal(next.stopReason,'limit');assert.equal(next.results[0]!.jobId,ids[1]);
+    assert.equal(next.results[0]!.status,'succeeded');
+  }finally{await locked.query('ROLLBACK');locked.release();}
+  const rounds=await Promise.all([dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,3),dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,3)]);
+  const receipts=rounds.flatMap(r=>r.results);assert.equal(receipts.length,5);assert.equal(new Set(receipts.map(r=>r.jobId)).size,5);
+  receipts.forEach(r=>{assert.equal(r.status,'succeeded');assert.equal(r.attempt,1);});
+  assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope)).stopReason,'empty');
+  const history=await context.pool!.query('SELECT job_id,count(*)::int AS n FROM integrity_job_events WHERE case_id=$1 GROUP BY job_id',[scope.caseId]);
+  assert.equal(history.rows.length,6);history.rows.forEach(r=>assert.equal(r.n,3));
+  const derivatives=await context.pool!.query('SELECT count(*)::int AS n FROM text_derivatives WHERE case_id=$1',[scope.caseId]);assert.equal(derivatives.rows[0].n,3);
+  const waiting=await enqueue();
+  for(const wrong of [{...scope,tenantId:randomUUID()},{...scope,caseId:randomUUID()}])assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,wrong)).selected,0);
+  const aborted=new AbortController();aborted.abort();
+  assert.deepEqual(await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,10,aborted.signal),{selected:0,stopReason:'aborted',results:[]});
+  const response=await request('GET',`${base}/${waiting}`,context.demo!);assert.equal(JSON.parse(response.body).status,'queued');
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[scope.caseId])).rows[0].n,0);
+});
+
+function dispatchEnvironment() {
+  return {...process.env,INVEOS_DEV_LAB:'1',NODE_ENV:'test',INVEOS_DATABASE_URL:databaseUrl!,INVEOS_STORAGE_ROOT:context.storageRoot!,
+    INVEOS_WORKER_SCHEMA:context.schema!,INVEOS_ADMIN_DATABASE_URL:''};
+}
+const dispatcherPath=fileURLToPath(new URL('../src/dispatch-integrity-jobs.ts',import.meta.url));
+
+test('actual dispatcher CLI uses the restricted lab connection, bounds each pass and rejects unsafe configuration',async()=>{
+  const {scope,enqueue,base,evidence}=await dispatchFixture();
+  const first=await enqueue('utf8_line_index_v1'),second=await enqueue();
+  const args=['--import','tsx',dispatcherPath,scope.tenantId,scope.caseId,'1'];
+  const output=await promisify(execFile)(process.execPath,args,{env:dispatchEnvironment(),timeout:15000});
+  assert.equal(output.stderr,'');
+  assert.deepEqual(JSON.parse(output.stdout),{selected:1,stopReason:'limit',results:[{jobId:first,status:'succeeded',attempt:1,failureCode:null}]});
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const job=await(await fetch(`${address}${base}/${first}`,{headers:{cookie:context.demo!.cookie}})).json() as InspectionJob;
+    const result=await fetch(`${address}${base}/${first}/derivative`,{headers:{cookie:context.demo!.cookie}});assert.equal(result.status,200);
+    assert.equal((await inspectTextDerivative(await result.json(),job)).sourceDigest,evidence.digest);
+  }finally{await app.close();}
+  for(const env of [{INVEOS_DEV_LAB:'0'},{NODE_ENV:'production'},{INVEOS_WORKER_SCHEMA:'bad;schema'},{INVEOS_DATABASE_URL:'postgres://fictional-secret:private@127.0.0.1:1/inveos_test'}]) {
+    await assert.rejects(promisify(execFile)(process.execPath,args,{env:{...dispatchEnvironment(),...env},timeout:15000}),error=>{
+      const failure=error as Error&{code:number;stderr:string;stdout:string};
+      assert.equal(failure.code,1);assert.equal(failure.stdout,'');assert.equal(failure.stderr,'Dispatch failed. Check lab configuration and scoped job history before retrying.\n');return true;
+    });
+  }
+  for(const limit of ['0','26','1.5','1e1'])await assert.rejects(promisify(execFile)(process.execPath,[...args.slice(0,-1),limit],{env:dispatchEnvironment(),timeout:15000}));
+  assert.equal(JSON.parse((await request('GET',`${base}/${second}`,context.demo!)).body).status,'queued');
+  const again=await promisify(execFile)(process.execPath,args,{env:dispatchEnvironment(),timeout:15000});
+  assert.equal(JSON.parse(again.stdout).results[0].jobId,second);
+});
+
+test('dispatcher recovers a killed worker only after expiry and cancels stale authority and exhausted jobs',async()=>{
+  const {scope,enqueue,base}=await dispatchFixture();const jobId=await enqueue();
+  const fixture=fileURLToPath(new URL('./fixtures/claim-and-wait.ts',import.meta.url));
+  const child=spawn(process.execPath,['--import','tsx',fixture,scope.tenantId,scope.caseId,jobId],{env:dispatchEnvironment(),stdio:['ignore','pipe','pipe']});
+  const closed=new Promise<void>((resolve,reject)=>{child.once('close',()=>resolve());child.once('error',reject);});
+  try {
+    await new Promise<void>((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error('Claim process did not become ready')),10000);
+      child.stdout.once('data',chunk=>{clearTimeout(timer);if(String(chunk)==='claimed\n')resolve();else reject(new Error('Unexpected worker receipt'));});
+      child.once('error',error=>{clearTimeout(timer);reject(error);});
+      child.once('exit',()=>{clearTimeout(timer);reject(new Error('Worker exited before claim'));});
+    });
+    child.kill('SIGKILL');await closed;
+    const old=(await context.pool!.query('SELECT lease_token FROM integrity_jobs WHERE id=$1',[jobId])).rows[0].lease_token;
+    assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope)).selected,0);
+    await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[jobId]);
+    const recovery=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,1);
+    assert.equal(recovery.results[0]!.status,'succeeded');assert.equal(recovery.results[0]!.attempt,2);
+    assert.equal(await finishIntegrityJob(context.pool!,{...scope,jobId},old,null),null);
+    const events=await context.pool!.query('SELECT status,attempt FROM integrity_job_events WHERE job_id=$1 ORDER BY id',[jobId]);
+    assert.deepEqual(events.rows,[{status:'queued',attempt:0},{status:'running',attempt:1},{status:'running',attempt:2},{status:'succeeded',attempt:2}]);
+  } finally {child.kill('SIGKILL');await closed;}
+  const exhausted=await enqueue();
+  for(let i=0;i<3;i++){
+    assert.ok(await claimIntegrityJob(context.pool!,{...scope,jobId:exhausted}));
+    await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[exhausted]);
+  }
+  const exhaustedResult=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,1);
+  assert.equal(exhaustedResult.results[0]!.failureCode,'attempts_exhausted');
+  const stale=await enqueue();await approveAuthority(scope.caseId);const fresh=await enqueue();
+  const final=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,2);
+  assert.deepEqual(final.results.map(r=>[r.jobId,r.status,r.failureCode]),[[stale,'cancelled','scope_changed'],[fresh,'succeeded',null]]);
+  const revoked=await enqueue();
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,scope.caseId,demoUserId]);
+  assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,1)).results[0]!.failureCode,'scope_changed');
+  assertError(await request('GET',`${base}/${revoked}`,context.demo!),404);
+});
+
+test('dispatcher fails closed on transactional output failure and resumes expired work without duplicate derivatives',async()=>{
+  const {scope,enqueue}=await dispatchFixture();const text=await enqueue('utf8_line_index_v1'),checksum=await enqueue();
+  await context.schemaAdminPool!.query(`CREATE FUNCTION fail_dispatch_output_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fictional dispatch failure'; END $$`);
+  await context.schemaAdminPool!.query('CREATE TRIGGER fail_dispatch_output_test BEFORE INSERT ON text_derivatives FOR EACH ROW EXECUTE FUNCTION fail_dispatch_output_test()');
+  try {await assert.rejects(dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope),/fictional dispatch failure/);}
+  finally {await context.schemaAdminPool!.query('DROP TRIGGER fail_dispatch_output_test ON text_derivatives');await context.schemaAdminPool!.query('DROP FUNCTION fail_dispatch_output_test()');}
+  const states=await context.pool!.query('SELECT id,status FROM integrity_jobs WHERE case_id=$1 ORDER BY created_at,id',[scope.caseId]);
+  assert.deepEqual(states.rows,[{id:text,status:'running'},{id:checksum,status:'queued'}]);
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM text_derivatives WHERE case_id=$1',[scope.caseId])).rows[0].n,0);
+  assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope)).results[0]!.jobId,checksum);
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[text]);
+  const recovered=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope);
+  assert.equal(recovered.results[0]!.jobId,text);assert.equal(recovered.results[0]!.attempt,2);
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM text_derivatives WHERE case_id=$1',[scope.caseId])).rows[0].n,1);
+  const ended=await context.pool!.query("SELECT status FROM integrity_job_events WHERE job_id=$1 AND status='succeeded'",[text]);assert.equal(ended.rowCount,1);
 });

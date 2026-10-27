@@ -67,3 +67,5 @@
 - [Processing job history](35_PROCESSING_JOB_HISTORY.md) — scoped processing receipts, attempts and cancellation controls.
 
 - [Verified derivative inspection](36_VERIFIED_DERIVATIVE_INSPECTION.md) — client lineage, byte-range verification and unreviewed line display.
+
+- [Bounded processing dispatch](37_BOUNDED_PROCESSING_DISPATCH.md) — case-scoped queue consumption, lease recovery and actual CLI tests.

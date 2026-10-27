@@ -45,6 +45,18 @@ async function terminal(client: PoolClient, s: Scope, status: string, code: stri
   return dto(result.rows[0]);
 }
 
+type Lease = {token: string; evidenceId: string; digest: string; kind: string};
+/** Caller holds the row lock. Both named jobs and dispatch use the same checks. */
+async function claimLocked(client: PoolClient, s: Scope, row: QueryResultRow) {
+  if (!await permitted(client,row)) return {lease:null,receipt:await terminal(client,s,'cancelled','scope_changed')};
+  if (row.attempt >= 3) return {lease:null,receipt:await terminal(client,s,'failed','attempts_exhausted')};
+  const updated = await client.query(`UPDATE integrity_jobs SET status='running',attempt=attempt+1,lease_token=$4,
+    lease_until=clock_timestamp()+interval '60 seconds' WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *`, [...values(s),randomUUID()]);
+  await event(client,s,updated.rows[0]);
+  const lease: Lease = {token:updated.rows[0].lease_token,evidenceId:row.evidence_id,digest:row.source_digest.trim(),kind:row.kind};
+  return {lease,receipt:null};
+}
+
 /** Trusted worker entry point, never an HTTP route. Scope must be supplied explicitly. */
 export async function claimIntegrityJob(pool: Pool, s: Scope) {
   return inTransaction(pool, async client => {
@@ -52,13 +64,44 @@ export async function claimIntegrityJob(pool: Pool, s: Scope) {
       WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE`, values(s));
     const row = found.rows[0];
     if (!row || !['queued','running'].includes(row.status) || row.live) return null;
-    if (!await permitted(client,row)) { await terminal(client,s,'cancelled','scope_changed'); return null; }
-    if (row.attempt >= 3) { await terminal(client,s,'failed','attempts_exhausted'); return null; }
-    const updated = await client.query(`UPDATE integrity_jobs SET status='running',attempt=attempt+1,lease_token=$4,
-      lease_until=clock_timestamp()+interval '60 seconds' WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *`, [...values(s),randomUUID()]);
-    await event(client,s,updated.rows[0]);
-    return {token: updated.rows[0].lease_token as string, evidenceId: row.evidence_id as string, digest: row.source_digest.trim() as string, kind: row.kind as string};
+    return (await claimLocked(client,s,row)).lease;
   });
+}
+
+export type DispatchScope = {tenantId:string;caseId:string};
+const workerUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export function validateDispatch(s: DispatchScope, limit: number) {
+  if (!workerUuid.test(s.tenantId) || !workerUuid.test(s.caseId) || !Number.isInteger(limit) || limit<1 || limit>25) {
+    throw new Error('Dispatch requires tenant and case UUIDs and a limit from 1 to 25.');
+  }
+}
+
+/** One bounded pass. No global tenant discovery, HTTP endpoint or privileged credentials. */
+export async function dispatchIntegrityJobs(pool: Pool, root: string, scope: DispatchScope, limit = 10, signal?: AbortSignal) {
+  validateDispatch(scope,limit);
+  const results: {jobId:string;status:string;attempt:number|null;failureCode:string|null}[] = [];
+  let stopReason: 'limit' | 'empty' | 'aborted' = 'limit';
+  while (results.length < limit) {
+    if (signal?.aborted) {stopReason='aborted';break;}
+    const selected = await inTransaction(pool,async client=>{
+      // Bound waits on authority locks and database statements; these are not an OS sandbox.
+      await client.query("SET LOCAL lock_timeout = '2s'");
+      await client.query("SET LOCAL statement_timeout = '5s'");
+      const r=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2
+        AND (status='queued' OR (status='running' AND lease_until<=clock_timestamp()))
+        ORDER BY created_at,id LIMIT 1 FOR UPDATE SKIP LOCKED`,[scope.tenantId,scope.caseId]);
+      const row=r.rows[0];if(!row)return null;
+      const s={...scope,jobId:row.id as string};
+      return {scope:s,...await claimLocked(client,s,row)};
+    });
+    if (!selected) {stopReason='empty';break;}
+    // A stop signal prevents the next claim, but an already acquired lease can finish safely.
+    const receipt=selected.lease
+      ? await processLeasedJob(pool,root,selected.scope,selected.lease) : selected.receipt;
+    results.push({jobId:selected.scope.jobId,status:receipt?.status??'lease_lost',
+      attempt:receipt?.attempt??null,failureCode:receipt?.failureCode??null});
+  }
+  return {selected:results.length,stopReason,results};
 }
 export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'digest_mismatch' | null) {
   return finishProcessingJob(pool,s,token,failure);
@@ -85,6 +128,9 @@ async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure:
 export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {
   const lease = await claimIntegrityJob(pool,s);
   if (!lease) return null;
+  return processLeasedJob(pool,root,s,lease);
+}
+async function processLeasedJob(pool: Pool, root: string, s: Scope, lease: Lease) {
   let failure: Failure | null = null;
   let output: DerivativeOutput | undefined;
   try {

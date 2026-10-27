@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: bounded case-scoped processing dispatch
+
+Based on PR #17 receipt `09be523fc80c0eb053518b737a089eb670568f62`; main remains PR #1 and PRs #2–#17 remain open, with no #17 feedback. Added atomic oldest-eligible selection with SKIP LOCKED, bounded sequential passes, shared named-job/dispatch claim and processing logic, a lab-only CLI without administrator configuration, and migration 010 candidate index. Existing authority, requester, lease fencing, immutable derivative and append-only event controls are reused. No public dispatch endpoint, parser, scheduler or findings. See docs/37_BOUNDED_PROCESSING_DISPATCH.md.
+
+Local lint/types/build, one new input/abort guard and all 42 Python tests passed. Four added actual PostgreSQL scenarios cover concurrent/locked selection, CLI-to-HTTP/client verification, killed-process lease recovery, scope/authority/revocation/exhaustion and transactional output failure/retry. Hosted execution pending; do not count these scenarios as passing yet. Browser/parser/device/restore and actual graceful-signal acceptance remain unrun. No new dependency or third-party incorporation, live data, merge or deployment.
+
+Next: continue this branch after its hosted receipt and fresh main/review inspection. Dedicated worker credentials/RLS/storage capabilities, runtime sandboxing, actual parser benchmark/page citations, resumable original intake, releases and native/offline/restore remain open. The dispatcher is explicitly case-scoped in application queries but uses the existing lab application database role; do not describe it as credential isolation or a production worker service. Useful independent work remains; no essential user decision.
+
 ## 27 October: recoverable processing requests and verified derivative inspector
 
 Based on PR #16 receipt `0d5e0c1b6256696e892df1f9f666cfd2875dc3cc`; main remains PR #1, PRs #2–#16 open and #16 has no feedback. Added client-side identity/source/output/configuration verification and reconstructed original-byte line ranges over the existing first-party UTF-8 processor. Evidence-workspace inspection renders 100 lines per page with explicit unreviewed state and provenance. Existing derivative API now marks responses no-store/nosniff. Added explicit checksum/text-index queue controls with a tab/session-scoped pending operation and matching receipt validation, reusing server idempotency and authority checks. No schema/dependency change, new parser or findings. See docs/36_VERIFIED_DERIVATIVE_INSPECTION.md.
