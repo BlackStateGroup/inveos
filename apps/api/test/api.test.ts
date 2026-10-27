@@ -1856,8 +1856,8 @@ test('job and attempt histories deny foreign cursors, invalid queries, clients, 
   const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
   const ids=[];for(let i=0;i<2;i++)ids.push(JSON.parse((await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}})).body).id);
   const events=`${url}/${ids[0]}/events`;
-  for(const suffix of ['?limit=0','?limit=51','?limit=1.5','?unknown=yes','?before=invalid'])assertError(await request('GET',url+suffix,context.demo!),400);
-  for(const suffix of ['?after=-1','?after=1.5','?after=9999999999999999999','?limit=51','?unknown=yes'])assertError(await request('GET',events+suffix,context.demo!),400);
+  for(const suffix of ['?limit=0','?limit=51','?limit=1.5','?unknown=yes','?before=invalid'])assertError(await request('GET',url+suffix,context.demo!),422);
+  for(const suffix of ['?after=-1','?after=1.5','?after=9999999999999999999','?limit=51','?unknown=yes'])assertError(await request('GET',events+suffix,context.demo!),422);
   const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/integrity-jobs?before=${ids[0]}`,context.demo!),404);
   assertError(await request('GET',`/api/cases/${other.id}/integrity-jobs/${ids[0]}/events`,context.demo!),404);
   const foreignEvent=JSON.parse((await request('GET',`${url}/${ids[1]}/events`,context.demo!)).body).items[0].id;
