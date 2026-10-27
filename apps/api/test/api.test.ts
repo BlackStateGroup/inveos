@@ -1,3 +1,4 @@
+import {uploadBinaryChunks} from '../../web/src/chunkUpload.js';
 import {prepareBinary,binaryIntakeScope,sendBinaryRecoverably} from '../../web/src/binaryIntake.js';
 import { fileURLToPath } from 'node:url';
 import { execFile, spawn, spawnSync } from 'node:child_process';
@@ -2267,4 +2268,27 @@ test('failed upload finalisation audit rolls back evidence and staging cleanup, 
  const state=JSON.parse((await request('GET',url,context.demo!)).body);assert.equal(state.status,'open');assert.deepEqual(state.received,[0]);
  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM evidence WHERE case_id=$1',[kase.id])).rows[0].n,0);
  assert.equal((await request('POST',url+'/complete',context.demo!,{payload:{}})).statusCode,200);
+});
+
+test('actual chunk client resumes after committed chunk and completion acknowledgement loss without duplicate intake',async()=>{
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+ const kase=await createCase();await approveAuthority(kase.id);const bytes=new Uint8Array(65537).fill(207);
+ const input=await prepareBinary({name:'fictional-resumed.bin',size:bytes.length,arrayBuffer:async()=>bytes.buffer},'2026-01-12T09:00:00Z','Fictional resumed transfer');
+ const scope=await binaryIntakeScope(context.demo.csrf,kase.id)+':chunks-v1',entries=new Map<string,string>();
+ const store={getItem:(k:string)=>entries.get(k)??null,setItem:(k:string,v:string)=>{entries.set(k,v);},removeItem:(k:string)=>{entries.delete(k);}};
+ const app=await createAppInstance();try{
+  const address=await app.listen({host:'127.0.0.1',port:0});let loseChunk=true,loseComplete=true;const ordinals:number[]=[];let committed:unknown;
+  const transport=async(path:string,body?:unknown)=>{
+   const r=await fetch(address+path,{method:body===undefined?'GET':'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},...(body===undefined?{}:{body:JSON.stringify(body)})});assert.equal(r.status,200);const value=await r.json();
+   if(path.endsWith('/chunk')){ordinals.push((body as {ordinal:number}).ordinal);if(loseChunk){loseChunk=false;throw Error('Fictional lost chunk receipt');}}
+   if(path.endsWith('/complete')&&loseComplete){loseComplete=false;committed=value;throw Error('Fictional lost original receipt');}return value;
+  };
+  const run=()=>sendBinaryRecoverably({...store},scope,kase.id,input,body=>uploadBinaryChunks(kase.id,body,transport));
+  await assert.rejects(run(),/lost chunk/);assert.deepEqual(ordinals,[0]);
+  await context.app!.close();context.app=await createAppInstance(); // Independent HTTP app and durable DB survive client reconstruction.
+  await assert.rejects(run(),/lost original/);assert.deepEqual(ordinals,[0,1,2]);
+  const receipt=await run();assert.deepEqual(receipt,committed);assert.deepEqual(ordinals,[0,1,2]);assert.equal(entries.size,0);
+  const original=await fetch(`${address}/api/cases/${kase.id}/evidence/${receipt.id}/original`,{headers:{cookie:context.demo!.cookie}});assert.equal(original.status,200);assert.deepEqual(new Uint8Array(await original.arrayBuffer()),bytes);
+  const counts=await context.pool!.query("SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM upload_reservations WHERE case_id=$1) AS reservations,(SELECT count(*)::int FROM upload_chunks WHERE case_id=$1) AS chunks",[kase.id]);assert.deepEqual(counts.rows[0],{originals:1,reservations:1,chunks:0});
+ }finally{await app.close();}
 });

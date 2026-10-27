@@ -75,3 +75,5 @@
 - [Recoverable binary file intake](39_RECOVERABLE_BINARY_INTAKE.md) — bounded file selection, fingerprints and acknowledgement recovery.
 
 - [Resumable binary upload API](40_RESUMABLE_UPLOAD_API.md) — reservations, bounded chunks, verified finalisation and cancellation.
+
+- [Resumable upload client](41_RESUMABLE_UPLOAD_CLIENT.md) — missing-range transfer, acknowledged progress, pause and safe legacy retries.

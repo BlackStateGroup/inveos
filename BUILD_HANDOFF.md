@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: resumable upload client
+
+Based on PR #21 receipt `d501327b6df2b91888b00f909d36eee86dfc290e`; main remains PR #1 and #21 has no feedback. Wired file intake to reservation/status/chunk/finalisation, strict reservation/range/provenance checks, acknowledged-byte progress and pause/navigation abort. Existing whole-file pending records retain their original route to prevent duplicate originals; new operations use a separate chunk namespace. Reuses the existing fingerprint and final quarantine receipt guard. No schema/dependency/parser changes. See docs/41_RESUMABLE_UPLOAD_CLIENT.md.
+
+Local lint/types/build, three new helper scenarios and 42 Python tests passed. Added actual HTTP/PostgreSQL recovery after committed chunk and finalisation acknowledgement loss; hosted result pending. Browser picker/reload/pause/accessibility and actual network/device/restore acceptance remain unrun. No merge or deployment.
+
+Next: continue after hosted verification and fresh main/review checks. Add bounded audited expiry maintenance and permitted administration for revoked-owner reservations, plus explicit cancellation/recovery controls; preserve immutable evidence and audit metadata. Obtain actual browser acceptance on a supported host. Parser/runtime/licence/isolation, dedicated worker credentials/encrypted storage, releases, offline/device/restore and remaining product requirements stay open. No essential user input.
+
 ## 27 October: resumable binary upload API
 
 Based on PR #20 receipt `f6ff642054693451de7a19b5f7d9fe29bb607e62`; main remains PR #1 and #20 has no feedback. Added migration 011, actor/case-scoped reservations, 32 KiB exact chunks, status/resumption, idempotent verified finalisation and audited cancellation/staging cleanup. Existing intake is reused, including authority, original immutability and quarantine. At most ten open uploads per case, 256 KiB each, 24-hour expiry. Completed evidence/audit/state/staging deletion are one database transaction. See docs/40_RESUMABLE_UPLOAD_API.md.
