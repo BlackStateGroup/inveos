@@ -8,6 +8,7 @@ import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
+import { claimIntegrityJob, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
 import { createPool, runMigrations } from '../src/db.js';
 import type { Case, Evidence, ReportDraft, Workspace, WorkInput, WorkItem, WorkEdit, WorkLink, WorkRevision } from '@inveos/contracts';
@@ -1163,7 +1164,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1212,4 +1213,103 @@ test('combined casework flow runs over TCP HTTP and its exported report verifies
   } finally {
     await app.close();
   }
+});
+
+
+test('durable integrity jobs replay, survive restart and verify original bytes without creating findings', async () => {
+  context.demo = await issueTestSession(demoUserId);
+  const kase = await createCase(); await approveAuthority(kase.id);
+  const evidence = parseBody<Evidence>(await uploadEvidence(kase.id));
+  const input = {evidenceId:evidence.id,idempotencyKey:randomUUID()};
+  const url = `/api/cases/${kase.id}/integrity-jobs`;
+  const replies = await Promise.all([request('POST',url,context.demo!,{payload:input}),request('POST',url,context.demo!,{payload:input})]);
+  replies.forEach(r=>assert.equal(r.statusCode,200,r.body));
+  const job = JSON.parse(replies[0]!.body);
+  assert.equal(job.id,JSON.parse(replies[1]!.body).id);
+  assert.equal(job.status,'queued');
+  assert.equal(job.sourceDigest,evidence.digest);
+  assert.equal(job.authorityVersion,1);
+  assert.equal('leaseToken' in job,false);
+  await context.app!.close(); context.app=await createAppInstance();
+  const scope={tenantId:demoTenantId,caseId:kase.id,jobId:job.id};
+  const completed=await runIntegrityJob(context.pool!,context.storageRoot!,scope);
+  assert.equal(completed?.status,'succeeded');
+  assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,scope),null);
+  const replay=await request('POST',url,context.demo!,{payload:input});
+  assert.equal(JSON.parse(replay.body).status,'succeeded');
+  const events=await context.pool!.query('SELECT status FROM integrity_job_events WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 ORDER BY id',[demoTenantId,kase.id,job.id]);
+  assert.deepEqual(events.rows.map(r=>r.status),['queued','running','succeeded']);
+  const binaryResponse=await request('POST',`/api/cases/${kase.id}/evidence/binary`,context.demo!,{payload:{filename:'fictional-job.bin',contentBase64:'YQ==',expectedSha256:digest('a'),sourceTime:'2026-01-01T00:00:00Z',method:'Fictional checksum fixture',idempotencyKey:randomUUID()}});
+  assert.equal(binaryResponse.statusCode,200,binaryResponse.body);
+  const binary=JSON.parse(binaryResponse.body);
+  const binaryJob=await request('POST',url,context.demo!,{payload:{evidenceId:binary.id,idempotencyKey:randomUUID()}});
+  assert.equal(binaryJob.statusCode,200,binaryJob.body);
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,{...scope,jobId:JSON.parse(binaryJob.body).id}))?.status,'succeeded');
+  const workspace=JSON.parse((await request('GET','/api/workspace',context.demo!)).body);
+  assert.equal(workspace.evidence.find((e: Evidence)=>e.id===binary.id).status,'Quarantined');
+  assert.equal(workspace.findings.filter((f: {caseId:string})=>f.caseId===kase.id).length,0);
+  await assert.rejects(context.pool!.query('UPDATE integrity_jobs SET source_digest=$2 WHERE id=$1',[job.id,'0'.repeat(64)]),/immutable/);
+  await assert.rejects(context.schemaAdminPool!.query('DELETE FROM integrity_job_events WHERE job_id=$1',[job.id]),/append-only/);
+  const other=await createCase();
+  assertError(await request('GET',`/api/cases/${other.id}/integrity-jobs/${job.id}`,context.demo!),404);
+  assert.equal(await claimIntegrityJob(context.pool!,{...scope,tenantId:randomUUID()}),null);
+  assertError(await request('POST',url,context.demo!,{payload:{...input,evidenceId:randomUUID()}}),409);
+  assertError(await request('POST',url,context.demo!,{payload:input,csrfHeader:false}),403);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional job outsider');
+  assertError(await request('GET',`${url}/${job.id}`,await issueTestSession(outsider)),404);
+  const client=await createMember(demoTenantId,'client','Fictional job client');
+  assertError(await request('GET',`${url}/${job.id}`,await issueTestSession(client)),403);
+  assertError(await request('POST',url,await issueTestSession(client),{payload:input}),403);
+});
+
+test('job leases fence stale completion, cancellation and exhausted attempts', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  async function enqueue(){const r=await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200,r.body);return {tenantId:demoTenantId,caseId:kase.id,jobId:JSON.parse(r.body).id};}
+  const scope=await enqueue();
+  const leases=await Promise.all([claimIntegrityJob(context.pool!,scope),claimIntegrityJob(context.pool!,scope)]);
+  assert.equal(leases.filter(Boolean).length,1);
+  const first=leases.find(Boolean)!;
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[scope.jobId]);
+  assert.equal(await finishIntegrityJob(context.pool!,scope,first.token,null),null);
+  const second=await claimIntegrityJob(context.pool!,scope);assert.ok(second);
+  assert.notEqual(first.token,second.token);
+  assert.equal(await finishIntegrityJob(context.pool!,scope,first.token,null),null);
+  assert.equal((await request('POST',`${url}/${scope.jobId}/cancel`,context.demo!,{payload:{}})).statusCode,200);
+  assert.equal(await finishIntegrityJob(context.pool!,scope,second.token,null),null);
+  const exhausted=await enqueue();
+  for(let i=0;i<3;i++){
+    assert.ok(await claimIntegrityJob(context.pool!,exhausted));
+    await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[exhausted.jobId]);
+  }
+  assert.equal(await claimIntegrityJob(context.pool!,exhausted),null);
+  const response=await request('GET',`${url}/${exhausted.jobId}`,context.demo!);
+  assert.equal(JSON.parse(response.body).failureCode,'attempts_exhausted');
+  assert.equal(JSON.parse(response.body).attempt,3);
+});
+
+test('jobs recheck authority and membership and fail safely on missing or corrupt originals', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  async function enqueue(){const r=await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200,r.body);return {tenantId:demoTenantId,caseId:kase.id,jobId:JSON.parse(r.body).id};}
+  const stale=await enqueue();await approveAuthority(kase.id);
+  assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,stale),null);
+  assert.equal(JSON.parse((await request('GET',`${url}/${stale.jobId}`,context.demo!)).body).failureCode,'scope_changed');
+  const revoked=await enqueue(); const lease=await claimIntegrityJob(context.pool!,revoked);assert.ok(lease);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
+  assert.equal((await finishIntegrityJob(context.pool!,revoked,lease.token,null))?.status,'cancelled');
+  assertError(await request('GET',`${url}/${revoked.jobId}`,context.demo!),404);
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)',[demoTenantId,kase.id,demoUserId]);
+  const row=(await context.pool!.query('SELECT object_path FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[demoTenantId,kase.id,evidence.id])).rows[0];
+  const path=resolve(context.storageRoot!,row.object_path);
+  await writeFile(path,Buffer.from('corrupt fictional bytes'));
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'digest_mismatch');
+  await writeFile(path,Buffer.alloc(262145));
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'original_unavailable');
+  await rm(path);
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'original_unavailable');
 });

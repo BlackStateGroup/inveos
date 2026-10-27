@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: durable scoped integrity jobs
+
+Based on PR #8 receipt commit `3234f22f434bdd2cfe643bc15b2692b75cc81da2`; main still PR #1 and open PR #8 has no review comments. Implemented migration 004, authenticated idempotent enqueue/status/cancel, immutable scoped identity, append-only attempts, exclusive expiring/fenced leases, bounded retries and an actual bounded SHA-256 worker/CLI. Authority and requester membership are rechecked at dispatch and completion. Binary quarantine and human findings are unchanged. No parser/dependency/source incorporation. See docs/28_DURABLE_INTEGRITY_JOBS.md for use and failure/rollback limits.
+
+Added three PostgreSQL regression scenarios covering persistence, concurrency, scope/CSRF/client denial, stale leases, cancellation, retries, authority/revocation, corrupted/oversized/missing originals. Local source checks pass; hosted expanded database/HTTP execution is pending publication. Previous browser evidence is not fresh acceptance. No new parser/isolation/device/restore result or production readiness is claimed.
+
+Next: immutable derivative/run lineage and approved isolated processors, then page/region review. A checksum consumer is not an extraction worker. Automatic dispatch, browser job controls and production worker-specific credentials remain open. Other product/release gates below remain incomplete; no user decision is needed for further independent engineering.
+
 ## 27 October: integrated casework/evidence review branch
 
 Prepared a new review branch from PR #6 `1e3992a9a04d607a93ab09a4e13b25197b4f3d97`, applying the completed #4/#5/#7 changes through `21d077f51ef8b90a20f5b4be37578ed7ce97bfb6`. Existing branches and main remain unchanged; no PR merge or deployment. This supersedes the textual integration blocker recorded below.

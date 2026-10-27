@@ -19,6 +19,7 @@ import type {
   ReviewInput,
   Workspace,
 } from '@inveos/contracts';
+import { registerIntegrityJobs } from './integrity-jobs.js';
 import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
 import { readOriginal, writeOriginal, type StoredOriginal } from './storage.js';
@@ -575,6 +576,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   });
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
+
+  registerIntegrityJobs(app, {pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
