@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
@@ -375,6 +377,23 @@ test('case, versioned authority, verified evidence, exact quote, review, report,
   assert.equal(JSON.stringify(report).includes('fictional-uncited-note.txt'), false);
   assert.equal(JSON.stringify(report).includes(context.storageRoot!), false);
   assert.match(report.limitations, /not a signed custody certificate/i);
+
+  // Verify the actual API response outside Node, without database access.
+  const reportPath = join(context.storageRoot!, 'synthetic-report.json');
+  await writeFile(reportPath, reportResponse.body, 'utf8');
+  const verifier = new URL('../../../tools/verify_report.py', import.meta.url);
+  const verifyArgs = [fileURLToPath(verifier), reportPath, '--expected-sha256', digest(reportResponse.body),
+    '--expected-case-id', kase.id];
+  const verified = spawnSync('python3', verifyArgs, {encoding: 'utf8'});
+  assert.equal(verified.status, 0, verified.stderr);
+  assert.equal(JSON.parse(verified.stdout).trustedReportDigestMatched, true);
+  const changedReport = structuredClone(report);
+  changedReport.findings[0]!.text = 'Altered fictional narrative';
+  await writeFile(reportPath, JSON.stringify(changedReport), 'utf8');
+  const rejected = spawnSync('python3', verifyArgs, {encoding: 'utf8'});
+  assert.equal(rejected.status, 1, rejected.stderr);
+  assert.equal(JSON.parse(rejected.stderr).error, 'Report digest mismatch');
+
 
   const audit = await context.pool!.query(
     'SELECT count(*)::int AS count FROM audit_events WHERE tenant_id = $1 AND case_id = $2',
