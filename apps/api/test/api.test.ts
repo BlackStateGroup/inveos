@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
@@ -719,11 +719,182 @@ test('foreign-tenant and same-tenant unassigned cases cannot leak originals, rev
       404,
     );
     assertError(await request('GET', `/api/cases/${item.caseId}/report`, context.demo!), 404);
+    assertError(await request('POST', `/api/cases/${item.caseId}/evidence/binary`, context.demo!, {
+      payload: {filename: 'fictional-boundary.bin', contentBase64: 'YQ==', expectedSha256: digest('a'),
+        sourceTime: '2026-01-01T00:00:00Z', method: 'Fictional boundary fixture', idempotencyKey: randomUUID()},
+    }), 404);
   }
 
   const clientId = await createMember(demoTenantId, 'client', 'Synthetic internal API client');
   const clientSession = await issueTestSession(clientId);
   assertError(await request('GET', '/api/workspace', clientSession), 403);
+});
+
+test('binary originals persist byte-for-byte, remain quarantined, and cannot become text claims', async () => {
+  const kase = await createCase();
+  const original = Buffer.concat([Buffer.from('SYNTHETIC BINARY PAYLOAD: fictional only\n'), Buffer.from([0, 255, 128, 13, 10])]);
+  const input = {
+    filename: 'fictional-opaque-source.bin', contentBase64: original.toString('base64'),
+    expectedSha256: createHash('sha256').update(original).digest('hex'),
+    sourceTime: '2026-01-12T10:30:00+01:30', method: 'Fictional binary fixture, no parser', idempotencyKey: randomUUID(),
+  };
+  const url = `/api/cases/${kase.id}/evidence/binary`;
+  assertError(await request('POST', url, context.demo!, {payload: input}), 409);
+  const authority = parseBody<{id: string}>(await approveAuthority(kase.id));
+  const responses = await Promise.all([request('POST', url, context.demo!, {payload: input}), request('POST', url, context.demo!, {payload: input})]);
+  for (const response of responses) assert.equal(response.statusCode, 200, response.body);
+  const receipt = parseBody<Evidence>(responses[0]!);
+  assert.equal(parseBody<Evidence>(responses[1]!).id, receipt.id);
+  assert.equal(receipt.status, 'Quarantined');
+  assert.equal(receipt.originalKind, 'opaque_binary');
+  assert.equal(receipt.text, '');
+  assert.equal(receipt.bytes, original.length);
+  assert.equal(receipt.digest, input.expectedSha256);
+  assert.equal(receipt.sourceTime, input.sourceTime);
+  assert.equal(receipt.authorityId, authority.id);
+  assert.equal(receipt.authorityVersion, 1);
+  assert.notEqual(receipt.receivedTime, input.sourceTime);
+
+  const download = await request('GET', `/api/cases/${kase.id}/evidence/${receipt.id}/original`, context.demo!);
+  assert.equal(download.statusCode, 200);
+  assert.deepEqual(download.rawPayload, original);
+  assert.equal(download.headers['content-type'], 'application/octet-stream');
+  assert.equal(download.headers['x-content-type-options'], 'nosniff');
+  assert.equal(download.headers['x-inveos-original-state'], 'Quarantined');
+  assert.match(download.headers['content-disposition']!, /^attachment;/);
+  const row = (await context.pool!.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3', [demoTenantId, kase.id, receipt.id])).rows[0];
+  assert.match(row.object_path, /\.bin$/);
+  assert.equal((await stat(resolve(context.storageRoot!, row.object_path))).mode & 0o777, 0o600);
+  const receivedEvents = await context.pool!.query("SELECT * FROM audit_events WHERE tenant_id=$1 AND case_id=$2 AND action='evidence.received'", [demoTenantId, kase.id]);
+  assert.equal(receivedEvents.rows.length, 1);
+  assert.equal(receivedEvents.rows[0].metadata.originalKind, 'opaque_binary');
+  assert.equal(receivedEvents.rows[0].metadata.sha256, input.expectedSha256);
+
+  assert.equal((await approveAuthority(kase.id)).statusCode, 200);
+  const replay = await request('POST', url, context.demo!, {payload: input});
+  assert.equal(replay.statusCode, 200);
+  assert.equal(parseBody<Evidence>(replay).authorityVersion, 1);
+  assertError(await request('POST', url, context.demo!, {payload: {...input, filename: 'changed.bin'}}), 409);
+  const separate = await request('POST', url, context.demo!, {payload: {...input, idempotencyKey: randomUUID()}});
+  assert.equal(separate.statusCode, 200);
+  assert.notEqual(parseBody<Evidence>(separate).id, receipt.id);
+  assert.equal(parseBody<Evidence>(separate).authorityVersion, 2);
+  assertError(await createClaim(kase.id, receipt.id, context.demo!, 'SYNTHETIC BINARY PAYLOAD'), 409);
+  assertError(await request('GET', `/api/cases/${kase.id}/report`, context.demo!), 422);
+  // Even UTF-8 bytes received as binary cannot bypass the citation boundary.
+  const textBinary = await request('POST', url, context.demo!, {payload: {...input, contentBase64: Buffer.from(sourceText()).toString('base64'), expectedSha256: digest(sourceText()), idempotencyKey: randomUUID()}});
+  assert.equal(textBinary.statusCode, 200);
+  assertError(await createClaim(kase.id, parseBody<Evidence>(textBinary).id), 409);
+  await assert.rejects(context.pool!.query(
+    `INSERT INTO claims (tenant_id,case_id,id,evidence_id,authority_id,authority_version,text,quote,source_start_byte,source_end_byte,source_digest,status,created_by)
+     VALUES ($1,$2,$3,$4,$5,1,'Fictional invalid binary claim','SYNTHETIC',0,9,$6,'Under review',$7)`,
+    [demoTenantId, kase.id, randomUUID(), receipt.id, authority.id, input.expectedSha256, demoUserId],
+  ), (error: unknown) => Boolean(error && typeof error === 'object' && 'code' in error && error.code === '23514'));
+  await assert.rejects(context.schemaAdminPool!.query(
+    'UPDATE evidence SET status=$4 WHERE tenant_id=$1 AND case_id=$2 AND id=$3', [demoTenantId, kase.id, receipt.id, 'Verified'],
+  ), (error: unknown) => Boolean(error && typeof error === 'object' && 'code' in error && error.code === '55000'));
+
+  const workspace = parseBody<Workspace>(await request('GET', '/api/workspace', context.demo!));
+  const shown = workspace.evidence.find((item) => item.id === receipt.id)!;
+  assert.equal(shown.status, 'Quarantined');
+  assert.equal(shown.text, '');
+  assert.equal(JSON.stringify(workspace).includes('SYNTHETIC BINARY PAYLOAD'), false);
+  await context.app!.close();
+  await runMigrations(context.adminPool!, context.schema!); // repeated migration on populated storage
+  context.app = await createAppInstance();
+  const restarted = await request('GET', `/api/cases/${kase.id}/evidence/${receipt.id}/original`, context.demo!);
+  assert.deepEqual(restarted.rawPayload, original);
+  await writeFile(resolve(context.storageRoot!, row.object_path), Buffer.from('corrupted fictional binary'));
+  assertError(await request('GET', `/api/cases/${kase.id}/evidence/${receipt.id}/original`, context.demo!), 409);
+  assertError(await request('POST', url, context.demo!, {payload: input}), 409);
+});
+
+test('binary intake enforces encoding, scope, CSRF, type separation and tenant boundaries', async () => {
+  const kase = await createCase();
+  assert.equal((await approveAuthority(kase.id)).statusCode, 200);
+  const url = `/api/cases/${kase.id}/evidence/binary`;
+  const input = {filename: 'fictional.bin', contentBase64: 'YQ==', expectedSha256: digest('a'), sourceTime: '2026-01-12T09:00:00Z', method: 'Fictional fixture', idempotencyKey: randomUUID()};
+  assertError(await request('POST', url, undefined, {payload: input}), 401);
+  assertError(await request('POST', url, context.demo!, {payload: input, csrfHeader: false}), 403);
+  for (const change of [
+    {contentBase64: 'YR=='}, {contentBase64: 'YQ==\n'}, {contentBase64: '!!!!'}, {contentBase64: ''},
+    {contentBase64: Buffer.alloc(262145).toString('base64')}, {expectedSha256: '0'.repeat(64)},
+    {filename: '../fictional.bin'}, {filename: 'a\n.bin'}, {filename: 'bad\uD800.bin'}, {sourceTime: '2026-02-30T00:00:00Z'},
+    {text: 'Must not mix representations'}, {originalKind: 'original_utf8'}, {status: 'Verified'},
+  ]) assertError(await request('POST', url, context.demo!, {payload: {...input, ...change}}), 422);
+  assertError(await request('POST', `/api/cases/${kase.id}/evidence`, context.demo!, {payload: input}), 422);
+  const textInput = evidenceInput({idempotencyKey: input.idempotencyKey});
+  assert.equal((await uploadEvidence(kase.id, context.demo!, textInput)).statusCode, 200);
+  assertError(await request('POST', url, context.demo!, {payload: input}), 409);
+
+  const clientId = await createMember(demoTenantId, 'client', 'Fictional client binary denial');
+  const clientSession = await issueTestSession(clientId);
+  assertError(await request('POST', url, clientSession, {payload: input}), 403);
+  const owner = await createMember(demoTenantId, 'investigator', 'Fictional unrelated binary owner');
+  const unassigned = await createAssignedCase(demoTenantId, owner);
+  assertError(await request('POST', `/api/cases/${unassigned.caseId}/evidence/binary`, context.demo!, {payload: input}), 404);
+  const ownBinary = await request('POST', url, context.demo!, {payload: {...input, idempotencyKey: randomUUID()}});
+  assert.equal(ownBinary.statusCode, 200);
+  const ownId = parseBody<Evidence>(ownBinary).id;
+  const unrelatedSession = await issueTestSession(owner);
+  assertError(await request('GET', `/api/cases/${kase.id}/evidence/${ownId}/original`, unrelatedSession), 404);
+  assertError(await request('GET', `/api/cases/${kase.id}/evidence/${ownId}/original`, clientSession), 403);
+  const otherCase = await createCase();
+  assertError(await request('GET', `/api/cases/${otherCase.id}/evidence/${ownId}/original`, context.demo!), 404);
+  const count = await context.pool!.query('SELECT count(*)::int AS count FROM evidence WHERE tenant_id=$1 AND case_id=$2', [demoTenantId, kase.id]);
+  assert.equal(count.rows[0].count, 2); // one original text and one binary, nothing from failed requests
+});
+
+test('binary migration upgrades a populated text-only foundation without relabelling originals', async () => {
+  const schema = `upgrade_test_${randomUUID().replaceAll('-', '')}`;
+  const legacy = await readFile(new URL('../migrations/001_foundation.sql', import.meta.url), 'utf8');
+  const client = await context.adminPool!.connect();
+  const caseId = randomUUID(); const authorityId = randomUUID(); const evidenceId = randomUUID();
+  try {
+    await client.query('BEGIN');
+    await client.query(`CREATE SCHEMA "${schema}"`);
+    await client.query(`SET LOCAL search_path TO "${schema}", public`);
+    await client.query(legacy);
+    await client.query(`INSERT INTO cases (tenant_id,id,ref,title,client,owner_user_id,scope,jurisdiction,status)
+      VALUES ($1,$2,'SYN-UPGRADE','Fictional upgrade case','Fictional client',$3,'Fictional upgrade scope','Test','Scope review')`, [demoTenantId, caseId, demoUserId]);
+    await client.query(`INSERT INTO authority_records (tenant_id,case_id,id,version,purpose,lawful_basis,scope,retention_days,minimisation,approved_by)
+      VALUES ($1,$2,$3,1,'Fictional purpose','Fictional basis','Fictional scope',30,'Fictional minimum',$4)`, [demoTenantId, caseId, authorityId, demoUserId]);
+    await client.query(`INSERT INTO evidence (tenant_id,case_id,id,authority_id,authority_version,filename,byte_length,source_time,method,digest,object_path,status,idempotency_key,request_hash,created_by)
+      VALUES ($1,$2,$3,$4,1,'fictional-legacy.txt',1,'2026-01-01T00:00:00Z','Fictional fixture',$5,'fictional-legacy-object.txt','Verified',$6,$5,$7)`, [demoTenantId, caseId, evidenceId, authorityId, digest('a'), randomUUID(), demoUserId]);
+    await client.query('COMMIT');
+    await runMigrations(context.adminPool!, schema);
+    await runMigrations(context.adminPool!, schema);
+    const result = await client.query(`SELECT original_kind,status,digest,object_path FROM "${schema}".evidence WHERE id=$1`, [evidenceId]);
+    assert.equal(result.rows[0].original_kind, 'original_utf8');
+    assert.equal(result.rows[0].status, 'Verified');
+    assert.equal(result.rows[0].digest.trim(), digest('a'));
+    assert.equal(result.rows[0].object_path, 'fictional-legacy-object.txt');
+  } finally {
+    await client.query('ROLLBACK');
+    await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+    client.release();
+  }
+});
+
+test('binary intake rolls back database receipts and removes newly written objects on failure', async () => {
+  const kase = await createCase();
+  assert.equal((await approveAuthority(kase.id)).statusCode, 200);
+  const input = {filename: 'fictional-insert-failure.bin', contentBase64: 'YQ==', expectedSha256: digest('a'), sourceTime: '2026-01-12T09:00:00Z', method: 'Fictional rollback fixture', idempotencyKey: randomUUID()};
+  await context.schemaAdminPool!.query("ALTER TABLE evidence ADD CONSTRAINT synthetic_insert_failure CHECK (filename <> 'fictional-insert-failure.bin')");
+  try {
+    assertError(await request('POST', `/api/cases/${kase.id}/evidence/binary`, context.demo!, {payload: input}), 500);
+  } finally {
+    await context.schemaAdminPool!.query('ALTER TABLE evidence DROP CONSTRAINT synthetic_insert_failure');
+  }
+  const records = await context.pool!.query('SELECT count(*)::int AS count FROM evidence WHERE tenant_id=$1 AND case_id=$2', [demoTenantId, kase.id]);
+  assert.equal(records.rows[0].count, 0);
+  const events = await context.pool!.query("SELECT count(*)::int AS count FROM audit_events WHERE tenant_id=$1 AND case_id=$2 AND action='evidence.received'", [demoTenantId, kase.id]);
+  assert.equal(events.rows[0].count, 0);
+  assert.deepEqual(await readdir(join(context.storageRoot!, demoTenantId, kase.id)), []);
+  // A retry after the transient failure receives one normal durable receipt.
+  const retry = await request('POST', `/api/cases/${kase.id}/evidence/binary`, context.demo!, {payload: input});
+  assert.equal(retry.statusCode, 200, retry.body);
+  assert.equal(parseBody<Evidence>(retry).status, 'Quarantined');
 });
 
 test('tampered originals block acceptance and export, and logout revokes the session', async () => {

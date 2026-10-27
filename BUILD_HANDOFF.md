@@ -1,5 +1,17 @@
 # INVEOS engineering handoff
 
+## 27 October 2026: quarantined binary-original API slice
+
+Stacked on PR #5 receipt commit `e762a8f472bccf3af0700367128a3f6debbbd3ab`, preserving the already tested package/verifier stack. Main is still PR #1; no automatic merges. This run delivered package engineering first and then advanced the independent binary-intake prerequisite while parser isolation remained denied.
+
+Implemented: canonical-base64 bounded binary-original API, existing case/authority/idempotency/storage transaction controls, immutable kind discriminator and quarantine state, exact octet-stream download, no binary text in workspace, API and database original-text claim guards, fail-closed undeclared fields and invalid Unicode filenames. Four new real-PostgreSQL tests cover round-trip, role/scope/type boundaries, restart/idempotency, populated legacy-schema upgrade and rollback/object cleanup. [Run instructions, limits and safe rollback](docs/27_QUARANTINED_BINARY_INTAKE.md).
+
+Local: lint, workspace type checks, web build, foundation validation, 37 Python tests and whitespace checks passed. Hosted execution of the expanded 11-test API suite is pending publication; no local database or browser test result is claimed. The source modifications preserve the browser text uploader. No production deployment, parser execution, new dependencies, device/offline/restore or malware assessment.
+
+Next dependency-ready work: durable scoped processing/run records and derivative lineage; or consistent scoped report snapshot/audit history. Binary originals now have a bounded intake prerequisite but no resumable upload, crash recovery, encrypted object store, scan clearance, parser, preview, extracted claims or derivative citations. Original-page review and the full supplier milestone remain open. PR #2 still holds the separate synthetic research contract and licence inventory. No runtime incorporation approval is inferred. See earlier receipts below for the completed package and report verification slices.
+
+Status: WP-02/WP-05/WP-07 partial, other documented gates remain; deployed no, pilot accepted no. Further useful authorised work is available without a user decision. Do not downgrade to the old text-only application with binary rows present; retain the upgraded reader or restore a matching pre-migration database/object snapshot after validation.
+
 ## 27 October 2026: versioned internal exhibit package
 
 Baseline checked: main remains `95b5c35`; open draft PRs #2, #3 and #4 have no review comments. This slice is stacked on PR #4 head `464ac9d8ce40735905da3742d72c1d513c694974`, reusing the report verifier and PostgreSQL workflow. Do not merge or overwrite the independent research/planning branches.

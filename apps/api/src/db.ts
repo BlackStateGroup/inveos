@@ -26,9 +26,11 @@ export async function runMigrations(pool: Pool, schema = 'inveos'): Promise<void
     await client.query('BEGIN');
     await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}" AUTHORIZATION CURRENT_USER`);
     await client.query(`SET LOCAL search_path TO "${schema}", public`);
-    const migrationPath = fileURLToPath(new URL('../migrations/001_foundation.sql', import.meta.url));
-    const migration = await readFile(migrationPath, 'utf8');
-    await client.query(migration);
+    for (const filename of ['001_foundation.sql', '002_binary_originals.sql']) {
+      const migrationPath = fileURLToPath(new URL(`../migrations/${filename}`, import.meta.url));
+      const migration = await readFile(migrationPath, 'utf8');
+      await client.query(migration);
+    }
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

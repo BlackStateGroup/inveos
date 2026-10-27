@@ -1,5 +1,5 @@
 export type Case = {id: string; ref: string; title: string; client: string; category: string; status: string; owner: string; due: string; scope: string; jurisdiction: string; authority: boolean};
-export type Evidence = {id: string; caseId: string; filename: string; kind: string; bytes: number; sourceTime: string; receivedTime: string; digest: string; status: string; text: string; method: string; authorityId?: string; authorityVersion?: number};
+export type Evidence = {id: string; caseId: string; filename: string; kind: string; bytes: number; sourceTime: string; receivedTime: string; digest: string; status: string; text: string; method: string; authorityId?: string; authorityVersion?: number; originalKind?: 'original_utf8' | 'opaque_binary'};
 export type Claim = {id: string; caseId: string; evidenceId: string; text: string; quote: string; status: string; reason?: string};
 export type Finding = {id: string; caseId: string; claimId: string; text: string; reviewer: string; reviewedAt: string};
 export type Activity = {id: string; caseId: string; text: string; actor: string; at: string};
@@ -30,6 +30,10 @@ export type EvidenceInput = {
   sourceTime: string;
   method: string;
   idempotencyKey: string;
+};
+
+export type BinaryEvidenceInput = Omit<EvidenceInput, 'text'> & {
+  contentBase64: string;
 };
 
 export type ClaimInput = {

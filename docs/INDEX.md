@@ -32,6 +32,7 @@
 - `22_GITHUB_HANDOFF.md` — repository write-access finding and publication steps.
 - [Local application and scope decision](23_LOCAL_APPLICATION.md) — visual prototype, persistent synthetic lab and non-production boundaries.
 - [Offline report verification](25_OFFLINE_REPORT_VERIFIER.md) — standalone verification of the current internal JSON draft.
+- [Quarantined binary intake](27_QUARANTINED_BINARY_INTAKE.md) — bounded opaque-original API storage with authority, integrity and claim guards.
 - [Internal exhibit packages](26_INTERNAL_EXHIBIT_PACKAGE.md) — versioned manifest, original exhibits and bounded offline package verification.
 - [Complete workspace delivery plan](24_DELIVERY_PLAN.md) — reconciled capability states, five-stage build sequence, next slices and the fictional supplier acceptance milestone.
 
