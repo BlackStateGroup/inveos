@@ -1,6 +1,27 @@
 # 21 — Agent-ready engineering work packages
 
-Each work package is a separate pull request with tests and evidence. Prefer narrowly scoped work, clean integration and no change to production by default. No implemented work packages are claimed yet.
+Deliver each bounded slice as a separate draft pull request with tests and evidence. Prefer narrowly scoped work, clean integration and no change to production by default. The merged synthetic application partially implements several packages; it does not complete their production exit gates. Use the [delivery plan and capability ledger](24_DELIVERY_PLAN.md) for the complete scope, milestone and evidence states.
+
+## Reconciled baseline — 27 October 2026
+
+PR #1 (`95b5c35`) is merged. PR #2 (`36081f1`) is a separate draft research slice; do not count its contract as a running parser or as merged application code. No deployment or pilot acceptance is claimed.
+
+| Package | Implemented slice | Remaining gate |
+|---|---|---|
+| WP-00 | TS workspaces, lockfile, schemas/contracts, migrations, lint/type/build commands and database harness | Hosted CI evidence, secret scanning and remaining scaffold/policy checks; CI implementation is in this change |
+| WP-01 | Synthetic case/authority, demo session and selected role/tenant/case denials | Real identity/MFA, invitations, membership administration and full resource isolation |
+| WP-02 | UTF-8 original intake, digests, local store, audit and idempotency | Encrypted object storage, binary/resumable intake, quarantine, holds and recovery |
+| WP-03 | Broad prototype; persistent case/evidence/manual-review workflow | Persistent tasks/notes/objectives, chronology/search and complete browser acceptance |
+| WP-04 | Memory-only Field preview | Entire native encrypted/offline/device gate |
+| WP-05 | Planned on main; PR #2 has research and synthetic provenance contract | Isolated parser benchmark, durable worker integration and citation lineage |
+| WP-06 | Manual source-linked claims, separate review/finding records and approval gate | Actual AI/extraction service, evaluations, case Q&A and permission-scoped assistance |
+| WP-07 | Internal reviewed JSON draft | Editable PDF/DOCX report, exhibits, redaction, versioning and offline verifier |
+| WP-08 | Fixed fictional portal preview | Operational release dataset, client identity, approval, expiry/revocation and acknowledgement |
+| WP-09–WP-12 | Illustrative source/graph/interview/admin surfaces | Operational source, graph, interview and agency acceptance gates |
+| WP-13 | Plans and local test evidence only | Production operations, restore/security/privacy evidence and pilot sign-off |
+| WP-14–WP-18 | Planned additions below | Their individual exit gates |
+
+The next unblocked implementation is the WP-00 CI slice. It does not require selecting production identity/storage providers or merging PR #2. Research worker execution remains gated on a host with proven isolation.
 
 ## WP-00 — Repository scaffold and policy (P0)
 
@@ -30,6 +51,8 @@ Quarantined worker, Tika/Docling/OCR/Whisper candidate benchmarks, page/timecode
 
 Typed claims, extraction queue, human accept/reject, source passage viewer and report gate. **Done when:** hallucinated/unlinked claim cannot be approved and prompt injection cannot trigger privileged action.
 
+Extend incrementally to cited summaries, candidate entities/events/amounts, permitted case Q&A, account comparison, possible contradictions, suggested missing material/questions/research and report drafting from reviewed findings. Every output remains a suggestion with inspectable support and limits; a source's assertion is not proof of its truth. Keep the working manual review loop while introducing AI.
+
 ## WP-07 — Report, exhibits and offline verifier (P0)
 
 Build PDF and report model from approved findings, exhibit manifest, receipt and independent hash verification. **Done when:** tampering with document/manifest/event history is detected and valid export verifies without server.
@@ -57,6 +80,30 @@ Dispatch board, budgets, time, subscriptions, SSO and custom retention, with cor
 ## WP-13 — Hardened production and adoption (P0 before live customer data)
 
 DPIA/legal/terms review, security assessment, incident response, backup restore, mobile loss scenario, observability/operations and controlled pilot. **Done when:** independent sign-offs and actual evidence are recorded.
+
+## WP-14 — Investigation questions and reasoning (P0 minimal for supplier milestone; P1 full)
+
+Persist questions, competing hypotheses, supporting/contrary evidence references, uncertain or unresolved checks, owners and review history. No hypothesis or AI suggestion becomes a finding automatically. **Done when:** the supplier case records the ownership discrepancy and alternative explanations; cited evidence opens in context; closure requires an auditable investigator decision and permissions deny unrelated cases.
+
+## WP-15 — Evidential chronology (P0 basic; P1 advanced)
+
+Persist observations, correspondence, source records and interviews as searchable events. Keep alleged event time, source-recorded time, receipt time and processing/render time distinct. Support approximate ranges, original timezone/precision, competing accounts and corrections. **Done when:** contradictory/uncertain dates remain visible in the timeline and export without invented ordering or precision.
+
+## WP-16 — Interface depth and case search (P0 core; P1 advanced)
+
+Implement case-scoped search/filtering, saved views, bulk actions, keyboard use, robust loading/empty/error/retry states and side-by-side original/source review. **Done when:** real browser tests cover representative large cases and long documents, permissions apply to search and bulk actions, and investigators can find and review the cited material without losing case context.
+
+## WP-17 — Team collaboration (P0 assignments/review; P1 richer coordination)
+
+Persist ownership, deadlines, tasks, comments, mentions, review queues, handovers and workload. Notify on meaningful deadlines, failed uploads and pending approvals; provide preferences. **Done when:** a contractor sees only assigned work, handovers survive reload, revoked users receive no case notifications and every unresolved question/review has a visible owner or unassigned state.
+
+## WP-18 — Customer and commercial validation (P0 discovery; no demand claim)
+
+Test corporate due diligence and internal investigations as the first market hypothesis. Observe existing workflows, interview users, recruit a small approved pilot and validate willingness to pay, onboarding, templates and support. Measure storage/processing costs before fixing allowances/pricing. **Done when:** evidence supports the first segment/offer and pilot users complete the agreed case; no invented interviews, commitments or acceptance.
+
+## How to select the next slice
+
+Use the [delivery plan](24_DELIVERY_PLAN.md): select the next dependency-ready slice, state its exit test, implement it, run relevant positive/negative checks and produce a draft PR. Record implementation, testing, deployment and pilot acceptance separately with exact revisions. A blocker requires a concrete next action; a research slice needs a measured experiment and explicit integration decision as its exit. Preserve the no-production/no-automatic-merge boundaries.
 
 ## Acceptance template for every PR
 

@@ -1,6 +1,14 @@
 # 14 — Verification and acceptance plan
 
-Do not declare tests green without command, runtime, input fixture, count, failures and environment evidence. No tests have been run against an INVEOS implementation because the application is not yet built.
+Do not declare tests green without command, revision, runtime, input fixture, count, failures and environment evidence. The merged local synthetic application has real PostgreSQL/API and recorded browser verification; see [the 26 October receipt](23_LOCAL_APPLICATION.md#local-verification--26-october-2026). Those results cover the bounded text-only lab, not the complete product. PR #2's synthetic derivative-contract tests belong to its unmerged revision, not to main.
+
+The main end-to-end acceptance target is [SYN-SUPPLIER-001](24_DELIVERY_PLAN.md#first-milestone--syn-supplier-001): intake through investigator-approved client delivery with a package that verifies independently. Its corpus must include digital/scanned records, contradictory ownership/date assertions, repeated names and misleading instructions inside sources. Include poor recordings as transcription work is introduced. Report citation correctness, missing/incorrect extraction, mistaken entity matches and unsupported conclusions separately from test pass counts.
+
+## Continuous integration baseline
+
+[Checks](../.github/workflows/checks.yml) runs on pull requests, pushes to main and manual dispatch. It uses the committed npm lockfile, Node 22/Python 3.11, a disposable PostgreSQL 15 service and a restricted `inveos_app` role. Lint, all workspace type checks, web build, Python source validation/tests, the synthetic reference and real-database API tests must pass without a private `.env` or production credentials. Actions are pinned to revisions; the workflow has read-only repository access and does not deploy.
+
+The API suite uses HTTP injection against Fastify plus a real database and filesystem. This is not a browser or network transport test. It covers the persisted workflow, selected tenant/case/role denials, invalid scope/input/digests, concurrent/replayed uploads and review decisions, source mutation and session revocation. Keep browser, native-device, worker isolation, restore and production security results separate. Adding the workflow does not prove a hosted run or complete WP-00; record actual run results in a verification receipt. Secret scanning remains outstanding.
 
 ## Test layers
 

@@ -723,6 +723,6 @@ test('tampered originals block acceptance and export, and logout revokes the ses
   assert.equal(parseBody<{ok: boolean}>(logout).ok, true);
   assertError(await request('GET', '/api/workspace', context.demo!), 401);
 
-  const fixture = await readFile(join(process.cwd(), 'apps/api/fixtures/fictional_supplier_note.txt'), 'utf8');
+  const fixture = await readFile(new URL('../fixtures/fictional_supplier_note.txt', import.meta.url), 'utf8');
   assert.match(fixture, /SYNTHETIC FIXTURE — FICTIONAL ONLY/);
 });

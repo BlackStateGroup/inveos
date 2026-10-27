@@ -106,6 +106,20 @@ identity or tenant.
 
 ## Tests
 
+The [CI workflow](.github/workflows/checks.yml) runs lint, workspace type checks,
+web build, foundation tests/reference and PostgreSQL API tests on pull requests.
+It creates its own disposable database and restricted application role and does
+not require the developer's `.env`. To run API tests with explicitly configured
+test URLs in your shell instead of a dotenv file, use:
+
+```bash
+npm test --workspace @inveos/api
+```
+
+This command still requires the real test database/roles below; no mocks or
+production credentials are used in CI. CI does not replace browser, native
+device, parser isolation, outage, restore or security acceptance.
+
 `npm run test:api` runs integration tests against the real `inveos_test`
 PostgreSQL database. Each run creates a uniquely named isolated schema and
 object root, applies the migration, and removes both at completion. Test setup

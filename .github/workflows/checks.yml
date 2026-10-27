@@ -1,0 +1,72 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-application:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Disposable service credentials, never production credentials or secrets.
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.11'
+      - name: Install locked application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Create restricted application role in disposable test database
+        run: |
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck every workspace
+        run: npm run typecheck
+      - name: Build web application
+        run: npm run build
+      - name: Validate foundation sources and run Python tests
+        run: npm run test:foundation
+      - name: Exercise synthetic reference flow
+        run: python3 -m examples.evidence_flow_demo
+      - name: Run API integration tests against real PostgreSQL
+        # This existing workspace command reads CI environment variables directly;
+        # the root test:api command requires a developer's private .env file.
+        run: npm test --workspace @inveos/api
+      - name: Check tracked sources remain unchanged
+        run: git diff --exit-code

@@ -2,7 +2,9 @@
 
 ## Customer choice
 
-Start with **small professional investigation agencies** because the mobile-evidence-report loop may give immediate recurring value. Validate with five to ten UK firms before final pricing. Larger fraud/legal customers can follow once permissions, disclosure and retention support are proven.
+Test **corporate due diligence and internal investigations** as the first market hypothesis, including professional agencies doing that work. The supplied-document supplier case is the first demonstration target. Observe current assignment-to-report workflows, interview five to ten prospective users and recruit a small pilot group before fixing the offer or pricing. This supersedes the foundation's agency-first assumption as a research direction; no demand, interviews, customer commitments or willingness to pay are claimed. Keep the architecture suitable for other lawful investigation types.
+
+Use pilot evidence to choose templates, onboarding and support. Measure storage, processing, retention and support costs before promising allowances; the broader commercial scope remains gated on privacy/security and operational readiness. See [WP-18 and the delivery plan](24_DELIVERY_PLAN.md).
 
 ## Pricing experiments (not researched willingness-to-pay)
 

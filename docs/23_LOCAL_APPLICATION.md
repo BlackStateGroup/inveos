@@ -24,6 +24,8 @@ The initial export is an internal JSON draft, not PDF, not a client release and 
 
 See [the local runbook](../LOCAL_RUN.md) for setup and verification commands.
 
+The [complete workspace delivery plan](24_DELIVERY_PLAN.md) records the expanded scope, reconciled implementation states and fictional supplier milestone. The lab below is its starting point; the 26 October verification receipt remains historical evidence for this slice.
+
 ## Local verification — 26 October 2026
 
 - Real PostgreSQL integration tests passed for the case/authority/evidence/claim/review/report lifecycle, persistence across API instances, access restrictions, retry/concurrency handling and mutated-source rejection. Focused regression tests subsequently passed for Unicode/calendar validation, blank quotes, malformed JSON and rate-limit responses.

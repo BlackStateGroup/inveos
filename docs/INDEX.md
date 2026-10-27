@@ -31,6 +31,7 @@
 - `21_ENGINEERING_WORKPACKAGES.md` — vertical slices with exit criteria.
 - `22_GITHUB_HANDOFF.md` — repository write-access finding and publication steps.
 - [Local application and scope decision](23_LOCAL_APPLICATION.md) — visual prototype, persistent synthetic lab and non-production boundaries.
+- [Complete workspace delivery plan](24_DELIVERY_PLAN.md) — reconciled capability states, five-stage build sequence, next slices and the fictional supplier acceptance milestone.
 
 ## Open-source mining
 
