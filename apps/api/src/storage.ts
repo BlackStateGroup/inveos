@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { chmod, mkdir, open, readFile, unlink } from 'node:fs/promises';
+import { chmod, mkdir, open, unlink } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 export type StoredOriginal = {
@@ -78,10 +78,6 @@ export async function writeOriginal(
       await syncDirectory(directory).catch(() => undefined);
     },
   };
-}
-
-export async function readOriginal(root: string, objectPath: string): Promise<Buffer> {
-  return readFile(resolveObjectPath(root, objectPath));
 }
 
 export async function removeOriginal(root: string, objectPath: string): Promise<void> {

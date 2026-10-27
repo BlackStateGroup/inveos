@@ -69,3 +69,5 @@
 - [Verified derivative inspection](36_VERIFIED_DERIVATIVE_INSPECTION.md) — client lineage, byte-range verification and unreviewed line display.
 
 - [Bounded processing dispatch](37_BOUNDED_PROCESSING_DISPATCH.md) — case-scoped queue consumption, lease recovery and actual CLI tests.
+
+- [Original access hardening](38_ORIGINAL_ACCESS_HARDENING.md) — bounded workspace previews and audited, verified original downloads.

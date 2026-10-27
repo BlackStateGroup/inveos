@@ -24,7 +24,7 @@ import { exactSpan, selectSourceSpan } from './source-span.js';
 import { registerIntegrityJobs } from './integrity-jobs.js';
 import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
-import { readOriginal, readOriginalBounded, writeOriginal, type StoredOriginal } from './storage.js';
+import { readOriginalBounded, writeOriginal, type StoredOriginal } from './storage.js';
 import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
@@ -689,7 +689,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  app.get('/api/workspace', {preHandler: authenticate}, async (request) => {
+  app.get('/api/workspace', {preHandler: authenticate}, async (request, reply) => {
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
     const actor = request.actor!;
     rejectClientRole(actor);
     const casesResult = await options.pool.query<CaseRow>(
@@ -741,7 +742,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     );
     for (const row of evidenceResult.rows) {
       try {
-        const bytes = await readOriginal(options.storageRoot, row.object_path);
+        const bytes = await readOriginalBounded(options.storageRoot, row.object_path, 262144);
         const valid = bytes.length === row.byte_length && sha256(bytes) === row.digest.trim();
         workspace.evidence.push({
           ...displayEvidence(row, valid && row.original_kind === 'original_utf8' ? bytes.toString('utf8') : ''),
@@ -1014,14 +1015,19 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     '/api/cases/:caseId/evidence/:evidenceId/original',
     {preHandler: authenticate, schema: {params: evidenceParamsSchema}},
     async (request, reply) => {
+      reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
       const actor = request.actor!;
       rejectClientRole(actor);
       const {caseId, evidenceId} = request.params as {caseId: string; evidenceId: string};
-      const evidence = await inTransaction(options.pool, async (client) => {
+      const {evidence,bytes} = await inTransaction(options.pool, async (client) => {
         await findCase(client, actor, caseId);
-        return findEvidence(client, actor, caseId, evidenceId);
+        const evidence=await findEvidence(client, actor, caseId, evidenceId);
+        const bytes=await verifiedBytes(options.storageRoot,evidence);
+        await writeAudit(client,actor,caseId,'evidence.original_read','evidence',evidenceId,
+          'Verified original prepared for download',
+          {sha256:evidence.digest.trim(),byteLength:bytes.length,originalKind:evidence.original_kind,authorityVersion:evidence.authority_version});
+        return {evidence,bytes};
       });
-      const bytes = await verifiedBytes(options.storageRoot, evidence);
       const encodedFilename = encodeURIComponent(evidence.filename).replace(/['()]/g, (char) =>
         `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
       return reply

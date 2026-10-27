@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: bounded previews and audited original access
+
+Based on PR #18 receipt `25944fc6d3565fe2b4e38554b8fd78c56fc26be7`; its six dispatcher scenarios passed hosted run #43 and #18 has no feedback. Continued into an independent original-access gap: workspace previews still used unbounded readFile, while explicit original downloads had no access event. Reused the existing bounded regular-file reader, removed the unused unbounded original helper, added no-store/nosniff to workspace/download handlers and committed minimal prepared-download audit metadata before delivery. Preserve exact text/binary bytes, acquisition authority and quarantine. No new schema or dependency. See docs/38_ORIGINAL_ACCESS_HARDENING.md.
+
+Local lint/types/build passed. Three added PostgreSQL scenarios cover actual HTTP preview replacement-file failures (including identical-byte symlink and FIFO), exact audited text/binary downloads, audit failure rollback and permission/corruption denials. Hosted execution pending; do not count these new scenarios as passing. Browser rendering/download acceptance, parser isolation, dedicated worker credentials, encrypted storage and device/restore remain unrun or incomplete. Nothing merged or deployed.
+
+Next: continue this branch after the hosted receipt and current review checks. Do not rebuild completed dispatcher/inspection/report slices. Next substantive WP-02 work is upload reservation plus bounded resumable chunks and verified finalisation through the existing evidence/authority/audit architecture, with interrupted upload/retry/corruption/revocation tests. Plan a staging lifecycle and cleanup policy without deleting custody records; keep the current 256 KiB original bound until downstream limits change coherently. Worker-specific credentials/storage capabilities, parser/runtime approvals/page citations, workspace pagination/preview access telemetry, releases and native/offline/restore remain open. No essential user decision; useful authorised work remains.
+
 ## 27 October: bounded case-scoped processing dispatch
 
 Based on PR #17 receipt `09be523fc80c0eb053518b737a089eb670568f62`; main remains PR #1 and PRs #2–#17 remain open, with no #17 feedback. Added atomic oldest-eligible selection with SKIP LOCKED, bounded sequential passes, shared named-job/dispatch claim and processing logic, a lab-only CLI without administrator configuration, and migration 010 candidate index. Existing authority, requester, lease fencing, immutable derivative and append-only event controls are reused. No public dispatch endpoint, parser, scheduler or findings. See docs/37_BOUNDED_PROCESSING_DISPATCH.md.

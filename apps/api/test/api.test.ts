@@ -2105,3 +2105,84 @@ test('dispatch authority lock timeout rolls back the claim and recorded source f
   const outcomes=await dispatchIntegrityJobs(context.pool!,context.storageRoot!,scope,2);
   assert.deepEqual(outcomes.results.map(r=>[r.jobId,r.status,r.failureCode]),[[first,'failed','digest_mismatch'],[second,'failed','digest_mismatch']]);
 });
+
+test('workspace previews bound original bytes and reject symlinks, directories, FIFOs and oversized replacements over HTTP',async()=>{
+  await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const text='Fictional bounded preview\n'+'x'.repeat(262144-Buffer.byteLength('Fictional bounded preview\n'));
+  const input=evidenceInput({text,expectedSha256:digest(text)}),evidence=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,input));
+  const row=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0];
+  const path=join(context.storageRoot!,row.object_path),copy=join(context.storageRoot!,`fictional-copy-${randomUUID()}.txt`);
+  await writeFile(copy,text);
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const preview=async()=>{
+      const response=await fetch(`${address}/api/workspace`,{headers:{cookie:context.demo!.cookie},signal:AbortSignal.timeout(5000)});
+      assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+      return (await response.json() as Workspace).evidence.find(e=>e.id===evidence.id)!;
+    };
+    const original=await preview();assert.equal(original.status,'Verified');assert.equal(original.text,text);
+    await writeFile(path,Buffer.alloc(262145,120));let result=await preview();assert.equal(result.status,'Original unavailable');assert.equal(result.text,'');
+    await writeFile(path,Buffer.alloc(262144,121));result=await preview();assert.equal(result.status,'Integrity mismatch');assert.equal(result.text,'');
+    await rm(path);await symlink(copy,path);result=await preview();assert.equal(result.status,'Original unavailable');assert.equal(result.text,'');
+    await rm(path);await mkdir(path);result=await preview();assert.equal(result.status,'Original unavailable');assert.equal(result.text,'');
+    await rm(path,{recursive:true});await promisify(execFile)('mkfifo',[path]);result=await preview();assert.equal(result.status,'Original unavailable');assert.equal(result.text,'');
+    await rm(path);result=await preview();assert.equal(result.status,'Original unavailable');assert.equal(result.text,'');
+    await writeFile(path,text);assert.equal((await preview()).text,text);
+  }finally{await app.close();await rm(path,{recursive:true,force:true});await writeFile(path,text);await rm(copy,{force:true});}
+});
+
+test('original downloads audit verified bytes before sending text and quarantined binary without cache or inline rendering',async()=>{
+  await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const input=evidenceInput(),text=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,input));
+  const bytes=Buffer.from([0,255,60,115,118,103,62,13,10]),hash=createHash('sha256').update(bytes).digest('hex');
+  const response=await request('POST',`/api/cases/${kase.id}/evidence/binary`,context.demo!,{payload:{filename:'fictional-original.svg',contentBase64:bytes.toString('base64'),expectedSha256:hash,sourceTime:'2026-01-01T00:00:00Z',method:'Fictional original download fixture',idempotencyKey:randomUUID()}});
+  assert.equal(response.statusCode,200,response.body);const binary=JSON.parse(response.body);
+  await approveAuthority(kase.id); // Access history records acquisition authority, not a fabricated new origin.
+  const app=await createAppInstance();
+  try{
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    for(const [evidence,expected] of [[text,Buffer.from(input.text)],[binary,bytes]] as const){
+      const download=await fetch(`${address}/api/cases/${kase.id}/evidence/${evidence.id}/original`,{headers:{cookie:context.demo!.cookie}});
+      assert.equal(download.status,200);assert.equal(download.headers.get('cache-control'),'no-store');assert.equal(download.headers.get('x-content-type-options'),'nosniff');
+      assert.match(download.headers.get('content-disposition')!,/^attachment;/);assert.equal(download.headers.get('x-inveos-original-state'),evidence.status);
+      assert.deepEqual(Buffer.from(await download.arrayBuffer()),expected);
+      if(evidence.id===binary.id)assert.equal(download.headers.get('content-type'),'application/octet-stream');
+    }
+    const audits=await context.pool!.query("SELECT actor_user_id,entity_id,metadata,summary FROM audit_events WHERE case_id=$1 AND action='evidence.original_read' ORDER BY created_at,id",[kase.id]);
+    assert.equal(audits.rowCount,2);
+    for(const audit of audits.rows){assert.equal(audit.actor_user_id,demoUserId);assert.equal(audit.summary,'Verified original prepared for download');assert.equal(audit.metadata.authorityVersion,1);assert.deepEqual(Object.keys(audit.metadata).sort(),['authorityVersion','byteLength','originalKind','sha256']);}
+    assert.deepEqual(audits.rows.map(r=>r.entity_id),[text.id,binary.id]);
+    assert.equal(audits.rows[1].metadata.sha256,hash);assert.equal(audits.rows[1].metadata.byteLength,bytes.length);assert.equal(audits.rows[1].metadata.originalKind,'opaque_binary');
+    const workspace=await(await fetch(`${address}/api/workspace`,{headers:{cookie:context.demo!.cookie}})).json() as Workspace;
+    assert.equal(workspace.evidence.find(e=>e.id===binary.id)!.status,'Quarantined');assert.equal(workspace.evidence.find(e=>e.id===binary.id)!.text,'');
+    assert.equal(workspace.findings.filter(f=>f.caseId===kase.id).length,0);
+  }finally{await app.close();}
+});
+
+test('original delivery fails closed on audit failure, corruption and revoked or unrelated access',async()=>{
+  await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const url=`/api/cases/${kase.id}/evidence/${evidence.id}/original`;
+  await context.schemaAdminPool!.query(`CREATE FUNCTION fail_original_audit_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    IF NEW.action='evidence.original_read' THEN RAISE EXCEPTION 'fictional read audit failure'; END IF; RETURN NEW; END $$`);
+  await context.schemaAdminPool!.query('CREATE TRIGGER fail_original_audit_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_original_audit_test()');
+  try {const response=await request('GET',url,context.demo!);assertError(response,500);assert.equal(response.headers['cache-control'],'no-store');assert.ok(!response.body.includes(sourceText()));}
+  finally {await context.schemaAdminPool!.query('DROP TRIGGER fail_original_audit_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_original_audit_test()');}
+  assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='evidence.original_read'",[kase.id])).rows[0].n,0);
+  assert.equal((await request('GET',url,context.demo!)).statusCode,200);
+  const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/evidence/${evidence.id}/original`,context.demo!),404);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional original outsider');assertError(await request('GET',url,await issueTestSession(outsider)),404);
+  const client=await createMember(demoTenantId,'client','Fictional original client');assertError(await request('GET',url,await issueTestSession(client)),403);
+  const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[tenant,'Fictional original foreign agency']);
+  const foreign=await createMember(tenant,'reviewer','Fictional foreign reviewer');assertError(await request('GET',url,await issueTestSession(foreign,tenant)),404);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
+  assertError(await request('GET',url,context.demo!),404);
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)',[demoTenantId,kase.id,demoUserId]);
+  const path=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0].object_path;
+  await writeFile(join(context.storageRoot!,path),'Fictional corruption after successful read');
+  const corrupt=await request('GET',url,context.demo!);assertError(corrupt,409);assert.equal(corrupt.headers['cache-control'],'no-store');
+  assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='evidence.original_read'",[kase.id])).rows[0].n,1);
+});
