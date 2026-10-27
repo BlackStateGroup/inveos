@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: upload staging maintenance and cancellation recovery
+
+Based on PR #22 receipt `e4315305c2caff1f6a2b34327eb46bcf9a40739f`; fresh main remains `95b5c35`, PRs #2–#22 open and #21/#22 have no feedback. Added owner/reviewer-scoped pending listing, explicit bounded reviewer expiry, reasoned reviewer cancellation of stranded uploads, and owner-only request-key lookup. Case locks serialise maintenance with finalisation; audit/state/chunk deletion commit atomically. Completed originals and immutable reservation/audit metadata remain. Added maintenance UI and guarded clearing of a server-confirmed cancelled chunk retry; legacy requests cannot be cleared through this protocol. Migration 012 adds a partial index only. See docs/42_UPLOAD_STAGING_MAINTENANCE.md.
+
+Local lint/types/build, cancelled-request helper checks and 42 Python tests passed before publication (final CI receipt pending). Five PostgreSQL scenarios added; no local PostgreSQL service available, so do not mark these run until hosted verification. Browser and real outage/device/restore remain unrun. No source/dependency incorporation, parser execution, merge or deployment.
+
+Next: record hosted results and exact implementation revision. Obtain actual browser acceptance on a supported sandboxed host. Continue case/evidence dependencies (worker privilege/storage boundaries, recovery/restore, explicit report release or basic evidential chronology) without treating lab slices as production completion. Automated maintenance scheduling, complete reservation history after tab/sign-in loss, actual parser/runtime/licence/isolation, encrypted storage, releases, offline/device/restore and wider product gates remain open. No essential user decision.
+
 ## 27 October: resumable upload client
 
 Based on PR #21 receipt `d501327b6df2b91888b00f909d36eee86dfc290e`; main remains PR #1 and #21 has no feedback. Wired file intake to reservation/status/chunk/finalisation, strict reservation/range/provenance checks, acknowledged-byte progress and pause/navigation abort. Existing whole-file pending records retain their original route to prevent duplicate originals; new operations use a separate chunk namespace. Reuses the existing fingerprint and final quarantine receipt guard. No schema/dependency/parser changes. See docs/41_RESUMABLE_UPLOAD_CLIENT.md.

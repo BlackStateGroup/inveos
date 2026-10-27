@@ -28,3 +28,17 @@ test('binary intake rejects invalid receipts and unavailable retry storage; late
  const next=randomUUID();await sendBinaryRecoverably(store,scope,caseId,input,async()=>{store.setItem(scope,JSON.stringify({...pendingBinary(store,scope),key:next}));return receipt(caseId,input);});assert.equal(pendingBinary(store,scope)!.key,next);
  store.setItem(scope,'broken');await assert.rejects(sendBinaryRecoverably(store,scope,caseId,input,async()=>{throw Error('Must not send');}),/invalid/);
 });
+
+test('cancelled retry reconciliation requires an exact terminal receipt and preserves changed or uncertain requests',async()=>{
+ const {clearCancelledBinary}=await import('../../web/src/binaryIntake.js');const store=storage(),caseId=randomUUID(),scope='test:chunks-v1',pending={key:randomUUID(),fingerprint:'a'.repeat(64)};
+ const save=()=>store.setItem(scope,JSON.stringify(pending));save();
+ const confirmed={id:randomUUID(),caseId,requestKey:pending.key,status:'cancelled',evidenceId:null};
+ for(const value of [{...confirmed,status:'open'},{...confirmed,status:'completed',evidenceId:randomUUID()},{...confirmed,caseId:randomUUID()},{...confirmed,requestKey:randomUUID()},{...confirmed,evidenceId:randomUUID()},{}]){
+  await assert.rejects(clearCancelledBinary(store,scope,caseId,async()=>value),/not confirmed/);assert.deepEqual(pendingBinary(store,scope),pending);
+ }
+ await assert.rejects(clearCancelledBinary(store,scope,caseId,async()=>{throw Error('lost response');}));assert.deepEqual(pendingBinary(store,scope),pending);
+ await assert.rejects(clearCancelledBinary(store,'legacy',caseId,async()=>confirmed),/Only chunk/);
+ await assert.rejects(clearCancelledBinary(store,scope,caseId,async()=>{store.setItem(scope,JSON.stringify({...pending,key:randomUUID()}));return confirmed;}),/changed/);assert.ok(pendingBinary(store,scope));
+ save();await assert.rejects(clearCancelledBinary({...store,removeItem:()=>{}},scope,caseId,async()=>confirmed),/could not be cleared/);
+ await clearCancelledBinary(store,scope,caseId,async key=>{assert.equal(key,pending.key);return confirmed;});assert.equal(pendingBinary(store,scope),null);
+});

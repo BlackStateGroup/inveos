@@ -1177,7 +1177,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2291,4 +2291,91 @@ test('actual chunk client resumes after committed chunk and completion acknowled
   const original=await fetch(`${address}/api/cases/${kase.id}/evidence/${receipt.id}/original`,{headers:{cookie:context.demo!.cookie}});assert.equal(original.status,200);assert.deepEqual(new Uint8Array(await original.arrayBuffer()),bytes);
   const counts=await context.pool!.query("SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM upload_reservations WHERE case_id=$1) AS reservations,(SELECT count(*)::int FROM upload_chunks WHERE case_id=$1) AS chunks",[kase.id]);assert.deepEqual(counts.rows[0],{originals:1,reservations:1,chunks:0});
  }finally{await app.close();}
+});
+
+async function expireUploadFixture(ids:string[]){
+ await context.schemaAdminPool!.query('ALTER TABLE upload_reservations DISABLE TRIGGER upload_identity');
+ try{await context.schemaAdminPool!.query("UPDATE upload_reservations SET expires_at=clock_timestamp()-interval '1 second' WHERE id=ANY($1::uuid[])",[ids]);}
+ finally{await context.schemaAdminPool!.query('ALTER TABLE upload_reservations ENABLE TRIGGER upload_identity');}
+}
+test('bounded reviewer expiry frees staging and quota, preserves identity and serialises concurrent HTTP passes',async()=>{
+ const {kase,base,input,id}=await uploadReservationFixture(Buffer.from('abc'));const ids=[id];
+ for(let i=0;i<9;i++){const r=await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200);ids.push(JSON.parse(r.body).id);}
+ for(const next of ids.slice(0,3))assert.equal((await request('POST',base+'/'+next+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}})).statusCode,200);
+ const original=await request('POST',base+'/'+ids[2]+'/complete',context.demo!,{payload:{}});assert.equal(original.statusCode,200);const evidence=JSON.parse(original.body) as Evidence;
+ await expireUploadFixture(ids.slice(0,3));
+ const before=(await context.pool!.query('SELECT metadata,created_at,expires_at,authority_version,idempotency_key FROM upload_reservations WHERE id=$1',[id])).rows[0];
+ const list=await request('GET',base,context.demo!);assert.equal(list.headers['cache-control'],'no-store');const listing=JSON.parse(list.body);assert.equal(listing.canManage,true);assert.equal(listing.items.length,9);assert.equal(listing.items.filter((x:{expired:boolean})=>x.expired).length,2);assert.equal('metadata' in listing.items[0],false);
+ const app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0});
+  const expire=async()=>{const r=await fetch(address+base+'/expire',{method:'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},body:'{"limit":1}'});assert.equal(r.status,200);return r.json() as Promise<{caseId:string;expired:string[]}>;};
+  const both=await Promise.all([expire(),expire()]);assert.equal(new Set(both.flatMap(r=>r.expired)).size,2);assert.ok(both.every(r=>r.caseId===kase.id&&r.expired.length===1));assert.deepEqual((await expire()).expired,[]);
+ }finally{await app.close();}
+ const after=(await context.pool!.query('SELECT metadata,created_at,expires_at,authority_version,idempotency_key FROM upload_reservations WHERE id=$1',[id])).rows[0];assert.deepEqual(after,before);
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM upload_chunks WHERE case_id=$1',[kase.id])).rows[0].n,0);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='upload.expired'",[kase.id])).rows[0].n,2);
+ assert.equal(JSON.parse((await request('GET',base+'/'+ids[2],context.demo!)).body).status,'completed');
+ const download=await request('GET',`/api/cases/${kase.id}/evidence/${evidence.id}/original`,context.demo!);assert.equal(download.statusCode,200);assert.equal(download.body,'abc');
+ assertError(await request('POST',base+'/'+id+'/complete',context.demo!,{payload:{}}),409);
+ for(let i=0;i<3;i++)assert.equal((await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}})).statusCode,200);
+ assertError(await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}}),409);
+});
+test('reviewer staging administration recovers revoked owners without disclosing their source metadata or accepting client access',async()=>{
+ const {kase,base,input,id}=await uploadReservationFixture(Buffer.from('abc'));
+ const colleague=await createMember(demoTenantId,'investigator','Fictional stranded uploader');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,kase.id,colleague]);const session=await issueTestSession(colleague);
+ const r=await request('POST',base,session,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200);const otherId=JSON.parse(r.body).id as string;
+ await request('POST',base+'/'+otherId+'/chunk',session,{payload:{ordinal:0,contentBase64:'YWJj'}});
+ const list=JSON.parse((await request('GET',base,session)).body);assert.equal(list.canManage,false);assert.deepEqual(list.items.map((x:{id:string})=>x.id),[otherId]);assert.equal(list.items[0].owned,true);
+ for(const suffix of ['/expire','/'+id+'/reviewer-cancel'])assertError(await request('POST',base+suffix,session,{payload:suffix==='/expire'?{limit:10}:{reason:'Fictional cancellation'}}),403);
+ assertError(await request('POST',base+'/'+id+'/cancel',session,{payload:{}}),404);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,colleague]);assertError(await request('GET',base,session),404);
+ const cancel=()=>request('POST',base+'/'+otherId+'/reviewer-cancel',context.demo!,{payload:{reason:'Fictional uploader assignment ended'}});
+ assert.equal(JSON.parse((await cancel()).body).status,'cancelled');assert.equal((await cancel()).statusCode,200);
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM upload_chunks WHERE upload_id=$1',[otherId])).rows[0].n,0);
+ const events=await context.pool!.query("SELECT actor_user_id,metadata FROM audit_events WHERE entity_id=$1 AND action='upload.reviewer_cancelled'",[otherId]);assert.equal(events.rowCount,1);assert.deepEqual(events.rows[0],{actor_user_id:demoUserId,metadata:{reason:'Fictional uploader assignment ended',removedChunks:1}});
+ const outsider=await createMember(demoTenantId,'reviewer','Fictional unrelated reviewer');const outsiderSession=await issueTestSession(outsider);
+ const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[foreignTenant,'Fictional maintenance agency']);const foreign=await createMember(foreignTenant,'reviewer','Fictional foreign maintainer');
+ const client=await createMember(demoTenantId,'client','Fictional maintenance client');
+ for(const [denied,status] of [[outsiderSession,404],[await issueTestSession(foreign,foreignTenant),404],[await issueTestSession(client),403]] as const){
+  assertError(await request('GET',base,denied),status);
+  assertError(await request('POST',base+'/expire',denied,{payload:{limit:10}}),status);
+  assertError(await request('POST',base+'/'+id+'/reviewer-cancel',denied,{payload:{reason:'Fictional cancellation'}}),status);
+ }
+ assertError(await request('POST',base+'/expire',context.demo!,{payload:{limit:10},csrfHeader:false}),403);
+ for(const limit of [0,11,1.5])assertError(await request('POST',base+'/expire',context.demo!,{payload:{limit}}),422);
+ assertError(await request('POST',base+'/'+id+'/reviewer-cancel',context.demo!,{payload:{reason:'          '}}),422);
+ const wrong=await createCase();assertError(await request('POST',`/api/cases/${wrong.id}/uploads/${id}/reviewer-cancel`,context.demo!,{payload:{reason:'Fictional cancellation'}}),404);
+});
+test('staging maintenance audit failure rolls back all bytes and state, then safely retries after authority changes',async()=>{
+ const {kase,base,id}=await uploadReservationFixture(Buffer.from('abc'));
+ await request('POST',base+'/'+id+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}});await expireUploadFixture([id]);await approveAuthority(kase.id);
+ await context.schemaAdminPool!.query(`CREATE FUNCTION fail_maintenance_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action IN ('upload.expired','upload.reviewer_cancelled') THEN RAISE EXCEPTION 'fictional maintenance audit failure'; END IF; RETURN NEW; END $$`);
+ await context.schemaAdminPool!.query('CREATE TRIGGER fail_maintenance_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_maintenance_test()');
+ try{
+  assertError(await request('POST',base+'/expire',context.demo!,{payload:{limit:10}}),500);
+  assertError(await request('POST',base+'/'+id+'/reviewer-cancel',context.demo!,{payload:{reason:'Fictional cancellation'}}),500);
+ }finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_maintenance_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_maintenance_test()');}
+ const status=JSON.parse((await request('GET',base+'/'+id,context.demo!)).body);assert.equal(status.status,'open');assert.deepEqual(status.received,[0]);
+ assert.deepEqual(JSON.parse((await request('POST',base+'/expire',context.demo!,{payload:{limit:10}})).body).expired,[id]);
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM evidence WHERE case_id=$1',[kase.id])).rows[0].n,0);
+});
+test('reviewer cancellation races with finalisation without losing originals or leaving staged bytes',async()=>{
+ const {kase,base,id}=await uploadReservationFixture(Buffer.from('abc'));await request('POST',base+'/'+id+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}});
+ const [complete,cancel]=await Promise.all([request('POST',base+'/'+id+'/complete',context.demo!,{payload:{}}),request('POST',base+'/'+id+'/reviewer-cancel',context.demo!,{payload:{reason:'Fictional race cancellation'}})]);
+ const state=JSON.parse((await request('GET',base+'/'+id,context.demo!)).body);
+ if(state.status==='completed'){assert.equal(complete.statusCode,200);assertError(cancel,409);assertError(await request('POST',base+'/'+id+'/reviewer-cancel',context.demo!,{payload:{reason:'Fictional repeat cancellation'}}),409);}
+ else{assert.equal(state.status,'cancelled');assert.equal(cancel.statusCode,200);assertError(complete,409);}
+ const counts=await context.pool!.query('SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM upload_chunks WHERE case_id=$1) AS chunks',[kase.id]);assert.deepEqual(counts.rows[0],{originals:state.status==='completed'?1:0,chunks:0});
+});
+
+test('cancelled upload lookup reconciles the actual client retry without permitting another owner or a live request to clear it',async()=>{
+ const {clearCancelledBinary,pendingBinary}=await import('../../web/src/binaryIntake.js');
+ const {kase,base,input,id}=await uploadReservationFixture(Buffer.from('abc')),scope='fictional:chunks-v1',entries=new Map<string,string>(),store={getItem:(k:string)=>entries.get(k)??null,setItem:(k:string,v:string)=>{entries.set(k,v);},removeItem:(k:string)=>{entries.delete(k);}};
+ store.setItem(scope,JSON.stringify({key:input.idempotencyKey,fingerprint:'a'.repeat(64)}));
+ const lookup=async(key:string)=>{const response=await request('GET',base+'/by-key/'+key,context.demo!);assert.equal(response.statusCode,200);return JSON.parse(response.body);};
+ await assert.rejects(clearCancelledBinary(store,scope,kase.id,lookup),/not confirmed/);assert.ok(pendingBinary(store,scope));
+ const other=await createMember(demoTenantId,'reviewer','Fictional lookup reviewer');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,kase.id,other]);assertError(await request('GET',base+'/by-key/'+input.idempotencyKey,await issueTestSession(other)),404);
+ assertError(await request('GET',base+'/by-key/'+randomUUID(),context.demo!),404);
+ assert.equal((await request('POST',base+'/'+id+'/cancel',context.demo!,{payload:{}})).statusCode,200);
+ await clearCancelledBinary(store,scope,kase.id,lookup);assert.equal(pendingBinary(store,scope),null);
+ const replacement=await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(replacement.statusCode,200);assert.notEqual(JSON.parse(replacement.body).id,id);
 });

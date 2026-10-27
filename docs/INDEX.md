@@ -77,3 +77,5 @@
 - [Resumable binary upload API](40_RESUMABLE_UPLOAD_API.md) — reservations, bounded chunks, verified finalisation and cancellation.
 
 - [Resumable upload client](41_RESUMABLE_UPLOAD_CLIENT.md) — missing-range transfer, acknowledged progress, pause and safe legacy retries.
+
+- [Upload staging maintenance](42_UPLOAD_STAGING_MAINTENANCE.md) — bounded expiry, reviewer cancellation and confirmed cancelled-request recovery.

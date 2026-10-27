@@ -28,3 +28,14 @@ export async function sendBinaryRecoverably(store:Store,scope:string,caseId:stri
   if(pendingBinary(store,scope)?.key===pending.key){store.removeItem(scope);if(pendingBinary(store,scope)?.key===pending.key)throw new Error('Original saved; retry record could not be cleared. Recover its receipt.');}
   return value;
 }
+
+/** Clear only a server-confirmed terminal cancellation in the chunk protocol namespace. */
+export async function clearCancelledBinary(store:Store,scope:string,caseId:string,lookup:(key:string)=>Promise<unknown>):Promise<void>{
+ if(!scope.endsWith(':chunks-v1')||!uuid.test(caseId))throw new Error('Only chunk reservations support cancellation recovery.');
+ const pending=pendingBinary(store,scope);if(!pending)throw new Error('No pending chunk request.');
+ const value=await lookup(pending.key) as {id?:string;caseId?:string;requestKey?:string;status?:string;evidenceId?:string|null};
+ if(!value||typeof value.id!=='string'||!uuid.test(value.id)||value.caseId!==caseId||value.requestKey!==pending.key||value.status!=='cancelled'||value.evidenceId!==null)throw new Error('Cancellation is not confirmed. Retain the retry key and recover or inspect the original receipt.');
+ const current=pendingBinary(store,scope);
+ if(current?.key!==pending.key||current.fingerprint!==pending.fingerprint)throw new Error('Pending request changed; nothing cleared.');
+ store.removeItem(scope);if(store.getItem(scope)!==null)throw new Error('Retry storage could not be cleared.');
+}

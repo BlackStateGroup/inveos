@@ -7,7 +7,7 @@ import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
  findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<{status:string;authority_version:number|null}>;
- audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>;
+ audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>;
  receive:(a:Actor,caseId:string,input:BinaryEvidenceInput,uploadId:string)=>Promise<Evidence>;
  receipt:(a:Actor,caseId:string,id:string)=>Promise<Evidence>;
  validFilename:(s:string,b:boolean)=>boolean;validSourceTime:(s:string)=>boolean};
@@ -17,6 +17,65 @@ const params={type:'object',required:['caseId','uploadId'],additionalProperties:
 const empty={type:'object',additionalProperties:false,maxProperties:0};
 export function registerUploads(app:FastifyInstance,s:Services){
  const base='/api/cases/:caseId/uploads';
+ // All lifecycle mutations take the same case lock as intake/finalisation.
+ // Staging is transient; reservation identity and completed evidence are retained.
+ app.get(base,{preHandler:s.authenticate,schema:{params:caseParams}},async(request,reply)=>{
+  reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
+  const actor=request.actor!,{caseId}=request.params as {caseId:string};
+  if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
+  return inTransaction(s.pool,async c=>{
+   await s.findCase(c,actor,caseId);
+   const rows=await c.query(`SELECT id,case_id,status,byte_length,authority_version,expires_at,evidence_id,
+     created_by=$3 AS owned,expires_at<=statement_timestamp() AS expired
+     FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND status='open'
+     AND ($4::boolean OR created_by=$3) ORDER BY expires_at,id LIMIT 10`,[actor.tenantId,caseId,actor.userId,actor.role==='reviewer']);
+   return {canManage:actor.role==='reviewer',items:rows.rows.map(r=>({...dto(r),owned:r.owned,expired:r.expired}))};
+  });
+ });
+ app.get(base+'/by-key/:requestKey',{preHandler:s.authenticate,schema:{params:{type:'object',additionalProperties:false,required:['caseId','requestKey'],properties:{caseId:uuid,requestKey:uuid}}}},async(request,reply)=>{
+  reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,requestKey}=request.params as {caseId:string;requestKey:string};
+  if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
+  return inTransaction(s.pool,async c=>{
+   await s.findCase(c,actor,caseId);
+   const found=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,requestKey]);
+   if(!found.rows[0])notFound();return {...dto(found.rows[0]),requestKey};
+  });
+ });
+ app.post(base+'/expire',{preHandler:s.requireCsrf,schema:{params:caseParams,body:{type:'object',additionalProperties:false,required:['limit'],properties:{limit:{type:'integer',minimum:1,maximum:10}}}}},async(request,reply)=>{
+  reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId}=request.params as {caseId:string};
+  if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required for staging maintenance.');
+  const {limit}=request.body as {limit:number};
+  return inTransaction(s.pool,async c=>{
+   await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");
+   await s.findCase(c,actor,caseId,true);
+   const rows=await c.query(`SELECT id FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2
+    AND status='open' AND expires_at<=statement_timestamp() ORDER BY expires_at,id LIMIT $3 FOR UPDATE`,[actor.tenantId,caseId,limit]);
+   for(const row of rows.rows){
+    const keys=[actor.tenantId,caseId,row.id];
+    await c.query("UPDATE upload_reservations SET status='cancelled' WHERE tenant_id=$1 AND case_id=$2 AND id=$3",keys);
+    const removed=await c.query('DELETE FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3',keys);
+    await s.audit(c,actor,caseId,'upload.expired','upload',row.id,'Expired upload closed; staging bytes removed',{removedChunks:removed.rowCount});
+   }
+   return {caseId,expired:rows.rows.map(r=>r.id as string)};
+  });
+ });
+ app.post(base+'/:uploadId/reviewer-cancel',{preHandler:s.requireCsrf,schema:{params,body:{type:'object',additionalProperties:false,required:['reason'],properties:{reason:{type:'string',minLength:10,maxLength:500}}}}},async(request,reply)=>{
+  reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,uploadId}=request.params as {caseId:string;uploadId:string};
+  if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required for staging maintenance.');
+  const reason=(request.body as {reason:string}).reason.trim();if(reason.length<10)throw new ApiError(422,'Explain why this pending upload must be cancelled.');
+  return inTransaction(s.pool,async c=>{
+   await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");
+   await s.findCase(c,actor,caseId,true);const keys=[actor.tenantId,caseId,uploadId];
+   const found=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE',keys),row=found.rows[0];if(!row)notFound();
+   if(row.status==='completed')throw new ApiError(409,'Completed originals cannot be cancelled as staging.');
+   if(row.status==='open'){
+    await c.query("UPDATE upload_reservations SET status='cancelled' WHERE tenant_id=$1 AND case_id=$2 AND id=$3",keys);
+    const removed=await c.query('DELETE FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3',keys);
+    await s.audit(c,actor,caseId,'upload.reviewer_cancelled','upload',uploadId,'Reviewer cancelled pending upload; staging bytes removed',{reason,removedChunks:removed.rowCount});row.status='cancelled';
+   }
+   return dto(row);
+  });
+ });
  app.post(base,{preHandler:s.requireCsrf,schema:{params:caseParams,body:{type:'object',additionalProperties:false,required:['filename','sourceTime','method','expectedSha256','byteLength','idempotencyKey'],properties:{filename:{type:'string',minLength:5,maxLength:128},sourceTime:{type:'string',maxLength:64},method:{type:'string',minLength:5,maxLength:500},expectedSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},byteLength:{type:'integer',minimum:1,maximum:262144},idempotencyKey:uuid}}}},async(request,reply)=>{
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId}=request.params as {caseId:string};
   const input=request.body as Omit<BinaryEvidenceInput,'contentBase64'>&{byteLength:number};
