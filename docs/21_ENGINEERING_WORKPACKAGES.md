@@ -8,7 +8,7 @@ PR #1 (`95b5c35`) is merged. PR #2 (`36081f1`) is a separate draft research slic
 
 | Package | Implemented slice | Remaining gate |
 |---|---|---|
-| WP-00 | TS workspaces, lockfile, schemas/contracts, migrations, lint/type/build commands and database harness | Hosted CI evidence, secret scanning and remaining scaffold/policy checks; CI implementation is in this change |
+| WP-00 | TS workspaces, lockfile, schemas/contracts, migrations, lint/type/build commands, database harness and passing hosted CI in PR #3 | Secret scanning and remaining scaffold/policy checks; see the [CI receipt](14_TEST_PLAN.md#verification-receipt--27-october-2026) |
 | WP-01 | Synthetic case/authority, demo session and selected role/tenant/case denials | Real identity/MFA, invitations, membership administration and full resource isolation |
 | WP-02 | UTF-8 original intake, digests, local store, audit and idempotency | Encrypted object storage, binary/resumable intake, quarantine, holds and recovery |
 | WP-03 | Broad prototype; persistent case/evidence/manual-review workflow | Persistent tasks/notes/objectives, chronology/search and complete browser acceptance |
@@ -21,7 +21,7 @@ PR #1 (`95b5c35`) is merged. PR #2 (`36081f1`) is a separate draft research slic
 | WP-13 | Plans and local test evidence only | Production operations, restore/security/privacy evidence and pilot sign-off |
 | WP-14–WP-18 | Planned additions below | Their individual exit gates |
 
-The next unblocked implementation is the WP-00 CI slice. It does not require selecting production identity/storage providers or merging PR #2. Research worker execution remains gated on a host with proven isolation.
+PR #3 implements and tests the WP-00 CI slice without selecting production identity/storage providers or merging PR #2. Remaining WP-00 work includes secret scanning; the next application slices are WP-01 real identity/access and WP-02 encrypted storage after their provider/region decisions. Research worker execution remains gated on a host with proven isolation.
 
 ## WP-00 — Repository scaffold and policy (P0)
 

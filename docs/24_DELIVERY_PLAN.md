@@ -22,6 +22,11 @@ retain their identifiers; the [roadmap](13_ROADMAP.md) gives delivery order.
 - Most broad UI interactions reset on reload. Field and Client Portal are
   illustrative. See [application boundaries and the 26 October verification
   receipt](23_LOCAL_APPLICATION.md) and [local run instructions](../LOCAL_RUN.md).
+- [PR #3](https://github.com/BlackStateGroup/inveos/pull/3) implements the CI
+  baseline and this scope reconciliation. Hosted checks passed for its
+  `f8080132657ed6a890e1b4ba0ffa43b91b40fe16` revision; see the
+  [verification receipt](14_TEST_PLAN.md#verification-receipt--27-october-2026).
+  This is a draft change, not merged product functionality.
 - No capability has evidence here of production deployment or pilot acceptance.
   A local lab test does not establish either state.
 
@@ -64,8 +69,8 @@ the remaining scope is **planned**, with no deployment or pilot acceptance.
 | 12. Client portal | WP-08 | Fixed fictional preview only | Separate release dataset and identity; explicit investigator approval, expiry, revocation and acknowledgements |
 | 13. Team coordination | WP-17, WP-12 | Illustrative assignments; no operational collaboration | Assignments, comments/mentions, review queues, handovers, workloads and useful notifications with preferences |
 | 14. Interface depth | WP-03, WP-16 | Broad prototype and recorded manual inspection in PR #1 | Persistent search/filter/saved views, bulk actions, keyboard use, side-by-side source review and large-case tests |
-| 15. Reliability/operations | WP-00, WP-02, WP-13 | Local migration/runbook and scoped API test harness | Repeatable environments/CI, monitored jobs, cost/quotas, backups/restores, retention/holds/deletion and audited support access |
-| 16. System verification | All, WP-13 | PR #1 database/browser receipt; current checks belong in this change's receipt | Representative synthetic corpus, measured citations/extraction/entity errors and full intake-to-verified-delivery test |
+| 15. Reliability/operations | WP-00, WP-02, WP-13 | Local migration/runbook and API harness; CI implemented and hosted-tested in draft PR #3 | Secret scanning, repeatable environments, monitored jobs, cost/quotas, backups/restores, retention/holds/deletion and audited support access |
+| 16. System verification | All, WP-13 | PR #1 database/browser receipt and [PR #3 CI/API receipt](14_TEST_PLAN.md#verification-receipt--27-october-2026) | Representative synthetic corpus, measured citations/extraction/entity errors and full intake-to-verified-delivery test |
 | 17. Customer/offer | WP-18, WP-12 | Hypotheses only; no validated demand or pricing | Observe corporate due-diligence/internal-investigation users, recruit pilots, validate value, costs, templates and support |
 | 18. Build discipline | WP-00 and every package | Packages and acceptance criteria exist; this ledger reconciles them | Select the next unblocked slice, implement, verify and open a draft PR with evidence and remaining gates |
 
@@ -121,7 +126,7 @@ declared complete when M1 passes.
 
 | Order | Slice | Dependencies / exit |
 |---|---|---|
-| Now | WP-00 CI baseline | Existing lockfile/test harness; lint, every workspace typecheck, web build, Python checks and real PostgreSQL API tests run on PRs without private credentials |
+| Implemented/tested in draft PR #3 | WP-00 CI baseline | Lint, every workspace typecheck, web build, Python checks and real PostgreSQL API tests passed on the hosted PR run without private credentials; full WP-00 remains partial |
 | Next | WP-01 identity/access design and implementation | Record identity provider, region and invitation/revocation decisions before adopting a service; use synthetic users and cross-tenant/case negative tests |
 | Next | WP-02 encrypted storage and binary intake | Identity/policy boundary, approved storage/encryption choice and original-byte receipt/recovery tests |
 | Parallel research prerequisite | WP-05 isolated PDF/OCR experiment | Review PR #2 at its exact revision; suitable host plus resolved artifacts/licences/SBOM and proven worker restrictions; no silent merge or application dependency adoption |
