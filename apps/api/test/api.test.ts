@@ -1609,3 +1609,38 @@ test('freezing requires reviewed findings and rolls back its revision when audit
   assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_revisions WHERE case_id=$1',[kase.id])).rows[0].n,0);
   const retried=await request('POST',url,context.demo!,{payload:input});assert.equal(retried.statusCode,200,retried.body);
 });
+
+test('report freeze keeps one real database snapshot when a case edit commits between assembler queries',async()=>{
+  const {kase,url}=await reportFixture();
+  const pool=context.pool!,connect=pool.connect.bind(pool);
+  let edited=false;
+  // Coordinate an actual second PostgreSQL connection after the findings SELECT.
+  // No query results are mocked; restore the instrumented client before returning it to the pool.
+  pool.connect=(async()=>{
+    const client=await connect(),query=client.query.bind(client),release=client.release.bind(client);
+    client.query=(async(sql:string,values?:unknown[])=>{
+      const result=await query(sql,values);
+      if(!edited && sql.includes('SELECT f.id AS finding_id')) {
+        edited=true;
+        await context.schemaAdminPool!.query('UPDATE cases SET scope=$2 WHERE id=$1',[kase.id,'Fictional scope edited during report assembly']);
+      }
+      return result;
+    }) as typeof client.query;
+    client.release=()=>{client.query=query;client.release=release;release();};
+    return client;
+  }) as typeof pool.connect;
+  let frozen;
+  try {frozen=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});} finally {pool.connect=connect;}
+  assert.equal(frozen.statusCode,200,frozen.body);assert.equal(edited,true);
+  const id=JSON.parse(frozen.body).id;
+  const app=await createAppInstance();
+  try {
+    const address=await app.listen({host:'127.0.0.1',port:0});
+    const response=await fetch(`${address}${url}/${id}`,{headers:{cookie:context.demo!.cookie}});
+    assert.equal(response.status,200);
+    const raw=await response.text();assert.equal(digest(raw),JSON.parse(frozen.body).sha256);
+    assert.equal(JSON.parse(raw).case.scope,kase.scope);
+  } finally {await app.close();}
+  const current=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);
+  assert.equal(JSON.parse(current.body).case.scope,'Fictional scope edited during report assembly');
+});

@@ -2,11 +2,11 @@
 
 ## 27 October: frozen internal report revisions
 
-Based on PR #11 receipt `b9592a573ee07bcbbfc33cc64f830ff159dd50ba`; main remains PR #1 and PR #11 has no review feedback. Added migration 007, consistent repeatable-read report assembly, idempotent immutable revision creation with atomic audit, and scoped integrity-checked exact-byte download. Reuses existing original/review verification and offline report/package tools. Added three PostgreSQL scenarios covering concurrent retry, restart, independent verification, access/revocation, corruption and audit rollback. See docs/31_FROZEN_REPORT_REVISIONS.md.
+Based on PR #11 receipt `b9592a573ee07bcbbfc33cc64f830ff159dd50ba`; main remains PR #1 and PR #11 has no review feedback. Added migration 007, consistent repeatable-read report assembly, idempotent immutable revision creation with atomic audit, and scoped integrity-checked exact-byte download. Reuses existing original/review verification and offline report/package tools. Added four PostgreSQL scenarios covering concurrent retry, restart, independent verification, access/revocation, corruption, audit rollback and a real second-connection edit between assembler queries with actual TCP download. See docs/31_FROZEN_REPORT_REVISIONS.md.
 
 Local lint/type/build and 42 Python tests pass; hosted database results pending. No new dependencies/source, parser execution, browser/device/restore claim, production deployment or merge. Snapshot access checks do not promise revocation of an already in-flight response.
 
-Next: inspect this draft and feedback, then add revision listing/selection and actual HTTP/browser export flow, bounded streaming assembly and deterministic concurrent-edit snapshot tests; continue original page review only with approved isolated parsers. Signed custody, release controls, recoverable uploads, production identity/storage and wider product gates remain open. No user action is required.
+Next: inspect this draft and feedback, then add revision listing/selection and actual HTTP/browser export flow, bounded streaming assembly; continue original page review only with approved isolated parsers. Signed custody, release controls, recoverable uploads, production identity/storage and wider product gates remain open. No user action is required.
 
 ## 27 October: explicit source occurrences and immutable reviewed citations
 
