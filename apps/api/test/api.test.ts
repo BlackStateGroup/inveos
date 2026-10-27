@@ -1612,6 +1612,7 @@ test('freezing requires reviewed findings and rolls back its revision when audit
 
 test('report freeze keeps one real database snapshot when a case edit commits between assembler queries',async()=>{
   const {kase,url}=await reportFixture();
+  const scopeBefore=JSON.parse((await request('GET',`/api/cases/${kase.id}/report`,context.demo!)).body).case.scope;
   const pool=context.pool!;
   const originals=new Map<import('pg').PoolClient,import('pg').PoolClient['query']>();
   let edited=false;
@@ -1643,7 +1644,7 @@ test('report freeze keeps one real database snapshot when a case edit commits be
     const response=await fetch(`${address}${url}/${id}`,{headers:{cookie:context.demo!.cookie}});
     assert.equal(response.status,200);
     const raw=await response.text();assert.equal(digest(raw),JSON.parse(frozen.body).sha256);
-    assert.equal(JSON.parse(raw).case.scope,kase.scope);
+    assert.equal(JSON.parse(raw).case.scope,scopeBefore);
   } finally {await app.close();}
   const current=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);
   assert.equal(JSON.parse(current.body).case.scope,'Fictional scope edited during report assembly');
