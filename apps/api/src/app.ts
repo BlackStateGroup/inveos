@@ -19,6 +19,7 @@ import type {
   ReviewInput,
   Workspace,
 } from '@inveos/contracts';
+import { exactSpan, selectSourceSpan } from './source-span.js';
 import { registerIntegrityJobs } from './integrity-jobs.js';
 import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
@@ -193,6 +194,8 @@ const claimBodySchema = {
     evidenceId: uuidSchema,
     text: {type: 'string', minLength: 1, maxLength: 2000},
     quote: {type: 'string', minLength: 1, maxLength: 4000},
+    sourceStartByte: {type: 'integer', minimum: 0, maximum: 262144},
+    sourceEndByte: {type: 'integer', minimum: 1, maximum: 262144},
   },
 } as const;
 const reviewBodySchema = {
@@ -363,6 +366,9 @@ function displayClaim(row: ClaimRow): Claim {
     quote: row.quote,
     status: row.status,
     reason: row.reason ?? undefined,
+    sourceStartByte: row.source_start_byte,
+    sourceEndByte: row.source_end_byte,
+    sourceDigest: row.source_digest.trim(),
   };
 }
 
@@ -1046,16 +1052,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         const evidence = await findEvidence(client, actor, caseId, input.evidenceId);
         requireTextOriginal(evidence);
         const bytes = await verifiedBytes(options.storageRoot, evidence);
-        const sourceText = bytes.toString('utf8');
-        if (!Buffer.from(sourceText, 'utf8').equals(bytes)) {
-          throw new ApiError(409, 'The cited original is not valid UTF-8 text.');
-        }
-        const charOffset = sourceText.indexOf(input.quote);
-        if (charOffset < 0) {
-          throw new ApiError(422, 'The quoted source text is not an exact substring of the original.');
-        }
-        const startByte = Buffer.byteLength(sourceText.slice(0, charOffset), 'utf8');
-        const endByte = startByte + Buffer.byteLength(input.quote, 'utf8');
+        const {startByte,endByte}=selectSourceSpan(bytes,input.quote,input.sourceStartByte,input.sourceEndByte);
         const inserted = await client.query<ClaimRow>(
           `INSERT INTO claims
              (tenant_id, case_id, id, evidence_id, authority_id, authority_version, text, quote,
@@ -1129,7 +1126,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
             const bytes = await verifiedBytes(options.storageRoot, evidence);
             if (
               evidence.digest.trim() !== claim.source_digest.trim()
-              || bytes.subarray(claim.source_start_byte, claim.source_end_byte).toString('utf8') !== claim.quote
+              || !exactSpan(bytes,claim.quote,claim.source_start_byte,claim.source_end_byte)
+              || previous.rows[0].source_digest.trim()!==claim.source_digest.trim()
+              || previous.rows[0].source_start_byte!==claim.source_start_byte
+              || previous.rows[0].source_end_byte!==claim.source_end_byte
             ) {
               throw new ApiError(409, 'The claim source link no longer verifies.');
             }
@@ -1150,12 +1150,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           evidence = await findEvidence(client, actor, caseId, claim.evidence_id);
           requireTextOriginal(evidence);
           bytes = await verifiedBytes(options.storageRoot, evidence);
-          const quoteBytes = Buffer.from(claim.quote, 'utf8');
-          const span = bytes.subarray(claim.source_start_byte, claim.source_end_byte);
+
           if (
             evidence.digest.trim() !== claim.source_digest.trim()
-            || span.length !== quoteBytes.length
-            || !span.equals(quoteBytes)
+            || !exactSpan(bytes,claim.quote,claim.source_start_byte,claim.source_end_byte)
           ) {
             throw new ApiError(409, 'The claim source link no longer verifies.');
           }
@@ -1232,11 +1230,14 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       await inTransaction(options.pool, async (client) => findCase(client, actor, caseId));
       const result = await options.pool.query(
         `SELECT f.id AS finding_id, f.text AS finding_text, f.reviewed_at, reviewer.display_name AS reviewer,
-                cl.evidence_id, cl.quote, cl.source_start_byte, cl.source_end_byte, cl.source_digest,
+                cl.id AS claim_id, cl.evidence_id, cl.quote, cl.source_start_byte, cl.source_end_byte, cl.source_digest,
+                r.claim_id AS review_claim_id, r.accepted AS review_accepted, r.source_digest AS review_digest,
+                r.source_start_byte AS review_start_byte, r.source_end_byte AS review_end_byte,
                 e.filename, e.byte_length, e.source_time, e.received_time, e.digest, e.object_path, e.original_kind, e.status,
                 e.authority_id, e.authority_version, a.purpose, a.lawful_basis, a.scope,
                 a.retention_days, a.minimisation, a.approved_at, policy_user.display_name AS approved_by
            FROM findings f
+           JOIN reviews r ON r.tenant_id=f.tenant_id AND r.case_id=f.case_id AND r.id=f.review_id
            JOIN claims cl
              ON cl.tenant_id = f.tenant_id AND cl.case_id = f.case_id AND cl.id = f.claim_id
            JOIN evidence e
@@ -1273,12 +1274,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         const evidence = row as EvidenceRow;
         requireTextOriginal(evidence);
         const bytes = await verifiedBytes(options.storageRoot, evidence);
-        const quoteBytes = Buffer.from(row.quote, 'utf8') as Buffer;
-        const span = bytes.subarray(row.source_start_byte, row.source_end_byte);
+
         if (
           row.source_digest.trim() !== evidence.digest.trim()
-          || span.length !== quoteBytes.length
-          || !span.equals(quoteBytes)
+          || !exactSpan(bytes,row.quote,row.source_start_byte,row.source_end_byte)
+          || !row.review_accepted || row.review_claim_id!==row.claim_id
+          || row.review_digest.trim()!==row.source_digest.trim()
+          || row.review_start_byte!==row.source_start_byte || row.review_end_byte!==row.source_end_byte
         ) {
           throw new ApiError(409, 'A cited source link no longer verifies.');
         }

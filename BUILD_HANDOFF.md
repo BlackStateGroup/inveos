@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: explicit source occurrences and immutable reviewed citations
+
+Stacked on PR #10 receipt `4f0ce43d2c93c2dfcb72a888edbbfbc4503748ff`. While reviewing the new line-index boundary, found that original-text proposals silently selected the first repeated quotation and accepted-review replay used replacement decoding. Implemented explicit paired original-byte spans, fail-closed ambiguity, an occurrence selector in the existing form, immutable claim assertion/source identity (migration 006), exact replay checks and report checks against the actual persisted review range/digest. Existing human review and original evidence architecture are preserved; this does not create PDF/derivative claims.
+
+Added three PostgreSQL scenarios, including second Unicode occurrence through actual offline report verification, invalid/missing/split-character ranges, append-only provenance and post-review corruption. Local lint/types/build/source checks and 42 Python tests pass. Hosted database results pending publication. Sandbox-enabled Chromium launch is unavailable because no browser executable is installed; UI compilation is not browser acceptance. See docs/30_EXPLICIT_SOURCE_SPANS.md for API/form use, tests, privacy and rollback.
+
+Next: continue from this stack after verification and feedback. Fresh browser occurrence-selection/inspection, actual isolated parser benchmarks/page review, frozen report versions/audit exports, recoverable uploads, production identity/storage and documented device/offline/restore gates remain open. No production deployment, merge, new dependencies/source, live collection or user decision.
+
 ## 27 October: immutable text derivative lineage
 
 Baseline: main remains PR #1 (`95b5c35`); PRs #2–#9 remain open with no new PR #9 feedback. Branch is stacked on PR #9 receipt `628fb3dc76c4428555ba613912a8a6c27b0ef468`. Reused the durable scoped job consumer, authority snapshots, migration ledger, binary quarantine and existing casework/report stack.

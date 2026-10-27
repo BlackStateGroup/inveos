@@ -205,6 +205,14 @@ async function createClaim(caseId: string, evidenceId: string, session = context
   });
 }
 
+/** Administrative corruption fixture only; normal application permissions retain the guard. */
+async function corruptClaim(sql: string, values: unknown[]) {
+  await context.schemaAdminPool!.query('ALTER TABLE claims DISABLE TRIGGER claim_source_identity');
+  try {await context.schemaAdminPool!.query(sql,values);} finally {
+    await context.schemaAdminPool!.query('ALTER TABLE claims ENABLE TRIGGER claim_source_identity');
+  }
+}
+
 async function createAssignedCase(
   tenantId: string,
   assignedUserId: string,
@@ -663,7 +671,7 @@ test('exact source links, reviewer roles, serialized decisions, unsupported clai
   );
 
   const unsupported = parseBody<{id: string}>(await createClaim(kase.id, evidence.id, context.demo!, 'Northstar'));
-  await context.schemaAdminPool!.query(
+  await corruptClaim(
     'UPDATE claims SET quote = $4 WHERE tenant_id = $1 AND case_id = $2 AND id = $3',
     [demoTenantId, kase.id, unsupported.id, 'This text is not in the original.'],
   );
@@ -1164,7 +1172,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1182,7 +1190,7 @@ test('case work rejects a Unicode citation pointing into the middle of a UTF-8 c
   const claim = parseBody<{id: string}>(await createClaim(kase.id, evidence.id, context.demo!, '�'));
   const question = parseBody<WorkItem>(await createWork(kase.id));
   const midpoint = Buffer.from(text).indexOf(Buffer.from('á')) + 1;
-  await context.schemaAdminPool!.query('UPDATE claims SET source_start_byte=$4, source_end_byte=$5 WHERE tenant_id=$1 AND case_id=$2 AND id=$3', [demoTenantId, kase.id, claim.id, midpoint, midpoint + 1]);
+  await corruptClaim('UPDATE claims SET source_start_byte=$4, source_end_byte=$5 WHERE tenant_id=$1 AND case_id=$2 AND id=$3', [demoTenantId, kase.id, claim.id, midpoint, midpoint + 1]);
   assertError(await request('POST', `/api/cases/${kase.id}/work/${question.id}/links`, context.demo!, {
     payload: {id: randomUUID(), claimId: claim.id, relation: 'context', reason: 'A corrupted Unicode byte range must not be accepted.'},
   }), 409);
@@ -1450,4 +1458,78 @@ test('derivative reads deny foreign scopes and revoked access and fail closed on
     await context.schemaAdminPool!.query('UPDATE text_derivatives SET output_bytes=$2,output_digest=$3 WHERE job_id=$1',[jobId,Buffer.from(raw),digest(raw)]);
   } finally {await context.schemaAdminPool!.query('ALTER TABLE text_derivatives ENABLE TRIGGER text_derivatives_append_only');}
   assertError(await request('GET',url,context.demo!),409);
+});
+
+test('explicit original-byte citations select repeated Unicode passages and survive review and offline export', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const text='\uFEFFFictional first: á😀 repeat\r\nFictional second: á😀 repeat\n';
+  const quote='á😀 repeat';
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,evidenceInput({text,expectedSha256:digest(text)})));
+  const url=`/api/cases/${kase.id}/claims`;
+  const input={evidenceId:evidence.id,text:'The second fictional record repeats the same wording.',quote};
+  assertError(await request('POST',url,context.demo!,{payload:input}),422);
+  const start=Buffer.byteLength(text.slice(0,text.lastIndexOf(quote)),'utf8'),end=start+Buffer.byteLength(quote,'utf8');
+  const response=await request('POST',url,context.demo!,{payload:{...input,sourceStartByte:start,sourceEndByte:end}});
+  assert.equal(response.statusCode,200,response.body);const claim=JSON.parse(response.body);
+  assert.equal(claim.sourceStartByte,start);assert.equal(claim.sourceEndByte,end);assert.equal(claim.sourceDigest,digest(text));
+  assert.equal(claim.status,'Under review');
+  const reviewUrl=`${url}/${claim.id}/review`,decision={accepted:true,reason:'Reviewed the second fictional occurrence in context.'};
+  assert.equal((await request('POST',reviewUrl,context.demo!,{payload:decision})).statusCode,200);
+  assert.equal((await request('POST',reviewUrl,context.demo!,{payload:decision})).statusCode,200);
+  const reportResponse=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);assert.equal(reportResponse.statusCode,200,reportResponse.body);
+  const report=JSON.parse(reportResponse.body);assert.equal(report.findings[0].source.startByte,start);assert.equal(report.findings[0].source.endByte,end);
+  const path=join(context.storageRoot!,`explicit-span-${randomUUID()}.json`);await writeFile(path,reportResponse.body);
+  const verify=fileURLToPath(new URL('../../../tools/verify_report.py',import.meta.url));
+  const verified=await promisify(execFile)('python3',[verify,path,'--expected-sha256',digest(reportResponse.body)],{timeout:10000});
+  assert.equal(JSON.parse(verified.stdout).reportSha256,digest(reportResponse.body));
+  assert.equal(JSON.parse(verified.stdout).trustedReportDigestMatched,true);
+  const workspace=JSON.parse((await request('GET','/api/workspace',context.demo!)).body);
+  assert.equal(workspace.claims.find((c:{id:string})=>c.id===claim.id).sourceStartByte,start);
+});
+
+test('claim ranges reject incomplete, invalid, split-Unicode and fabricated source selections', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const text='Fictional: á😀 and literal �. aaaa';
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,evidenceInput({text,expectedSha256:digest(text)})));
+  const url=`/api/cases/${kase.id}/claims`;
+  const input={evidenceId:evidence.id,text:'A fictional passage used for validation.',quote:'á'};
+  const start=Buffer.from(text).indexOf(Buffer.from('á'));
+  for(const invalid of [
+    {sourceStartByte:start},{sourceEndByte:start+2},{sourceStartByte:-1,sourceEndByte:2},
+    {sourceStartByte:start+1,sourceEndByte:start+2},{sourceStartByte:start,sourceEndByte:start},
+    {sourceStartByte:start,sourceEndByte:262145},{sourceStartByte:0.5,sourceEndByte:2},
+    {sourceStartByte:start,sourceEndByte:start+2,quote:'�'},
+    {sourceStartByte:start,sourceEndByte:start+2,quote:'\ud83d'},
+  ]) assertError(await request('POST',url,context.demo!,{payload:{...input,...invalid}}),422);
+  assertError(await request('POST',url,context.demo!,{payload:{...input,quote:'aa'}}),422); // Overlapping occurrences count.
+  assertError(await request('POST',url,context.demo!,{payload:{...input,quote:'\ud83d'}}),422);
+  assert.equal((await request('POST',url,context.demo!,{payload:input})).statusCode,200); // Unique old callers still work.
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS count FROM claims WHERE case_id=$1',[kase.id])).rows[0].count,1);
+});
+
+test('claim source identity is immutable and review replay or reports reject changed reviewed ranges', async () => {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const text='Fictional á then � and another �.';
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,evidenceInput({text,expectedSha256:digest(text)})));
+  const quote='�',first=Buffer.from(text).indexOf(Buffer.from(quote));
+  const url=`/api/cases/${kase.id}/claims`;
+  const created=await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,text:'Fictional literal replacement character at the selected position.',quote,sourceStartByte:first,sourceEndByte:first+3}});
+  assert.equal(created.statusCode,200,created.body);const id=JSON.parse(created.body).id;
+  for (const [field,value] of [['text','Changed fictional narrative'],['quote','Changed quote'],['source_start_byte',first+1],['source_digest','0'.repeat(64)]] as const) {
+    await assert.rejects(context.pool!.query(`UPDATE claims SET ${field}=$2 WHERE id=$1`,[id,value]),/immutable/);
+  }
+  const decision={accepted:true,reason:'Reviewed the first literal replacement character.'};
+  const review=`${url}/${id}/review`;
+  assert.equal((await request('POST',review,context.demo!,{payload:decision})).statusCode,200);
+  const second=Buffer.from(text).lastIndexOf(Buffer.from(quote));
+  await corruptClaim('UPDATE claims SET source_start_byte=$2,source_end_byte=$3 WHERE id=$1',[id,second,second+3]);
+  assertError(await request('POST',review,context.demo!,{payload:decision}),409); // Valid quote but different reviewed occurrence.
+  assertError(await request('GET',`/api/cases/${kase.id}/report`,context.demo!),409);
+  const midpoint=Buffer.from(text).indexOf(Buffer.from('á'))+1;
+  await corruptClaim('UPDATE claims SET source_start_byte=$2,source_end_byte=$3 WHERE id=$1',[id,midpoint,midpoint+1]);
+  assertError(await request('POST',review,context.demo!,{payload:decision}),409); // Replacement decoding must not pass.
+  assertError(await request('GET',`/api/cases/${kase.id}/report`,context.demo!),409);
 });
