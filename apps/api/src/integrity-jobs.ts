@@ -28,12 +28,18 @@ async function permitted(client: PoolClient, row: QueryResultRow): Promise<boole
   const r = await client.query(`SELECT 1 FROM cases c JOIN case_memberships cm ON cm.tenant_id=c.tenant_id AND cm.case_id=c.id
     JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
     WHERE c.tenant_id=$1 AND c.id=$2 AND cm.user_id=$3 AND m.role <> 'client'
-      AND c.status='Active' AND c.authority_version=$4 FOR SHARE OF c,cm,m`, [row.tenant_id,row.case_id,row.requested_by,row.authority_version]);
+      AND c.status='Active' AND c.authority_version=$4 FOR SHARE OF c`, [row.tenant_id,row.case_id,row.requested_by,row.authority_version]);
   return r.rowCount === 1;
 }
-async function terminal(client: PoolClient, s: Scope, status: string, code: string | null) {
+async function terminal(client: PoolClient, s: Scope, status: string, code: string | null, token: string | null = null) {
   const result = await client.query(`UPDATE integrity_jobs SET status=$4,failure_code=$5,lease_token=NULL,lease_until=NULL,finished_at=clock_timestamp()
-    WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *`, [...values(s),status,code]);
+    WHERE tenant_id=$1 AND case_id=$2 AND id=$3
+      AND ($6::uuid IS NULL OR (status='running' AND lease_token=$6 AND lease_until>clock_timestamp()))
+      AND ($6::uuid IS NULL OR $4='cancelled' OR EXISTS (
+        SELECT 1 FROM case_memberships cm JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
+        WHERE cm.tenant_id=integrity_jobs.tenant_id AND cm.case_id=integrity_jobs.case_id
+          AND cm.user_id=integrity_jobs.requested_by AND m.role <> 'client')) RETURNING *`, [...values(s),status,code,token]);
+  if (!result.rows[0]) return null;
   await event(client,s,result.rows[0]);
   return dto(result.rows[0]);
 }
@@ -58,8 +64,8 @@ export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, fa
     const r = await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until > clock_timestamp() FOR UPDATE`, [...values(s),token]);
     if (!r.rows[0]) return null; // Expired, cancelled or superseded worker cannot commit.
-    if (!await permitted(client,r.rows[0])) return terminal(client,s,'cancelled','scope_changed');
-    return terminal(client,s,failure ? 'failed' : 'succeeded',failure);
+    if (!await permitted(client,r.rows[0])) return terminal(client,s,'cancelled','scope_changed',token);
+    return terminal(client,s,failure ? 'failed' : 'succeeded',failure,token);
   });
 }
 export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {

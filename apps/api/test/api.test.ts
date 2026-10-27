@@ -3,7 +3,7 @@ import { execFile, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
@@ -1312,4 +1312,7 @@ test('jobs recheck authority and membership and fail safely on missing or corrup
   assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'original_unavailable');
   await rm(path);
   assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'original_unavailable');
+  await symlink('/dev/zero',path);
+  assert.equal((await runIntegrityJob(context.pool!,context.storageRoot!,await enqueue()))?.failureCode,'original_unavailable');
+  await rm(path);
 });

@@ -1,3 +1,4 @@
+import { constants } from 'node:fs';
 import { chmod, mkdir, open, readFile, unlink } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
@@ -89,8 +90,9 @@ export async function removeOriginal(root: string, objectPath: string): Promise<
 
 /** Bounded worker read: never allocate based on an untrusted replacement file. */
 export async function readOriginalBounded(root: string, objectPath: string, maximum: number): Promise<Buffer> {
-  const handle = await open(resolveObjectPath(root, objectPath), 'r');
+  const handle = await open(resolveObjectPath(root, objectPath), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
+    if (!(await handle.stat()).isFile()) throw new Error('Original must be a regular file');
     const buffer = Buffer.alloc(maximum + 1);
     let length = 0;
     while (length < buffer.length) {
