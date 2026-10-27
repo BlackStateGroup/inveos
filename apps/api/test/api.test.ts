@@ -1821,6 +1821,8 @@ test('client freeze recovery retries a committed but unacknowledged HTTP request
 });
 
 test('job history paginates stable case receipts and actual worker attempts over HTTP without worker credentials',async()=>{
+  // Fresh server instance isolates this scenario's rate-limit budget; retain all application limits.
+  await context.app!.close();context.app=await createAppInstance();
   const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
   const queue=async()=>{const r=await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200,r.body);return JSON.parse(r.body);};
   const jobs=[];for(let i=0;i<4;i++)jobs.unshift(await queue());
@@ -1849,6 +1851,8 @@ test('job history paginates stable case receipts and actual worker attempts over
 });
 
 test('job and attempt histories deny foreign cursors, invalid queries, clients, outsiders and revoked assignments',async()=>{
+  // Fresh server instance isolates this scenario's rate-limit budget; retain all application limits.
+  await context.app!.close();context.app=await createAppInstance();
   const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
   const ids=[];for(let i=0;i<2;i++)ids.push(JSON.parse((await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}})).body).id);
   const events=`${url}/${ids[0]}/events`;
@@ -1870,6 +1874,8 @@ test('job and attempt histories deny foreign cursors, invalid queries, clients, 
 
 
 test('attempt pagination preserves numeric sequence order beyond JavaScript safe integers',async()=>{
+  // Fresh server instance isolates this scenario's rate-limit budget; retain all application limits.
+  await context.app!.close();context.app=await createAppInstance();
   const {kase,evidence}=await reportFixture(),url=`/api/cases/${kase.id}/integrity-jobs`;
   const job=JSON.parse((await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}})).body);
   // Explicit administrative append-only fixture; no sequence reset or history rewrite.
