@@ -1,0 +1,233 @@
+{
+  "schema": "inveos.casework.http-evaluation.v1",
+  "data": "explicitly_fictional",
+  "caseId": "aa4abc19-de81-4de2-8b09-dcb799e6eecd",
+  "caseRef": "INV-2026-AA4ABC19",
+  "results": [
+    {
+      "name": "Start synthetic reviewer session",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 25.22,
+      "passed": true
+    },
+    {
+      "name": "Create fictional supplier case",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 7.46,
+      "passed": true
+    },
+    {
+      "name": "Approve versioned synthetic authority",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 17.32,
+      "passed": true
+    },
+    {
+      "name": "Read persistent case membership",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 9.71,
+      "passed": true
+    },
+    {
+      "name": "Create objective",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 6.33,
+      "passed": true
+    },
+    {
+      "name": "Create question",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 6.09,
+      "passed": true
+    },
+    {
+      "name": "Create hypothesis",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 5.05,
+      "passed": true
+    },
+    {
+      "name": "Create task",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.54,
+      "passed": true
+    },
+    {
+      "name": "Create note",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 5.45,
+      "passed": true
+    },
+    {
+      "name": "Create handover",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 5.61,
+      "passed": true
+    },
+    {
+      "name": "Register original 1",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 16.11,
+      "passed": true
+    },
+    {
+      "name": "Propose exact-source claim 1",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 5.37,
+      "passed": true
+    },
+    {
+      "name": "Link supporting material",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 11.59,
+      "passed": true
+    },
+    {
+      "name": "Review source assertion 1",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 7.2,
+      "passed": true
+    },
+    {
+      "name": "Register original 2",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 11.38,
+      "passed": true
+    },
+    {
+      "name": "Propose exact-source claim 2",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.39,
+      "passed": true
+    },
+    {
+      "name": "Link contrary material",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.94,
+      "passed": true
+    },
+    {
+      "name": "Review source assertion 2",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.51,
+      "passed": true
+    },
+    {
+      "name": "Reject impossible calendar date",
+      "expected": 422,
+      "actual": 422,
+      "milliseconds": 1.98,
+      "passed": true
+    },
+    {
+      "name": "Reject blank question title",
+      "expected": 422,
+      "actual": 422,
+      "milliseconds": 1.54,
+      "passed": true
+    },
+    {
+      "name": "Reject client-supplied tenant context",
+      "expected": 422,
+      "actual": 422,
+      "milliseconds": 0.9,
+      "passed": true
+    },
+    {
+      "name": "Reject unassigned task owner",
+      "expected": 422,
+      "actual": 422,
+      "milliseconds": 2.12,
+      "passed": true
+    },
+    {
+      "name": "Reject unsupported hypothesis promotion",
+      "expected": 422,
+      "actual": 422,
+      "milliseconds": 2.64,
+      "passed": true
+    },
+    {
+      "name": "Record blocked next action",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.34,
+      "passed": true
+    },
+    {
+      "name": "Preserve note correction as a revision",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 3.59,
+      "passed": true
+    },
+    {
+      "name": "Reject stale note edit",
+      "expected": 409,
+      "actual": 409,
+      "milliseconds": 2.46,
+      "passed": true
+    },
+    {
+      "name": "Acknowledge assigned handover",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.67,
+      "passed": true
+    },
+    {
+      "name": "Read original and revised note history",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 4.49,
+      "passed": true
+    },
+    {
+      "name": "Export source-verified internal draft",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 6.1,
+      "passed": true
+    },
+    {
+      "name": "Verify draft independently without API access",
+      "passed": true
+    },
+    {
+      "name": "Offline verifier rejects altered source",
+      "passed": true
+    },
+    {
+      "name": "Reload saved workspace",
+      "expected": 200,
+      "actual": 200,
+      "milliseconds": 5.68,
+      "passed": true
+    }
+  ],
+  "report": {
+    "status": "internal_draft_integrity_checked",
+    "sha256": "7e6d7d0af41a38915c6d6b4af595dfaa7a6cd1f5def2a1a3f5f3f2365c5fe749",
+    "findings": 2,
+    "originals": 2,
+    "trusted_fingerprint_checked": true
+  }
+}

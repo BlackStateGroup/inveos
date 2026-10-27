@@ -1,6 +1,7 @@
 import type { Workspace } from '@inveos/contracts';
 export type { Case, Evidence, Claim, Finding, Activity, Workspace } from '@inveos/contracts';
 export const initialWorkspace: Workspace = {
+  workItems: [], workLinks: [], members: [],
   cases: [
     {id:'northstar',ref:'INV–2026–014',title:'Northstar procurement review',client:'Northstar Holdings (fictional)',category:'Corporate investigation',status:'Active',owner:'Alex Morgan',due:'30 Oct',scope:'Review fictional supplier invoices and commissioning-party records. No external collection authorised.',jurisdiction:'United Kingdom',authority:true},
     {id:'meridian',ref:'INV–2026–013',title:'Meridian asset verification',client:'Meridian Legal (fictional)',category:'Legal support',status:'In review',owner:'Jamie Chen',due:'28 Oct',scope:'Review supplied fictional asset records only.',jurisdiction:'United Kingdom',authority:true},

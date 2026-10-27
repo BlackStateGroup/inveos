@@ -21,10 +21,11 @@ import type {
 import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
 import { readOriginal, writeOriginal, type StoredOriginal } from './storage.js';
+import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
 
-type Actor = {
+export type Actor = {
   tokenHash: string;
   csrfHash: string;
   tenantId: string;
@@ -453,6 +454,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 2 * 1024 * 1024,
     logger: false,
+    ajv: {customOptions: {removeAdditional: false}},
   });
   app.decorateRequest('actor', null);
   await app.register(cookiePlugin);
@@ -465,6 +467,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     if (request.method === 'POST' && request.url.startsWith('/api/')) {
       jsonOnly(request);
     }
+  });
+  app.addHook('onSend', async (request, reply, payload) => {
+    if (request.url.startsWith('/api/')) reply.header('Cache-Control', 'no-store');
+    return payload;
   });
 
   const authenticate = async (request: AppRequest): Promise<void> => {
@@ -538,6 +544,22 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   });
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
+
+  registerCaseWork(app, {
+    pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
+    verifyClaim: async (client, actor, caseId, claimId) => {
+      const claim = await findClaim(client, actor, caseId, claimId);
+      const source = await findEvidence(client, actor, caseId, claim.evidence_id);
+      const bytes = await verifiedBytes(options.storageRoot, source);
+      const quoteBytes = Buffer.from(claim.quote, 'utf8');
+      const span = bytes.subarray(claim.source_start_byte, claim.source_end_byte);
+      if (!claim.quote.trim() || claim.source_start_byte < 0 || claim.source_end_byte > bytes.length
+          || claim.source_end_byte <= claim.source_start_byte || source.digest.trim() !== claim.source_digest.trim()
+          || span.length !== quoteBytes.length || !span.equals(quoteBytes)) {
+        throw new ApiError(409, 'The claim no longer matches its cited original.');
+      }
+    },
+  });
 
   app.post(
     '/api/session/start',
@@ -639,10 +661,32 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       [actor.tenantId, actor.userId],
     );
     const caseIds = casesResult.rows.map((row) => row.id);
-    const workspace: Workspace = {cases: casesResult.rows.map(displayCase), evidence: [], claims: [], findings: [], activity: []};
+    const workspace: Workspace = {cases: casesResult.rows.map(displayCase), evidence: [], claims: [], findings: [], activity: [], workItems: [], workLinks: [], members: []};
     if (!caseIds.length) {
       return workspace;
     }
+
+    const workResult = await options.pool.query(
+      `SELECT w.*, w.due_date::text AS due_date FROM case_work_items w JOIN case_memberships cm
+         ON cm.tenant_id=w.tenant_id AND cm.case_id=w.case_id
+        WHERE w.tenant_id=$1 AND cm.user_id=$2 ORDER BY w.created_at DESC, w.id`,
+      [actor.tenantId, actor.userId],
+    );
+    workspace.workItems = workResult.rows.map(displayWork);
+    const linksResult = await options.pool.query(
+      `SELECT l.* FROM case_work_links l JOIN case_memberships cm ON cm.tenant_id=l.tenant_id AND cm.case_id=l.case_id
+        WHERE l.tenant_id=$1 AND cm.user_id=$2 ORDER BY l.created_at, l.id`, [actor.tenantId, actor.userId],
+    );
+    workspace.workLinks = linksResult.rows.map(displayWorkLink);
+    const membersResult = await options.pool.query(
+      `SELECT cm.case_id, cm.user_id, u.display_name, m.role FROM case_memberships cm
+         JOIN case_memberships mine ON mine.tenant_id=cm.tenant_id AND mine.case_id=cm.case_id
+         JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
+         JOIN users u ON u.id=cm.user_id
+        WHERE cm.tenant_id=$1 AND mine.user_id=$2 AND m.role IN ('investigator','reviewer') ORDER BY u.display_name`,
+      [actor.tenantId, actor.userId],
+    );
+    workspace.members = membersResult.rows.map((row) => ({caseId: row.case_id, userId: row.user_id, name: row.display_name, role: row.role}));
 
     const evidenceResult = await options.pool.query<EvidenceRow>(
       `SELECT e.*
@@ -1218,6 +1262,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           source: sources.get(row.evidence_id)!,
         });
       }
+      const workResult = await options.pool.query(
+        `SELECT *, due_date::text AS due_date FROM case_work_items
+          WHERE tenant_id=$1 AND case_id=$2 ORDER BY created_at, id`, [actor.tenantId, caseId],
+      );
+      const work = workResult.rows.map(displayWork);
       return {
         status: 'draft_not_released',
         case: {
@@ -1229,7 +1278,14 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           jurisdiction: caseRow.jurisdiction,
         },
         findings,
-        limitations: 'Internal synthetic-lab JSON draft only. Not a signed custody certificate, independent verifier, PDF, or client release.',
+        investigation: {
+          status: 'working_context_not_findings',
+          objectives: work.filter(w => w.kind === 'objective'),
+          questions: work.filter(w => w.kind === 'question'),
+          hypotheses: work.filter(w => w.kind === 'hypothesis'),
+          blockers: work.filter(w => w.kind === 'task' && w.status === 'Blocked'),
+        },
+        limitations: 'Internal synthetic-lab JSON draft only. Working questions and hypotheses are not findings. Verify cited bytes/spans offline with tools/verify_report.py; authenticate the whole draft using a separately trusted fingerprint. Not a signed custody certificate, production PDF, or client release.',
       };
     },
   );

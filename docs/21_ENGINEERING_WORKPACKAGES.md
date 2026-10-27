@@ -11,15 +11,18 @@ PR #1 (`95b5c35`) is merged. PR #2 (`36081f1`) is a separate draft research slic
 | WP-00 | TS workspaces, lockfile, schemas/contracts, migrations, lint/type/build commands, database harness and passing hosted CI in PR #3 | Secret scanning and remaining scaffold/policy checks; see the [CI receipt](14_TEST_PLAN.md#verification-receipt--27-october-2026) |
 | WP-01 | Synthetic case/authority, demo session and selected role/tenant/case denials | Real identity/MFA, invitations, membership administration and full resource isolation |
 | WP-02 | UTF-8 original intake, digests, local store, audit and idempotency | Encrypted object storage, binary/resumable intake, quarantine, holds and recovery |
-| WP-03 | Broad prototype; persistent case/evidence/manual-review workflow | Persistent tasks/notes/objectives, chronology/search and complete browser acceptance |
+| WP-03 | Persistent case/evidence/manual-review workflow plus versioned objectives, questions, tasks, notes, owners/deadlines and casework search | Real identity, richer brief/chronology/search and production acceptance; see the [casework receipt](evals/2026-10-27-casework.md) |
 | WP-04 | Memory-only Field preview | Entire native encrypted/offline/device gate |
 | WP-05 | Planned on main; PR #2 has research and synthetic provenance contract | Isolated parser benchmark, durable worker integration and citation lineage |
 | WP-06 | Manual source-linked claims, separate review/finding records and approval gate | Actual AI/extraction service, evaluations, case Q&A and permission-scoped assistance |
-| WP-07 | Internal reviewed JSON draft | Editable PDF/DOCX report, exhibits, redaction, versioning and offline verifier |
+| WP-07 | Internal JSON draft, complete branded browser print view, offline original/span verifier and export fingerprint | Canonical PDF/DOCX generation, frozen report versions, redaction, signed packages and release; JSON verifier does not certify printed PDF content |
 | WP-08 | Fixed fictional portal preview | Operational release dataset, client identity, approval, expiry/revocation and acknowledgement |
 | WP-09–WP-12 | Illustrative source/graph/interview/admin surfaces | Operational source, graph, interview and agency acceptance gates |
 | WP-13 | Plans and local test evidence only | Production operations, restore/security/privacy evidence and pilot sign-off |
-| WP-14–WP-18 | Planned additions below | Their individual exit gates |
+| WP-14 | Local versioned questions/hypotheses with supporting/contrary links, reverified source assessments and auditable decisions | Production identity/storage and wider reasoning validation |
+| WP-15–WP-16 | Source chronology preserves original offsets and sorts actual instants; casework search and responsive forms | Alleged-event/approximate chronology, saved views, bulk actions and large-case measurements |
+| WP-17 | Persistent tasks/ownership/deadlines and recipient-acknowledged handovers | Comments/mentions, workload, notifications and production identity |
+| WP-18 | Planned customer-validation work | Actual interviews, approved pilots and measured acceptance |
 
 PR #3 implements and tests the WP-00 CI slice without selecting production identity/storage providers or merging PR #2. Remaining WP-00 work includes secret scanning; the next application slices are WP-01 real identity/access and WP-02 encrypted storage after their provider/region decisions. Research worker execution remains gated on a host with proven isolation.
 

@@ -55,19 +55,19 @@ the remaining scope is **planned**, with no deployment or pilot acceptance.
 
 | Capability | Work packages | Delivered slice / evidence | Next acceptance target |
 |---|---|---|---|
-| 1. Case workflow | WP-01, WP-03 | Case/scope intake implemented and lab-tested in PR #1 | Persist objectives, questions, people, tasks, notes, owners, deadlines and blockers; reload shows the same case state |
+| 1. Case workflow | WP-01, WP-03 | Case/scope intake plus [persistent casework](evals/2026-10-27-casework.md): objectives, questions, tasks, notes, ownership/deadlines, blockers and reload restoration | Production identity, richer case brief, agency membership administration and full case lifecycle |
 | 2. Accounts and access | WP-01 | Demo sessions and selected tenant/case/role denial tests in PR #1 | Agency invitations, real identity/MFA, revocation and contractor assignment boundaries across every resource |
 | 3. Evidence vault | WP-02 | Bounded UTF-8 originals, server digests, receipts, retry checks and source re-verification in PR #1 | Encrypted object storage; documents/photos/audio/video/email/spreadsheets; bulk/resumable intake, previews and recovery |
 | 4. Document/media processing | WP-05 | No operational implementation on main; PR #2 research/contract only | Isolated PDF/OCR experiment, measured results, durable jobs and page/region lineage before application attachment |
 | 5. AI assistant | WP-05, WP-06, WP-11 | Manual claim/review gate implemented and lab-tested; no AI service | Permission-scoped summaries, entities, case Q&A, contradictions, follow-up suggestions and drafts with inspectable citations |
-| 6. Investigation reasoning | WP-14 | Planned | Questions, competing hypotheses, supporting/contrary evidence, unresolved checks and accountable owners persist with history |
+| 6. Investigation reasoning | WP-14 | Implemented/tested locally: versioned questions/hypotheses, supporting/contrary/context links, source-reverified assessments and ownership | Wider reasoning validation with pilot cases and production identity/storage |
 | 7. Chronology | WP-15 | Timeline prototype; source/receipt times preserved in text intake | Searchable events with separate alleged-event, source-recorded and receipt times; uncertainty and disagreement remain explicit |
 | 8. Field application | WP-04 | Memory-only Field prototype | Native encrypted queue survives restart; resumable uploads, receipts, conflicts and iPhone/Android outage tests |
 | 9. Research workbench | WP-09 | Illustrative source register | Authorised manual captures with provenance, annotations and saved searches; ranked connector backlog and per-source approval |
 | 10. Relationship graph | WP-10 | Fictional graph prototype | Cited, reviewed/disputed/suggested edges; possible matches, reversible merges and distinct identifiers |
-| 11. Reporting/disclosure | WP-07 | Reviewed internal JSON draft implemented and lab-tested | Editable report, methodology/limits, PDF/DOCX, exhibits, revisions, redaction and independently verifiable package |
+| 11. Reporting/disclosure | WP-07 | Reviewed JSON draft with separate working context, complete browser print view, copyable fingerprint and offline original/span verifier | Editable/versioned report, canonical PDF/DOCX, redaction and signed verifiable delivery package; PDF content is outside the JSON verifier |
 | 12. Client portal | WP-08 | Fixed fictional preview only | Separate release dataset and identity; explicit investigator approval, expiry, revocation and acknowledgements |
-| 13. Team coordination | WP-17, WP-12 | Illustrative assignments; no operational collaboration | Assignments, comments/mentions, review queues, handovers, workloads and useful notifications with preferences |
+| 13. Team coordination | WP-17, WP-12 | Persistent assignments, deadlines, blocked work and recipient-acknowledged handovers in the local lab | Real invitations/accounts, comments/mentions, workload and notifications with preferences |
 | 14. Interface depth | WP-03, WP-16 | Broad prototype and recorded manual inspection in PR #1 | Persistent search/filter/saved views, bulk actions, keyboard use, side-by-side source review and large-case tests |
 | 15. Reliability/operations | WP-00, WP-02, WP-13 | Local migration/runbook and API harness; CI implemented and hosted-tested in draft PR #3 | Secret scanning, repeatable environments, monitored jobs, cost/quotas, backups/restores, retention/holds/deletion and audited support access |
 | 16. System verification | All, WP-13 | PR #1 database/browser receipt and [PR #3 CI/API receipt](14_TEST_PLAN.md#verification-receipt--27-october-2026) | Representative synthetic corpus, measured citations/extraction/entity errors and full intake-to-verified-delivery test |

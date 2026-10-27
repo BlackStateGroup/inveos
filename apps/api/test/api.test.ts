@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { createApp } from '../src/app.js';
 import { createPool, runMigrations } from '../src/db.js';
-import type { Case, Evidence, ReportDraft, Workspace } from '@inveos/contracts';
+import type { Case, Evidence, ReportDraft, Workspace, WorkInput, WorkItem, WorkEdit, WorkLink, WorkRevision } from '@inveos/contracts';
 
 type TestSession = {cookie: string; csrf: string};
 type ApiContext = {
@@ -113,13 +113,13 @@ async function startDemoSession(): Promise<TestSession> {
   return {cookie: cookieParts.join('; '), csrf: parseBody<{csrf: string}>(response).csrf};
 }
 
-async function issueTestSession(userId: string): Promise<TestSession> {
+async function issueTestSession(userId: string, tenantId = demoTenantId): Promise<TestSession> {
   const token = randomBytes(32).toString('base64url');
   const csrf = randomBytes(32).toString('base64url');
   await context.schemaAdminPool!.query(
     `INSERT INTO sessions (token_hash, id, csrf_hash, tenant_id, user_id, expires_at)
      VALUES ($1, $2, $3, $4, $5, now() + interval '1 hour')`,
-    [digest(token), randomUUID(), digest(csrf), demoTenantId, userId],
+    [digest(token), randomUUID(), digest(csrf), tenantId, userId],
   );
   return {cookie: `inveos_session=${token}; inveos_csrf=${csrf}`, csrf};
 }
@@ -725,4 +725,218 @@ test('tampered originals block acceptance and export, and logout revokes the ses
 
   const fixture = await readFile(new URL('../fixtures/fictional_supplier_note.txt', import.meta.url), 'utf8');
   assert.match(fixture, /SYNTHETIC FIXTURE — FICTIONAL ONLY/);
+});
+
+function workInput(overrides: Partial<WorkInput> = {}): WorkInput {
+  return {id: randomUUID(), kind: 'question', title: 'Do the fictional supplier records agree?',
+    body: 'Compare the supplied fictional declaration with the older extract. Preserve alternative explanations.',
+    ownerId: demoUserId, dueDate: '2026-11-02', parentId: null, ...overrides};
+}
+async function createWork(caseId: string, input = workInput(), session = context.demo!) {
+  return request('POST', `/api/cases/${caseId}/work`, session, {payload: input});
+}
+function workEdit(item: WorkItem, overrides: Partial<WorkEdit> = {}): WorkEdit {
+  return {expectedVersion: item.version, title: item.title, body: item.body, status: item.status,
+    ownerId: item.ownerId, dueDate: item.dueDate, reason: 'Synthetic investigator revision after checking the case.', ...overrides};
+}
+async function reviseWork(item: WorkItem, input = workEdit(item), session = context.demo!) {
+  return request('POST', `/api/cases/${item.caseId}/work/${item.id}/revise`, session, {payload: input});
+}
+
+test('persistent objectives, questions, hypotheses, tasks, notes and handovers share case state and survive restart', async () => {
+  context.demo = await issueTestSession(demoUserId);
+  const kase = await createCase();
+  const question = parseBody<WorkItem>(await createWork(kase.id));
+  assert.equal(question.status, 'Open');
+  assert.equal(question.dueDate, '2026-11-02');
+  assert.equal(question.version, 1);
+  for (const kind of ['objective', 'hypothesis', 'task', 'note', 'handover'] as const) {
+    const response = await createWork(kase.id, workInput({kind, parentId: kind === 'hypothesis' ? question.id : null,
+      body: 'FICTIONAL: ownership may have changed. Português — £50; العربية.'}));
+    assert.equal(response.statusCode, 200, response.body);
+  }
+  await context.app!.close();
+  context.app = await createAppInstance();
+  const workspace = parseBody<Workspace>(await request('GET', '/api/workspace', context.demo!));
+  assert.equal(workspace.workItems.filter(w => w.caseId === kase.id).length, 6);
+  assert.ok(workspace.workItems.some(w => w.body.includes('العربية')));
+  assert.ok(workspace.members.some(m => m.caseId === kase.id && m.userId === demoUserId));
+  const history = await request('GET', `/api/cases/${kase.id}/work/${question.id}/history`, context.demo!);
+  assert.equal(history.statusCode, 200);
+  assert.equal(parseBody<WorkRevision[]>(history)[0]!.item.title, question.title);
+});
+
+test('case work retries do not duplicate records and changed retries conflict', async () => {
+  const kase = await createCase(); const input = workInput();
+  const responses = await Promise.all([createWork(kase.id, input), createWork(kase.id, input)]);
+  assert.deepEqual(responses.map(r => r.statusCode), [200, 200]);
+  assert.equal(parseBody<WorkItem>(responses[0]!).id, parseBody<WorkItem>(responses[1]!).id);
+  assertError(await createWork(kase.id, {...input, title: 'A changed fictional question'}), 409);
+  const audit = await context.pool!.query('SELECT count(*)::int AS count FROM audit_events WHERE tenant_id=$1 AND case_id=$2 AND action=$3', [demoTenantId, kase.id, 'work.created']);
+  assert.equal(audit.rows[0].count, 1);
+});
+
+test('concurrent case work edits reject stale versions and preserve immutable history', async () => {
+  const kase = await createCase(); const item = parseBody<WorkItem>(await createWork(kase.id, workInput({kind: 'task'})));
+  const results = await Promise.all([
+    reviseWork(item, workEdit(item, {status: 'Blocked', body: 'Fictional clarification is outstanding.'})),
+    reviseWork(item, workEdit(item, {status: 'Complete', body: 'Conflicting fictional completion.'})),
+  ]);
+  assert.deepEqual(results.map(r => r.statusCode).sort(), [200, 409]);
+  const history = parseBody<WorkRevision[]>(await request('GET', `/api/cases/${kase.id}/work/${item.id}/history`, context.demo!));
+  assert.deepEqual(history.map(r => r.version), [2, 1]);
+  assert.equal(history[1]!.item.body, item.body);
+  assert.equal(history[0]!.actor, 'Synthetic reviewer');
+  await assert.rejects(context.pool!.query('UPDATE case_work_revisions SET reason=$1 WHERE tenant_id=$2 AND case_id=$3', ['Rewrite history', demoTenantId, kase.id]), /permission denied/);
+  await assert.rejects(context.schemaAdminPool!.query('UPDATE case_work_revisions SET reason=$1 WHERE tenant_id=$2 AND case_id=$3', ['Rewrite history', demoTenantId, kase.id]), /append-only/);
+});
+
+test('case work validates blank text, real calendar dates, control characters, kinds, statuses and owner scope', async () => {
+  const kase = await createCase();
+  const outsider = await createMember(demoTenantId, 'investigator', 'Fictional unassigned contractor');
+  const client = await createMember(demoTenantId, 'client', 'Fictional client');
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)', [demoTenantId, kase.id, client]);
+  const invalid = [
+    {title: '   '}, {dueDate: '2026-02-30'}, {dueDate: '2026-13-01'}, {dueDate: '2026-01-32'},
+    {dueDate: '2027-02-29'}, {dueDate: '0000-01-01'}, {body: 'Control\u0000text'},
+    {body: 'Broken surrogate \ud800'}, {kind: 'finding'}, {ownerId: outsider}, {ownerId: client},
+    {tenantId: randomUUID()}, {body: 'x'.repeat(12001)},
+  ];
+  for (const override of invalid) {
+    const response = await request('POST', `/api/cases/${kase.id}/work`, context.demo!, {payload: {...workInput(), ...override}});
+    assertError(response, 422);
+  }
+  const leap = await createWork(kase.id, workInput({dueDate: '2028-02-29'}));
+  assert.equal(leap.statusCode, 200, leap.body);
+  const item = parseBody<WorkItem>(leap);
+  assertError(await reviseWork(item, workEdit(item, {status: 'Accepted' as WorkEdit['status']})), 422);
+  assertError(await reviseWork(item, workEdit(item, {reason: '   '})), 422);
+  assertError(await reviseWork(item, workEdit(item, {status: 'Acknowledged'})), 422);
+});
+
+test('hypotheses require a same-case investigation question, not an objective or arbitrary parent', async () => {
+  const kase = await createCase(); const other = await createCase();
+  const objective = parseBody<WorkItem>(await createWork(kase.id, workInput({kind: 'objective'})));
+  const foreignQuestion = parseBody<WorkItem>(await createWork(other.id));
+  assertError(await createWork(kase.id, workInput({kind: 'hypothesis'})), 422);
+  assertError(await createWork(kase.id, workInput({kind: 'hypothesis', parentId: objective.id})), 422);
+  assertError(await createWork(kase.id, workInput({kind: 'hypothesis', parentId: foreignQuestion.id})), 404);
+});
+
+test('supporting and contrary source links verify originals and do not create findings', async () => {
+  const kase = await createCase(); await approveAuthority(kase.id);
+  const evidence = parseBody<Evidence>(await uploadEvidence(kase.id));
+  const claim = parseBody<{id: string}>(await createClaim(kase.id, evidence.id));
+  const question = parseBody<WorkItem>(await createWork(kase.id));
+  const hypothesis = parseBody<WorkItem>(await createWork(kase.id, workInput({kind: 'hypothesis', parentId: question.id})));
+  assertError(await reviseWork(hypothesis, workEdit(hypothesis, {status: 'Supported'})), 422);
+  const input = {id: randomUUID(), claimId: claim.id, relation: 'supports', reason: 'The supplied fictional note supports this candidate explanation.'};
+  const linked = await request('POST', `/api/cases/${kase.id}/work/${hypothesis.id}/links`, context.demo!, {payload: input});
+  assert.equal(linked.statusCode, 200, linked.body);
+  const replay = await request('POST', `/api/cases/${kase.id}/work/${hypothesis.id}/links`, context.demo!, {payload: input});
+  assert.equal(parseBody<WorkLink>(replay).id, parseBody<WorkLink>(linked).id);
+  const supported = await reviseWork(hypothesis, workEdit(hypothesis, {status: 'Supported'}));
+  assert.equal(supported.statusCode, 200, supported.body);
+  assertError(await reviseWork(parseBody<WorkItem>(supported), workEdit(parseBody<WorkItem>(supported), {status: 'Disputed'})), 422);
+  const contrary = await request('POST', `/api/cases/${kase.id}/work/${hypothesis.id}/links`, context.demo!, {payload: {...input, id: randomUUID(), relation: 'contradicts', reason: 'A separate analyst interpretation disputes the candidate; it is not a finding.'}});
+  assert.equal(contrary.statusCode, 200, contrary.body);
+  const workspace = parseBody<Workspace>(await request('GET', '/api/workspace', context.demo!));
+  assert.equal(workspace.workLinks.filter(l => l.itemId === hypothesis.id).length, 2);
+  assert.equal(workspace.findings.filter(f => f.caseId === kase.id).length, 0);
+  assert.equal(workspace.claims.find(c => c.id === claim.id)!.status, 'Under review');
+});
+
+test('source mutation and cross-case citations block links and hypothesis promotion', async () => {
+  const kase = await createCase(); const other = await createCase(); await approveAuthority(kase.id);
+  const evidence = parseBody<Evidence>(await uploadEvidence(kase.id));
+  const claim = parseBody<{id: string}>(await createClaim(kase.id, evidence.id));
+  const question = parseBody<WorkItem>(await createWork(kase.id));
+  const otherQuestion = parseBody<WorkItem>(await createWork(other.id));
+  const hypothesis = parseBody<WorkItem>(await createWork(kase.id, workInput({kind: 'hypothesis', parentId: question.id})));
+  const input = {id: randomUUID(), claimId: claim.id, relation: 'supports', reason: 'Fictional supporting passage needs independent re-verification.'};
+  assertError(await request('POST', `/api/cases/${other.id}/work/${otherQuestion.id}/links`, context.demo!, {payload: input}), 404);
+  assert.equal((await request('POST', `/api/cases/${kase.id}/work/${hypothesis.id}/links`, context.demo!, {payload: input})).statusCode, 200);
+  const source = await context.pool!.query('SELECT object_path FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3', [demoTenantId, kase.id, evidence.id]);
+  await writeFile(resolve(context.storageRoot!, source.rows[0].object_path), 'Mutated fictional original');
+  assertError(await request('POST', `/api/cases/${kase.id}/work/${question.id}/links`, context.demo!, {payload: {...input, id: randomUUID()}}), 409);
+  assertError(await reviseWork(hypothesis, workEdit(hypothesis, {status: 'Supported'})), 409);
+});
+
+test('client, other tenant, unassigned and revoked memberships cannot read or mutate case work', async () => {
+  const kase = await createCase(); const item = parseBody<WorkItem>(await createWork(kase.id));
+  const outsiderId = await createMember(demoTenantId, 'investigator', 'Fictional unrelated contractor');
+  const outsider = await issueTestSession(outsiderId);
+  const tenantId = randomUUID(); await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)', [tenantId, 'Fictional second agency']);
+  const foreignId = await createMember(tenantId, 'reviewer', 'Fictional second-agency reviewer');
+  const foreign = await issueTestSession(foreignId, tenantId);
+  const clientId = await createMember(demoTenantId, 'client', 'Fictional portal viewer');
+  const client = await issueTestSession(clientId);
+  for (const [session, denied] of [[outsider, 404], [foreign, 404], [client, 403]] as const) {
+    assertError(await createWork(kase.id, workInput(), session), denied);
+    assertError(await reviseWork(item, workEdit(item), session), denied);
+    assertError(await request('GET', `/api/cases/${kase.id}/work/${item.id}/history`, session), denied);
+    assertError(await request('POST', `/api/cases/${kase.id}/work/${item.id}/links`, session, {payload: {id: randomUUID(), claimId: randomUUID(), relation: 'context', reason: 'Fictional denied reference'}}), denied);
+  }
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)', [demoTenantId, kase.id, outsiderId]);
+  assert.equal((await request('GET', `/api/cases/${kase.id}/work/${item.id}/history`, outsider)).statusCode, 200);
+  assert.equal((await reviseWork(item, workEdit(item, {ownerId: outsiderId}), context.demo!)).statusCode, 200);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3', [demoTenantId, kase.id, outsiderId]);
+  assertError(await request('GET', `/api/cases/${kase.id}/work/${item.id}/history`, outsider), 404);
+  const workspace = parseBody<Workspace>(await request('GET', '/api/workspace', outsider));
+  assert.equal(workspace.workItems.length, 0); assert.equal(workspace.workLinks.length, 0); assert.equal(workspace.members.length, 0);
+});
+
+test('only the assigned handover recipient acknowledges it and cannot combine acknowledgement with reassignment', async () => {
+  const kase = await createCase();
+  const userId = await createMember(demoTenantId, 'investigator', 'Fictional handover recipient');
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)', [demoTenantId, kase.id, userId]);
+  const recipient = await issueTestSession(userId);
+  const handover = parseBody<WorkItem>(await createWork(kase.id, workInput({kind: 'handover', ownerId: userId})));
+  assertError(await reviseWork(handover, workEdit(handover, {status: 'Acknowledged'})), 403);
+  assertError(await reviseWork(handover, workEdit(handover, {status: 'Acknowledged', ownerId: demoUserId}), recipient), 422);
+  const response = await reviseWork(handover, workEdit(handover, {status: 'Acknowledged', reason: 'I have reviewed the fictional context and accepted the next actions.'}), recipient);
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(parseBody<WorkItem>(response).status, 'Acknowledged');
+});
+
+test('case work mutations require CSRF and reject unknown tenant fields', async () => {
+  const kase = await createCase();
+  assertError(await request('POST', `/api/cases/${kase.id}/work`, context.demo!, {payload: workInput(), csrfHeader: false}), 403);
+  assertError(await request('POST', `/api/cases/${kase.id}/work`, context.demo!, {payload: {...workInput(), tenantId: randomUUID()}}), 422);
+});
+
+test('ordered migrations upgrade a pre-ledger foundation database, rerun safely and reject modified migration checksums', async () => {
+  const schema = `upgrade_test_${randomUUID().replaceAll('-', '')}`;
+  const client = await context.adminPool!.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`CREATE SCHEMA "${schema}"`);
+    await client.query(`SET LOCAL search_path TO "${schema}", public`);
+    await client.query(await readFile(new URL('../migrations/001_foundation.sql', import.meta.url), 'utf8'));
+    await client.query('COMMIT');
+    await runMigrations(context.adminPool!, schema);
+    await runMigrations(context.adminPool!, schema);
+    const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql']);
+    assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
+    await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
+    await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
+  } finally {
+    await client.query('ROLLBACK');
+    await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+    client.release();
+  }
+});
+
+test('case work rejects a Unicode citation pointing into the middle of a UTF-8 character', async () => {
+  const kase = await createCase(); await approveAuthority(kase.id);
+  const text = 'FICTIONAL: á and a literal replacement character �.';
+  const evidence = parseBody<Evidence>(await uploadEvidence(kase.id, context.demo!, evidenceInput({text, expectedSha256: digest(text)})));
+  const claim = parseBody<{id: string}>(await createClaim(kase.id, evidence.id, context.demo!, '�'));
+  const question = parseBody<WorkItem>(await createWork(kase.id));
+  const midpoint = Buffer.from(text).indexOf(Buffer.from('á')) + 1;
+  await context.schemaAdminPool!.query('UPDATE claims SET source_start_byte=$4, source_end_byte=$5 WHERE tenant_id=$1 AND case_id=$2 AND id=$3', [demoTenantId, kase.id, claim.id, midpoint, midpoint + 1]);
+  assertError(await request('POST', `/api/cases/${kase.id}/work/${question.id}/links`, context.demo!, {
+    payload: {id: randomUUID(), claimId: claim.id, relation: 'context', reason: 'A corrupted Unicode byte range must not be accepted.'},
+  }), 409);
 });

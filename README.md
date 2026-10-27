@@ -13,6 +13,7 @@ INVEOS is a case-centred operating environment for lawful private, corporate, le
 |---|---|
 | [Foundation delivery status](DELIVERY_STATUS.md) | Publication receipt, original foundation commit and verification results |
 | [Local application](docs/23_LOCAL_APPLICATION.md) | Implemented visual surfaces, synthetic-lab architecture and explicit limitations |
+| [Persistent casework verification](docs/evals/2026-10-27-casework.md) | Saved questions/hypotheses, tasks, notes, handovers, source links, report printing and offline JSON checks |
 | [Complete workspace delivery plan](docs/24_DELIVERY_PLAN.md) | All 18 capability areas, current evidence, next build slices and the fictional supplier milestone |
 | [Documentation index](docs/INDEX.md) | All plans, specifications, architecture and decisions |
 | [Product requirements](docs/02_PRODUCT_REQUIREMENTS.md) | Scope and acceptance requirements for all modules |

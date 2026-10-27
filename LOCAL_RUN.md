@@ -106,6 +106,29 @@ identity or tenant.
 
 ## Tests
 
+After applying the latest migrations, the persistent lab also supports objectives,
+questions/hypotheses, tasks, notes, handovers, source links and revision history.
+Existing lab sessions restore their case/view after reload. Run the real HTTP
+exercise against the running loopback API with:
+
+```bash
+python3 tools/verify_casework.py
+python3 tools/verify_report.py .local-data/casework-verification/draft.json
+```
+
+The first command creates explicitly fictional cases and records and writes a
+JSON report, its fingerprint and a 32-check receipt under ignored `.local-data/`.
+It accepts only a loopback HTTP lab, never an external service URL. To authenticate
+a downloaded JSON report against a fingerprint received separately, run:
+
+```bash
+python3 tools/verify_report.py path/to/draft.json --expected-sha256 TRUSTED_FINGERPRINT
+```
+
+The report studio can print the complete branded internal draft. JSON integrity
+verification and browser printing are separate checks; neither creates a client
+release or a signed custody certificate. See the [casework receipt](docs/evals/2026-10-27-casework.md).
+
 The [CI workflow](.github/workflows/checks.yml) runs lint, workspace type checks,
 web build, foundation tests/reference and PostgreSQL API tests on pull requests.
 It creates its own disposable database and restricted application role and does
