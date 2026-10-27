@@ -1676,9 +1676,6 @@ test('revision listing rejects foreign cursors, invalid pagination, client and r
   const foreign=JSON.parse((await request('POST',other.url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).body);
   assertError(await request('GET',`${url}?before=${foreign.id}`,context.demo!),404);
   for(const suffix of ['?limit=0','?limit=51','?limit=1.5','?before=invalid','?tenantId=x'])assertError(await request('GET',url+suffix,context.demo!),422);
-  const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[foreignTenant,'Fictional processing history agency']);
-  const foreign=await createMember(foreignTenant,'reviewer','Fictional history foreign reviewer');
-  for(const path of [url,events])assertError(await request('GET',path,await issueTestSession(foreign,foreignTenant)),404);
   const outsider=await createMember(demoTenantId,'investigator','Fictional history outsider');
   assertError(await request('GET',url,await issueTestSession(outsider)),404);
   const client=await createMember(demoTenantId,'client','Fictional history client');
@@ -1862,6 +1859,9 @@ test('job and attempt histories deny foreign cursors, invalid queries, clients, 
   const foreignEvent=JSON.parse((await request('GET',`${url}/${ids[1]}/events`,context.demo!)).body).items[0].id;
   assertError(await request('GET',`${events}?after=${foreignEvent}`,context.demo!),404);
   assertError(await request('GET',`${url}?before=${randomUUID()}`,context.demo!),404);
+  const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[foreignTenant,'Fictional processing history agency']);
+  const foreign=await createMember(foreignTenant,'reviewer','Fictional history foreign reviewer');
+  for(const path of [url,events])assertError(await request('GET',path,await issueTestSession(foreign,foreignTenant)),404);
   const outsider=await createMember(demoTenantId,'investigator','Fictional history outsider'),client=await createMember(demoTenantId,'client','Fictional history client');
   for(const [session,code] of [[await issueTestSession(outsider),404],[await issueTestSession(client),403]] as const)for(const path of [url,events])assertError(await request('GET',path,session),code);
   await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
