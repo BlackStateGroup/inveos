@@ -51,3 +51,5 @@
 - [Foundation validator](../tools/validate_foundation.py): JSON, links, licence flags, source locks, file inventory.
 
 - [Delivery status and GitHub access](../DELIVERY_STATUS.md).
+
+- [Document-processing research decision and synthetic contract](../research/document_processing/DECISION.md): pinned licence/dependency review, worker boundary and explicit verification limits.

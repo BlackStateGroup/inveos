@@ -1,0 +1,296 @@
+{
+  "schema": "inveos.source-audit.v1",
+  "status": "research_only_not_approved_dependencies",
+  "resolved_sbom": false,
+  "vulnerability_scan": "not_performed",
+  "repositories": [
+    {
+      "repository": "docling-project/docling",
+      "commit": "90234a71b16785d08fd2f46ec62668dd2396db76",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "edb765d1e3e60d0c7a7d5fba5f2bb2c3c29f7465cecb5c22cf1185c884954e4c",
+          "url": "https://github.com/docling-project/docling/blob/90234a71b16785d08fd2f46ec62668dd2396db76/LICENSE"
+        },
+        {
+          "path": "pyproject.toml",
+          "sha256": "e47caa5b65f749a9fb4b92520163c2bcc0e74713180831388877c63551b7ae6d",
+          "url": "https://github.com/docling-project/docling/blob/90234a71b16785d08fd2f46ec62668dd2396db76/pyproject.toml"
+        },
+        {
+          "path": "packages/docling/pyproject.toml",
+          "sha256": "eaa5fe82e526a8d80d4896d8a34d0ce64d0c8577cba2095c327bd0a2d21ee1b3",
+          "url": "https://github.com/docling-project/docling/blob/90234a71b16785d08fd2f46ec62668dd2396db76/packages/docling/pyproject.toml"
+        }
+      ],
+      "submodules_declared": false,
+      "package": "docling-slim",
+      "version": "2.142.1",
+      "python": ">=3.10,<4.0",
+      "declared_dependencies": [
+        "pydantic>=2.0.0,<3.0.0",
+        "docling-core>=2.103.1,<3.0.0",
+        "pydantic-settings>=2.3.0,<3.0.0",
+        "filetype>=1.2.0,<2.0.0",
+        "requests>=2.32.2,<3.0.0",
+        "certifi>=2024.7.4",
+        "pluggy>=1.0.0,<2.0.0",
+        "tqdm>=4.65.0,<5.0.0",
+        "langcodes>=3.5.0,<4.0.0"
+      ],
+      "optional_dependencies": {
+        "convert-core": [
+          "numpy>=1.24.0,<3.0.0",
+          "pillow>=10.0.0,<14.0.0",
+          "rtree>=1.3.0,<2.0.0",
+          "scipy>=1.9.0,<2.0.0"
+        ],
+        "extract-core": [
+          "docling-slim[convert-core]",
+          "polyfactory>=2.22.2"
+        ],
+        "format-pdf-pypdfium2": [
+          "pypdfium2>=4.30.0,!=4.30.1,<6.0.0"
+        ],
+        "format-pdf-docling": [
+          "docling-parse>=7.22.2,<8.0.0"
+        ],
+        "format-pdf": [
+          "docling-slim[format-pdf-pypdfium2,format-pdf-docling]"
+        ],
+        "format-docx": [
+          "python-docx>=1.2.0,<2.0.0"
+        ],
+        "format-pptx": [
+          "python-pptx>=1.0.2,<2.0.0",
+          "pylatexenc>=2.10,<3.0"
+        ],
+        "format-xlsx": [
+          "openpyxl>=3.1.5,<4.0.0"
+        ],
+        "format-office": [
+          "docling-slim[format-docx,format-pptx,format-xlsx]"
+        ],
+        "format-opendocument": [
+          "odfdo>=3.22.0,<4.0.0"
+        ],
+        "format-html": [
+          "beautifulsoup4>=4.12.3,<5.0.0"
+        ],
+        "format-markdown": [
+          "marko>=2.1.2,<3.0.0"
+        ],
+        "format-web": [
+          "docling-slim[format-html,format-markdown]"
+        ],
+        "format-latex": [
+          "pylatexenc>=2.10,<3.0"
+        ],
+        "format-email": [
+          "docling-slim[format-html]",
+          "mail-parser>=4.1.4,<5.0.0",
+          "python-oxmsg>=0.0.2,<0.1.0"
+        ],
+        "format-iwork": [
+          "defusedxml>=0.7.1,<0.8.0"
+        ],
+        "format-xml-jats": [
+          "docling-slim[format-html]",
+          "lxml>=4.0.0,<7.0.0"
+        ],
+        "format-xml-uspto": [
+          "docling-slim[format-html]",
+          "defusedxml>=0.7.1,<0.8.0"
+        ],
+        "format-xml-xbrl": [
+          "arelle-release>=2.38.17,<3.0.0"
+        ],
+        "format-html-render": [
+          "playwright>=1.58.0"
+        ],
+        "format-audio": [
+          "mlx-whisper>=0.4.3 ; python_version >= \"3.10\" and sys_platform == \"darwin\" and platform_machine == \"arm64\"",
+          "openai-whisper>=20250625",
+          "numba>=0.63.0",
+          "whisper-s2t-reborn>=1.8.0,<2.0.0 ; sys_platform != \"darwin\" or platform_machine != \"arm64\""
+        ],
+        "feat-asr-transformers": [
+          "docling-slim[format-audio]",
+          "transformers>=5.16.0,<6.0.0",
+          "torchaudio>=2.2.2,<3.0.0"
+        ],
+        "format-video": [
+          "docling-slim[format-audio]",
+          "resemblyzer>=0.1.4,<0.2.0",
+          "soundfile>=0.12.1,<1.0.0",
+          "scikit-learn>=1.3.0,<2.0.0",
+          "librosa>=0.10.0,<1.0.0"
+        ],
+        "feat-ocr-rapidocr": [
+          "rapidocr>=3.9.1,<4.0.0"
+        ],
+        "feat-ocr-rapidocr-onnx": [
+          "rapidocr>=3.9.1,<4.0.0",
+          "onnxruntime>=1.7.0,<1.24 ; python_version < \"3.11\"",
+          "onnxruntime>=1.7.0,<2.0.0 ; python_version >= \"3.11\" and python_version < \"3.14\"",
+          "onnxruntime>=1.24.1,<2.0.0 ; python_version >= \"3.14\""
+        ],
+        "feat-ocr-easyocr": [
+          "easyocr>=1.7,<2.0",
+          "scikit-image>=0.19"
+        ],
+        "feat-ocr-tesserocr": [
+          "tesserocr>=2.7.1,<3.0.0",
+          "pandas>=2.1.4,<4.0.0"
+        ],
+        "feat-ocr-mac": [
+          "ocrmac>=1.0.0,<2.0.0 ; sys_platform == \"darwin\""
+        ],
+        "feat-ocr-nemotron": [
+          "nemotron-ocr>=2.0.0 ; python_version == \"3.12\" and sys_platform == \"linux\" and platform_machine == \"x86_64\""
+        ],
+        "models-local": [
+          "torch>=2.2.2,<3.0.0",
+          "torchvision>=0,<1",
+          "docling-ibm-models>=4.0.2,<5",
+          "accelerate>=1.0.0,<2",
+          "huggingface_hub>=0.23,<2",
+          "defusedxml>=0.7.1,<0.8.0"
+        ],
+        "models-remote": [
+          "tritonclient[grpc]>=2.65.0,<3.0.0"
+        ],
+        "models-onnxruntime": [
+          "onnxruntime<1.24 ; python_version < \"3.11\" and sys_platform == \"darwin\"",
+          "onnxruntime<2.0.0 ; python_version >= \"3.11\" and python_version < \"3.14\" and sys_platform == \"darwin\"",
+          "onnxruntime>=1.24.1,<2.0.0 ; python_version >= \"3.14\" and sys_platform == \"darwin\"",
+          "onnxruntime-gpu<1.24 ; python_version < \"3.11\" and (sys_platform == \"linux\" or sys_platform == \"win32\")",
+          "onnxruntime-gpu<2.0.0 ; python_version >= \"3.11\" and python_version < \"3.14\" and (sys_platform == \"linux\" or sys_platform == \"win32\")",
+          "onnxruntime-gpu>=1.24.1,<2.0.0 ; python_version >= \"3.14\" and (sys_platform == \"linux\" or sys_platform == \"win32\")"
+        ],
+        "models-vlm-inline": [
+          "transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.9.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.* ; sys_platform == \"darwin\"",
+          "transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.13.0 ; sys_platform != \"darwin\"",
+          "accelerate>=1.2.1,<2.0.0",
+          "einops>=0.8.1,<1.0.0",
+          "open-clip-torch>=3.2.0,<4.0.0",
+          "timm>=1.0.22,<2.0.0",
+          "mlx-vlm>=0.7.0,<1.0.0 ; python_version >= \"3.10\" and sys_platform == \"darwin\" and platform_machine == \"arm64\"",
+          "qwen-vl-utils>=0.0.11",
+          "peft>=0.18.1"
+        ],
+        "feat-chunking": [
+          "docling-core[chunking]>=2.103.1,<3.0.0"
+        ],
+        "service-client": [
+          "httpx>=0.28,<1.0.0",
+          "websockets>=14.0,<17.0",
+          "typer>=0.19.0,<0.27.0",
+          "rich>=13.0.0",
+          "python-dotenv~=1.0"
+        ],
+        "cli": [
+          "typer>=0.19.0,<0.27.0",
+          "rich>=13.0.0",
+          "python-dotenv~=1.0"
+        ],
+        "standard": [
+          "docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]"
+        ],
+        "all": [
+          "docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]"
+        ]
+      }
+    },
+    {
+      "repository": "ocrmypdf/OCRmyPDF",
+      "commit": "b457e9efa68c3a46be2470ffb222ed1bccc4dcbc",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+          "url": "https://github.com/ocrmypdf/OCRmyPDF/blob/b457e9efa68c3a46be2470ffb222ed1bccc4dcbc/LICENSE"
+        },
+        {
+          "path": "pyproject.toml",
+          "sha256": "4c7eea90bdbfd77538f1543e0754dd64449bc343839fe2f33d1aca58c4a7788e",
+          "url": "https://github.com/ocrmypdf/OCRmyPDF/blob/b457e9efa68c3a46be2470ffb222ed1bccc4dcbc/pyproject.toml"
+        },
+        {
+          "path": "docs/installation.md",
+          "sha256": "1743643f3303effd094364128d366957d0af2ce5d1603778274464e7a8de0788",
+          "url": "https://github.com/ocrmypdf/OCRmyPDF/blob/b457e9efa68c3a46be2470ffb222ed1bccc4dcbc/docs/installation.md"
+        },
+        {
+          "path": "docs/cookbook.md",
+          "sha256": "f44e57e15c396de17f41ae5f1e4cf440d9c1e8513437a9902a6ac1c5babb5f89",
+          "url": "https://github.com/ocrmypdf/OCRmyPDF/blob/b457e9efa68c3a46be2470ffb222ed1bccc4dcbc/docs/cookbook.md"
+        }
+      ],
+      "submodules_declared": false,
+      "package": "ocrmypdf",
+      "version": "17.13.1",
+      "python": ">=3.11",
+      "declared_dependencies": [
+        "fpdf2>=2.8.0",
+        "img2pdf>=0.5",
+        "packaging>=20",
+        "pdfminer.six>=20260107",
+        "pikepdf[pdfa]>=10.17",
+        "Pillow>=12",
+        "pluggy>=1",
+        "pydantic>=2.12.5",
+        "pypdfium2>=5.0.0",
+        "rich>=13",
+        "typing-extensions>=4.12; python_version < '3.13'",
+        "uharfbuzz>=0.53.2"
+      ],
+      "optional_dependencies": {
+        "heic": [
+          "pillow-heif>=1.7.0"
+        ],
+        "watcher": [
+          "watchfiles>=1.0",
+          "cyclopts>=3",
+          "python-dotenv"
+        ],
+        "webservice": [
+          "streamlit>=1.41.0"
+        ]
+      }
+    },
+    {
+      "repository": "apache/tika",
+      "commit": "f45b9498f35d55445af28737407586362b2e37fc",
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "sha256": "ad5f4c4d0d4a04ac264ee55539191e1d36eb5d43ff63bbfc2cf97d541dc7ce8c",
+          "url": "https://github.com/apache/tika/blob/f45b9498f35d55445af28737407586362b2e37fc/LICENSE.txt"
+        },
+        {
+          "path": "NOTICE.txt",
+          "sha256": "407c430392d86b3eca6df93f62d9c07625f1968f4ed0bd68d817e00da44945aa",
+          "url": "https://github.com/apache/tika/blob/f45b9498f35d55445af28737407586362b2e37fc/NOTICE.txt"
+        },
+        {
+          "path": "tika-parent/pom.xml",
+          "sha256": "19febc27feb784ade943e52c642d84f1a4876355cc1b5c538ca2d2ef54a5598b",
+          "url": "https://github.com/apache/tika/blob/f45b9498f35d55445af28737407586362b2e37fc/tika-parent/pom.xml"
+        },
+        {
+          "path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/pom.xml",
+          "sha256": "d3b78ebe5a6b27e191f73c0d5a0cfa4ed6bf8fa3b72bbb518d0e0f26fe1bce9f",
+          "url": "https://github.com/apache/tika/blob/f45b9498f35d55445af28737407586362b2e37fc/tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/pom.xml"
+        }
+      ],
+      "submodules_declared": false,
+      "selected_build_properties": {
+        "javaVersion": "17",
+        "pdfbox.version": "3.0.8",
+        "poi.version": "6.0.0"
+      }
+    }
+  ]
+}
