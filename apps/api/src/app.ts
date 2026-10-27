@@ -1,3 +1,4 @@
+import {registerUploads} from './uploads.js';
 import { randomBytes, randomUUID, createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import cookiePlugin from '@fastify/cookie';
@@ -889,15 +890,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  for (const binary of [false, true]) {
-    app.post(
-      binary ? '/api/cases/:caseId/evidence/binary' : '/api/cases/:caseId/evidence',
-      {preHandler: requireCsrf, schema: {params: caseParamsSchema, body: binary ? binaryEvidenceBodySchema : evidenceBodySchema}},
-      async (request) => {
-        const actor = request.actor!;
+  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string) {
         rejectClientRole(actor);
-        const {caseId} = request.params as {caseId: string};
-        const input = request.body as EvidenceInput | BinaryEvidenceInput;
         const originalKind = binary ? 'opaque_binary' : 'original_utf8';
         if (!validFilename(input.filename, binary)) {
           throw new ApiError(422, binary ? 'Evidence filename must be safe.' : 'Evidence filename must be a safe .txt filename.');
@@ -937,8 +931,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               if (prior.rows[0].request_hash.trim() !== requestHash) {
                 throw new ApiError(409, 'Idempotency key was already used for a different request.');
               }
+              if(uploadId){const saved=await client.query("SELECT 1 FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND status='completed' AND evidence_id=$4",[actor.tenantId,caseId,uploadId,prior.rows[0].id]);if(!saved.rowCount)throw new ApiError(409,'Upload key conflicts with another intake.');}
               const existingBytes = await verifiedBytes(options.storageRoot, prior.rows[0]);
               return {row: prior.rows[0], bytes: existingBytes};
+            }
+            if(uploadId){
+              const upload=await client.query('SELECT *,expires_at>clock_timestamp() AS live FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND created_by=$4 FOR UPDATE',[actor.tenantId,caseId,uploadId,actor.userId]);
+              const u=upload.rows[0];if(!u||u.status!=='open'||!u.live||u.authority_version!==kase.authority_version)throw new ApiError(409,'Upload is closed, expired or authority changed.');
             }
             if (!kase.authority_version || kase.status !== 'Active') {
               throw new ApiError(409, 'Evidence intake is blocked until authority scope is approved.');
@@ -996,6 +995,12 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
             if (!row) {
               throw new Error('Evidence insert did not return a row.');
             }
+            if(uploadId){
+              const keys=[actor.tenantId,caseId,uploadId];
+              await client.query("UPDATE upload_reservations SET status='completed',evidence_id=$4 WHERE tenant_id=$1 AND case_id=$2 AND id=$3",[...keys,evidenceId]);
+              await client.query('DELETE FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3',keys);
+              await writeAudit(client,actor,caseId,'upload.completed','upload',uploadId,'Upload verified and attached as quarantined original');
+            }
             return {row, bytes};
           });
           if (stored && result.row.object_path !== stored.objectPath) {
@@ -1007,9 +1012,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           await stored?.remove();
           throw error;
         }
-      },
-    );
   }
+  for(const binary of [false,true])app.post(binary?'/api/cases/:caseId/evidence/binary':'/api/cases/:caseId/evidence',
+    {preHandler:requireCsrf,schema:{params:caseParamsSchema,body:binary?binaryEvidenceBodySchema:evidenceBodySchema}},
+    request=>receiveEvidence(request.actor!,(request.params as {caseId:string}).caseId,request.body as EvidenceInput|BinaryEvidenceInput,binary));
+  registerUploads(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validFilename,validSourceTime,
+    receive:(actor,caseId,input,uploadId)=>receiveEvidence(actor,caseId,input,true,uploadId),
+    receipt:(actor,caseId,id)=>inTransaction(options.pool,async c=>{const row=await findEvidence(c,actor,caseId,id);return evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));})});
 
   app.get(
     '/api/cases/:caseId/evidence/:evidenceId/original',

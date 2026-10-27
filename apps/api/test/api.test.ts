@@ -1176,7 +1176,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2203,4 +2203,67 @@ test('binary file intake recovers a committed HTTP receipt after response loss w
   const original=await fetch(`${address}/api/cases/${kase.id}/evidence/${recovered.id}/original`,{headers:{cookie:context.demo!.cookie}});assert.equal(original.status,200);assert.deepEqual(new Uint8Array(await original.arrayBuffer()),bytes);assert.equal(original.headers.get('x-inveos-original-state'),'Quarantined');
   assertError(await createClaim(kase.id,recovered.id),409);
  }finally{await app.close();}
+});
+
+async function uploadReservationFixture(bytes=Buffer.alloc(32769,42)){
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+ const kase=await createCase();await approveAuthority(kase.id);const base=`/api/cases/${kase.id}/uploads`;
+ const input={filename:'fictional-chunked.bin',byteLength:bytes.length,expectedSha256:createHash('sha256').update(bytes).digest('hex'),sourceTime:'2026-01-12T09:00:00Z',method:'Fictional resumable fixture',idempotencyKey:randomUUID()};
+ const r=await request('POST',base,context.demo!,{payload:input});assert.equal(r.statusCode,200,r.body);return {kase,base,input,bytes,id:JSON.parse(r.body).id as string};
+}
+test('resumable binary chunks survive restart, replay out of order and atomically become one quarantined original over HTTP',async()=>{
+ const {kase,base,input,bytes,id}=await uploadReservationFixture(),url=base+'/'+id;
+ assert.equal(JSON.parse((await request('POST',base,context.demo!,{payload:input})).body).id,id);
+ const chunk={ordinal:1,contentBase64:bytes.subarray(32768).toString('base64')};
+ assert.equal((await request('POST',url+'/chunk',context.demo!,{payload:chunk})).statusCode,200);
+ await context.app!.close();context.app=await createAppInstance();
+ assert.deepEqual(JSON.parse((await request('GET',url,context.demo!)).body).received,[1]);
+ assertError(await request('POST',url+'/complete',context.demo!,{payload:{}}),409);
+ assert.equal((await request('POST',url+'/chunk',context.demo!,{payload:chunk})).statusCode,200);
+ assertError(await request('POST',url+'/chunk',context.demo!,{payload:{...chunk,contentBase64:'AA=='}}),409);
+ assert.equal((await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:bytes.subarray(0,32768).toString('base64')}})).statusCode,200);
+ const app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0});
+ const complete=async()=>{const r=await fetch(address+url+'/complete',{method:'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},body:'{}'});assert.equal(r.status,200);return r.json() as Promise<Evidence>;};
+ const [first,second]=await Promise.all([complete(),complete()]);assert.equal(first.id,second.id);assert.equal(first.status,'Quarantined');
+ const downloaded=await fetch(`${address}/api/cases/${kase.id}/evidence/${first.id}/original`,{headers:{cookie:context.demo!.cookie}});assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()),bytes);
+ assert.equal((await complete()).id,first.id);assertError(await createClaim(kase.id,first.id),409);
+ }finally{await app.close();}
+ const counts=await context.pool!.query("SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM upload_chunks WHERE case_id=$1) AS chunks,(SELECT count(*)::int FROM audit_events WHERE case_id=$1 AND action='upload.completed') AS completed",[kase.id]);assert.deepEqual(counts.rows[0],{originals:1,chunks:0,completed:1});
+});
+test('upload reservations reject bad ranges, corrupt assembly and stale authority while cancellation removes staging only',async()=>{
+ const {kase,base,id}=await uploadReservationFixture(Buffer.from('abc')),url=base+'/'+id;
+ for(const payload of [{ordinal:1,contentBase64:'YQ=='},{ordinal:0,contentBase64:'YQ=='},{ordinal:0,contentBase64:'YWJj\n'}])assertError(await request('POST',url+'/chunk',context.demo!,{payload}),422);
+ assert.equal((await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'eHl6'}})).statusCode,200);
+ assertError(await request('POST',url+'/complete',context.demo!,{payload:{}}),422);
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM evidence WHERE case_id=$1',[kase.id])).rows[0].n,0);
+ await approveAuthority(kase.id);assertError(await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'eHl6'}}),409);
+ assert.equal((await request('POST',url+'/cancel',context.demo!,{payload:{}})).statusCode,200);
+ assert.equal(JSON.parse((await request('POST',url+'/cancel',context.demo!,{payload:{}})).body).status,'cancelled');
+ assertError(await request('POST',url+'/complete',context.demo!,{payload:{}}),409);
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM upload_chunks WHERE case_id=$1',[kase.id])).rows[0].n,0);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='upload.cancelled'",[kase.id])).rows[0].n,1);
+});
+test('upload scope, actor ownership, CSRF, expiry and bounded reservation quota remain enforced',async()=>{
+ const {kase,base,input,id}=await uploadReservationFixture(Buffer.from('abc')),url=base+'/'+id;
+ assertError(await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'},csrfHeader:false}),403);
+ const other=await createMember(demoTenantId,'investigator','Fictional upload colleague');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,kase.id,other]);
+ assertError(await request('GET',url,await issueTestSession(other)),404);
+ const client=await createMember(demoTenantId,'client','Fictional upload client');assertError(await request('GET',url,await issueTestSession(client)),403);
+ const wrong=await createCase();assertError(await request('GET',`/api/cases/${wrong.id}/uploads/${id}`,context.demo!),404);
+ await context.schemaAdminPool!.query('ALTER TABLE upload_reservations DISABLE TRIGGER upload_identity');try{await context.schemaAdminPool!.query("UPDATE upload_reservations SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE upload_reservations ENABLE TRIGGER upload_identity');}
+ assertError(await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}}),409);
+ for(let i=0;i<9;i++)assert.equal((await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}})).statusCode,200);
+ assertError(await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}}),409);
+ await request('POST',url+'/cancel',context.demo!,{payload:{}});assert.equal((await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}})).statusCode,200);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);assertError(await request('GET',url,context.demo!),404);
+});
+test('failed upload finalisation audit rolls back evidence and staging cleanup, allowing safe retry',async()=>{
+ const {kase,base,id}=await uploadReservationFixture(Buffer.from('abc')),url=base+'/'+id;
+ await request('POST',url+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}});
+ await context.schemaAdminPool!.query(`CREATE FUNCTION fail_upload_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='upload.completed' THEN RAISE EXCEPTION 'fictional upload audit failure'; END IF; RETURN NEW; END $$`);
+ await context.schemaAdminPool!.query('CREATE TRIGGER fail_upload_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_upload_test()');
+ try{assertError(await request('POST',url+'/complete',context.demo!,{payload:{}}),500);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_upload_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_upload_test()');}
+ const state=JSON.parse((await request('GET',url,context.demo!)).body);assert.equal(state.status,'open');assert.deepEqual(state.received,[0]);
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM evidence WHERE case_id=$1',[kase.id])).rows[0].n,0);
+ assert.equal((await request('POST',url+'/complete',context.demo!,{payload:{}})).statusCode,200);
 });

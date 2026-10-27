@@ -73,3 +73,5 @@
 - [Original access hardening](38_ORIGINAL_ACCESS_HARDENING.md) — bounded workspace previews and audited, verified original downloads.
 
 - [Recoverable binary file intake](39_RECOVERABLE_BINARY_INTAKE.md) — bounded file selection, fingerprints and acknowledgement recovery.
+
+- [Resumable binary upload API](40_RESUMABLE_UPLOAD_API.md) — reservations, bounded chunks, verified finalisation and cancellation.

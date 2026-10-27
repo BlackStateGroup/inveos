@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 27 October: resumable binary upload API
+
+Based on PR #20 receipt `f6ff642054693451de7a19b5f7d9fe29bb607e62`; main remains PR #1 and #20 has no feedback. Added migration 011, actor/case-scoped reservations, 32 KiB exact chunks, status/resumption, idempotent verified finalisation and audited cancellation/staging cleanup. Existing intake is reused, including authority, original immutability and quarantine. At most ten open uploads per case, 256 KiB each, 24-hour expiry. Completed evidence/audit/state/staging deletion are one database transaction. See docs/40_RESUMABLE_UPLOAD_API.md.
+
+Local lint/types/build and Python checks run; four new PostgreSQL/API scenarios are pending hosted verification. Browser chunk integration, automatic expiry cleanup/revoked-owner administration, power-loss/restore and production storage remain open; do not claim full WP-02 completion.
+
+Next: verify this draft and continue with a browser chunk client that binds selected bytes/metadata to a reservation, queries received ordinals and resumes missing ranges. Preserve existing whole-request recovery; do not invent offline/device acceptance. Add bounded audited expiry maintenance for stranded reservations, then browser acceptance on a supported host. Parser/runtime/licence/isolation, dedicated worker credentials, releases and wider product gates remain incomplete. No merge/deployment or essential user decision.
+
 ## 27 October: recoverable binary file intake
 
 Baseline PR #19 receipt `9fb50886c30856390e88ff39393c5dcc52dee6ef`; main remains PR #1, PRs #2–#19 open and #19 has no feedback. Connected the existing quarantined binary endpoint to the evidence workspace with bounded file selection, Web Crypto SHA-256, explicit source metadata and tab-scoped recovery of unconfirmed requests. Reuses immutable originals, authority, idempotency and quarantine. This is whole-request recovery, not resumable chunk transfer. No schema, dependency or parser addition. See docs/39_RECOVERABLE_BINARY_INTAKE.md.
