@@ -387,6 +387,31 @@ test('case, versioned authority, verified evidence, exact quote, review, report,
   const verified = spawnSync('python3', verifyArgs, {encoding: 'utf8'});
   assert.equal(verified.status, 0, verified.stderr);
   assert.equal(JSON.parse(verified.stdout).trustedReportDigestMatched, true);
+  // Package the real API export, then verify offline without extracting it.
+  const packager = fileURLToPath(new URL('../../../tools/report_package.py', import.meta.url));
+  const packagePath = join(context.storageRoot!, 'synthetic-exhibits.zip');
+  const packaged = spawnSync('python3', [packager, 'build', reportPath, packagePath,
+    '--expected-report-sha256', digest(reportResponse.body), '--expected-case-id', kase.id], {encoding: 'utf8'});
+  assert.equal(packaged.status, 0, packaged.stderr);
+  const packageReceipt = JSON.parse(packaged.stdout);
+  assert.equal(packageReceipt.status, 'package_created');
+  assert.equal((await stat(packagePath)).mode & 0o777, 0o600);
+  const packageArgs = [packager, 'verify', packagePath,
+    '--expected-manifest-sha256', packageReceipt.manifestSha256, '--expected-case-id', kase.id];
+  const packageVerified = spawnSync('python3', packageArgs, {encoding: 'utf8'});
+  assert.equal(packageVerified.status, 0, packageVerified.stderr);
+  assert.equal(JSON.parse(packageVerified.stdout).originalsChecked, 1);
+  assert.equal(JSON.parse(packageVerified.stdout).trustedManifestDigestMatched, true);
+  const corruptedPackage = await readFile(packagePath);
+  const originalOffset = corruptedPackage.indexOf(Buffer.from(firstUploadInput.text));
+  assert.notEqual(originalOffset, -1);
+  corruptedPackage[originalOffset] = corruptedPackage[originalOffset]! ^ 1;
+  await writeFile(packagePath, corruptedPackage);
+  const packageRejected = spawnSync('python3', packageArgs, {encoding: 'utf8'});
+  assert.equal(packageRejected.status, 1, packageRejected.stderr);
+  assert.equal(JSON.parse(packageRejected.stderr).status, 'package_operation_failed');
+  assert.equal(await readFile(reportPath, 'utf8'), reportResponse.body);
+
   const changedReport = structuredClone(report);
   changedReport.findings[0]!.text = 'Altered fictional narrative';
   await writeFile(reportPath, JSON.stringify(changedReport), 'utf8');

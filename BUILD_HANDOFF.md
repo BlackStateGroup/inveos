@@ -1,5 +1,17 @@
 # INVEOS engineering handoff
 
+## 27 October 2026: versioned internal exhibit package
+
+Baseline checked: main remains `95b5c35`; open draft PRs #2, #3 and #4 have no review comments. This slice is stacked on PR #4 head `464ac9d8ce40735905da3742d72c1d513c694974`, reusing the report verifier and PostgreSQL workflow. Do not merge or overwrite the independent research/planning branches.
+
+Implemented: stdlib offline package builder and verifier, deterministic per-evidence exhibits, exact report/original bytes, versioned canonical manifest with citation/policy/time mapping and explicit omissions, optional trusted manifest digest/case check, bounded non-extracting ZIP validation and private atomic no-overwrite output. Hardened existing report JSON error handling. Added fifteen Python tests and actual API-report package verification/corruption assertions. [Run instructions, format, limits and rollback](docs/26_INTERNAL_EXHIBIT_PACKAGE.md).
+
+Local verification: 37 Python tests, foundation validator, npm lint, all workspace type checks, web build and whitespace checks pass. Hosted PostgreSQL evidence will be recorded after publication; no local PostgreSQL execution is claimed. Package tests are real stdlib CLI/ZIP executions with fictional data, not parser tests. No browser/device/worker-isolation/restore/production security assessment, deployment or pilot acceptance is claimed.
+
+Parser blocker rechecked: `bwrap --ro-bind / / --unshare-net -- /usr/bin/true` fails with `Creating new namespace failed: Operation not permitted`. No upstream parser execution or dependency installation followed. Third-party research copies remain ignored and unapproved; no new runtime dependency/source is incorporated.
+
+Next work: WP-02 binary immutable intake and derivative lineage/durable scoped jobs, or WP-07 a consistent report snapshot with actual scoped audit history and a versioned report model. Do not synthesise custody events from report metadata. PDF/DOCX/redaction/client release, signature anchors, complete source inventory, real identity/encrypted storage, native offline and the remaining work packages are still open. Packaging is an internal local workflow, not a client-release route. Implementation partial; testing partial; deployed no; pilot accepted no. No user decision is required for further independent engineering.
+
 ## 27 October 2026: offline report verification slice
 
 Baseline: PR #1 merged; PR #2 contains the isolated document research contract; PR #3 contains expanded delivery planning and PostgreSQL CI. This branch is stacked on PR #3 (`4e4664e8b4b357c1c2b18c162d83a6ca65453f04`) to reuse its workflow and fixture-path fix. Do not merge automatically or duplicate that work.

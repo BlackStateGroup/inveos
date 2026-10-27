@@ -73,7 +73,7 @@ class ReportVerifierTests(unittest.TestCase):
         with self.assertRaises(InvalidReport): verify_report(encode(fixture()), expected_case_id='other-case')
 
     def test_malformed_json(self):
-        for raw in [b'', b'[]', b'\xff', b'{"x":1,"x":2}', b'{"x":NaN}', b'['*2000]:
+        for raw in [b'', b'[]', b'\xff', b'{"x":1,"x":2}', b'{"x":NaN}', b'['*2000, b'{"x":' + b'1'*5000 + b'}']:
             with self.subTest(raw=raw[:20]), self.assertRaises(InvalidReport): verify_report(raw)
 
     def test_cli_has_no_application_dependency(self):

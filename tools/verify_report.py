@@ -61,7 +61,7 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
     try:
         report = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object,
                             parse_constant=reject_constant)
-    except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+    except (UnicodeError, ValueError, RecursionError) as exc:
         raise InvalidReport('Malformed UTF-8 JSON') from exc
     require(isinstance(report, dict), 'Expected report object')
     require(report.get('status') == 'draft_not_released', 'Unsupported report status')
