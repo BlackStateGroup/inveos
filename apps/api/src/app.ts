@@ -7,6 +7,7 @@ import type {
   Activity,
   AuthorityInput,
   AuthorityRecord,
+  BinaryEvidenceInput,
   Case,
   CaseInput,
   Claim,
@@ -64,7 +65,8 @@ type EvidenceRow = QueryResultRow & {
   method: string;
   digest: string;
   object_path: string;
-  status: 'Verified';
+  status: 'Verified' | 'Quarantined';
+  original_kind: 'original_utf8' | 'opaque_binary';
   request_hash: string;
   created_by: string;
 };
@@ -169,6 +171,19 @@ const evidenceBodySchema = {
     idempotencyKey: uuidSchema,
   },
 } as const;
+const binaryEvidenceBodySchema = {
+  type: 'object',
+  required: ['filename', 'contentBase64', 'expectedSha256', 'sourceTime', 'method', 'idempotencyKey'],
+  additionalProperties: false,
+  properties: {
+    filename: evidenceBodySchema.properties.filename,
+    contentBase64: {type: 'string', minLength: 4, maxLength: 349528},
+    expectedSha256: evidenceBodySchema.properties.expectedSha256,
+    sourceTime: evidenceBodySchema.properties.sourceTime,
+    method: evidenceBodySchema.properties.method,
+    idempotencyKey: uuidSchema,
+  },
+} as const;
 const claimBodySchema = {
   type: 'object',
   required: ['evidenceId', 'text', 'quote'],
@@ -250,6 +265,20 @@ function sha256TextBytes(text: string): Buffer {
   return bytes;
 }
 
+function binaryBytes(encoded: string): Buffer {
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.length < 1 || bytes.length > 256 * 1024 || bytes.toString('base64') !== encoded) {
+    throw new ApiError(422, 'Binary evidence must be canonical base64 encoding 1 byte to 256 KiB.');
+  }
+  return bytes;
+}
+
+function requireTextOriginal(evidence: EvidenceRow): void {
+  if (evidence.original_kind !== 'original_utf8' || evidence.status !== 'Verified') {
+    throw new ApiError(409, 'Unprocessed binary originals cannot support original-text claims or reports.');
+  }
+}
+
 function validSourceTime(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(?:[Zz]|[+-](\d{2}):(\d{2}))$/u.exec(value);
   if (!match) {
@@ -277,14 +306,15 @@ function validSourceTime(value: string): boolean {
   return day >= 1 && day <= daysInMonth;
 }
 
-function validFilename(value: string): boolean {
+function validFilename(value: string, binary = false): boolean {
   const hasUnsafeCharacters = [...value].some((character) => {
     const codePoint = character.codePointAt(0)!;
     return character === '/' || character === '\\' || codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
   });
-  return value.toLowerCase().endsWith('.txt')
+  return (binary || value.toLowerCase().endsWith('.txt'))
     && value.length > 4
     && value.trim() === value
+    && Buffer.from(value, 'utf8').toString('utf8') === value
     && !hasUnsafeCharacters;
 }
 
@@ -309,7 +339,8 @@ function displayEvidence(row: EvidenceRow, text = ''): Evidence {
     id: row.id,
     caseId: row.case_id,
     filename: row.filename,
-    kind: 'Document',
+    kind: row.original_kind === 'opaque_binary' ? 'Binary (unprocessed)' : 'Document',
+    originalKind: row.original_kind,
     receivedTime: iso(row.received_time),
     sourceTime: row.source_time,
     method: row.method,
@@ -432,7 +463,7 @@ async function writeAudit(
 }
 
 function evidenceDtoWithText(row: EvidenceRow, bytes: Buffer): Evidence {
-  return displayEvidence(row, bytes.toString('utf8'));
+  return displayEvidence(row, row.original_kind === 'opaque_binary' ? '' : bytes.toString('utf8'));
 }
 
 function toAuthorityRecord(row: QueryResultRow, caseId: string): AuthorityRecord {
@@ -453,8 +484,8 @@ function toAuthorityRecord(row: QueryResultRow, caseId: string): AuthorityRecord
 export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 2 * 1024 * 1024,
-    logger: false,
     ajv: {customOptions: {removeAdditional: false}},
+    logger: false,
   });
   app.decorateRequest('actor', null);
   await app.register(cookiePlugin);
@@ -550,6 +581,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     verifyClaim: async (client, actor, caseId, claimId) => {
       const claim = await findClaim(client, actor, caseId, claimId);
       const source = await findEvidence(client, actor, caseId, claim.evidence_id);
+      requireTextOriginal(source);
       const bytes = await verifiedBytes(options.storageRoot, source);
       const quoteBytes = Buffer.from(claim.quote, 'utf8');
       const span = bytes.subarray(claim.source_start_byte, claim.source_end_byte);
@@ -702,8 +734,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         const bytes = await readOriginal(options.storageRoot, row.object_path);
         const valid = bytes.length === row.byte_length && sha256(bytes) === row.digest.trim();
         workspace.evidence.push({
-          ...displayEvidence(row, valid ? bytes.toString('utf8') : ''),
-          status: valid ? 'Verified' : 'Integrity mismatch',
+          ...displayEvidence(row, valid && row.original_kind === 'original_utf8' ? bytes.toString('utf8') : ''),
+          status: valid ? row.status : 'Integrity mismatch',
         });
       } catch {
         workspace.evidence.push({...displayEvidence(row), status: 'Original unavailable'});
@@ -846,119 +878,127 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  app.post(
-    '/api/cases/:caseId/evidence',
-    {preHandler: requireCsrf, schema: {params: caseParamsSchema, body: evidenceBodySchema}},
-    async (request) => {
-      const actor = request.actor!;
-      rejectClientRole(actor);
-      const {caseId} = request.params as {caseId: string};
-      const input = request.body as EvidenceInput;
-      if (!validFilename(input.filename)) {
-        throw new ApiError(422, 'Evidence filename must be a safe .txt filename.');
-      }
-      if (!validSourceTime(input.sourceTime)) {
-        throw new ApiError(422, 'Source time must be a valid timestamp with an explicit timezone.');
-      }
-      const bytes = sha256TextBytes(input.text);
-      const digest = sha256(bytes);
-      if (digest !== input.expectedSha256.toLowerCase()) {
-        throw new ApiError(422, 'Server-computed digest does not match expectedSha256.');
-      }
-      const requestHash = sha256(JSON.stringify({
-        filename: input.filename,
-        text: input.text,
-        expectedSha256: input.expectedSha256.toLowerCase(),
-        sourceTime: input.sourceTime,
-        method: input.method,
-        idempotencyKey: input.idempotencyKey,
-      }));
-      let stored: StoredOriginal | undefined;
-      try {
-        const result = await inTransaction(options.pool, async (client) => {
-          await client.query(
-            'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-            [`${actor.tenantId}:${caseId}:${actor.userId}:${input.idempotencyKey}`],
-          );
-          const kase = await findCase(client, actor, caseId, true);
-          const prior = await client.query<EvidenceRow>(
-            `SELECT * FROM evidence
-              WHERE tenant_id = $1 AND case_id = $2 AND created_by = $3 AND idempotency_key = $4`,
-            [actor.tenantId, caseId, actor.userId, input.idempotencyKey],
-          );
-          if (prior.rows[0]) {
-            if (prior.rows[0].request_hash.trim() !== requestHash) {
-              throw new ApiError(409, 'Idempotency key was already used for a different request.');
-            }
-            const existingBytes = await verifiedBytes(options.storageRoot, prior.rows[0]);
-            return {row: prior.rows[0], bytes: existingBytes};
-          }
-          if (!kase.authority_version || kase.status !== 'Active') {
-            throw new ApiError(409, 'Evidence intake is blocked until authority scope is approved.');
-          }
-          const authorityResult = await client.query(
-            `SELECT id, version
-               FROM authority_records
-              WHERE tenant_id = $1 AND case_id = $2 AND version = $3`,
-            [actor.tenantId, caseId, kase.authority_version],
-          );
-          const authority = authorityResult.rows[0] as QueryResultRow | undefined;
-          if (!authority) {
-            throw new ApiError(409, 'The current immutable authority record is unavailable.');
-          }
-
-          const evidenceId = randomUUID();
-          stored = await writeOriginal(options.storageRoot, actor.tenantId, caseId, evidenceId, bytes);
-          const inserted = await client.query<EvidenceRow>(
-            `INSERT INTO evidence
-               (tenant_id, case_id, id, authority_id, authority_version, filename, byte_length,
-                source_time, method, digest, object_path, status, idempotency_key, request_hash, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'Verified', $12, $13, $14)
-             RETURNING *`,
-            [
-              actor.tenantId,
-              caseId,
-              evidenceId,
-              authority.id,
-              authority.version,
-              input.filename,
-              bytes.length,
-              input.sourceTime,
-              input.method,
-              digest,
-              stored.objectPath,
-              input.idempotencyKey,
-              requestHash,
-              actor.userId,
-            ],
-          );
-          await writeAudit(
-            client,
-            actor,
-            caseId,
-            'evidence.received',
-            'evidence',
-            evidenceId,
-            'Evidence received; server digest matched supplied bytes',
-            {sha256: digest, authorityVersion: authority.version, byteLength: bytes.length},
-          );
-          const row = inserted.rows[0];
-          if (!row) {
-            throw new Error('Evidence insert did not return a row.');
-          }
-          return {row, bytes};
-        });
-        if (stored && result.row.object_path !== stored.objectPath) {
-          await stored.remove();
-          stored = undefined;
+  for (const binary of [false, true]) {
+    app.post(
+      binary ? '/api/cases/:caseId/evidence/binary' : '/api/cases/:caseId/evidence',
+      {preHandler: requireCsrf, schema: {params: caseParamsSchema, body: binary ? binaryEvidenceBodySchema : evidenceBodySchema}},
+      async (request) => {
+        const actor = request.actor!;
+        rejectClientRole(actor);
+        const {caseId} = request.params as {caseId: string};
+        const input = request.body as EvidenceInput | BinaryEvidenceInput;
+        const originalKind = binary ? 'opaque_binary' : 'original_utf8';
+        if (!validFilename(input.filename, binary)) {
+          throw new ApiError(422, binary ? 'Evidence filename must be safe.' : 'Evidence filename must be a safe .txt filename.');
         }
-        return evidenceDtoWithText(result.row, result.bytes);
-      } catch (error) {
-        await stored?.remove();
-        throw error;
-      }
-    },
-  );
+        if (!validSourceTime(input.sourceTime)) {
+          throw new ApiError(422, 'Source time must be a valid timestamp with an explicit timezone.');
+        }
+        const bytes = binary ? binaryBytes((input as BinaryEvidenceInput).contentBase64)
+          : sha256TextBytes((input as EvidenceInput).text);
+        const digest = sha256(bytes);
+        if (digest !== input.expectedSha256.toLowerCase()) {
+          throw new ApiError(422, 'Server-computed digest does not match expectedSha256.');
+        }
+        const requestHash = sha256(JSON.stringify({
+          filename: input.filename,
+          ...(binary ? {originalKind, contentBase64: (input as BinaryEvidenceInput).contentBase64}
+            : {text: (input as EvidenceInput).text}),
+          expectedSha256: input.expectedSha256.toLowerCase(),
+          sourceTime: input.sourceTime,
+          method: input.method,
+          idempotencyKey: input.idempotencyKey,
+        }));
+        let stored: StoredOriginal | undefined;
+        try {
+          const result = await inTransaction(options.pool, async (client) => {
+            await client.query(
+              'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+              [`${actor.tenantId}:${caseId}:${actor.userId}:${input.idempotencyKey}`],
+            );
+            const kase = await findCase(client, actor, caseId, true);
+            const prior = await client.query<EvidenceRow>(
+              `SELECT * FROM evidence
+                WHERE tenant_id = $1 AND case_id = $2 AND created_by = $3 AND idempotency_key = $4`,
+              [actor.tenantId, caseId, actor.userId, input.idempotencyKey],
+            );
+            if (prior.rows[0]) {
+              if (prior.rows[0].request_hash.trim() !== requestHash) {
+                throw new ApiError(409, 'Idempotency key was already used for a different request.');
+              }
+              const existingBytes = await verifiedBytes(options.storageRoot, prior.rows[0]);
+              return {row: prior.rows[0], bytes: existingBytes};
+            }
+            if (!kase.authority_version || kase.status !== 'Active') {
+              throw new ApiError(409, 'Evidence intake is blocked until authority scope is approved.');
+            }
+            const authorityResult = await client.query(
+              `SELECT id, version
+                 FROM authority_records
+                WHERE tenant_id = $1 AND case_id = $2 AND version = $3`,
+              [actor.tenantId, caseId, kase.authority_version],
+            );
+            const authority = authorityResult.rows[0] as QueryResultRow | undefined;
+            if (!authority) {
+              throw new ApiError(409, 'The current immutable authority record is unavailable.');
+            }
+
+            const evidenceId = randomUUID();
+            stored = await writeOriginal(options.storageRoot, actor.tenantId, caseId, evidenceId, bytes, binary ? 'bin' : 'txt');
+            const inserted = await client.query<EvidenceRow>(
+              `INSERT INTO evidence
+                 (tenant_id, case_id, id, authority_id, authority_version, filename, byte_length,
+                  source_time, method, digest, object_path, status, idempotency_key, request_hash, created_by, original_kind)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $15, $12, $13, $14, $16)
+               RETURNING *`,
+              [
+                actor.tenantId,
+                caseId,
+                evidenceId,
+                authority.id,
+                authority.version,
+                input.filename,
+                bytes.length,
+                input.sourceTime,
+                input.method,
+                digest,
+                stored.objectPath,
+                input.idempotencyKey,
+                requestHash,
+                actor.userId,
+                binary ? 'Quarantined' : 'Verified',
+                originalKind,
+              ],
+            );
+            await writeAudit(
+              client,
+              actor,
+              caseId,
+              'evidence.received',
+              'evidence',
+              evidenceId,
+              binary ? 'Binary original received; digest matched; quarantined without scanning or parsing'
+                : 'Evidence received; server digest matched supplied bytes',
+              {sha256: digest, authorityVersion: authority.version, byteLength: bytes.length, originalKind},
+            );
+            const row = inserted.rows[0];
+            if (!row) {
+              throw new Error('Evidence insert did not return a row.');
+            }
+            return {row, bytes};
+          });
+          if (stored && result.row.object_path !== stored.objectPath) {
+            await stored.remove();
+            stored = undefined;
+          }
+          return evidenceDtoWithText(result.row, result.bytes);
+        } catch (error) {
+          await stored?.remove();
+          throw error;
+        }
+      },
+    );
+  }
 
   app.get(
     '/api/cases/:caseId/evidence/:evidenceId/original',
@@ -976,8 +1016,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
       return reply
         .header('X-Content-Type-Options', 'nosniff')
-        .header('Content-Disposition', `attachment; filename="evidence.txt"; filename*=UTF-8''${encodedFilename}`)
-        .type('text/plain; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="evidence.${evidence.original_kind === 'opaque_binary' ? 'bin' : 'txt'}"; filename*=UTF-8''${encodedFilename}`)
+        .header('X-INVEOS-Original-State', evidence.status)
+        .type(evidence.original_kind === 'opaque_binary' ? 'application/octet-stream' : 'text/plain; charset=utf-8')
         .send(bytes);
     },
   );
@@ -1000,6 +1041,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const claim = await inTransaction(options.pool, async (client) => {
         await findCase(client, actor, caseId, true);
         const evidence = await findEvidence(client, actor, caseId, input.evidenceId);
+        requireTextOriginal(evidence);
         const bytes = await verifiedBytes(options.storageRoot, evidence);
         const sourceText = bytes.toString('utf8');
         if (!Buffer.from(sourceText, 'utf8').equals(bytes)) {
@@ -1080,6 +1122,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           }
           if (input.accepted) {
             const evidence = await findEvidence(client, actor, caseId, claim.evidence_id);
+            requireTextOriginal(evidence);
             const bytes = await verifiedBytes(options.storageRoot, evidence);
             if (
               evidence.digest.trim() !== claim.source_digest.trim()
@@ -1102,6 +1145,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         let bytes: Buffer | undefined;
         if (input.accepted) {
           evidence = await findEvidence(client, actor, caseId, claim.evidence_id);
+          requireTextOriginal(evidence);
           bytes = await verifiedBytes(options.storageRoot, evidence);
           const quoteBytes = Buffer.from(claim.quote, 'utf8');
           const span = bytes.subarray(claim.source_start_byte, claim.source_end_byte);
@@ -1186,7 +1230,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const result = await options.pool.query(
         `SELECT f.id AS finding_id, f.text AS finding_text, f.reviewed_at, reviewer.display_name AS reviewer,
                 cl.evidence_id, cl.quote, cl.source_start_byte, cl.source_end_byte, cl.source_digest,
-                e.filename, e.byte_length, e.source_time, e.received_time, e.digest, e.object_path,
+                e.filename, e.byte_length, e.source_time, e.received_time, e.digest, e.object_path, e.original_kind, e.status,
                 e.authority_id, e.authority_version, a.purpose, a.lawful_basis, a.scope,
                 a.retention_days, a.minimisation, a.approved_at, policy_user.display_name AS approved_by
            FROM findings f
@@ -1224,6 +1268,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const findings: ReportDraft['findings'] = [];
       for (const row of result.rows) {
         const evidence = row as EvidenceRow;
+        requireTextOriginal(evidence);
         const bytes = await verifiedBytes(options.storageRoot, evidence);
         const quoteBytes = Buffer.from(row.quote, 'utf8') as Buffer;
         const span = bytes.subarray(row.source_start_byte, row.source_end_byte);

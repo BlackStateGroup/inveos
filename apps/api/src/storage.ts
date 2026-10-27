@@ -33,11 +33,12 @@ export async function writeOriginal(
   caseId: string,
   evidenceId: string,
   bytes: Buffer,
+  extension: 'txt' | 'bin' = 'txt',
 ): Promise<StoredOriginal> {
   if (!isAbsolute(root)) {
     throw new Error('Storage root must be an absolute path.');
   }
-  const objectPath = join(tenantId, caseId, `${evidenceId}.txt`);
+  const objectPath = join(tenantId, caseId, `${evidenceId}.${extension}`);
   const rootPath = resolve(root);
   const fullPath = resolveObjectPath(rootPath, objectPath);
   const directory = dirname(fullPath);
