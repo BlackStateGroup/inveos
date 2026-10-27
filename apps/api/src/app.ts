@@ -1220,15 +1220,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  app.get(
-    '/api/cases/:caseId/report',
-    {preHandler: authenticate, schema: {params: caseParamsSchema}},
-    async (request): Promise<ReportDraft> => {
-      const actor = request.actor!;
-      rejectClientRole(actor);
-      const {caseId} = request.params as {caseId: string};
-      await inTransaction(options.pool, async (client) => findCase(client, actor, caseId));
-      const result = await options.pool.query(
+  async function buildReport(client: PoolClient, actor: Actor, caseId: string): Promise<ReportDraft> {
+      await findCase(client,actor,caseId);
+      const result = await client.query(
         `SELECT f.id AS finding_id, f.text AS finding_text, f.reviewed_at, reviewer.display_name AS reviewer,
                 cl.id AS claim_id, cl.evidence_id, cl.quote, cl.source_start_byte, cl.source_end_byte, cl.source_digest,
                 r.claim_id AS review_claim_id, r.accepted AS review_accepted, r.source_digest AS review_digest,
@@ -1248,13 +1242,14 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
            JOIN users reviewer ON reviewer.id = f.reviewer_user_id
            JOIN users policy_user ON policy_user.id = a.approved_by
           WHERE f.tenant_id = $1 AND f.case_id = $2
-          ORDER BY f.reviewed_at, f.id`,
+          ORDER BY f.reviewed_at, f.id LIMIT 1001`,
         [actor.tenantId, caseId],
       );
+      if (result.rows.length>1000) throw new ApiError(422,'Report finding limit exceeded.');
       if (!result.rows.length) {
         throw new ApiError(422, 'A report draft requires at least one accepted finding.');
       }
-      const caseResult = await options.pool.query<CaseRow>(
+      const caseResult = await client.query<CaseRow>(
         `SELECT c.*, u.display_name AS owner_name
            FROM cases c
            JOIN case_memberships cm
@@ -1312,7 +1307,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           source: sources.get(row.evidence_id)!,
         });
       }
-      const workResult = await options.pool.query(
+      const workResult = await client.query(
         `SELECT *, due_date::text AS due_date FROM case_work_items
           WHERE tenant_id=$1 AND case_id=$2 ORDER BY created_at, id`, [actor.tenantId, caseId],
       );
@@ -1337,8 +1332,64 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         },
         limitations: 'Internal synthetic-lab JSON draft only. Working questions and hypotheses are not findings. Verify cited bytes/spans offline with tools/verify_report.py; authenticate the whole draft using a separately trusted fingerprint. Not a signed custody certificate, production PDF, or client release.',
       };
-    },
-  );
+  }
+  async function reportTransaction<T>(operation: (client: PoolClient)=>Promise<T>): Promise<T> {
+    for(let attempt=0;;attempt++) {
+      try {return await inTransaction(options.pool,async client=>{
+        await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        return operation(client);
+      });} catch(error) {
+        if (attempt>=2 || (error as {code?:string}).code!=='40001') throw error;
+      }
+    }
+  }
+  async function reportAccess(client: PoolClient,actor: Actor,caseId:string) {
+    rejectClientRole(actor);
+    await findCase(client,actor,caseId);
+    const member=await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role<>'client'",[actor.tenantId,actor.userId]);
+    if(!member.rowCount) throw new ApiError(403,'Internal reports only.');
+  }
+  app.get('/api/cases/:caseId/report',{preHandler:authenticate,schema:{params:caseParamsSchema}},async request=>{
+    const actor=request.actor!,{caseId}=request.params as {caseId:string};
+    return reportTransaction(async client=>{await reportAccess(client,actor,caseId);return buildReport(client,actor,caseId);});
+  });
+  app.post('/api/cases/:caseId/report-revisions',{preHandler:requireCsrf,schema:{params:caseParamsSchema,
+    body:{type:'object',required:['idempotencyKey'],additionalProperties:false,properties:{idempotencyKey:uuidSchema}}}},async request=>{
+    const actor=request.actor!,{caseId}=request.params as {caseId:string},{idempotencyKey}=request.body as {idempotencyKey:string};
+    return reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);
+      const old=await client.query('SELECT id,digest,created_at,report_bytes FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,idempotencyKey]);
+      if(old.rows[0]) {checkRevision(old.rows[0]);return revisionReceipt(old.rows[0],caseId);}
+      const report=await buildReport(client,actor,caseId);
+      const bytes=Buffer.from(JSON.stringify(report),'utf8');
+      if(bytes.length>33554432) throw new ApiError(422,'Report byte limit exceeded.');
+      const digest=createHash('sha256').update(bytes).digest('hex'),id=randomUUID();
+      const inserted=await client.query(`INSERT INTO report_revisions (tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest)
+        VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);
+      if(!inserted.rows[0]) throw Object.assign(new Error('Concurrent revision retry'),{code:'40001'});
+      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,findingIds:report.findings.map(f=>f.id)});
+      return revisionReceipt(inserted.rows[0],caseId);
+    });
+  });
+  function revisionReceipt(row: QueryResultRow,caseId:string) {
+    return {id:row.id,caseId,status:'draft_not_released',sha256:row.digest.trim(),createdAt:iso(row.created_at)};
+  }
+  function checkRevision(row: QueryResultRow) {
+    if(createHash('sha256').update(row.report_bytes).digest('hex')!==row.digest.trim()) throw new ApiError(409,'Stored report revision integrity failed.');
+  }
+  app.get('/api/cases/:caseId/report-revisions/:revisionId',{preHandler:authenticate,schema:{params:{type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}}}},async(request,reply)=>{
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
+    const row=await reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);
+      const result=await client.query('SELECT * FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId]);
+      if(!result.rows[0]) notFound();checkRevision(result.rows[0]);
+      await writeAudit(client,actor,caseId,'report_revision.downloaded','report_revision',revisionId,'Frozen internal draft downloaded');
+      return result.rows[0];
+    });
+    return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff')
+      .header('X-INVEOS-Report-SHA256',row.digest.trim()).header('Content-Disposition',`attachment; filename="report-${revisionId}.json"`)
+      .type('application/json').send(row.report_bytes);
+  });
 
   return app;
 }

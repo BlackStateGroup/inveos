@@ -1172,7 +1172,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1532,4 +1532,80 @@ test('claim source identity is immutable and review replay or reports reject cha
   await corruptClaim('UPDATE claims SET source_start_byte=$2,source_end_byte=$3 WHERE id=$1',[id,midpoint,midpoint+1]);
   assertError(await request('POST',review,context.demo!,{payload:decision}),409); // Replacement decoding must not pass.
   assertError(await request('GET',`/api/cases/${kase.id}/report`,context.demo!),409);
+});
+
+async function reportFixture() {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const claim=JSON.parse((await createClaim(kase.id,evidence.id)).body);
+  const review=await request('POST',`/api/cases/${kase.id}/claims/${claim.id}/review`,context.demo!,{payload:{accepted:true,reason:'Reviewed fictional original for frozen report.'}});
+  assert.equal(review.statusCode,200,review.body);
+  return {kase,evidence,url:`/api/cases/${kase.id}/report-revisions`};
+}
+
+test('frozen reports deduplicate concurrent requests, survive restart and preserve independently verifiable bytes',async()=>{
+  const {kase,evidence,url}=await reportFixture();
+  const input={idempotencyKey:randomUUID()};
+  const replies=await Promise.all([request('POST',url,context.demo!,{payload:input}),request('POST',url,context.demo!,{payload:input})]);
+  replies.forEach(r=>assert.equal(r.statusCode,200,r.body));
+  const receipt=JSON.parse(replies[0]!.body);assert.deepEqual(JSON.parse(replies[1]!.body),receipt);
+  const download=await request('GET',`${url}/${receipt.id}`,context.demo!);
+  assert.equal(download.statusCode,200,download.body);assert.equal(digest(download.body),receipt.sha256);
+  assert.equal(download.headers['cache-control'],'no-store');assert.equal(download.headers['x-inveos-report-sha256'],receipt.sha256);
+  await createWork(kase.id,workInput({kind:'question',title:'New fictional question after freeze'}));
+  const next=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(next.statusCode,200,next.body);
+  assert.notEqual(JSON.parse(next.body).sha256,receipt.sha256);
+  await context.app!.close();context.app=await createAppInstance();
+  assert.equal((await request('GET',`${url}/${receipt.id}`,context.demo!)).body,download.body);
+  const original=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[evidence.id])).rows[0];
+  await writeFile(resolve(context.storageRoot!,original.object_path),'corrupt fictional original after export');
+  assertError(await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}}),409);
+  assert.deepEqual(JSON.parse((await request('POST',url,context.demo!,{payload:input})).body),receipt);
+  assert.equal((await request('GET',`${url}/${receipt.id}`,context.demo!)).body,download.body);
+  const file=join(context.storageRoot!,`frozen-${receipt.id}.json`);await writeFile(file,download.body);
+  const verifier=fileURLToPath(new URL('../../../tools/verify_report.py',import.meta.url));
+  const verified=await promisify(execFile)('python3',[verifier,file,'--expected-sha256',receipt.sha256,'--expected-case-id',kase.id]);
+  assert.equal(JSON.parse(verified.stdout).trustedReportDigestMatched,true);
+  const count=await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='report.frozen'",[kase.id]);assert.equal(count.rows[0].n,2);
+});
+
+test('frozen reports enforce case and role boundaries, CSRF, immutable storage and corruption detection',async()=>{
+  const {kase,url}=await reportFixture(),input={idempotencyKey:randomUUID()};
+  assertError(await request('POST',url,context.demo!,{payload:input,csrfHeader:false}),403);
+  assertError(await request('POST',url,context.demo!,{payload:{...input,report:{}}}),422);
+  const created=await request('POST',url,context.demo!,{payload:input});assert.equal(created.statusCode,200,created.body);
+  const id=JSON.parse(created.body).id;
+  const outsider=await createMember(demoTenantId,'investigator','Fictional frozen-report outsider');
+  const client=await createMember(demoTenantId,'client','Fictional frozen-report client');
+  for(const [session,code] of [[await issueTestSession(outsider),404],[await issueTestSession(client),403]] as const){
+    assertError(await request('GET',`${url}/${id}`,session),code);assertError(await request('POST',url,session,{payload:input}),code);
+  }
+  const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/report-revisions/${id}`,context.demo!),404);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,demoUserId]);
+  assertError(await request('GET',`${url}/${id}`,context.demo!),404);
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)',[demoTenantId,kase.id,demoUserId]);
+  await assert.rejects(context.pool!.query('UPDATE report_revisions SET digest=$2 WHERE id=$1',[id,'0'.repeat(64)]),/permission denied/);
+  await assert.rejects(context.schemaAdminPool!.query('DELETE FROM report_revisions WHERE id=$1',[id]),/append-only/);
+  await context.schemaAdminPool!.query('ALTER TABLE report_revisions DISABLE TRIGGER report_revisions_append_only');
+  try {await context.schemaAdminPool!.query('UPDATE report_revisions SET report_bytes=$2 WHERE id=$1',[id,Buffer.from('{}')]);}
+  finally {await context.schemaAdminPool!.query('ALTER TABLE report_revisions ENABLE TRIGGER report_revisions_append_only');}
+  assertError(await request('GET',`${url}/${id}`,context.demo!),409);
+  assertError(await request('POST',url,context.demo!,{payload:input}),409);
+});
+
+test('freezing requires reviewed findings and rolls back its revision when audit insertion fails',async()=>{
+  context.demo=await issueTestSession(demoUserId);const empty=await createCase();
+  assertError(await request('POST',`/api/cases/${empty.id}/report-revisions`,context.demo!,{payload:{idempotencyKey:randomUUID()}}),422);
+  const {kase,url}=await reportFixture(),input={idempotencyKey:randomUUID()};
+  await context.schemaAdminPool!.query(`CREATE FUNCTION fail_report_audit_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    IF NEW.action='report.frozen' THEN
+      IF current_setting('transaction_isolation')<>'repeatable read' THEN RAISE EXCEPTION 'wrong isolation'; END IF;
+      RAISE EXCEPTION 'fictional audit failure'; END IF; RETURN NEW; END $$`);
+  await context.schemaAdminPool!.query('CREATE TRIGGER fail_report_audit_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_report_audit_test()');
+  try {assertError(await request('POST',url,context.demo!,{payload:input}),500);} finally {
+    await context.schemaAdminPool!.query('DROP TRIGGER fail_report_audit_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_report_audit_test()');
+  }
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_revisions WHERE case_id=$1',[kase.id])).rows[0].n,0);
+  const retried=await request('POST',url,context.demo!,{payload:input});assert.equal(retried.statusCode,200,retried.body);
 });
