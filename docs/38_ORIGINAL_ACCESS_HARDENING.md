@@ -26,7 +26,7 @@ npm run test:foundation
 npm test --workspace @inveos/api
 ```
 
-Local lint/types/build pass. Three added PostgreSQL scenarios are pending hosted execution; record the actual result in `BUILD_HANDOFF.md`:
+Local lint/types/build and all 42 Python tests pass. Hosted [Checks run #45](https://github.com/BlackStateGroup/inveos/actions/runs/40570812313) passed at `006af9ed327e2bf7e12f1d8a9a0dcd6cadbb3472`, tree `c9f5dc61fd52de439b1dfebda01b264191a426f2`: 60 PostgreSQL API tests, eighteen helpers (78 Node tests) and 42 Python tests, plus lint/types/build/reference checks. Three added PostgreSQL scenarios passed:
 
 - Actual loopback HTTP workspace requests accept a 256 KiB fictional original and reject an oversized replacement, same-sized corruption, a symlink to identical bytes, a directory, a FIFO with no writer and a missing file. Restore verifies the original preview again. Requests have a five-second timeout; the application must reject the FIFO without waiting for a writer.
 - Actual HTTP text and arbitrary-byte binary downloads return exact original bytes as attachments, no-store/nosniff and unchanged quarantine state. Committed audit metadata is scoped and minimal, preserving acquisition authority after the current authority changes. No finding is created.
