@@ -189,6 +189,8 @@ done < /sys/fs/cgroup/cpu.stat
                     else:
                         require(limit is None and result.returncode == 0 and result.stdout.strip() == 'ISOLATION_PROBE_OK')
                     receipts.append(label)
+                except (ValueError, ProcessLimitExceeded) as error:
+                    raise ValueError(f'{label}: {error}') from None
                 finally:
                     command('rm', '-f', '-v', name)
                     require(command('inspect', name, check=False).returncode != 0)
@@ -209,6 +211,7 @@ def main():
         print(json.dumps(run_probe(args.image), indent=2))
     except (OSError, subprocess.SubprocessError, ProcessLimitExceeded, ValueError, AssertionError, KeyError) as error:
         print(json.dumps({'status': 'host_probe_failed', 'errorType': type(error).__name__,
+                          'policyFailure': str(error) if isinstance(error, ValueError) else None,
                           'parserExecuted': False}))
         return 1
     return 0
