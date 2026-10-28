@@ -2456,4 +2456,10 @@ test('report review audit failure rolls back and allows retry; changed authority
  assert.equal(JSON.parse((await request('GET',f.reviewUrl,f.session)).body).items.length,0);
  const result=await request('POST',f.reviewUrl,f.session,{payload:{...f.input,decision:'request_changes'}});assert.equal(result.statusCode,200);assert.equal(JSON.parse(result.body).authorityVersion,2);
  assert.equal(digest((await request('GET',f.url+'/'+f.revision.id,context.demo!)).body),f.revision.sha256);
+ const another=await createMember(demoTenantId,'reviewer','Fictional dissenting reviewer');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,another]);
+ assert.equal((await request('POST',f.reviewUrl,await issueTestSession(another),{payload:f.input})).statusCode,200);
+ const decisions=JSON.parse((await request('GET',f.reviewUrl,f.session)).body).items.map((r:{decision:string})=>r.decision);assert.deepEqual(decisions,['request_changes','accept_internal']);
+ await context.schemaAdminPool!.query('ALTER TABLE report_revisions DISABLE TRIGGER report_revisions_append_only');
+ try{await context.schemaAdminPool!.query("UPDATE report_revisions SET report_bytes=convert_to('fictional corrupt snapshot','UTF8') WHERE id=$1",[f.revision.id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_revisions ENABLE TRIGGER report_revisions_append_only');}
+ assertError(await request('GET',f.reviewUrl,f.session),409);assertError(await request('POST',f.reviewUrl,f.session,{payload:{...f.input,decision:'request_changes'}}),409);
 });
