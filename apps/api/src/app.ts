@@ -694,6 +694,23 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
+  app.post('/api/session/end-others', {preHandler: requireSessionCsrf, schema: {body: emptyBodySchema}}, async request => {
+    const actor=request.actor!;
+    return inTransaction(options.pool,async client=>{
+      // Serialise this user's competing revocations before checking the current session again.
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))',[actor.tenantId,actor.userId]);
+      const current=await client.query('SELECT id FROM sessions WHERE token_hash=$1 AND tenant_id=$2 AND user_id=$3 AND revoked_at IS NULL AND expires_at>now() FOR UPDATE',[actor.tokenHash,actor.tenantId,actor.userId]);
+      if(!current.rows[0])throw new ApiError(401,'The current session is no longer valid.');
+      const revoked=await client.query(`WITH selected AS (
+        SELECT token_hash FROM sessions WHERE tenant_id=$1 AND user_id=$2 AND token_hash<>$3
+        AND revoked_at IS NULL AND expires_at>now() ORDER BY id LIMIT 100 FOR UPDATE
+      ) UPDATE sessions s SET revoked_at=now() FROM selected WHERE s.token_hash=selected.token_hash RETURNING s.id`,[actor.tenantId,actor.userId,actor.tokenHash]);
+      if(revoked.rows.length)await writeAudit(client,actor,null,'session.others_ended','session',current.rows[0].id,'Other sessions ended in this tenant',{revokedCount:revoked.rows.length});
+      const more=await client.query('SELECT EXISTS(SELECT 1 FROM sessions WHERE tenant_id=$1 AND user_id=$2 AND token_hash<>$3 AND revoked_at IS NULL AND expires_at>now()) AS remaining',[actor.tenantId,actor.userId,actor.tokenHash]);
+      return {revokedCount:revoked.rows.length,moreRemaining:more.rows[0].remaining};
+    });
+  });
+
   app.get('/api/workspace', {preHandler: authenticate}, async (request, reply) => {
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
     const actor = request.actor!;

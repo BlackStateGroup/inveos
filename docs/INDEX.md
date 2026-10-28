@@ -105,3 +105,5 @@
 - [Verified original downloads](53_VERIFIED_ORIGINAL_DOWNLOAD.md) — bounded browser byte verification through existing audited access.
 
 - [Synthetic restore acceptance](54_SYNTHETIC_RESTORE.md) — actual quiesced PostgreSQL and original-store recovery with negative integrity checks.
+
+- [Other-session revocation](55_OTHER_SESSION_REVOCATION.md) — bounded self-service session control and atomic audit.

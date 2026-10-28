@@ -2675,6 +2675,7 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
   assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_disclosure_acknowledgements WHERE disclosure_id=$1',[grant.id])).rows[0].n,1);
   await request('POST',`/api/cases/${f.kase.id}/disclosures/${grant.id}/revoke`,context.demo!,{payload:{reason:'Fictional browser withdrawal check'}});await click('Verify and download snapshot');await eventually(async()=> (await text()).includes('Download denied or unavailable'),'stale grant denied');
   await click('Refresh disclosures');await eventually(async()=> (await text()).includes('No currently available disclosures'),'withdrawn grant disappears');
+  const otherSession=await issueTestSession(f.client);await click('End other sessions');await eventually(async()=> (await text()).includes('1 other sessions ended. This session remains active.'),'browser session revocation receipt');assertError(await request('GET','/api/portal/disclosures',otherSession),401);assert.equal(await b.evaluate("fetch('/api/portal/disclosures').then(r=>r.status)"),200);
   await click('Sign out');await eventually(async()=> (await text()).includes('Session ended.'),'client sign-out');assert.equal(await b.evaluate("fetch('/api/portal/disclosures').then(r=>r.status)"),401);
  });
 });
@@ -2862,4 +2863,23 @@ test('quiesced PostgreSQL and original-store backup restores exact reports, auth
  }finally{
   try{if(context.app!==previous.app)await context.app?.close();if(context.pool!==previous.pool)await context.pool?.end().catch(()=>{});if(context.schemaAdminPool!==previous.schemaAdminPool)await context.schemaAdminPool?.end().catch(()=>{});}finally{Object.assign(context,previous);await previous.adminPool!.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);await rm(root,{recursive:true,force:true});}
  }
+});
+
+test('ending other sessions is scoped, bounded, audited, repeatable and survives restart',async()=>{
+ const user=await createMember(demoTenantId,'investigator','Fictional session owner'),current=await issueTestSession(user),other=await issueTestSession(user);
+ const unrelated=await issueTestSession(demoUserId),tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional second session workspace']);await context.schemaAdminPool!.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'investigator')",[tenant,user]);const foreign=await issueTestSession(user,tenant);
+ const response=await request('POST','/api/session/end-others',current,{payload:{}});assert.equal(response.statusCode,200,response.body);assert.deepEqual(JSON.parse(response.body),{revokedCount:1,moreRemaining:false});assert.equal(response.headers['cache-control'],'no-store');
+ assertError(await request('GET','/api/workspace',other),401);for(const session of [current,unrelated,foreign])assert.equal((await request('GET','/api/workspace',session)).statusCode,200);
+ await context.app!.close();context.app=await createAppInstance();assertError(await request('GET','/api/workspace',other),401);assert.deepEqual(JSON.parse((await request('POST','/api/session/end-others',current,{payload:{}})).body),{revokedCount:0,moreRemaining:false});
+ const rows=(await context.pool!.query("SELECT metadata FROM audit_events WHERE actor_user_id=$1 AND action='session.others_ended'",[user])).rows;assert.equal(rows.length,1);assert.equal(rows[0].metadata.revokedCount,1);
+ for(let i=0;i<101;i++)await issueTestSession(user);
+ assert.deepEqual(JSON.parse((await request('POST','/api/session/end-others',current,{payload:{}})).body),{revokedCount:100,moreRemaining:true});assert.deepEqual(JSON.parse((await request('POST','/api/session/end-others',current,{payload:{}})).body),{revokedCount:1,moreRemaining:false});
+});
+
+test('other-session revocation requires CSRF and rolls back with its audit; clients cannot select another owner',async()=>{
+ const user=await createMember(demoTenantId,'client','Fictional session client'),current=await issueTestSession(user),other=await issueTestSession(user);
+ const url='/api/session/end-others';assertError(await request('POST',url,undefined,{payload:{}}),401);assertError(await request('POST',url,current,{payload:{},csrfHeader:false}),403);assertError(await request('POST',url,current,{payload:{},origin:'https://untrusted.invalid'}),403);assertError(await request('POST',url,current,{payload:{userId:demoUserId}}),422);
+ await context.schemaAdminPool!.query("CREATE FUNCTION fail_session_revoke_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='session.others_ended' THEN RAISE EXCEPTION 'Fictional audit failure'; END IF; RETURN NEW; END $$");await context.schemaAdminPool!.query('CREATE TRIGGER fail_session_revoke_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_session_revoke_test()');
+ try{assertError(await request('POST',url,current,{payload:{}}),500);assert.equal((await request('GET','/api/portal/disclosures',other)).statusCode,200);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_session_revoke_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_session_revoke_test()');}
+ const replies=await Promise.all([request('POST',url,current,{payload:{}}),request('POST',url,current,{payload:{}})]);assert.deepEqual(replies.map(r=>JSON.parse(r.body).revokedCount).sort(),[0,1]);assertError(await request('GET','/api/portal/disclosures',other),401);assert.equal((await request('GET','/api/portal/disclosures',current)).statusCode,200);assertError(await request('GET','/api/workspace',current),403);
 });
