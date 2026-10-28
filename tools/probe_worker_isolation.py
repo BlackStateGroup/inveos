@@ -140,8 +140,10 @@ printf 'ISOLATION_PROBE_OK\\n'
                 # The cap must actually deny a fork. Short-lived children allow
                 # the shell to recover and inspect the kernel's denial counter.
                 ('pids', '''
+set +e
 for i in {1..40}; do /bin/sleep 2 & done
 wait
+set -e
 while read -r key value; do
   if [ "$key" = max ]; then printf 'PID_DENIALS=%s\\n' "$value"; fi
 done < /sys/fs/cgroup/pids.events
@@ -183,7 +185,8 @@ done < /sys/fs/cgroup/cpu.stat
                         resource_evidence['oomKilled'] = True
                     elif label in ('pids', 'cpu'):
                         prefix = 'PID_DENIALS=' if label == 'pids' else 'CPU_THROTTLED_USEC='
-                        require(limit is None and result.returncode == 0, 'Resource probe failed')
+                        require(limit is None and result.returncode == 0,
+                                f'Resource probe failed: limit={limit}, exit={None if result is None else result.returncode}')
                         require(bool(re.fullmatch(re.escape(prefix)+r'[1-9][0-9]*\n', result.stdout)), 'No resource enforcement observed')
                         resource_evidence[label] = int(result.stdout.strip().split('=')[1])
                     else:
