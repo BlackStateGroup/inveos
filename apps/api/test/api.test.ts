@@ -2883,3 +2883,14 @@ test('other-session revocation requires CSRF and rolls back with its audit; clie
  try{assertError(await request('POST',url,current,{payload:{}}),500);assert.equal((await request('GET','/api/portal/disclosures',other)).statusCode,200);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_session_revoke_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_session_revoke_test()');}
  const replies=await Promise.all([request('POST',url,current,{payload:{}}),request('POST',url,current,{payload:{}})]);assert.deepEqual(replies.map(r=>JSON.parse(r.body).revokedCount).sort(),[0,1]);assertError(await request('GET','/api/portal/disclosures',other),401);assert.equal((await request('GET','/api/portal/disclosures',current)).statusCode,200);assertError(await request('GET','/api/workspace',current),403);
 });
+
+test('competing session owners leave exactly one caller active and exclude expired sessions',async()=>{
+ const user=await createMember(demoTenantId,'investigator','Fictional competing session owner');
+ const expired=await issueTestSession(user);await context.schemaAdminPool!.query('UPDATE sessions SET expires_at=now()-interval \'1 minute\' WHERE user_id=$1',[user]);
+ const first=await issueTestSession(user),second=await issueTestSession(user);
+ const responses=await Promise.all([first,second].map(s=>request('POST','/api/session/end-others',s,{payload:{}})));
+ assert.deepEqual(responses.map(r=>r.statusCode).sort(),[200,401]);assert.deepEqual(JSON.parse(responses.find(r=>r.statusCode===200)!.body),{revokedCount:1,moreRemaining:false});
+ const access=await Promise.all([first,second].map(s=>request('GET','/api/workspace',s)));assert.deepEqual(access.map(r=>r.statusCode).sort(),[200,401]);assertError(await request('GET','/api/workspace',expired),401);
+ const rows=(await context.pool!.query('SELECT revoked_at FROM sessions WHERE user_id=$1 AND expires_at<now()',[user])).rows;assert.equal(rows.length,1);assert.equal(rows[0].revoked_at,null);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE actor_user_id=$1 AND action='session.others_ended'",[user])).rows[0].n,1);
+});
