@@ -2990,3 +2990,18 @@ test('renewals cap at immutable attempt deadline and concurrent renewals cannot 
   assert.equal(await renewIntegrityJob(context.pool!,scope,lease.token),null);
   assert.equal(await finishIntegrityJob(context.pool!,scope,lease.token,null),null);
 });
+
+test('renewal lock timeout leaves lease unchanged and can be retried after contention',async()=>{
+  const {scope,lease}=await renewalFixture();
+  const before=(await context.pool!.query('SELECT lease_until,lease_deadline,attempt FROM integrity_jobs WHERE id=$1',[scope.jobId])).rows[0];
+  const blocker=await context.pool!.connect();
+  try {
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM integrity_jobs WHERE id=$1 FOR UPDATE',[scope.jobId]);
+    await assert.rejects(renewIntegrityJob(context.pool!,scope,lease.token),(error:unknown)=>
+      error instanceof Error && 'code' in error && error.code==='55P03');
+    const after=(await blocker.query('SELECT lease_until,lease_deadline,attempt FROM integrity_jobs WHERE id=$1',[scope.jobId])).rows[0];
+    assert.deepEqual(after,before);
+  } finally {await blocker.query('ROLLBACK');blocker.release();}
+  assert.ok(await renewIntegrityJob(context.pool!,scope,lease.token));
+});
