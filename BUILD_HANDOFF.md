@@ -1,5 +1,11 @@
 # INVEOS engineering handoff
 
+## 28 October: worker output and image-volume containment
+
+Recovered the published repository after scratch maintenance; no prior cache assumed present. Based on PR #34 `a73b8da739be558671180754d049a22300e711cc`; main remains `95b5c35`, drafts #2–#34 unchanged with empty review timelines. Fixed two prerequisite gaps: unbounded host output becomes 16 MiB tmpfs, and policy checks remain enforced under Python -O. Image-defined volumes become bounded read-only tmpfs; reject conflicting paths and unexpected mounts. Added actual output exhaustion and image-volume write-denial probes, plus negative policy tests. Hosted evidence pending.
+
+Next: exact pinned-source isolated builder/runtime qualification and native dependency/licence/SBOM review before PDF benchmarks. Docling same-version wheel mismatch remains unresolved; no parser installed/executed. Independent identity/recipient, binary recovery, device/offline/restore and broader requirements remain open. Nothing merged or deployed.
+
 ## 28 October: selected Docling runtime artifact inventory
 
 Based on PR #33 `a218a892d2cdeafc6586f177aee4b92b1773d21c`; main remains `95b5c35`, drafts #2–#33 open with empty review timelines. Acquired 47 wheel-only artifacts (100,781,410 bytes) for Docling slim 2.142.1 with actual convert-core/format-pdf extras into ignored cache. Added bounded non-executing metadata/notice scanner, exact acquisition lock and source comparison. Native pipeline/backend match the pin, but the converter wheel lacks the pinned multi-document rejection guard. Same version is not exact source equivalence. See research/runtime_artifacts/README.md.
