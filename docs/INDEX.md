@@ -117,3 +117,5 @@
 - [Pinned image providers](../research/runtime_artifacts/IMAGE_AUDIT.md) — isolated native library and package provenance inspection.
 
 - [Native PDF experiment](../research/runtime_artifacts/NATIVE_EXPERIMENT.md) — isolated fictional page/region extraction and malformed input checks.
+
+- [Actual parser citation boundary](../research/runtime_artifacts/NATIVE_BOUNDARY.md) — scoped, reverified page citations from isolated native output.

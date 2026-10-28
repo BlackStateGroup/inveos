@@ -66,4 +66,4 @@ for name in ('overpages','oversize'):
     if not rejected:raise ValueError('Input limit was not enforced')
     if hashlib.sha256(path.read_bytes()).hexdigest()!=digest:raise ValueError('Rejected original changed')
     coverage_cases[name]={'originalSha256':digest,'rejected':True}
-print(json.dumps({'parserExecuted':True,'originalSha256':before,'rows':rows,'malformedOutcome':malformed,'coverageCases':coverage_cases,'elapsedSeconds':time.monotonic()-started,'maxRssKiB':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss},sort_keys=True))
+print(json.dumps({'parserExecuted':True,'originalSha256':before,'rows':rows,'malformedOutcome':malformed,'coverageCases':coverage_cases,'nativeDocument':result.document.model_dump(mode='json'),'elapsedSeconds':time.monotonic()-started,'maxRssKiB':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss},sort_keys=True))
