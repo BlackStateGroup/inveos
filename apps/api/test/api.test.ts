@@ -2678,7 +2678,7 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
   await b.send('Network.enable');for(const pair of f.clientSession.cookie.split('; ')){const split=pair.indexOf('=');await b.send('Network.setCookie',{name:pair.slice(0,split),value:pair.slice(split+1),url:origin,path:'/',sameSite:'Strict',httpOnly:pair.startsWith('inveos_session=')});}
   const downloads=join(b.root,'downloads');await mkdir(downloads);await b.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloads});
   await b.send('Page.navigate',{url:origin+'/portal'});
-  const text=()=>b.evaluate<string>('document.body.innerText');
+  const text=()=>b.evaluate<string>("document.body?.innerText||''");
   const click=async(label:string)=>{await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});if(!button||button.disabled)throw new Error('Button unavailable');button.click();})()`);};
   await eventually(async()=> (await text()).includes('Refresh disclosures'),'portal render');await click('Refresh disclosures');await eventually(async()=> (await text()).includes(grant.id),'recipient grant discovery');
   assert.equal(await b.evaluate("fetch('/api/workspace').then(r=>r.status)"),403);
@@ -2688,5 +2688,5 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
   await request('POST',`/api/cases/${f.kase.id}/disclosures/${grant.id}/revoke`,context.demo!,{payload:{reason:'Fictional browser withdrawal check'}});await click('Verify and download snapshot');await eventually(async()=> (await text()).includes('Download denied or unavailable'),'stale grant denied');
   await click('Refresh disclosures');await eventually(async()=> (await text()).includes('No currently available disclosures'),'withdrawn grant disappears');
   await click('Sign out');await eventually(async()=> (await text()).includes('Session ended.'),'client sign-out');assert.equal(await b.evaluate("fetch('/api/portal/disclosures').then(r=>r.status)"),401);
- }finally{await browser?.close();await app.close();server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
+ }finally{try{await browser?.close();}finally{try{await app.close();}finally{server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
 });
