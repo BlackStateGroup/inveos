@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: scoped upload receipt history
+
+Based on PR #23 receipt `16cf1dcbbe5b40a1cfb588464e3179b17be66e0d`; main remains `95b5c35`, PRs #2–#23 open and #23 has no feedback. Added bounded history of all reservation states with owner/reviewer visibility, exact database keyset cursors and completed original receipt IDs. Added UI refresh/older-page controls without changing pending maintenance or cancellation recovery. Migration 013 adds history indexes. See docs/43_UPLOAD_RECEIPT_HISTORY.md.
+
+Local lint/types/build/foundation checks and hosted PostgreSQL results are to be recorded after verification. Two new PostgreSQL/TCP scenarios cover precision/ties, restart, inserts/status changes, terminal receipts, minimisation and permission/cursor boundaries. Browser/device/offline/restore and parser checks remain unrun. No dependencies/source incorporation, merge or deployment.
+
+Next: verify and record this draft, then advance an independent product slice such as basic evidential chronology or explicit report release, preserving existing authority/review boundaries. Actual supported-host browser acceptance, isolated parser/runtime/licence work, encrypted storage/dedicated credentials, native field/offline/restore and wider requirements remain open. History is not integrity verification or automatic replacement-upload permission. No essential user action.
+
 ## 27 October: upload staging maintenance and cancellation recovery
 
 Based on PR #22 receipt `e4315305c2caff1f6a2b34327eb46bcf9a40739f`; fresh main remains `95b5c35`, PRs #2–#22 open and #21/#22 have no feedback. Added owner/reviewer-scoped pending listing, explicit bounded reviewer expiry, reasoned reviewer cancellation of stranded uploads, and owner-only request-key lookup. Case locks serialise maintenance with finalisation; audit/state/chunk deletion commit atomically. Completed originals and immutable reservation/audit metadata remain. Added maintenance UI and guarded clearing of a server-confirmed cancelled chunk retry; legacy requests cannot be cleared through this protocol. Migration 012 adds a partial index only. See docs/42_UPLOAD_STAGING_MAINTENANCE.md.

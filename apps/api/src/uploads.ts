@@ -32,6 +32,28 @@ export function registerUploads(app:FastifyInstance,s:Services){
    return {canManage:actor.role==='reviewer',items:rows.rows.map(r=>({...dto(r),owned:r.owned,expired:r.expired}))};
   });
  });
+ app.get(base+'/history',{preHandler:s.authenticate,schema:{params:caseParams,querystring:{type:'object',additionalProperties:false,properties:{before:uuid,limit:{type:'integer',minimum:1,maximum:50}}}}},async(request,reply)=>{
+  reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
+  const actor=request.actor!,{caseId}=request.params as {caseId:string},{before,limit=25}=request.query as {before?:string;limit?:number};
+  if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
+  return inTransaction(s.pool,async c=>{
+   await s.findCase(c,actor,caseId);
+   // Resolve an opaque cursor inside the same visibility boundary; retain database timestamp precision.
+   const scope=[actor.tenantId,caseId,actor.userId,actor.role==='reviewer'];
+   let boundary:string|null=null;
+   if(before){
+    const cursor=await c.query(`SELECT created_at::text AS boundary FROM upload_reservations
+     WHERE tenant_id=$1 AND case_id=$2 AND ($4::boolean OR created_by=$3) AND id=$5`,[...scope,before]);
+    if(!cursor.rows[0])notFound();boundary=cursor.rows[0].boundary;
+   }
+   const result=await c.query(`SELECT id,case_id,status,byte_length,authority_version,created_at,expires_at,evidence_id,
+    created_by=$3 AS owned FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2
+    AND ($4::boolean OR created_by=$3) AND ($5::timestamptz IS NULL OR (created_at,id)<($5::timestamptz,$6::uuid))
+    ORDER BY created_at DESC,id DESC LIMIT $7`,[...scope,boundary,before??null,limit+1]);
+   const rows=result.rows.slice(0,limit);
+   return {caseId,items:rows.map(r=>({...dto(r),createdAt:r.created_at,owned:r.owned})),nextCursor:result.rows.length>limit?rows[rows.length-1].id:null};
+  });
+ });
  app.get(base+'/by-key/:requestKey',{preHandler:s.authenticate,schema:{params:{type:'object',additionalProperties:false,required:['caseId','requestKey'],properties:{caseId:uuid,requestKey:uuid}}}},async(request,reply)=>{
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,requestKey}=request.params as {caseId:string;requestKey:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');

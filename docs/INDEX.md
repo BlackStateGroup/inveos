@@ -79,3 +79,5 @@
 - [Resumable upload client](41_RESUMABLE_UPLOAD_CLIENT.md) — missing-range transfer, acknowledged progress, pause and safe legacy retries.
 
 - [Upload staging maintenance](42_UPLOAD_STAGING_MAINTENANCE.md) — bounded expiry, reviewer cancellation and confirmed cancelled-request recovery.
+
+- [Upload receipt history](43_UPLOAD_RECEIPT_HISTORY.md) — bounded scoped history after tab/sign-in loss.

@@ -1177,7 +1177,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2378,4 +2378,43 @@ test('cancelled upload lookup reconciles the actual client retry without permitt
  assert.equal((await request('POST',base+'/'+id+'/cancel',context.demo!,{payload:{}})).statusCode,200);
  await clearCancelledBinary(store,scope,kase.id,lookup);assert.equal(pendingBinary(store,scope),null);
  const replacement=await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(replacement.statusCode,200);assert.notEqual(JSON.parse(replacement.body).id,id);
+});
+
+test('upload history retains terminal receipts and paginates exact database order across inserts and status changes over HTTP',async()=>{
+ const {kase,base,input,id}=await uploadReservationFixture(Buffer.from('abc'));const ids=[id];
+ for(let i=0;i<5;i++){const r=await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200);ids.push(JSON.parse(r.body).id);}
+ await request('POST',base+'/'+id+'/chunk',context.demo!,{payload:{ordinal:0,contentBase64:'YWJj'}});
+ const original=JSON.parse((await request('POST',base+'/'+id+'/complete',context.demo!,{payload:{}})).body) as Evidence;
+ await request('POST',base+'/'+ids[1]+'/cancel',context.demo!,{payload:{}});
+ // Precision/tie fixture: application identity remains immutable; only test administrator bypasses its trigger.
+ await context.schemaAdminPool!.query('ALTER TABLE upload_reservations DISABLE TRIGGER upload_identity');
+ try{for(let i=0;i<ids.length;i++)await context.schemaAdminPool!.query("UPDATE upload_reservations SET created_at='2026-01-12T09:00:00Z'::timestamptz+$2*interval '1 microsecond' WHERE id=$1",[ids[i],Math.floor(i/2)]);}
+ finally{await context.schemaAdminPool!.query('ALTER TABLE upload_reservations ENABLE TRIGGER upload_identity');}
+ const expected=(await context.pool!.query('SELECT id FROM upload_reservations WHERE case_id=$1 ORDER BY created_at DESC,id DESC',[kase.id])).rows.map(r=>r.id);
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+ const app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0});
+  const page=async(before?:string)=>{const r=await fetch(address+base+'/history?limit=2'+(before?'&before='+before:''),{headers:{cookie:context.demo!.cookie}});assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');assert.equal(r.headers.get('x-content-type-options'),'nosniff');return r.json() as Promise<{caseId:string;items:Array<{id:string;status:string;evidenceId:string|null}>;nextCursor:string|null}>;};
+  const first=await page();assert.equal(first.caseId,kase.id);assert.deepEqual(first.items.map(r=>r.id),expected.slice(0,2));assert.ok(first.nextCursor);
+  await request('POST',base+'/'+first.nextCursor+'/cancel',context.demo!,{payload:{}});
+  const added=await request('POST',base,context.demo!,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(added.statusCode,200);
+  const second=await page(first.nextCursor!),third=await page(second.nextCursor!);const all=[...first.items,...second.items,...third.items];assert.deepEqual(all.map(r=>r.id),expected);assert.equal(third.nextCursor,null);
+  assert.equal(all.find(r=>r.id===id)!.evidenceId,original.id);assert.equal(all.find(r=>r.id===id)!.status,'completed');assert.equal(all.find(r=>r.id===ids[1])!.status,'cancelled');
+  for(const item of all)for(const forbidden of ['metadata','filename','contentBase64','requestKey','idempotencyKey','created_by'])assert.equal(forbidden in item,false);
+  assert.equal((await page()).items[0]!.id,JSON.parse(added.body).id);
+ }finally{await app.close();}
+});
+test('upload history and cursors enforce owner, reviewer, case, tenant, role and revocation boundaries',async()=>{
+ const {kase,base,input,id}=await uploadReservationFixture(Buffer.from('abc'));
+ const user=await createMember(demoTenantId,'investigator','Fictional history investigator');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,kase.id,user]);const session=await issueTestSession(user);
+ const own=await request('POST',base,session,{payload:{...input,idempotencyKey:randomUUID()}});assert.equal(own.statusCode,200);const ownId=JSON.parse(own.body).id;
+ const listing=JSON.parse((await request('GET',base+'/history',session)).body);assert.deepEqual(listing.items.map((x:{id:string})=>x.id),[ownId]);assert.equal(listing.items[0].owned,true);
+ assertError(await request('GET',base+'/history?before='+id,session),404);
+ const reviewer=JSON.parse((await request('GET',base+'/history',context.demo!)).body);assert.equal(reviewer.items.length,2);assert.equal(reviewer.items.find((x:{id:string})=>x.id===ownId).owned,false);
+ const wrong=await createCase();assertError(await request('GET',`/api/cases/${wrong.id}/uploads/history?before=${id}`,context.demo!),404);
+ const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[foreignTenant,'Fictional receipt agency']);const foreign=await createMember(foreignTenant,'reviewer','Fictional foreign reviewer');assertError(await request('GET',base+'/history',await issueTestSession(foreign,foreignTenant)),404);
+ const client=await createMember(demoTenantId,'client','Fictional history client');assertError(await request('GET',base+'/history',await issueTestSession(client)),403);
+ for(const query of ['limit=0','limit=51','limit=1.5','before=invalid','extra=1'])assertError(await request('GET',base+'/history?'+query,context.demo!),422);
+ assertError(await request('GET',base+'/history?before='+randomUUID(),context.demo!),404);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,user]);assertError(await request('GET',base+'/history',session),404);
+ assertError(await request('GET',base+'/history'),401);
 });
