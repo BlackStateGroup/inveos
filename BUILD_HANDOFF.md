@@ -1,5 +1,9 @@
 # INVEOS engineering handoff
 
+## 28 October: actual quiesced restore acceptance
+
+Based on PR #37 `be5878da1b9153ca169e8342c5f9ae8059b131ca`. Fresh main remains `95b5c35`; drafts #2–#37 unchanged with empty review timelines. Added an isolated PostgreSQL dump/drop/restore and original-store recovery scenario, including exact frozen report/offline verification, missing/corrupt original denials, authority/audit/migration preservation, immutable guards and client denial. No new dependency, migration or production backup tool. See docs/54_SYNTHETIC_RESTORE.md. Hosted verification pending; no restore completion claim yet. Parser execution, real identity, device/offline and production restore remain open. Nothing merged or deployed.
+
 ## 28 October: verified browser original downloads
 
 Continues from draft PR #36 receipt `96a65b5ca29ce028a8c3ee7829e24ed90c83ca20`. Added explicit internal original download control with exact size/SHA-256 verification, quarantine/state checks, bounded streaming and cancelled late responses. The binary recovery browser journey now verifies an actual saved .bin and denies a stale download after membership withdrawal. No API/schema/dependency change. See docs/53_VERIFIED_ORIGINAL_DOWNLOAD.md.

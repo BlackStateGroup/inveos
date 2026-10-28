@@ -103,3 +103,5 @@
 - [Binary browser recovery](52_BINARY_BROWSER_RECOVERY.md) — pause, lost acknowledgement, reload and explicit cancellation acceptance.
 
 - [Verified original downloads](53_VERIFIED_ORIGINAL_DOWNLOAD.md) — bounded browser byte verification through existing audited access.
+
+- [Synthetic restore acceptance](54_SYNTHETIC_RESTORE.md) — actual quiesced PostgreSQL and original-store recovery with negative integrity checks.

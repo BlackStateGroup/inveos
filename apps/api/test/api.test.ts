@@ -7,7 +7,7 @@ import { execFile, spawn, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
@@ -2813,4 +2813,52 @@ test('real browser cancels paused staging and clears only its confirmed retry be
   await ui.fill(path);await ui.click('Register in quarantine');await eventually(async()=> (await ui.text()).includes('confirmed in quarantine.'),'replacement original confirmed');assert.deepEqual(await ui.pending(),[]);
   const rows=(await context.pool!.query('SELECT status,id FROM upload_reservations WHERE case_id=$1 ORDER BY created_at',[kase.id])).rows;assert.deepEqual(rows.map(r=>r.status),['cancelled','completed']);assert.notEqual(rows[0].id,rows[1].id);assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM evidence WHERE case_id=$1',[kase.id])).rows[0].n,1);
  },{response:(path,status)=>{if(status===200&&path.endsWith('/chunk')&&!held){held=true;return 'hold';}}});
+});
+
+test('quiesced PostgreSQL and original-store backup restores exact reports, authority and access guards', {timeout:90000},async t=>{
+ // Separate random schema and filesystem roots: never reset another test or an application database.
+ const previous={...context},schema='api_test_restore_'+randomUUID().replaceAll('-','');
+ assert.match(schema,/^api_test_restore_[a-f0-9]{32}$/);
+ const root=await mkdtemp(join(process.cwd(),'.local-data','restore-')),objects=join(root,'objects'),backup=join(root,'backup');
+ const command=async(name:string,args:string[])=>promisify(execFile)(name,args,{timeout:20000,maxBuffer:1024*1024,env:{...process.env,PGDATABASE:adminDatabaseUrl!}});
+ const checksum=(b:Buffer)=>createHash('sha256').update(b).digest('hex');
+ try{
+  await mkdir(objects);await mkdir(backup,{mode:0o700});await runMigrations(previous.adminPool!,schema);
+  context.schema=schema;context.storageRoot=objects;context.schemaAdminPool=createPool(adminDatabaseUrl!,schema,2);context.pool=createPool(databaseUrl!,schema,4);context.app=await createAppInstance();context.demo=await startDemoSession();
+  const f=await reportFixture(),key=randomUUID();const frozen=await request('POST',f.url,context.demo!,{payload:{idempotencyKey:key}});assert.equal(frozen.statusCode,200,frozen.body);const revision=JSON.parse(frozen.body);
+  const originalUrl=`/api/cases/${f.kase.id}/evidence/${f.evidence.id}/original`,reportUrl=f.url+'/'+revision.id;
+  const original=await request('GET',originalUrl,context.demo!),report=await request('GET',reportUrl,context.demo!);assert.equal(original.statusCode,200);assert.equal(report.statusCode,200);
+  const client=await createMember(demoTenantId,'client','Fictional restore access check'),clientSession=await issueTestSession(client);
+  const authorityBefore=(await context.pool!.query('SELECT * FROM authority_records ORDER BY id')).rows;
+  const auditBefore=(await context.pool!.query('SELECT * FROM audit_events ORDER BY id')).rows;
+  const migrationsBefore=(await context.schemaAdminPool!.query('SELECT * FROM schema_migrations ORDER BY filename')).rows;
+  const evidenceRow=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.evidence.id])).rows[0];
+  await context.app!.close();await context.pool!.end();await context.schemaAdminPool!.end();
+  // No writers remain for this isolated schema/store. This is not a live atomic backup protocol.
+  const archive=join(backup,'database.dump');await command('pg_dump',['--schema='+schema,'--format=custom','--no-owner','--file='+archive]);await cp(objects,join(backup,'objects'),{recursive:true});
+  const backupHash=checksum(await readFile(archive));assert.ok((await stat(archive)).size>0);
+  await previous.adminPool!.query(`DROP SCHEMA "${schema}" CASCADE`);await rm(objects,{recursive:true});await mkdir(objects);
+  assert.equal((await previous.adminPool!.query('SELECT 1 FROM pg_namespace WHERE nspname=$1',[schema])).rows.length,0);
+  assert.equal(checksum(await readFile(archive)),backupHash);
+  await command('pg_restore',['--exit-on-error','--single-transaction','--no-owner','--dbname='+adminDatabaseUrl!,archive]);
+  context.schemaAdminPool=createPool(adminDatabaseUrl!,schema,2);context.pool=createPool(databaseUrl!,schema,4);context.app=await createAppInstance();
+  assert.deepEqual((await context.schemaAdminPool!.query('SELECT * FROM schema_migrations ORDER BY filename')).rows,migrationsBefore);
+  assert.deepEqual((await context.pool!.query('SELECT * FROM authority_records ORDER BY id')).rows,authorityBefore);
+  assert.deepEqual((await context.pool!.query('SELECT * FROM audit_events ORDER BY id')).rows,auditBefore);
+  assertError(await request('GET',originalUrl,context.demo!),409);
+  await cp(join(backup,'objects'),objects,{recursive:true});
+  const restored=await request('GET',originalUrl,context.demo!);assert.equal(restored.statusCode,200,restored.body);assert.deepEqual(restored.rawPayload,original.rawPayload);
+  const restoredReport=await request('GET',reportUrl,context.demo!);assert.equal(restoredReport.statusCode,200,restoredReport.body);assert.deepEqual(restoredReport.rawPayload,report.rawPayload);assert.equal(checksum(restoredReport.rawPayload),revision.sha256);
+  const offline=join(root,'restored-report.json');await writeFile(offline,restoredReport.rawPayload);await promisify(execFile)('python3',[fileURLToPath(new URL('../../../tools/verify_report.py',import.meta.url)),offline,'--expected-sha256',revision.sha256,'--expected-case-id',f.kase.id],{timeout:10000});
+  assertError(await request('GET',originalUrl,clientSession),403);assertError(await request('GET',reportUrl,clientSession),403);
+  await assert.rejects(context.pool!.query("UPDATE evidence SET digest=$1 WHERE id=$2",['0'.repeat(64),f.evidence.id]));
+  await assert.rejects(context.schemaAdminPool!.query('DELETE FROM authority_records WHERE case_id=$1',[f.kase.id]));
+  const retry=await request('POST',f.url,context.demo!,{payload:{idempotencyKey:key}});assert.equal(retry.statusCode,200);assert.equal(JSON.parse(retry.body).id,revision.id);
+  await writeFile(join(objects,evidenceRow.object_path),'Fictional restore corruption');assertError(await request('GET',originalUrl,context.demo!),409);
+  await cp(join(backup,'objects',evidenceRow.object_path),join(objects,evidenceRow.object_path));assert.equal((await request('GET',originalUrl,context.demo!)).statusCode,200);
+  await runMigrations(previous.adminPool!,schema);assert.deepEqual((await context.schemaAdminPool!.query('SELECT * FROM schema_migrations ORDER BY filename')).rows,migrationsBefore);
+  t.diagnostic('Restore passed: quiesced schema + objects, missing/corrupt object denial, exact snapshot, offline verification, permissions, immutable authority and idempotency. Dump SHA-256 '+backupHash);
+ }finally{
+  try{if(context.app!==previous.app)await context.app?.close();if(context.pool!==previous.pool)await context.pool?.end().catch(()=>{});if(context.schemaAdminPool!==previous.schemaAdminPool)await context.schemaAdminPool?.end().catch(()=>{});}finally{Object.assign(context,previous);await previous.adminPool!.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);await rm(root,{recursive:true,force:true});}
+ }
 });
