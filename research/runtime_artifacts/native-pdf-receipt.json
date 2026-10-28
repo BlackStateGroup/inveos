@@ -1,0 +1,121 @@
+{
+  "status": "synthetic_native_pdf_passed",
+  "sourcePin": "90234a71b16785d08fd2f46ec62668dd2396db76",
+  "image": "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487",
+  "qualification": {
+    "status": "host_probe_passed",
+    "imageId": "sha256:37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+    "repoDigests": [
+      "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487"
+    ],
+    "checks": [
+      "boundaries",
+      "timeout",
+      "stdout_limit",
+      "stderr_limit",
+      "memory",
+      "pids",
+      "cpu"
+    ],
+    "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+    "parserExecuted": false,
+    "imageVolumeOverrides": [],
+    "profile": "runtime-1g",
+    "resourceEvidence": {
+      "oomKilled": true,
+      "pids": 2,
+      "cpu": 1086315
+    },
+    "combinedCaptureLimitBytes": 16384,
+    "daemonLogging": false,
+    "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+  },
+  "runs": [
+    {
+      "elapsedSeconds": 0.0250244979999934,
+      "malformedOutcome": "ValueError",
+      "maxRssKiB": 160908,
+      "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "parserExecuted": true,
+      "rows": [
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 1,
+          "text": "FICTIONAL INVEOS repeated passage"
+        },
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 2,
+          "text": "FICTIONAL INVEOS repeated passage"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 0.07443972000000088,
+      "malformedOutcome": "ValueError",
+      "maxRssKiB": 161364,
+      "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "parserExecuted": true,
+      "rows": [
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 1,
+          "text": "FICTIONAL INVEOS repeated passage"
+        },
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 2,
+          "text": "FICTIONAL INVEOS repeated passage"
+        }
+      ]
+    }
+  ],
+  "approval": "research_only_not_product_or_licence_approval",
+  "verification": {
+    "commit": "46df726afcf4301f244cb284e2122e87b89abcbb",
+    "tree": "fcdd20e7f3066e6c3ac782196c16ef4e82bbbf15",
+    "workflowRun": 40753018236,
+    "job": 123044429179,
+    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40753018236"
+  }
+}

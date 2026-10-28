@@ -96,3 +96,5 @@ Successful packaging would resolve source provenance only; it would not establis
 extraction quality, runtime completeness, licence approval or production safety.
 
 The wheel bytes are deliberately temporary and removed after comparison; a future runtime experiment must rebuild with these exact inputs and verify the recorded digest before using a private ignored copy. The initial workflow YAML quoting error was corrected before the successful isolated run. Source provenance is now demonstrated for this build; no parser was installed or invoked.
+
+The [native PDF follow-up](NATIVE_EXPERIMENT.md) adds optional `--retain-wheel`: after both builds and source verification pass, the exact wheel can remain solely in ignored `.research-cache/docling-exact/` for isolated runtime experiments. Default behaviour still removes temporary wheels.

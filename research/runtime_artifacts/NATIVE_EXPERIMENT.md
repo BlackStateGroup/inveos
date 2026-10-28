@@ -10,9 +10,10 @@ wheel closure. It excludes the mismatching published docling-slim wheel. Depende
 wheels are expanded as data into a private ignored tree with bounds, rejecting
 symlinks, .pth files, unsupported .data layouts and collisions. No upstream code is
 imported or installed on the host. The source and runtime tree are mounted read-only
-into a fresh container; Python imports happen only inside that boundary. Distribution
-version metadata for Docling itself may report unknown because it runs from the
-verified source tree; the explicit source pin is the provenance authority.
+into a fresh container; Python imports happen only inside that boundary. The exact-source wheel is rebuilt twice with the prior recipe, retained only in
+ignored cache via `--retain-wheel`, checked against the recorded digest and all
+pinned package files, and used for genuine distribution/entry-point metadata.
+The explicit source pin remains the provenance authority.
 
 The runtime profile permits 1 GiB RAM/swap and 512 MiB noexec scratch, retaining
 16 MiB noexec output, 0.5 CPU, 32 PIDs, no network, non-root, read-only root, no
@@ -34,7 +35,27 @@ Docling/Tika/OCRmyPDF benchmarking. It does not test hostile exploit resistance.
 Run the existing source/wheel acquisition commands from PINNED_BUILD.md and
 NATIVE_AUDIT.md, then `timeout 240s python3 tools/experiment_native_pdf.py` on the
 qualified host with its pinned image present. Local fixture and profile tests pass;
-actual hosted parser execution is pending. The research CI workflow runs the same
+Hosted [research run #10](https://github.com/BlackStateGroup/inveos/actions/runs/40753018236) passed at `46df726afcf4301f244cb284e2122e87b89abcbb`, tree `fcdd20e7f3066e6c3ac782196c16ef4e82bbbf15`: actual pinned-source NativePdfPipeline and threaded Docling-parse executed in two fresh qualified runtime containers. Both recovered the same 33-character passage on pages 1 and 2 at bottom-left box [72, 697.516, 282.756, 708.616], rejected malformed input and preserved original SHA-256 `4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9`. Measured conversion-plus-rejection times were 0.0250/0.0744 seconds after imports; peak process RSS 160,908/161,364 KiB. These are tiny-fixture observations, not capacity claims. All runtime-profile resource probes passed. [Checks #119](https://github.com/BlackStateGroup/inveos/actions/runs/40753018232) passed at the same revision: 135 Node tests (98 PostgreSQL API/restore, five actual Chrome journeys, 32 helpers), zero failures/skips; 74 Python tests, lint/types/build/reference and service isolation. See the [machine-readable receipt](native-pdf-receipt.json). The research CI workflow runs the same
 experiment. There is no application/schema integration, automatic finding, page
 review UI or client release. Those gates remain open along with broader fixtures,
 full runtime licence/security review and the other parser candidates.
+
+
+## Engineering decision from actual failures
+
+Importing general DocumentConverter at this pin eagerly imports the ASR transformer
+module and requires Torch even for the native PDF path. Do not add a model bundle
+merely to satisfy that import. The bounded experiment instead calls InputDocument,
+ThreadedDoclingParseDocumentBackend and NativePdfPipeline directly, with explicit
+page/file limits, one parser thread, no image generation and no model processing.
+A source-only attempt then failed because plugin discovery needs installed
+entry-point metadata. Retaining the verified exact-source wheel supplies that
+metadata without fabricating it or substituting the mismatching published wheel.
+No upstream source was patched. This direct API is pinned research, not a promise
+of compatibility with later Docling releases or complete converter behaviour.
+
+The default builder still deletes its temporary outputs. The optional retained
+copy lives only at `.research-cache/docling-exact/`; a differing existing copy is
+rejected rather than overwritten. Nothing is uploaded as a third-party artifact.
+The implementation revision above was tested; the receipt follow-up changes only
+documentation and the recorded result.
