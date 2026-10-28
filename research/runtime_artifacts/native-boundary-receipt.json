@@ -1,0 +1,732 @@
+{
+  "status": "synthetic_native_pdf_passed",
+  "sourcePin": "90234a71b16785d08fd2f46ec62668dd2396db76",
+  "image": "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487",
+  "qualification": {
+    "status": "host_probe_passed",
+    "imageId": "sha256:37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+    "repoDigests": [
+      "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487"
+    ],
+    "checks": [
+      "boundaries",
+      "timeout",
+      "stdout_limit",
+      "stderr_limit",
+      "memory",
+      "pids",
+      "cpu"
+    ],
+    "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+    "parserExecuted": false,
+    "imageVolumeOverrides": [],
+    "profile": "runtime-1g",
+    "resourceEvidence": {
+      "oomKilled": true,
+      "pids": 2,
+      "cpu": 1266558
+    },
+    "combinedCaptureLimitBytes": 16384,
+    "daemonLogging": false,
+    "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+  },
+  "runs": [
+    {
+      "coverageCases": {
+        "blank": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              0,
+              1
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+          "rows": [
+            {
+              "page": 2,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "mixed": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              1,
+              0
+            ],
+            "pagesWithoutText": [
+              2
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+          "rows": [
+            {
+              "page": 1,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "overpages": {
+          "originalSha256": "875c4fa83143ed349a567b791eac8beba99906f44b88cd7a7460011c50cd4655",
+          "rejected": true
+        },
+        "oversize": {
+          "originalSha256": "99ff663aee374abeedd3de908bfde6e18fdc695e9a13a238fd1d36138553ce79",
+          "rejected": true
+        },
+        "raster": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 1,
+            "pageTextCounts": [
+              0
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+          "rows": []
+        }
+      },
+      "elapsedSeconds": 0.0811121340000085,
+      "malformedOutcome": "ValueError",
+      "maxRssKiB": 161632,
+      "nativeDocument": {
+        "body": {
+          "children": [
+            {
+              "cref": "#/texts/0"
+            },
+            {
+              "cref": "#/texts/1"
+            }
+          ],
+          "content_layer": "body",
+          "label": "unspecified",
+          "meta": null,
+          "name": "_root_",
+          "parent": null,
+          "self_ref": "#/body"
+        },
+        "form_items": [],
+        "furniture": {
+          "children": [],
+          "content_layer": "furniture",
+          "label": "unspecified",
+          "meta": null,
+          "name": "_root_",
+          "parent": null,
+          "self_ref": "#/furniture"
+        },
+        "groups": [],
+        "key_value_items": [],
+        "name": "digital",
+        "origin": {
+          "binary_hash": 13032009255706130169,
+          "filename": "digital.pdf",
+          "mimetype": "application/pdf",
+          "uri": null
+        },
+        "pages": {
+          "1": {
+            "image": null,
+            "page_no": 1,
+            "size": {
+              "height": 792.0,
+              "width": 612.0
+            }
+          },
+          "2": {
+            "image": null,
+            "page_no": 2,
+            "size": {
+              "height": 792.0,
+              "width": 612.0
+            }
+          }
+        },
+        "pictures": [],
+        "schema_name": "DoclingDocument",
+        "tables": [],
+        "texts": [
+          {
+            "children": [],
+            "content_layer": "body",
+            "formatting": null,
+            "hyperlink": null,
+            "label": "text",
+            "meta": null,
+            "orig": "FICTIONAL INVEOS repeated passage",
+            "parent": {
+              "cref": "#/body"
+            },
+            "prov": [
+              {
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "charspan": [
+                  0,
+                  33
+                ],
+                "page_no": 1
+              }
+            ],
+            "self_ref": "#/texts/0",
+            "text": "FICTIONAL INVEOS repeated passage"
+          },
+          {
+            "children": [],
+            "content_layer": "body",
+            "formatting": null,
+            "hyperlink": null,
+            "label": "text",
+            "meta": null,
+            "orig": "FICTIONAL INVEOS repeated passage",
+            "parent": {
+              "cref": "#/body"
+            },
+            "prov": [
+              {
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "charspan": [
+                  0,
+                  33
+                ],
+                "page_no": 2
+              }
+            ],
+            "self_ref": "#/texts/1",
+            "text": "FICTIONAL INVEOS repeated passage"
+          }
+        ],
+        "version": "1.10.0"
+      },
+      "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "parserExecuted": true,
+      "rows": [
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72.0,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 1,
+          "text": "FICTIONAL INVEOS repeated passage"
+        },
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72.0,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 2,
+          "text": "FICTIONAL INVEOS repeated passage"
+        }
+      ],
+      "citationBoundary": {
+        "envelope": {
+          "schema": "inveos.native-boundary-lab.v1",
+          "extraction": {
+            "schema": "inveos.extraction-lab.v1",
+            "context": {
+              "tenant_id": "tenant-fiction",
+              "case_id": "case-fiction",
+              "evidence_id": "evidence-fiction",
+              "authority_id": "authority-fiction",
+              "authority_version": 1,
+              "original_sha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+              "source_time": "2026-10-25T10:00:00Z",
+              "received_time": "2026-10-28T10:00:00Z"
+            },
+            "state": "unreviewed_derivative",
+            "tool": {
+              "name": "docling",
+              "version": "2.142.1",
+              "revision": "90234a71b16785d08fd2f46ec62668dd2396db76"
+            },
+            "configuration_sha256": "2d1c5aa4ad230efab6a711081c0c840869c6037cb066c53a215fa3755300c1a3",
+            "raw_sha256": "f025ddcdfaf296e4c2a090afd7ffdcdd629e6f25d0c30174d509a6cfbc9f06b9",
+            "text_sha256": "b19a533911ffcb5c2a0e3698ac287b018e0f6701a17bee9a3059f3e41d929a1c",
+            "text": "FICTIONAL INVEOS repeated passage\nFICTIONAL INVEOS repeated passage",
+            "references": [
+              {
+                "item_ref": "#/texts/0",
+                "page": 1,
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "start_byte": 0,
+                "end_byte": 33
+              },
+              {
+                "item_ref": "#/texts/1",
+                "page": 2,
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "start_byte": 34,
+                "end_byte": 67
+              }
+            ],
+            "extraction_id": "d0262c83f7e9bc884013c7f5107e51a212975d41a1545cd722bdb8d547c359f4"
+          },
+          "coverage": {
+            "pageCount": 2,
+            "pagesWithoutText": [],
+            "pageTextCounts": [
+              1,
+              1
+            ],
+            "parserSucceeded": true,
+            "disposition": "unreviewed_text",
+            "completeExtractionVerified": false
+          },
+          "runtime": {
+            "tool_version": "2.142.1",
+            "tool_revision": "90234a71b16785d08fd2f46ec62668dd2396db76",
+            "image_sha256": "37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+            "wheel_inventory_sha256": "0d0dae5ea2484d990c51c08c3b1259510a5dac96063c090cae6f1a86ce85657f",
+            "pipeline": "NativePdfPipeline",
+            "backend": "ThreadedDoclingParseDocumentBackend",
+            "parser_threads": 1,
+            "ocr": false,
+            "render_pages": false,
+            "include_bitmap_images": false,
+            "max_num_pages": 2,
+            "max_file_size": 65536,
+            "document_timeout": 20
+          },
+          "reviewState": "unreviewed",
+          "offsetBasis": "extracted_utf8_not_original_pdf",
+          "envelope_sha256": "233aa542a5da81800011274f91a413846aa9e4dc3c6ec0fbff6fd439f328d734"
+        },
+        "citation": {
+          "state": "unreviewed_derivative_citation",
+          "extraction_id": "d0262c83f7e9bc884013c7f5107e51a212975d41a1545cd722bdb8d547c359f4",
+          "original_sha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+          "item_ref": "#/texts/1",
+          "page": 2,
+          "bbox": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72.0,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "quote": "FICTIONAL INVEOS repeated passage",
+          "start_byte": 34,
+          "end_byte": 67,
+          "offset_basis": "extracted_utf8_not_original_pdf",
+          "envelope_sha256": "233aa542a5da81800011274f91a413846aa9e4dc3c6ec0fbff6fd439f328d734",
+          "coverage": {
+            "pageCount": 2,
+            "pagesWithoutText": [],
+            "pageTextCounts": [
+              1,
+              1
+            ],
+            "parserSucceeded": true,
+            "disposition": "unreviewed_text",
+            "completeExtractionVerified": false
+          }
+        },
+        "negativeChecksPassed": true
+      }
+    },
+    {
+      "coverageCases": {
+        "blank": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              0,
+              1
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+          "rows": [
+            {
+              "page": 2,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "mixed": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              1,
+              0
+            ],
+            "pagesWithoutText": [
+              2
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+          "rows": [
+            {
+              "page": 1,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "overpages": {
+          "originalSha256": "875c4fa83143ed349a567b791eac8beba99906f44b88cd7a7460011c50cd4655",
+          "rejected": true
+        },
+        "oversize": {
+          "originalSha256": "99ff663aee374abeedd3de908bfde6e18fdc695e9a13a238fd1d36138553ce79",
+          "rejected": true
+        },
+        "raster": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 1,
+            "pageTextCounts": [
+              0
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+          "rows": []
+        }
+      },
+      "elapsedSeconds": 0.0807980129999919,
+      "malformedOutcome": "ValueError",
+      "maxRssKiB": 161576,
+      "nativeDocument": {
+        "body": {
+          "children": [
+            {
+              "cref": "#/texts/0"
+            },
+            {
+              "cref": "#/texts/1"
+            }
+          ],
+          "content_layer": "body",
+          "label": "unspecified",
+          "meta": null,
+          "name": "_root_",
+          "parent": null,
+          "self_ref": "#/body"
+        },
+        "form_items": [],
+        "furniture": {
+          "children": [],
+          "content_layer": "furniture",
+          "label": "unspecified",
+          "meta": null,
+          "name": "_root_",
+          "parent": null,
+          "self_ref": "#/furniture"
+        },
+        "groups": [],
+        "key_value_items": [],
+        "name": "digital",
+        "origin": {
+          "binary_hash": 13032009255706130169,
+          "filename": "digital.pdf",
+          "mimetype": "application/pdf",
+          "uri": null
+        },
+        "pages": {
+          "1": {
+            "image": null,
+            "page_no": 1,
+            "size": {
+              "height": 792.0,
+              "width": 612.0
+            }
+          },
+          "2": {
+            "image": null,
+            "page_no": 2,
+            "size": {
+              "height": 792.0,
+              "width": 612.0
+            }
+          }
+        },
+        "pictures": [],
+        "schema_name": "DoclingDocument",
+        "tables": [],
+        "texts": [
+          {
+            "children": [],
+            "content_layer": "body",
+            "formatting": null,
+            "hyperlink": null,
+            "label": "text",
+            "meta": null,
+            "orig": "FICTIONAL INVEOS repeated passage",
+            "parent": {
+              "cref": "#/body"
+            },
+            "prov": [
+              {
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "charspan": [
+                  0,
+                  33
+                ],
+                "page_no": 1
+              }
+            ],
+            "self_ref": "#/texts/0",
+            "text": "FICTIONAL INVEOS repeated passage"
+          },
+          {
+            "children": [],
+            "content_layer": "body",
+            "formatting": null,
+            "hyperlink": null,
+            "label": "text",
+            "meta": null,
+            "orig": "FICTIONAL INVEOS repeated passage",
+            "parent": {
+              "cref": "#/body"
+            },
+            "prov": [
+              {
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "charspan": [
+                  0,
+                  33
+                ],
+                "page_no": 2
+              }
+            ],
+            "self_ref": "#/texts/1",
+            "text": "FICTIONAL INVEOS repeated passage"
+          }
+        ],
+        "version": "1.10.0"
+      },
+      "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "parserExecuted": true,
+      "rows": [
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72.0,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 1,
+          "text": "FICTIONAL INVEOS repeated passage"
+        },
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72.0,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 2,
+          "text": "FICTIONAL INVEOS repeated passage"
+        }
+      ],
+      "citationBoundary": {
+        "envelope": {
+          "schema": "inveos.native-boundary-lab.v1",
+          "extraction": {
+            "schema": "inveos.extraction-lab.v1",
+            "context": {
+              "tenant_id": "tenant-fiction",
+              "case_id": "case-fiction",
+              "evidence_id": "evidence-fiction",
+              "authority_id": "authority-fiction",
+              "authority_version": 1,
+              "original_sha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+              "source_time": "2026-10-25T10:00:00Z",
+              "received_time": "2026-10-28T10:00:00Z"
+            },
+            "state": "unreviewed_derivative",
+            "tool": {
+              "name": "docling",
+              "version": "2.142.1",
+              "revision": "90234a71b16785d08fd2f46ec62668dd2396db76"
+            },
+            "configuration_sha256": "2d1c5aa4ad230efab6a711081c0c840869c6037cb066c53a215fa3755300c1a3",
+            "raw_sha256": "f025ddcdfaf296e4c2a090afd7ffdcdd629e6f25d0c30174d509a6cfbc9f06b9",
+            "text_sha256": "b19a533911ffcb5c2a0e3698ac287b018e0f6701a17bee9a3059f3e41d929a1c",
+            "text": "FICTIONAL INVEOS repeated passage\nFICTIONAL INVEOS repeated passage",
+            "references": [
+              {
+                "item_ref": "#/texts/0",
+                "page": 1,
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "start_byte": 0,
+                "end_byte": 33
+              },
+              {
+                "item_ref": "#/texts/1",
+                "page": 2,
+                "bbox": {
+                  "b": 697.516,
+                  "coord_origin": "BOTTOMLEFT",
+                  "l": 72.0,
+                  "r": 282.7560000000001,
+                  "t": 708.616
+                },
+                "start_byte": 34,
+                "end_byte": 67
+              }
+            ],
+            "extraction_id": "d0262c83f7e9bc884013c7f5107e51a212975d41a1545cd722bdb8d547c359f4"
+          },
+          "coverage": {
+            "pageCount": 2,
+            "pagesWithoutText": [],
+            "pageTextCounts": [
+              1,
+              1
+            ],
+            "parserSucceeded": true,
+            "disposition": "unreviewed_text",
+            "completeExtractionVerified": false
+          },
+          "runtime": {
+            "tool_version": "2.142.1",
+            "tool_revision": "90234a71b16785d08fd2f46ec62668dd2396db76",
+            "image_sha256": "37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+            "wheel_inventory_sha256": "0d0dae5ea2484d990c51c08c3b1259510a5dac96063c090cae6f1a86ce85657f",
+            "pipeline": "NativePdfPipeline",
+            "backend": "ThreadedDoclingParseDocumentBackend",
+            "parser_threads": 1,
+            "ocr": false,
+            "render_pages": false,
+            "include_bitmap_images": false,
+            "max_num_pages": 2,
+            "max_file_size": 65536,
+            "document_timeout": 20
+          },
+          "reviewState": "unreviewed",
+          "offsetBasis": "extracted_utf8_not_original_pdf",
+          "envelope_sha256": "233aa542a5da81800011274f91a413846aa9e4dc3c6ec0fbff6fd439f328d734"
+        },
+        "citation": {
+          "state": "unreviewed_derivative_citation",
+          "extraction_id": "d0262c83f7e9bc884013c7f5107e51a212975d41a1545cd722bdb8d547c359f4",
+          "original_sha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+          "item_ref": "#/texts/1",
+          "page": 2,
+          "bbox": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72.0,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "quote": "FICTIONAL INVEOS repeated passage",
+          "start_byte": 34,
+          "end_byte": 67,
+          "offset_basis": "extracted_utf8_not_original_pdf",
+          "envelope_sha256": "233aa542a5da81800011274f91a413846aa9e4dc3c6ec0fbff6fd439f328d734",
+          "coverage": {
+            "pageCount": 2,
+            "pagesWithoutText": [],
+            "pageTextCounts": [
+              1,
+              1
+            ],
+            "parserSucceeded": true,
+            "disposition": "unreviewed_text",
+            "completeExtractionVerified": false
+          }
+        },
+        "negativeChecksPassed": true
+      }
+    }
+  ],
+  "approval": "research_only_not_product_or_licence_approval"
+,
+"verification": {"commit":"0f6a057f25d226d0ae4dd2510ec6651841a5466b","tree":"a67789893cd711e9dca9c3f87d2f886ec541c349","run":40772391766,"job":123112753027}
+}
