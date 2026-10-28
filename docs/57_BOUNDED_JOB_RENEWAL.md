@@ -30,7 +30,7 @@ No parser dependency or licence approval is introduced by this change.
 Run `npm test --workspace @inveos/api` with the documented restricted PostgreSQL
 and admin test URLs. New actual-database tests cover restart, completion, scope,
 token/expiry/cancellation fencing, authority/membership withdrawal, concurrent
-renewals and the immutable ceiling. Hosted verification is pending. Local
+renewals, the immutable ceiling and lock-timeout rollback/retry. Hosted [Checks #127](https://github.com/BlackStateGroup/inveos/actions/runs/40783925491) passed at `b5996ae4da26cde107eae91215f1519fcd8d84ac`, tree `398305bfa4ae9a682606c685bc396a04fb064005`: all 140 Node tests, zero failures/skips, including five new actual PostgreSQL renewal scenarios, migration upgrade, restore and five Chrome journeys. All 98 Python tests, lint/types/build/reference and worker isolation probes passed. The first run found an outdated expected migration list; adding migration 021 corrected it, and the complete suite reran successfully. Local lint/types/build, Python and foundation validation also pass. This evidence follow-up changes documentation only; parser research was not rerun or represented as new evidence. Local
 lint/types, Python and build checks are recorded separately in the handoff.
 
 Rollback application code before removing the additive migration; leaving its
