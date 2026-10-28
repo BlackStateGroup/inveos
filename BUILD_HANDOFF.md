@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: explicit client receipt acknowledgement
+
+Based on PR #28 receipt `1840493c334de0ef125cd2105c76d966960a137d`; fresh main is still `95b5c35`, drafts #2–#28 open, #28 has no feedback. Added append-only fingerprint-bound recipient acknowledgements with case-serialised eligibility/integrity revalidation, atomic audit and retry receipts. Fixed client sign-out while retaining internal mutation denial. Portal offers an explicit acknowledgement only after a verified download. Migration 017; see docs/48_DISCLOSURE_ACKNOWLEDGEMENT.md.
+
+Four new PostgreSQL scenarios await hosted validation. Local lint/types/build/foundation checks run separately. Namespace isolation remains denied by a fresh probe; no parser executed. Browser/device/offline/restore and real identity checks remain unrun.
+
+Next: record hosted evidence then continue recipient administration and real identity/session lifecycle, plus actual portal browser acceptance on a supported host. Acknowledgement is not finding approval, legal delivery or access extension. Redaction, isolated parsers, native field/offline/restore and wider product gates stay open. No merge/deployment or essential user action.
+
 ## 28 October: recipient disclosure discovery
 
 Based on PR #27 receipt `02290669df14880f2b58d0ed3fd6225eab50d6be`. Fresh main remains `95b5c35`; drafts #2–#27 remain open and all their review timelines have no feedback. Draft PR #28 adds this slice. Added bounded, minimal recipient-only grant discovery with database-precision keysets and shared download eligibility. Migration 016 adds the recipient history index. Listing loads no report bytes and grants no internal case access. Added a separate `/portal` client surface with minimal page validation, bounded streamed downloads and existing SHA-256 verification; no automatic reviewer session. See docs/47_RECIPIENT_DISCOVERY.md.

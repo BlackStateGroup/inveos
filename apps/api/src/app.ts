@@ -541,11 +541,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     };
   };
 
-  const requireCsrf = async (request: AppRequest): Promise<void> => {
+  const requireSessionCsrf = async (request: AppRequest): Promise<void> => {
     requireAllowedOrigin(request, options.allowedOrigins);
     jsonOnly(request);
     await authenticate(request);
-    rejectClientRole(request.actor!);
     const header = request.headers['x-csrf-token'];
     const cookie = request.cookies[csrfCookieName];
     if (
@@ -557,6 +556,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       throw new ApiError(403, 'A valid CSRF token is required.');
     }
   };
+  const requireCsrf = async (request: AppRequest): Promise<void> => {
+    await requireSessionCsrf(request);
+    rejectClientRole(request.actor!);
+  };
+
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ApiError) {
@@ -670,7 +674,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.post(
     '/api/session/end',
-    {preHandler: requireCsrf, schema: {body: emptyBodySchema}},
+    {preHandler: requireSessionCsrf, schema: {body: emptyBodySchema}},
     async (request, reply) => {
       const actor = request.actor!;
       await inTransaction(options.pool, async (client) => {
@@ -1505,6 +1509,25 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3))
         ORDER BY d.created_at DESC,d.id DESC LIMIT $4`,[actor.tenantId,actor.userId,before??null,limit+1]);
       return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.digest.trim(),createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+    });
+  });
+  app.post('/api/portal/disclosures/:disclosureId/acknowledge',{preHandler:requireSessionCsrf,schema:{params:{type:'object',additionalProperties:false,required:['disclosureId'],properties:{disclosureId:uuidSchema}},body:{type:'object',additionalProperties:false,required:['sha256','confirmReceipt'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},confirmReceipt:{const:true}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
+    if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
+    const {sha256:expected}=request.body as {sha256:string};
+    return inTransaction(options.pool,async client=>{
+      // Match recipient before locking, then serialise with case authority and grant revocation.
+      const scope=await client.query('SELECT case_id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,disclosureId]);
+      if(!scope.rows[0])notFound();await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,scope.rows[0].case_id]);
+      const found=await client.query(`SELECT d.*,r.report_bytes FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+        JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
+        WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.id=$3 AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}`,[actor.tenantId,actor.userId,disclosureId]);
+      const grant=found.rows[0];if(!grant)notFound();checkRevision(grant);
+      if(grant.digest.trim()!==expected)throw new ApiError(409,'Disclosure fingerprint changed.');
+      const inserted=await client.query(`INSERT INTO report_disclosure_acknowledgements(tenant_id,disclosure_id,recipient_id,digest) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING acknowledged_at`,[actor.tenantId,disclosureId,actor.userId,expected]);
+      if(inserted.rowCount)await writeAudit(client,actor,grant.case_id,'report.disclosure_acknowledged','report_disclosure',disclosureId,'Recipient explicitly acknowledged receipt',{digest:expected});
+      const receipt=inserted.rows[0]??(await client.query('SELECT acknowledged_at FROM report_disclosure_acknowledgements WHERE tenant_id=$1 AND disclosure_id=$2',[actor.tenantId,disclosureId])).rows[0];
+      return {disclosureId,sha256:expected,acknowledgedAt:iso(receipt.acknowledged_at),status:'recipient_acknowledged_receipt'};
     });
   });
   app.get('/api/portal/disclosures/:disclosureId',{preHandler:authenticate,schema:{params:{type:'object',additionalProperties:false,required:['disclosureId'],properties:{disclosureId:uuidSchema}}}},async(request,reply)=>{

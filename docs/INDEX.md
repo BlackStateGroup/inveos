@@ -89,3 +89,5 @@
 - [Scoped report disclosure](46_SCOPED_REPORT_DISCLOSURE.md) — explicit recipient grants, expiry, revocation and audited snapshot delivery.
 
 - [Recipient disclosure discovery](47_RECIPIENT_DISCOVERY.md) — bounded recipient-only listing with current access gates.
+
+- [Disclosure acknowledgement](48_DISCLOSURE_ACKNOWLEDGEMENT.md) — explicit fingerprint-bound receipt assertions and client sign-out.

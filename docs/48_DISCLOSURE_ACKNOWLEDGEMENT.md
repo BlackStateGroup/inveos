@@ -1,0 +1,15 @@
+# Explicit disclosure receipt acknowledgement
+
+28 October 2026. Synthetic lab slice on draft PR #28. A prepared download audit is not proof that a person received or read a file. This slice records a separate explicit recipient assertion, bound to the exact disclosure fingerprint. It does not approve findings, sign a report, certify legal delivery or extend access.
+
+`POST /api/portal/disclosures/:disclosureId/acknowledge` requires the exact authenticated client recipient, allowed origin, JSON content type and session-bound double-submit CSRF token. Body: `{sha256,confirmReceipt:true}`. It locks the case before rechecking current disclosure eligibility, expiry, authority, issuer assignment and absence of dissent/revocation; it rehashes the immutable snapshot. Append-only acknowledgement and audit commit atomically. Concurrent identical requests return one receipt with the original server time. Changed fingerprints fail. Retries after access withdrawal fail; the historical receipt remains in the database. No acknowledgement is created by listing or downloading.
+
+Migration 017 adds append-only acknowledgement records; no report, evidence, review or grant bytes change. A historical acknowledgement is an assertion from the authenticated identity, not independent proof of possession. No claim of real identity is made by the current synthetic session system.
+
+`POST /api/session/end` now accepts clients using the same origin/content-type/CSRF checks as internal users. It revokes only the current session and commits audit atomically. Internal case mutation routes retain their client denial. No client sign-in or invitation mechanism is introduced.
+
+The `/portal` surface offers sign-out. After a verified download, it offers an explicit checkbox and acknowledgement button; no acknowledgement is sent automatically. It checks the returned grant identity, fingerprint and timestamp before displaying confirmation. An interrupted response can be retried while the grant remains eligible. A failed sign-out does not claim that the server session ended. Refresh/reload clears the local download/confirmation state; no sensitive receipt is stored in browser storage.
+
+Run normal lab migrations, then `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:foundation` and configured `npm run test:api`. Four added PostgreSQL scenarios cover actual concurrent HTTP requests, restart/retry, unchanged receipt/audit count, immutability, scope/tenant/CSRF/origin/role/attestation denial, corrupt bytes, expiry, stale authority, revocation, audit rollback and client logout. Hosted evidence is recorded in BUILD_HANDOFF.md. Browser/device/offline/restore and real parser checks remain unrun.
+
+Rollback removes the acknowledgement routes/UI while retaining history. Keep session sign-out available for all authenticated roles. No new dependency, source incorporation, collection, notification, merge or deployment. Remaining work includes recipient administration, real identity, browser acceptance, redacted release artifacts, parser isolation and wider product requirements.
