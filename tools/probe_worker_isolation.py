@@ -140,10 +140,9 @@ printf 'ISOLATION_PROBE_OK\\n'
                 # The cap must actually deny a fork. Short-lived children allow
                 # the shell to recover and inspect the kernel's denial counter.
                 ('pids', '''
-set +e
-for i in {1..40}; do /bin/sleep 2 & done
-wait
-set -e
+# Bash can exit 254 on fork exhaustion even without errexit. Keep a parent
+# shell outside the burst so it can inspect the kernel counter afterwards.
+(for i in {1..40}; do /bin/sleep 2 & done; wait) || true
 while read -r key value; do
   if [ "$key" = max ]; then printf 'PID_DENIALS=%s\\n' "$value"; fi
 done < /sys/fs/cgroup/pids.events
