@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: recipient disclosure discovery
+
+Based on PR #27 receipt `02290669df14880f2b58d0ed3fd6225eab50d6be`. Fresh main remains `95b5c35`; drafts #2–#27 remain open and #27 has no feedback. Added bounded, minimal recipient-only grant discovery with database-precision keysets and shared download eligibility. Migration 016 adds the recipient history index. No report-byte loading or internal case access. See docs/47_RECIPIENT_DISCOVERY.md.
+
+Local checks and hosted PostgreSQL validation pending below. Three new scenarios cover HTTP/pagination/restart, scope/query denials and eligibility withdrawal. Isolation probe remains denied (`unshare -Urn true`); no parser executed or restriction bypassed. Browser/device/offline/restore remain unrun.
+
+Next: complete hosted verification then continue portal UI, verified download controls and recipient administration from this branch after fresh main/review checks. Full snapshots are not redacted releases; production identity/storage, page/region parsers, native field/offline/restore and broader requirements remain open. Nothing merged or deployed; no essential user action.
+
 ## 28 October: scoped report disclosure API
 
 Based on PR #26 receipt `1797beb1d206a1f70b7b062f40a4cee04c87a9c6`; main remains `95b5c35`; drafts #2–#26 were inspected with no review comments. Draft PR #27 adds this slice. Added explicit full-snapshot recipient grants, current independent review/authority gates, source revalidation in the grant transaction, bounded expiry, immutable revocation and exact-recipient audited download. No generic client case/evidence permission; frozen bytes remain unchanged. Migration 015. API-only synthetic lab, not portal UI or production release. See docs/46_SCOPED_REPORT_DISCLOSURE.md for full embedded-original disclosure semantics and remaining gates.

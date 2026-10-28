@@ -1177,7 +1177,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2560,4 +2560,35 @@ test('portal disclosure denies cross-tenant identifiers, issuer revocation and s
  await context.schemaAdminPool!.query('ALTER TABLE report_revisions DISABLE TRIGGER report_revisions_append_only');try{await context.schemaAdminPool!.query("UPDATE report_revisions SET report_bytes=convert_to('fictional altered snapshot','UTF8') WHERE id=$1",[f.revision.id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_revisions ENABLE TRIGGER report_revisions_append_only');}
  assertError(await request('GET',url,f.clientSession),409);
  await assert.rejects(context.pool!.query('DELETE FROM report_disclosures WHERE id=$1',[grant.id]));
+});
+
+test('recipient discovery paginates exact database timestamps, survives revoked anchors and returns only minimal metadata over HTTP',async()=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});
+ const ids:string[]=[];for(let i=0;i<4;i++){const r=await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}});assert.equal(r.statusCode,200,r.body);ids.push(JSON.parse(r.body).id);}
+ await context.schemaAdminPool!.query('ALTER TABLE report_disclosures DISABLE TRIGGER disclosure_append_only');try{for(let i=0;i<ids.length;i++)await context.schemaAdminPool!.query("UPDATE report_disclosures SET created_at='2026-01-01T00:00:00Z'::timestamptz + $2::integer * interval '1 microsecond' WHERE id=$1",[ids[i],i<2?0:i]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_disclosures ENABLE TRIGGER disclosure_append_only');}
+ const expected=(await context.pool!.query('SELECT id FROM report_disclosures WHERE recipient_id=$1 ORDER BY created_at DESC,id DESC',[f.client])).rows.map(r=>r.id);
+ const app=await createAppInstance();let first;try{const address=await app.listen({host:'127.0.0.1',port:0});const r=await fetch(address+'/api/portal/disclosures?limit=2',{headers:{cookie:f.clientSession.cookie}});assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');first=await r.json() as {items:{id:string}[];nextBefore:string};}finally{await app.close();}
+ assert.deepEqual(first.items.map(r=>r.id),expected.slice(0,2));assert.deepEqual(Object.keys(first.items[0]!).sort(),['createdAt','expiresAt','id','revisionId','sha256']);assert.equal(first.nextBefore,expected[1]);
+ await request('POST',`/api/cases/${f.kase.id}/disclosures/${first.nextBefore}/revoke`,context.demo!,{payload:{reason:'Fictional cursor grant withdrawn'}});
+ await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}});
+ await context.app!.close();context.app=await createAppInstance();const second=JSON.parse((await request('GET','/api/portal/disclosures?limit=2&before='+first.nextBefore,f.clientSession)).body);assert.deepEqual(second.items.map((r:{id:string})=>r.id),expected.slice(2));assert.equal(second.nextBefore,null);
+});
+
+test('recipient discovery rejects foreign anchors and query variations without internal access',async()=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});const grant=JSON.parse((await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput})).body);
+ const other=await createMember(demoTenantId,'client','Fictional empty inbox');const otherSession=await issueTestSession(other);
+ assert.deepEqual(JSON.parse((await request('GET','/api/portal/disclosures',otherSession)).body),{items:[],nextBefore:null});assertError(await request('GET','/api/portal/disclosures?before='+grant.id,otherSession),404);
+ const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional discovery tenant']);const foreign=await createMember(tenant,'client','Fictional remote inbox');const foreignSession=await issueTestSession(foreign,tenant);assert.deepEqual(JSON.parse((await request('GET','/api/portal/disclosures',foreignSession)).body),{items:[],nextBefore:null});assertError(await request('GET','/api/portal/disclosures?before='+grant.id,foreignSession),404);
+ assertError(await request('GET','/api/portal/disclosures'),401);assertError(await request('GET','/api/portal/disclosures',context.demo!),403);
+ for(const q of ['limit=0','limit=51','before=bad','caseId='+f.kase.id,'recipientId='+other])assertError(await request('GET','/api/portal/disclosures?'+q,f.clientSession),422);
+ assertError(await request('GET','/api/portal/disclosures?before='+randomUUID(),f.clientSession),404);
+});
+
+test('discovery removes revoked, expired, stale-authority and issuer-revoked grants using download eligibility',async()=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});const ids:string[]=[];for(let i=0;i<3;i++)ids.push(JSON.parse((await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}})).body).id);
+ const visible=async()=>JSON.parse((await request('GET','/api/portal/disclosures',f.clientSession)).body).items.map((r:{id:string})=>r.id);
+ assert.equal((await visible()).length,3);await request('POST',`/api/cases/${f.kase.id}/disclosures/${ids[0]}/revoke`,context.demo!,{payload:{reason:'Fictional grant withdrawn'}});
+ await context.schemaAdminPool!.query('ALTER TABLE report_disclosures DISABLE TRIGGER disclosure_append_only');try{await context.schemaAdminPool!.query("UPDATE report_disclosures SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[ids[1]]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_disclosures ENABLE TRIGGER disclosure_append_only');}assert.deepEqual(await visible(),[ids[2]]);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);assert.deepEqual(await visible(),[]);await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,demoUserId]);assert.deepEqual(await visible(),[ids[2]]);
+ await approveAuthority(f.kase.id);assert.deepEqual(await visible(),[]);
 });

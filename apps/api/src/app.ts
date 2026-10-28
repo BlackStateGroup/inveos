@@ -1485,6 +1485,28 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(inserted.rowCount)await writeAudit(client,actor,caseId,'report.disclosure_revoked','report_disclosure',disclosureId,'Recipient disclosure revoked');return {id:disclosureId,caseId,status:'revoked'};
     });
   });
+  // Shared by discovery and download; discovery is not an integrity or delivery receipt.
+  const disclosureEligibility=`c.status='Active' AND c.authority_version=d.authority_version
+       AND NOT EXISTS(SELECT 1 FROM report_revision_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.revision_id=d.revision_id AND rr.decision='request_changes')
+       AND EXISTS(SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=d.tenant_id AND m.user_id=d.created_by AND m.role='reviewer' AND cm.case_id=d.case_id)
+       AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)`;
+  app.get('/api/portal/disclosures',{preHandler:authenticate,schema:{querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!;
+    if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
+    const {before,limit=25}=request.query as {before?:string;limit?:number};
+    return reportTransaction(async client=>{
+      // An owned historical anchor remains usable after expiry/revocation, but foreign anchors never do.
+      if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,before]);if(!anchor.rowCount)notFound();}
+      const rows=await client.query(`SELECT d.id,d.revision_id,d.digest,d.created_at,d.expires_at
+        FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+        WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.expires_at>clock_timestamp()
+        AND ${disclosureEligibility}
+        AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3))
+        ORDER BY d.created_at DESC,d.id DESC LIMIT $4`,[actor.tenantId,actor.userId,before??null,limit+1]);
+      return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.digest.trim(),createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+    });
+  });
   app.get('/api/portal/disclosures/:disclosureId',{preHandler:authenticate,schema:{params:{type:'object',additionalProperties:false,required:['disclosureId'],properties:{disclosureId:uuidSchema}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
     if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
@@ -1492,10 +1514,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const found=await client.query(`SELECT d.*,r.report_bytes FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
        JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
        WHERE d.tenant_id=$1 AND d.id=$2 AND d.recipient_id=$3 AND d.expires_at>clock_timestamp()
-       AND c.status='Active' AND c.authority_version=d.authority_version
-       AND NOT EXISTS(SELECT 1 FROM report_revision_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.revision_id=d.revision_id AND rr.decision='request_changes')
-       AND EXISTS(SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=d.tenant_id AND m.user_id=d.created_by AND m.role='reviewer' AND cm.case_id=d.case_id)
-       AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)`,[actor.tenantId,disclosureId,actor.userId]);
+       AND ${disclosureEligibility}`,[actor.tenantId,disclosureId,actor.userId]);
       const value=found.rows[0];if(!value)notFound();checkRevision(value);
       await writeAudit(client,actor,value.case_id,'report.disclosure_downloaded','report_disclosure',disclosureId,'Recipient snapshot prepared for download',{digest:value.digest.trim()});return value;
     });
