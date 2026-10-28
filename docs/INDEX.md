@@ -95,3 +95,5 @@
 - [Case disclosure oversight](49_DISCLOSURE_OVERSIGHT.md) — reviewer-scoped grant, acknowledgement and revocation history.
 
 - [Portal browser acceptance](50_PORTAL_BROWSER_ACCEPTANCE.md) — real sandboxed Chrome, HTTP and PostgreSQL test harness.
+
+- [Worker host qualification](51_WORKER_HOST_QUALIFICATION.md) — first-party isolation probes before parser runtime selection.
