@@ -115,3 +115,5 @@
 - [Native runtime audit](../research/runtime_artifacts/NATIVE_AUDIT.md) — hash-bound ELF dependencies and independent static comparison.
 
 - [Pinned image providers](../research/runtime_artifacts/IMAGE_AUDIT.md) — isolated native library and package provenance inspection.
+
+- [Native PDF experiment](../research/runtime_artifacts/NATIVE_EXPERIMENT.md) — isolated fictional page/region extraction and malformed input checks.

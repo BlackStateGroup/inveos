@@ -35,6 +35,8 @@ def require(condition, message='Isolation policy rejected'):
 
 
 SCRATCH = 'rw,noexec,nosuid,nodev,size=16m,mode=1777'
+RUNTIME_SCRATCH = 'rw,noexec,nosuid,nodev,size=512m,mode=1777'
+
 READONLY_VOLUME = 'ro,noexec,nosuid,nodev,size=1m,mode=0555'
 
 
@@ -49,32 +51,32 @@ def volume_overrides(volumes):
     return {path: READONLY_VOLUME for path in paths}
 
 
-def container_args(name, image_id, original, volumes=()):
+def container_args(name, image_id, original, volumes=(), *, runtime=False):
     if not re.fullmatch(r'sha256:[a-f0-9]{64}', image_id):
         raise ValueError('An immutable local image ID is required')
     overrides = volume_overrides(volumes)
     return ['create', '--pull=never', '--name', name, '--network=none',
             '--log-driver=none',
             '--user=65534:65534', '--read-only', '--cap-drop=ALL',
-            '--security-opt=no-new-privileges:true', '--memory=128m',
-            '--memory-swap=128m', '--cpus=0.5', '--pids-limit=32',
-            f'--tmpfs=/scratch:{SCRATCH}', f'--tmpfs=/output:{SCRATCH}',
+            '--security-opt=no-new-privileges:true', f'--memory={1024 if runtime else 128}m',
+            f'--memory-swap={1024 if runtime else 128}m', '--cpus=0.5', '--pids-limit=32',
+            f'--tmpfs=/scratch:{RUNTIME_SCRATCH if runtime else SCRATCH}', f'--tmpfs=/output:{SCRATCH}',
             *[f'--tmpfs={path}:{options}' for path, options in overrides.items()],
             '--mount', f'type=bind,src={original},dst=/original,readonly',
             '--entrypoint=/bin/bash', image_id, '-ceu']
 
 
-def check_configuration(info, volumes=()):
+def check_configuration(info, volumes=(), *, runtime=False):
     host = info['HostConfig']
     require(info['Config']['User'] == '65534:65534')
     require(host['NetworkMode'] == 'none' and host['ReadonlyRootfs'])
     require(host['LogConfig']['Type'] == 'none', 'Daemon logging must be disabled')
     require(host['CapDrop'] == ['ALL'] and (not host['Privileged']))
     require('no-new-privileges:true' in host['SecurityOpt'])
-    require(host['Memory'] == 128 * 1024 * 1024)
+    require(host['Memory'] == (1024 if runtime else 128) * 1024 * 1024)
     require(host['MemorySwap'] == host['Memory'])
     require(host['NanoCpus'] == 500000000 and host['PidsLimit'] == 32)
-    require(host['Tmpfs'] == {'/scratch': SCRATCH, '/output': SCRATCH, **volume_overrides(volumes)})
+    require(host['Tmpfs'] == {'/scratch': RUNTIME_SCRATCH if runtime else SCRATCH, '/output': SCRATCH, **volume_overrides(volumes)})
     for mount in info['Mounts']:
         require(mount['Destination'] in ['/original', '/scratch', '/output', *volumes])
         require(not mount['RW'] or (mount['Destination'] in ['/scratch', '/output'] and mount['Type'] == 'tmpfs'))
@@ -82,7 +84,7 @@ def check_configuration(info, volumes=()):
     require(len(originals) == 1 and originals[0]['RW'] is False)
 
 
-def run_probe(image):
+def run_probe(image, *, runtime=False):
     # Resolving a tag is allowed only for the existing CI image. Every run below
     # uses the captured content ID and records it; this is not a runtime lock.
     image_info = json.loads(command('image', 'inspect', image).stdout)[0]
@@ -110,7 +112,7 @@ def run_probe(image):
 [ "$(id -u)" = 65534 ]
 grep -Eq '^CapEff:[[:space:]]+0+$' /proc/self/status
 grep -Eq '^NoNewPrivs:[[:space:]]+1$' /proc/self/status
-[ "$(cat /sys/fs/cgroup/memory.max)" = 134217728 ]
+[ "$(cat /sys/fs/cgroup/memory.max)" = {1073741824 if runtime else 134217728} ]
 [ "$(cat /sys/fs/cgroup/pids.max)" = 32 ]
 [ "$(cat /sys/fs/cgroup/cpu.max)" = '50000 100000' ]
 if (echo changed >> /original) 2>/dev/null; then exit 41; fi
@@ -124,7 +126,7 @@ cmp /original /output/copy.txt
 if dd if=/dev/zero of=/output/overflow bs=1048576 count=20 status=none 2>/dev/null; then exit 46; fi
 rm -f /output/overflow
 
-if dd if=/dev/zero of=/scratch/overflow bs=1048576 count=20 status=none 2>/dev/null; then exit 45; fi
+if dd if=/dev/zero of=/scratch/overflow bs=1048576 count={516 if runtime else 20} status=none 2>/dev/null; then exit 45; fi
 rm -f /scratch/overflow
 printf 'ISOLATION_PROBE_OK\\n'
 '''
@@ -163,9 +165,9 @@ done < /sys/fs/cgroup/cpu.stat
             for label, script, deadline in probes:
                 name = 'inveos-probe-' + uuid.uuid4().hex
                 try:
-                    command(*container_args(name, image_id, original, volumes), script)
+                    command(*container_args(name, image_id, original, volumes, runtime=runtime), script)
                     info = json.loads(command('inspect', name).stdout)[0]
-                    check_configuration(info, volumes)
+                    check_configuration(info, volumes, runtime=runtime)
                     limit = None
                     result = None
                     try:
@@ -200,7 +202,7 @@ done < /sys/fs/cgroup/cpu.stat
     return {'status': 'host_probe_passed', 'imageId': image_id,
             'repoDigests': image_info.get('RepoDigests', []), 'checks': receipts,
             'originalSha256': expected, 'parserExecuted': False, 'imageVolumeOverrides': list(volumes),
-            'resourceEvidence': resource_evidence, 'combinedCaptureLimitBytes': 16384,
+            'profile': 'runtime-1g' if runtime else 'probe-128m', 'resourceEvidence': resource_evidence, 'combinedCaptureLimitBytes': 16384,
             'daemonLogging': False,
             'limits': 'Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification.'}
 

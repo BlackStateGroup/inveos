@@ -11,6 +11,10 @@ on:
       - 'tests/test_docling_research_build.py'
       - 'tools/audit_native_wheels.py'
       - 'tools/audit_runtime_image.py'
+      - 'tools/experiment_native_pdf.py'
+      - 'tools/run_native_pdf_fixture.py'
+      - 'tools/synthetic_pdf.py'
+      - 'tests/test_synthetic_pdf.py'
       - 'tools/inspect_image_libraries.py'
       - 'tests/test_runtime_image_audit.py'
       - 'tests/test_native_wheel_audit.py'
@@ -59,5 +63,7 @@ jobs:
           PYTHON
       - name: Inspect native library candidates and package notices in the pinned image
         run: timeout 120s python3 tools/audit_runtime_image.py --output .research-cache/image-inspection.json
+      - name: Run isolated fictional native PDF experiment
+        run: timeout 240s python3 tools/experiment_native_pdf.py
       - name: Keep all acquired and generated third-party files untracked
         run: git diff --exit-code
