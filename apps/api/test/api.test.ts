@@ -2693,6 +2693,7 @@ async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,o
  let browser:Awaited<ReturnType<typeof launchBrowser>>|undefined;
  try{
   apiAddress=await app.listen({host:'127.0.0.1',port:0});browser=await launchBrowser();const b=browser;
+  await b.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await run(b,origin);
  }finally{try{await browser?.close();}finally{try{await app.close();}finally{server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
 }
