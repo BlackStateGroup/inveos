@@ -2547,3 +2547,17 @@ test('disclosure audit rollback denies creation and download; expiry and change 
  const dissent=await createMember(demoTenantId,'reviewer','Fictional disclosure dissent');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,dissent]);await request('POST',f.reviewUrl,await issueTestSession(dissent),{payload:{...f.input,decision:'request_changes'}});
  assertError(await request('GET','/api/portal/disclosures/'+next.id,f.clientSession),404);assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}}),409);
 });
+
+test('portal disclosure denies cross-tenant identifiers, issuer revocation and snapshot tampering without exposing internal records',async()=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});
+ const created=await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput});assert.equal(created.statusCode,200);const grant=JSON.parse(created.body),url='/api/portal/disclosures/'+grant.id;
+ const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional isolated portal agency']);const other=await createMember(tenant,'client','Fictional foreign recipient');assertError(await request('GET',url,await issueTestSession(other,tenant)),404);
+ assertError(await request('GET',url,context.demo!),403);assertError(await request('GET',url),401);assertError(await request('GET','/api/portal/disclosures/'+randomUUID(),f.clientSession),404);
+ assertError(await request('POST',f.disclosureUrl,f.clientSession,{payload:f.disclosureInput}),403);
+ const wrong=await createCase();assertError(await request('POST',`/api/cases/${wrong.id}/disclosures/${grant.id}/revoke`,context.demo!,{payload:{reason:'Fictional wrong case revoke'}}),404);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);assertError(await request('GET',url,f.clientSession),404);
+ await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,demoUserId]);assert.equal((await request('GET',url,f.clientSession)).statusCode,200);
+ await context.schemaAdminPool!.query('ALTER TABLE report_revisions DISABLE TRIGGER report_revisions_append_only');try{await context.schemaAdminPool!.query("UPDATE report_revisions SET report_bytes=convert_to('fictional altered snapshot','UTF8') WHERE id=$1",[f.revision.id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_revisions ENABLE TRIGGER report_revisions_append_only');}
+ assertError(await request('GET',url,f.clientSession),409);
+ await assert.rejects(context.pool!.query('DELETE FROM report_disclosures WHERE id=$1',[grant.id]));
+});
