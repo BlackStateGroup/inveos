@@ -2,11 +2,11 @@
 
 ## 28 October: reviewer disclosure oversight
 
-Based on PR #29 receipt `b3141db258e47349a2a16d03c503f8fac3434963`; fresh main remains `95b5c35`, drafts #2–#29 open and #29 has no feedback. Added bounded assigned-reviewer case history with exact database keysets, historical acknowledgement/revocation details and a separate current access-policy flag. Added Reports panel with reasoned revocation through the existing endpoint. Migration 018 is index-only; no report bytes are loaded by listing. See docs/49_DISCLOSURE_OVERSIGHT.md.
+Based on PR #29 receipt `b3141db258e47349a2a16d03c503f8fac3434963`; fresh main remains `95b5c35`, drafts #2–#29 open and all review timelines have no feedback. Draft PR #30 adds this slice. Added bounded assigned-reviewer case history with exact database keysets, historical acknowledgement/revocation details and a separate current access-policy flag. Added Reports panel with reasoned revocation through the existing endpoint. Migration 018 is index-only; no report bytes are loaded by listing. See docs/49_DISCLOSURE_OVERSIGHT.md.
 
-Local checks and three new PostgreSQL scenarios are being verified. Namespace isolation remains denied by a fresh probe; no parser execution or bypass. Browser/device/offline/restore checks remain unrun.
+Hosted [Checks run #73](https://github.com/BlackStateGroup/inveos/actions/runs/40642647472) passed at `be00ccf75588fdda3228194215e9a50976ed7d2d`, tree `56dffce77038b079d90753df5dc8016fd221d650`: 93 PostgreSQL API tests plus 28 helpers (121 Node), all 42 Python tests, lint/types/build and reference checks. Three new scenarios passed actual HTTP/restart, historical acknowledgements/revocations, metadata minimisation, microsecond/tied ordering, newer inserts, withdrawn cursors and role/tenant/case/query/issuer/authority boundaries. Local lint/types/build/foundation checks passed. This receipt follow-up changes documentation only. Namespace isolation remains denied by a fresh probe; no parser execution or bypass. Browser/device/offline/restore checks remain unrun.
 
-Next: record hosted evidence, then continue from this draft after fresh main/review checks. Recipient administration, real identity/session lifecycle and explicit grant-creation controls remain next; obtain actual browser acceptance on a supported host. Redaction, page/region processing, native field/offline/restore and wider product gates stay open. No merge/deployment or essential user action.
+Next: continue from draft PR #30 after fresh main/review checks. Recipient administration, real identity/session lifecycle and explicit grant-creation controls remain next; obtain actual browser acceptance on a supported host. Redaction, page/region processing, native field/offline/restore and wider product gates stay open. No merge/deployment or essential user action.
 
 ## 28 October: explicit client receipt acknowledgement
 
