@@ -107,3 +107,5 @@
 - [Synthetic restore acceptance](54_SYNTHETIC_RESTORE.md) — actual quiesced PostgreSQL and original-store recovery with negative integrity checks.
 
 - [Other-session revocation](55_OTHER_SESSION_REVOCATION.md) — bounded self-service session control and atomic audit.
+
+- [Session recovery generations](56_SESSION_RECOVERY_GENERATIONS.md) — reject restored cookies using separately managed runtime configuration.

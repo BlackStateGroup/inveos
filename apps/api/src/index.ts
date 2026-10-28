@@ -11,6 +11,7 @@ const app = await createApp({
   demoTenantId: config.demoTenantId,
   demoUserId: config.demoUserId,
   sessionTtlSeconds: config.sessionTtlSeconds,
+  sessionEpoch: config.sessionEpoch,
 });
 
 try {

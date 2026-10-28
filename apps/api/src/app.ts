@@ -1,3 +1,4 @@
+import {sessionEpoch} from './session-epoch.js';
 import {registerUploads} from './uploads.js';
 import { randomBytes, randomUUID, createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
@@ -100,6 +101,7 @@ type AppOptions = {
   demoTenantId: string;
   demoUserId: string;
   sessionTtlSeconds: number;
+  sessionEpoch?: string;
 };
 
 type AppRequest = FastifyRequest & { actor: Actor | null };
@@ -491,6 +493,7 @@ function toAuthorityRecord(row: QueryResultRow, caseId: string): AuthorityRecord
 }
 
 export async function createApp(options: AppOptions): Promise<FastifyInstance> {
+  const epoch=sessionEpoch(options.sessionEpoch);
   const app = Fastify({
     bodyLimit: 2 * 1024 * 1024,
     ajv: {customOptions: {removeAdditional: false}},
@@ -524,8 +527,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
          FROM sessions s
          JOIN memberships m ON m.tenant_id = s.tenant_id AND m.user_id = s.user_id
          JOIN users u ON u.id = s.user_id
-        WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now()`,
-      [tokenHash],
+        WHERE s.token_hash = $1 AND s.epoch=$2 AND s.revoked_at IS NULL AND s.expires_at > now()`,
+      [tokenHash,epoch],
     );
     const row = result.rows[0] as QueryResultRow | undefined;
     if (!row) {
@@ -645,9 +648,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       };
       await inTransaction(options.pool, async (client) => {
         await client.query(
-          `INSERT INTO sessions (token_hash, id, csrf_hash, tenant_id, user_id, expires_at)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [sessionActor.tokenHash, sessionId, sessionActor.csrfHash, sessionActor.tenantId, sessionActor.userId, expiresAt],
+          `INSERT INTO sessions (token_hash, id, csrf_hash, tenant_id, user_id, expires_at, epoch)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [sessionActor.tokenHash, sessionId, sessionActor.csrfHash, sessionActor.tenantId, sessionActor.userId, expiresAt, epoch],
         );
         await writeAudit(client, sessionActor, null, 'session.started', 'session', sessionId, 'Local demo session started');
       });
@@ -699,14 +702,14 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return inTransaction(options.pool,async client=>{
       // Serialise this user's competing revocations before checking the current session again.
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))',[actor.tenantId,actor.userId]);
-      const current=await client.query('SELECT id FROM sessions WHERE token_hash=$1 AND tenant_id=$2 AND user_id=$3 AND revoked_at IS NULL AND expires_at>now() FOR UPDATE',[actor.tokenHash,actor.tenantId,actor.userId]);
+      const current=await client.query('SELECT id FROM sessions WHERE token_hash=$1 AND tenant_id=$2 AND user_id=$3 AND epoch=$4 AND revoked_at IS NULL AND expires_at>now() FOR UPDATE',[actor.tokenHash,actor.tenantId,actor.userId,epoch]);
       if(!current.rows[0])throw new ApiError(401,'The current session is no longer valid.');
       const revoked=await client.query(`WITH selected AS (
-        SELECT token_hash FROM sessions WHERE tenant_id=$1 AND user_id=$2 AND token_hash<>$3
+        SELECT token_hash FROM sessions WHERE tenant_id=$1 AND user_id=$2 AND token_hash<>$3 AND epoch=$4
         AND revoked_at IS NULL AND expires_at>now() ORDER BY id LIMIT 100 FOR UPDATE
-      ) UPDATE sessions s SET revoked_at=now() FROM selected WHERE s.token_hash=selected.token_hash RETURNING s.id`,[actor.tenantId,actor.userId,actor.tokenHash]);
+      ) UPDATE sessions s SET revoked_at=now() FROM selected WHERE s.token_hash=selected.token_hash RETURNING s.id`,[actor.tenantId,actor.userId,actor.tokenHash,epoch]);
       if(revoked.rows.length)await writeAudit(client,actor,null,'session.others_ended','session',current.rows[0].id,'Other sessions ended in this tenant',{revokedCount:revoked.rows.length});
-      const more=await client.query('SELECT EXISTS(SELECT 1 FROM sessions WHERE tenant_id=$1 AND user_id=$2 AND token_hash<>$3 AND revoked_at IS NULL AND expires_at>now()) AS remaining',[actor.tenantId,actor.userId,actor.tokenHash]);
+      const more=await client.query('SELECT EXISTS(SELECT 1 FROM sessions WHERE tenant_id=$1 AND user_id=$2 AND token_hash<>$3 AND epoch=$4 AND revoked_at IS NULL AND expires_at>now()) AS remaining',[actor.tenantId,actor.userId,actor.tokenHash,epoch]);
       return {revokedCount:revoked.rows.length,moreRemaining:more.rows[0].remaining};
     });
   });

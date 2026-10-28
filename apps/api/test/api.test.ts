@@ -63,7 +63,7 @@ function assertError(response: {statusCode: number; body: string}, statusCode: n
   assert.equal(typeof body.error, 'string');
 }
 
-async function createAppInstance(): Promise<FastifyInstance> {
+async function createAppInstance(epoch?:string): Promise<FastifyInstance> {
   const app = await createApp({
     pool: context.pool!,
     storageRoot: context.storageRoot!,
@@ -71,6 +71,7 @@ async function createAppInstance(): Promise<FastifyInstance> {
     demoTenantId,
     demoUserId,
     sessionTtlSeconds: 3600,
+    sessionEpoch: epoch,
   });
   await app.ready();
   return app;
@@ -1179,7 +1180,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2680,7 +2681,7 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
  });
 });
 
-type BrowserProxyProbe={request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
+type BrowserProxyProbe={epoch?:string;request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
 async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,origin:string)=>Promise<void>,probe:BrowserProxyProbe={}){
  const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';
  const server=createServer((req,res)=>{void(async()=>{
@@ -2699,7 +2700,7 @@ async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,o
   res.statusCode=404;res.end();
  })().catch(()=>{res.statusCode=500;res.end();});});
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address() as {port:number};const origin='http://127.0.0.1:'+address.port;
- const app=await createApp({pool:context.pool!,storageRoot:context.storageRoot!,allowedOrigins:[...allowedOrigins,origin],demoTenantId,demoUserId,sessionTtlSeconds:3600});
+ const app=await createApp({pool:context.pool!,storageRoot:context.storageRoot!,allowedOrigins:[...allowedOrigins,origin],demoTenantId,demoUserId,sessionTtlSeconds:3600,sessionEpoch:probe.epoch});
  let browser:Awaited<ReturnType<typeof launchBrowser>>|undefined;
  try{
   apiAddress=await app.listen({host:'127.0.0.1',port:0});browser=await launchBrowser();const b=browser;
@@ -2859,6 +2860,9 @@ test('quiesced PostgreSQL and original-store backup restores exact reports, auth
   await writeFile(join(objects,evidenceRow.object_path),'Fictional restore corruption');assertError(await request('GET',originalUrl,context.demo!),409);
   await cp(join(backup,'objects',evidenceRow.object_path),join(objects,evidenceRow.object_path));assert.equal((await request('GET',originalUrl,context.demo!)).statusCode,200);
   await runMigrations(previous.adminPool!,schema);assert.deepEqual((await context.schemaAdminPool!.query('SELECT * FROM schema_migrations ORDER BY filename')).rows,migrationsBefore);
+  const restoredSession=context.demo!;await context.app!.close();context.app=await createAppInstance(randomUUID());
+  assertError(await request('GET',originalUrl,restoredSession),401);assertError(await request('GET',reportUrl,restoredSession),401);assertError(await request('POST','/api/session/end-others',restoredSession,{payload:{}}),401);
+  context.demo=await startDemoSession();assert.equal((await request('GET',originalUrl,context.demo!)).statusCode,200);assert.equal((await request('GET',reportUrl,context.demo!)).statusCode,200);
   t.diagnostic('Restore passed: quiesced schema + objects, missing/corrupt object denial, exact snapshot, offline verification, permissions, immutable authority and idempotency. Dump SHA-256 '+backupHash);
  }finally{
   try{if(context.app!==previous.app)await context.app?.close();if(context.pool!==previous.pool)await context.pool?.end().catch(()=>{});if(context.schemaAdminPool!==previous.schemaAdminPool)await context.schemaAdminPool?.end().catch(()=>{});}finally{Object.assign(context,previous);await previous.adminPool!.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);await rm(root,{recursive:true,force:true});}
@@ -2893,4 +2897,27 @@ test('competing session owners leave exactly one caller active and exclude expir
  const access=await Promise.all([first,second].map(s=>request('GET','/api/workspace',s)));assert.deepEqual(access.map(r=>r.statusCode).sort(),[200,401]);assertError(await request('GET','/api/workspace',expired),401);
  const rows=(await context.pool!.query('SELECT revoked_at FROM sessions WHERE user_id=$1 AND expires_at<now()',[user])).rows;assert.equal(rows.length,1);assert.equal(rows[0].revoked_at,null);
  assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE actor_user_id=$1 AND action='session.others_ended'",[user])).rows[0].n,1);
+});
+
+test('external session generations reject old cookies across restart without changing evidence or audit history',async()=>{
+ const before=context.demo!,epoch=randomUUID();const beforeCount=(await context.pool!.query('SELECT count(*)::int AS n FROM audit_events')).rows[0].n;
+ await context.app!.close();context.app=await createAppInstance(epoch);
+ assertError(await request('GET','/api/workspace',before),401);assertError(await request('POST','/api/session/end',before,{payload:{}}),401);
+ context.demo=await startDemoSession();const active=context.demo!;await assert.rejects(context.pool!.query('UPDATE sessions SET epoch=$1 WHERE epoch=$2',[randomUUID(),epoch]),/immutable/);assert.equal((await request('GET','/api/workspace',active)).statusCode,200);
+ assert.deepEqual(JSON.parse((await request('POST','/api/session/end-others',active,{payload:{}})).body),{revokedCount:0,moreRemaining:false});
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM audit_events')).rows[0].n,beforeCount+1);
+ await context.app!.close();context.app=await createAppInstance(epoch);assert.equal((await request('GET','/api/workspace',active)).statusCode,200);assertError(await request('GET','/api/workspace',before),401);
+ await context.app!.close();context.app=await createAppInstance(randomUUID());assertError(await request('GET','/api/workspace',active),401);
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+});
+
+test('browser rejects a retired session generation and requires explicit lab re-entry', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const old=await issueTestSession(demoUserId),epoch=randomUUID();
+ await withBrowserApp(async(b,origin)=>{
+  await b.send('Network.enable');for(const pair of old.cookie.split('; ')){const split=pair.indexOf('=');await b.send('Network.setCookie',{name:pair.slice(0,split),value:pair.slice(split+1),url:origin,path:'/',sameSite:'Strict',httpOnly:pair.startsWith('inveos_session=')});}
+  const text=()=>b.evaluate<string>("document.body?.innerText||''");const click=async(label:string)=>{await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)}&&b.getClientRects().length);if(!button||button.disabled)throw new Error('Unavailable button');button.click();})()`);};
+  await b.send('Page.navigate',{url:origin+'/'});await eventually(async()=> (await text()).includes('Open persistent lab'),'retired session cannot restore workspace');assert.equal(await b.evaluate("fetch('/api/workspace').then(r=>r.status)"),401);
+  await click('Open persistent lab');await b.evaluate("document.querySelector('input[type=checkbox]').click()");await click('Enter synthetic lab');await eventually(async()=> (await text()).includes('PERSISTENT SYNTHETIC LAB'),'explicit new-generation session');assert.equal(await b.evaluate("fetch('/api/workspace').then(r=>r.status)"),200);
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM sessions WHERE epoch=$1',[epoch])).rows[0].n,1);
+ },{epoch});
 });

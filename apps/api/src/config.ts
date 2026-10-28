@@ -1,3 +1,4 @@
+import {sessionEpoch} from './session-epoch.js';
 import { isAbsolute } from 'node:path';
 
 export type RuntimeConfig = {
@@ -10,6 +11,7 @@ export type RuntimeConfig = {
   demoTenantId: string;
   demoUserId: string;
   sessionTtlSeconds: number;
+  sessionEpoch: string;
 };
 
 const defaultOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
@@ -86,5 +88,6 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     demoTenantId,
     demoUserId,
     sessionTtlSeconds,
+    sessionEpoch: sessionEpoch(env.INVEOS_SESSION_EPOCH),
   };
 }
