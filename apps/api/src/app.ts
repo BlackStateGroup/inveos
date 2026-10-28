@@ -1237,7 +1237,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   );
 
   // Cursor names are fixed application constants. Transaction end also closes them on failure.
-  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work', sql: string, values: string[], message: string) {
+  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work', sql: string, values: unknown[], message: string) {
     await client.query(`DECLARE ${name} NO SCROLL CURSOR FOR ${sql}`, values);
     let count = 0;
     for (;;) {
@@ -1251,7 +1251,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     await client.query(`CLOSE ${name}`);
   }
 
-  async function buildReport(client: PoolClient, actor: Actor, caseId: string): Promise<ReportDraft> {
+  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[]): Promise<ReportDraft> {
       await findCase(client,actor,caseId);
       const caseResult = await client.query<CaseRow>(
         `SELECT c.*, u.display_name AS owner_name
@@ -1308,9 +1308,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
              AND a.version = e.authority_version
            JOIN users reviewer ON reviewer.id = f.reviewer_user_id
            JOIN users policy_user ON policy_user.id = a.approved_by
-          WHERE f.tenant_id = $1 AND f.case_id = $2
+          WHERE f.tenant_id = $1 AND f.case_id = $2 AND ($3::uuid[] IS NULL OR f.id=ANY($3))
           ORDER BY f.reviewed_at, f.id LIMIT 1001`,
-        [actor.tenantId, caseId],
+        [actor.tenantId, caseId,selectedFindings??null],
         'Report finding limit exceeded.')) {
         const evidence = row as EvidenceRow;
         requireTextOriginal(evidence);
@@ -1358,6 +1358,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         report.findings.push(finding);
       }
       if (!report.findings.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
+      if(selectedFindings)return report; // Verification inspects only the frozen finding set, not later working context.
       for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
           WHERE tenant_id=$1 AND case_id=$2
@@ -1435,6 +1436,27 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     if(createHash('sha256').update(row.report_bytes).digest('hex')!==row.digest.trim()) throw new ApiError(409,'Stored report revision integrity failed.');
   }
   const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
+  app.post('/api/cases/:caseId/report-revisions/:revisionId/verify-sources',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string},{sha256:expected}=request.body as {sha256:string};
+    return reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);
+      const revision=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];
+      if(!revision)notFound();checkRevision(revision);
+      if(expected!==revision.digest.trim())throw new ApiError(409,'Verification fingerprint does not match the frozen revision.');
+      let frozen:ReportDraft;
+      try{frozen=JSON.parse(revision.report_bytes.toString('utf8'));}catch{throw new ApiError(409,'Frozen report structure is invalid.');}
+      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||!frozen.findings.length||frozen.findings.length>1000)throw new ApiError(409,'Frozen report structure is invalid.');
+      const ids=frozen.findings.map(f=>f?.id);
+      if(ids.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))||new Set(ids).size!==ids.length)throw new ApiError(409,'Frozen finding identities are invalid.');
+      const current=await buildReport(client,actor,caseId,ids);
+      // Preserve the exact frozen claim/review/source/policy representation, including byte spans and embedded originals.
+      if(JSON.stringify(current.findings)!==JSON.stringify(frozen.findings))throw new ApiError(409,'Frozen findings no longer match their current source records.');
+      const verificationId=randomUUID();
+      await writeAudit(client,actor,caseId,'report_revision.sources_verified','report_revision',revisionId,'Frozen cited sources reverified; not a release',{verificationId,digest:expected,findingCount:ids.length});
+      return {verificationId,caseId,revisionId,sha256:expected,findingCount:ids.length,status:'snapshot_sources_verified_not_released'};
+    });
+  });
   for(const method of ['GET','POST'] as const)app.route({method,url:'/api/cases/:caseId/report-revisions/:revisionId/reviews',preHandler:method==='GET'?authenticate:requireCsrf,
     schema:{params:reviewParams,...(method==='GET'?{}:{body:{type:'object',additionalProperties:false,required:['sha256','decision','reason'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},decision:{type:'string',enum:['accept_internal','request_changes']},reason:{type:'string',minLength:10,maxLength:2000}}}})},handler:async(request,reply)=>{
     reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};

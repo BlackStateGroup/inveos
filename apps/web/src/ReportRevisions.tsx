@@ -59,6 +59,11 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     setVerified(old=>({...old,[row.id]:true}));
     setMessage('Exact revision bytes verified and downloaded. This remains an internal draft.');
   }
+  async function verifySources(row:Receipt){
+    const receipt=await json<{revisionId:string;caseId:string;sha256:string;findingCount:number;status:string}>(`${base}/${row.id}/verify-sources`,AbortSignal.timeout(30000),{sha256:row.sha256},csrf);
+    if(receipt.revisionId!==row.id||receipt.caseId!==caseId||receipt.sha256!==row.sha256||receipt.status!=='snapshot_sources_verified_not_released')throw new Error('Source verification receipt mismatch.');
+    if(alive.current)setMessage(`${receipt.findingCount} frozen findings matched current stored source bytes and review links. This point-in-time check is not approval or release.`);
+  }
   async function reviews(row:Receipt){
     const result=await json<{items:Array<{id:string;decision:string;reason:string;reviewerId:string;createdAt:string}>}>(`${base}/${row.id}/reviews`);
     if(alive.current)setReviewHistory(old=>({...old,[row.id]:result.items}));
@@ -81,6 +86,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <p><strong>Internal draft · {new Date(row.createdAt).toLocaleString('en-GB',{timeZone:'UTC'})} UTC</strong></p>
       <label className="form-label">SHA-256 for revision {row.id}<input readOnly value={row.sha256}/></label>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
+      <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
       {reviewHistory[row.id]?.map(item=><p key={item.id}>{item.decision} · reviewer {item.reviewerId} · {item.createdAt}: {item.reason}</p>)}
       <details><summary>Review this frozen revision</summary><p>A different assigned reviewer must decide. Conflicting decisions remain separate; none releases the report. Download, verify and inspect its exact contents first.</p>

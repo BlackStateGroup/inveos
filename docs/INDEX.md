@@ -83,3 +83,5 @@
 - [Upload receipt history](43_UPLOAD_RECEIPT_HISTORY.md) — bounded scoped history after tab/sign-in loss.
 
 - [Frozen internal report review](44_FROZEN_REPORT_REVIEW.md) — separate reviewer decisions bound to immutable snapshot fingerprints.
+
+- [Frozen source verification](45_FROZEN_SOURCE_VERIFICATION.md) — audited revalidation of a frozen revision’s cited originals and review links.

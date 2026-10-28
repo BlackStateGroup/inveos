@@ -2463,3 +2463,42 @@ test('report review audit failure rolls back and allows retry; changed authority
  try{await context.schemaAdminPool!.query("UPDATE report_revisions SET report_bytes=convert_to('fictional corrupt snapshot','UTF8') WHERE id=$1",[f.revision.id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_revisions ENABLE TRIGGER report_revisions_append_only');}
  assertError(await request('GET',f.reviewUrl,f.session),409);assertError(await request('POST',f.reviewUrl,f.session,{payload:{...f.input,decision:'request_changes'}}),409);
 });
+
+test('frozen source verification checks the selected historical finding set over HTTP and excludes unrelated later material',async()=>{
+ const f=await revisionReviewFixture();const base=f.url+'/'+f.revision.id;
+ await createWork(f.kase.id,workInput({kind:'question',title:'Fictional later context is not frozen'}));
+ const later=JSON.parse((await uploadEvidence(f.kase.id)).body) as Evidence;
+ const claim=JSON.parse((await createClaim(f.kase.id,later.id)).body);
+ assert.equal((await request('POST',`/api/cases/${f.kase.id}/claims/${claim.id}/review`,context.demo!,{payload:{accepted:true,reason:'Reviewed fictional later source.'}})).statusCode,200);
+ const laterPath=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[later.id])).rows[0].object_path;
+ await writeFile(join(context.storageRoot!,laterPath),'Fictional corrupt unrelated later source');
+ const app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0});
+ const response=await fetch(address+base+'/verify-sources',{method:'POST',headers:{cookie:context.demo!.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':context.demo!.csrf},body:JSON.stringify({sha256:f.revision.sha256})});assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');
+ const receipt=await response.json() as {findingCount:number;status:string;sha256:string};assert.equal(receipt.findingCount,1);assert.equal(receipt.status,'snapshot_sources_verified_not_released');assert.equal(receipt.sha256,f.revision.sha256);
+ }finally{await app.close();}
+ assert.equal(digest((await request('GET',base,context.demo!)).body),f.revision.sha256);
+ const audits=await context.pool!.query("SELECT metadata FROM audit_events WHERE entity_id=$1 AND action='report_revision.sources_verified'",[f.revision.id]);assert.equal(audits.rowCount,1);assert.equal(audits.rows[0].metadata.findingCount,1);
+});
+test('source verification fails closed on corrupted originals and denied scope without creating a successful verification event',async()=>{
+ const f=await revisionReviewFixture(),url=f.url+'/'+f.revision.id+'/verify-sources',payload={sha256:f.revision.sha256};
+ assertError(await request('POST',url,context.demo!,{payload:{sha256:'0'.repeat(64)}}),409);
+ assertError(await request('POST',url,context.demo!,{payload,csrfHeader:false}),403);
+ const client=await createMember(demoTenantId,'client','Fictional verification client');assertError(await request('POST',url,await issueTestSession(client),{payload}),403);
+ const foreignTenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[foreignTenant,'Fictional verification agency']);const foreign=await createMember(foreignTenant,'reviewer','Fictional foreign verifier');assertError(await request('POST',url,await issueTestSession(foreign,foreignTenant),{payload}),404);
+ const wrong=await createCase();assertError(await request('POST',`/api/cases/${wrong.id}/report-revisions/${f.revision.id}/verify-sources`,context.demo!,{payload}),404);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,f.reviewer]);assertError(await request('POST',url,f.session,{payload}),404);
+ const path=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.evidence.id])).rows[0].object_path;
+ await writeFile(join(context.storageRoot!,path),'Fictional corrupted cited original');assertError(await request('POST',url,context.demo!,{payload}),409);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE entity_id=$1 AND action='report_revision.sources_verified'",[f.revision.id])).rows[0].n,0);
+ assert.equal(digest((await request('GET',f.url+'/'+f.revision.id,context.demo!)).body),f.revision.sha256);
+});
+test('source verification audit failure rolls back its receipt and changed reviewed source spans fail revalidation',async()=>{
+ const f=await revisionReviewFixture(),url=f.url+'/'+f.revision.id+'/verify-sources',payload={sha256:f.revision.sha256};
+ await context.schemaAdminPool!.query(`CREATE FUNCTION fail_source_check_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='report_revision.sources_verified' THEN RAISE EXCEPTION 'fictional verification audit failure'; END IF; RETURN NEW; END $$`);
+ await context.schemaAdminPool!.query('CREATE TRIGGER fail_source_check_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_source_check_test()');
+ try{assertError(await request('POST',url,context.demo!,{payload}),500);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_source_check_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_source_check_test()');}
+ assert.equal((await request('POST',url,context.demo!,{payload})).statusCode,200);
+ await corruptClaim('UPDATE claims SET source_start_byte=source_start_byte+1 WHERE tenant_id=$1 AND case_id=$2',[demoTenantId,f.kase.id]);
+ assertError(await request('POST',url,context.demo!,{payload}),409);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE entity_id=$1 AND action='report_revision.sources_verified'",[f.revision.id])).rows[0].n,1);
+});

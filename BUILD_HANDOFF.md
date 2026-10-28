@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: frozen report source revalidation
+
+Based on PR #25 receipt `7df28f95868dade6716aa321dc2130c45aa7a42a`; main remains `95b5c35`, drafts #2–#25 open and #25 has no feedback. Added explicit scoped verification of frozen report fingerprints against their current cited original bytes, exact spans, accepted review links and source policies. Reuses bounded report assembly for only the frozen finding set, excluding later findings and working context. Successful checks commit audit before returning a point-in-time receipt; no release/review state changes. Added UI action and receipt guard. No migration/dependency. See docs/45_FROZEN_SOURCE_VERIFICATION.md.
+
+Local lint/types/build and 42 Python tests passed. Three new PostgreSQL/TCP scenarios await hosted verification: later unrelated changes, exact historical bytes, corruption, role/tenant/case/CSRF/revocation, audit rollback and changed claim spans. Browser/parser/device/offline/restore remain unrun. No source incorporation, merge or deployment.
+
+Next: record hosted evidence, then continue explicit release preparation with current scope/privilege/redaction/recipient controls. A successful source check is not a reusable release token; a release must revalidate within its own commit boundary. Real identity, browser acceptance on a supported host, isolated parsers/licences, encrypted storage, native field/offline/restore and other product gates remain open. No essential user decision.
+
 ## 28 October: frozen internal report review
 
 Based on PR #24 receipt `d5d92bbebc2fed932282fd2b304588ecbd7a30c8`; main remains `95b5c35`, drafts #2–#24 open and #24 has no feedback. Added separate-reviewer immutable internal snapshot decisions, exact fingerprint binding, natural-key retry/conflict handling, atomic audit and current decision-time authority version. Added review inspection/form to report revisions with verified download and human attestation before submission. Migration 014; no release or client access. See docs/44_FROZEN_REPORT_REVIEW.md.
