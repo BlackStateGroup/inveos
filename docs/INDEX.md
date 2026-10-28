@@ -119,3 +119,5 @@
 - [Native PDF experiment](../research/runtime_artifacts/NATIVE_EXPERIMENT.md) — isolated fictional page/region extraction and malformed input checks.
 
 - [Actual parser citation boundary](../research/runtime_artifacts/NATIVE_BOUNDARY.md) — scoped, reverified page citations from isolated native output.
+
+- [Bounded worker renewal](57_BOUNDED_JOB_RENEWAL.md) — live-token renewal with authority checks and a fixed attempt ceiling.

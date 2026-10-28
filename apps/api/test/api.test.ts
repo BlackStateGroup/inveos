@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
-import { claimIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
+import { claimIntegrityJob, renewIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
 import {jobRequestScope,queueRecoverably} from '../../web/src/jobRequest.js';
 import { inspectTextDerivative, type InspectionJob } from '../../web/src/derivativeInspection.js';
@@ -2920,4 +2920,73 @@ test('browser rejects a retired session generation and requires explicit lab re-
   await click('Open persistent lab');await b.evaluate("document.querySelector('input[type=checkbox]').click()");await click('Enter synthetic lab');await eventually(async()=> (await text()).includes('PERSISTENT SYNTHETIC LAB'),'explicit new-generation session');assert.equal(await b.evaluate("fetch('/api/workspace').then(r=>r.status)"),200);
   assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM sessions WHERE epoch=$1',[epoch])).rows[0].n,1);
  },{epoch});
+});
+
+
+async function renewalFixture() {
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  const response=await request('POST',url,context.demo!,{payload:{evidenceId:evidence.id,idempotencyKey:randomUUID()}});
+  assert.equal(response.statusCode,200,response.body);
+  const scope={tenantId:demoTenantId,caseId:kase.id,jobId:JSON.parse(response.body).id};
+  const lease=await claimIntegrityJob(context.pool!,scope);assert.ok(lease);
+  return {scope,lease,url};
+}
+
+test('worker renewal preserves attempt, deadline and token across restart without exposing credentials',async()=>{
+  const {scope,lease,url}=await renewalFixture();
+  const before=(await context.pool!.query('SELECT lease_deadline,lease_token FROM integrity_jobs WHERE id=$1',[scope.jobId])).rows[0];
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()+interval '2 seconds' WHERE id=$1",[scope.jobId]);
+  await context.app!.close();context.app=await createAppInstance();
+  const renewed=await renewIntegrityJob(context.pool!,scope,lease.token);assert.ok(renewed);
+  assert.equal(renewed.attempt,1);assert.deepEqual(renewed.deadline,before.lease_deadline);
+  const remaining=(await context.pool!.query('SELECT EXTRACT(EPOCH FROM lease_until-clock_timestamp())::float AS seconds,lease_token FROM integrity_jobs WHERE id=$1',[scope.jobId])).rows[0];
+  assert.ok(remaining.seconds>50 && remaining.seconds<=60);assert.equal(remaining.lease_token,before.lease_token);
+  const events=(await context.pool!.query('SELECT status FROM integrity_job_events WHERE job_id=$1 ORDER BY id',[scope.jobId])).rows;
+  assert.deepEqual(events.map(r=>r.status),['queued','running']);
+  const body=(await request('GET',`${url}/${scope.jobId}`,context.demo!)).body;
+  assert.ok(!body.includes(lease.token));assert.ok(!body.includes('lease_deadline'));
+  assert.equal((await finishIntegrityJob(context.pool!,scope,lease.token,null))?.status,'succeeded');
+  assert.equal(await renewIntegrityJob(context.pool!,scope,lease.token),null);
+});
+
+test('renewal denies wrong scope, stale tokens, expiry, cancellation and superseded workers',async()=>{
+  const {scope,lease,url}=await renewalFixture();
+  for(const wrong of [{...scope,tenantId:randomUUID()},{...scope,caseId:randomUUID()},{...scope,jobId:randomUUID()}]) {
+    assert.equal(await renewIntegrityJob(context.pool!,wrong,lease.token),null);
+  }
+  assert.equal(await renewIntegrityJob(context.pool!,scope,randomUUID()),null);
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[scope.jobId]);
+  assert.equal(await renewIntegrityJob(context.pool!,scope,lease.token),null);
+  const next=await claimIntegrityJob(context.pool!,scope);assert.ok(next);
+  assert.equal(await renewIntegrityJob(context.pool!,scope,lease.token),null);
+  const current=await renewIntegrityJob(context.pool!,scope,next.token);assert.equal(current?.attempt,2);
+  await request('POST',`${url}/${scope.jobId}/cancel`,context.demo!,{payload:{}});
+  assert.equal(await renewIntegrityJob(context.pool!,scope,next.token),null);
+});
+
+test('renewal rechecks authority and requester membership',async()=>{
+  for(const revoke of ['authority','membership']) {
+    const {scope,lease}=await renewalFixture();
+    if(revoke==='authority')await approveAuthority(scope.caseId);
+    else await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,scope.caseId,demoUserId]);
+    assert.equal(await renewIntegrityJob(context.pool!,scope,lease.token),null);
+    const row=(await context.pool!.query('SELECT status,failure_code FROM integrity_jobs WHERE id=$1',[scope.jobId])).rows[0];
+    assert.deepEqual(row,{status:'cancelled',failure_code:'scope_changed'});
+    assert.equal(await finishIntegrityJob(context.pool!,scope,lease.token,null),null);
+  }
+});
+
+test('renewals cap at immutable attempt deadline and concurrent renewals cannot accumulate time',async()=>{
+  const {scope,lease}=await renewalFixture();
+  await assert.rejects(context.pool!.query("UPDATE integrity_jobs SET lease_deadline=lease_deadline+interval '1 second' WHERE id=$1",[scope.jobId]),/cannot be extended/);
+  await assert.rejects(context.pool!.query('UPDATE integrity_jobs SET lease_deadline=NULL WHERE id=$1',[scope.jobId]),/cannot be extended/);
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()+interval '10 seconds',lease_deadline=clock_timestamp()+interval '20 seconds' WHERE id=$1",[scope.jobId]);
+  const renewals=await Promise.all([renewIntegrityJob(context.pool!,scope,lease.token),renewIntegrityJob(context.pool!,scope,lease.token)]);
+  for(const result of renewals){assert.ok(result);assert.deepEqual(result.leaseUntil,result.deadline);assert.equal(result.attempt,1);}
+  await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '2 seconds',lease_deadline=clock_timestamp()-interval '1 second' WHERE id=$1",[scope.jobId]);
+  assert.equal(await renewIntegrityJob(context.pool!,scope,lease.token),null);
+  assert.equal(await finishIntegrityJob(context.pool!,scope,lease.token,null),null);
 });

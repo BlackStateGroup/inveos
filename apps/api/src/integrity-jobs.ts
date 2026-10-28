@@ -51,7 +51,7 @@ async function claimLocked(client: PoolClient, s: Scope, row: QueryResultRow) {
   if (!await permitted(client,row)) return {lease:null,receipt:await terminal(client,s,'cancelled','scope_changed')};
   if (row.attempt >= 3) return {lease:null,receipt:await terminal(client,s,'failed','attempts_exhausted')};
   const updated = await client.query(`UPDATE integrity_jobs SET status='running',attempt=attempt+1,lease_token=$4,
-    lease_until=clock_timestamp()+interval '60 seconds' WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *`, [...values(s),randomUUID()]);
+    lease_until=clock_timestamp()+interval '60 seconds',lease_deadline=clock_timestamp()+interval '5 minutes' WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *`, [...values(s),randomUUID()]);
   await event(client,s,updated.rows[0]);
   const lease: Lease = {token:updated.rows[0].lease_token,evidenceId:row.evidence_id,digest:row.source_digest.trim(),kind:row.kind};
   return {lease,receipt:null};
@@ -65,6 +65,35 @@ export async function claimIntegrityJob(pool: Pool, s: Scope) {
     const row = found.rows[0];
     if (!row || !['queued','running'].includes(row.status) || row.live) return null;
     return (await claimLocked(client,s,row)).lease;
+  });
+}
+
+/** Trusted worker heartbeat. No HTTP exposure and no new attempt/token. */
+export async function renewIntegrityJob(pool: Pool, s: Scope, token: string) {
+  return inTransaction(pool,async client=>{
+    await client.query("SET LOCAL lock_timeout = '2s'");
+    await client.query("SET LOCAL statement_timeout = '5s'");
+    const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
+      AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp()
+      AND lease_deadline>clock_timestamp() FOR UPDATE`,[...values(s),token]);
+    const row=found.rows[0];if(!row)return null;
+    if(!await permitted(client,row)) {
+      await terminal(client,s,'cancelled','scope_changed',token);
+      return null;
+    }
+    // Recheck after lock waits. Membership may have been withdrawn meanwhile.
+    const renewed=await client.query(`UPDATE integrity_jobs SET
+      lease_until=LEAST(lease_deadline,clock_timestamp()+interval '60 seconds')
+      WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND status='running' AND lease_token=$4
+        AND lease_until>clock_timestamp() AND lease_deadline>clock_timestamp()
+        AND EXISTS (SELECT 1 FROM case_memberships cm JOIN memberships m
+          ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
+          WHERE cm.tenant_id=integrity_jobs.tenant_id AND cm.case_id=integrity_jobs.case_id
+            AND cm.user_id=integrity_jobs.requested_by AND m.role<>'client')
+      RETURNING lease_until,lease_deadline,attempt`,[...values(s),token]);
+    if(!renewed.rows[0])return null;
+    const result=renewed.rows[0];
+    return {leaseUntil:result.lease_until,deadline:result.lease_deadline,attempt:result.attempt};
   });
 }
 
