@@ -1,6 +1,6 @@
 """First-party collector executed inside the already-qualified research image.
 
-Reads ldconfig/dpkg metadata and files; never loads an inspected shared library.
+Reads ldconfig/dpkg metadata and files; performs no candidate loader test or wheel import.
 """
 import hashlib
 import json
