@@ -2,11 +2,11 @@
 
 ## 28 October: recipient disclosure discovery
 
-Based on PR #27 receipt `02290669df14880f2b58d0ed3fd6225eab50d6be`. Fresh main remains `95b5c35`; drafts #2–#27 remain open and #27 has no feedback. Added bounded, minimal recipient-only grant discovery with database-precision keysets and shared download eligibility. Migration 016 adds the recipient history index. No report-byte loading or internal case access. See docs/47_RECIPIENT_DISCOVERY.md.
+Based on PR #27 receipt `02290669df14880f2b58d0ed3fd6225eab50d6be`. Fresh main remains `95b5c35`; drafts #2–#27 remain open and #27 has no feedback. Added bounded, minimal recipient-only grant discovery with database-precision keysets and shared download eligibility. Migration 016 adds the recipient history index. Listing loads no report bytes and grants no internal case access. Added a separate `/portal` client surface with minimal page validation, bounded streamed downloads and existing SHA-256 verification; no automatic reviewer session. See docs/47_RECIPIENT_DISCOVERY.md.
 
-Local checks and hosted PostgreSQL validation pending below. Three new scenarios cover HTTP/pagination/restart, scope/query denials and eligibility withdrawal. Isolation probe remains denied (`unshare -Urn true`); no parser executed or restriction bypassed. Browser/device/offline/restore remain unrun.
+Local lint/types/build and 42 Python tests passed for the API; hosted run #68 passed its implementation. Final combined API/client hosted verification pending below. Three new PostgreSQL scenarios cover HTTP/pagination/restart, scope/query denials and eligibility withdrawal; three new helpers cover list response validation and streamed download limits. Isolation probe remains denied (`unshare -Urn true`); no parser executed or restriction bypassed. Browser/device/offline/restore remain unrun.
 
-Next: complete hosted verification then continue portal UI, verified download controls and recipient administration from this branch after fresh main/review checks. Full snapshots are not redacted releases; production identity/storage, page/region parsers, native field/offline/restore and broader requirements remain open. Nothing merged or deployed; no essential user action.
+Next: complete hosted verification then continue recipient administration and actual portal browser acceptance from this branch after fresh main/review checks. Full snapshots are not redacted releases; production identity/storage, page/region parsers, native field/offline/restore and broader requirements remain open. Nothing merged or deployed; no essential user action.
 
 ## 28 October: scoped report disclosure API
 
