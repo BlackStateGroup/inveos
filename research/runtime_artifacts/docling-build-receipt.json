@@ -1,0 +1,57 @@
+{
+  "status": "pinned_source_wheel_built_twice",
+  "sourcePin": "90234a71b16785d08fd2f46ec62668dd2396db76",
+  "sourceManifestSha256": "85f74307cb5e3918da6ae7cc3e033dfb460846c4480bc25113cac4d8d68aadb1",
+  "buildInventorySha256": "9e380abe98fe28e5f88bc88f085f78eb5698aa74afbfd5372f7290573b727002",
+  "buildLockSha256": "775ae8c7fdae9d21696d6e9b06fd14e40dd13736ce4e91fbc7697c6c1e2e6dd7",
+  "image": "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487",
+  "hostQualification": {
+    "status": "host_probe_passed",
+    "imageId": "sha256:37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+    "repoDigests": [
+      "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487"
+    ],
+    "checks": [
+      "boundaries",
+      "timeout",
+      "stdout_limit",
+      "stderr_limit",
+      "memory",
+      "pids",
+      "cpu"
+    ],
+    "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+    "parserExecuted": false,
+    "imageVolumeOverrides": [],
+    "resourceEvidence": {
+      "oomKilled": true,
+      "pids": 2,
+      "cpu": 1347823
+    },
+    "combinedCaptureLimitBytes": 16384,
+    "daemonLogging": false,
+    "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+  },
+  "builds": [
+    {
+      "wheelSha256": "a3beff60a61814bcc757d71b1a042bdb06d4a4b7a969296a309b3bd5f5693fca",
+      "wheelBytes": 1129821,
+      "matchedPackageFiles": 313
+    },
+    {
+      "wheelSha256": "a3beff60a61814bcc757d71b1a042bdb06d4a4b7a969296a309b3bd5f5693fca",
+      "wheelBytes": 1129821,
+      "matchedPackageFiles": 313
+    }
+  ],
+  "parserExecuted": false,
+  "runtimeDependenciesInstalled": false,
+  "approval": "isolated_research_build_only_not_incorporation",
+  "verification": {
+    "commit": "a34e76ab17eefe1bc9ed1aa5b58462fdd15a9a16",
+    "tree": "674efc02860843b932b510e10773e48e1c0bb6fb",
+    "workflowRun": 40727680529,
+    "job": 122955237520,
+    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40727680529"
+  }
+}

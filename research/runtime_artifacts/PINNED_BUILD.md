@@ -86,11 +86,13 @@ timeout 180s python3 tools/build_docling_research.py --source .research-cache/so
 
 The separate `Pinned Docling research build` workflow runs the same commands on
 relevant PR changes or manual dispatch. Local four synthetic verifier/configuration
-tests and the actual pinned-source snapshot pass. Hosted build execution is pending.
+tests and the actual pinned-source snapshot pass. [Pinned Docling research build run #2](https://github.com/BlackStateGroup/inveos/actions/runs/40727680529) passed at `a34e76ab17eefe1bc9ed1aa5b58462fdd15a9a16`, tree `674efc02860843b932b510e10773e48e1c0bb6fb`. Two fresh qualified containers produced identical 1,129,821-byte wheels, SHA-256 `a3beff60a61814bcc757d71b1a042bdb06d4a4b7a969296a309b3bd5f5693fca`; all 313 package files and the licence matched the exact pin. The builder image ID was `sha256:37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05`. Its seven actual isolation/resource probes passed (OOM kill, two PID denials, 1,347,823 throttled CPU microseconds, output caps, cleanup and unchanged original). [Checks run #111](https://github.com/BlackStateGroup/inveos/actions/runs/40727680557) also passed at that revision: 135 Node tests (98 PostgreSQL API/restore, five actual Chrome journeys, 32 helpers), zero failures/skips; 62 Python tests, lint/types/build/reference and service-image isolation checks. The machine-readable [receipt](docling-build-receipt.json) binds exact source, lock, inventory, image and wheel identities. This documentation receipt follow-up was not the tested implementation revision.
 Local Docker remains absent; no upstream tool was executed outside isolation.
 
-Next gates: actual isolated exact-pin build receipt, full native/runtime audit and
+Next gates: full native/runtime audit and
 minimal pipeline import qualification, then synthetic PDF page/region comparisons
 with rejected malformed/partial/encrypted inputs. Tika/OCRmyPDF remain unexecuted.
 Successful packaging would resolve source provenance only; it would not establish
 extraction quality, runtime completeness, licence approval or production safety.
+
+The wheel bytes are deliberately temporary and removed after comparison; a future runtime experiment must rebuild with these exact inputs and verify the recorded digest before using a private ignored copy. The initial workflow YAML quoting error was corrected before the successful isolated run. Source provenance is now demonstrated for this build; no parser was installed or invoked.
