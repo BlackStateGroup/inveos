@@ -1,5 +1,11 @@
 # INVEOS engineering handoff
 
+## 28 October: investigator browser scope acceptance
+
+Based on PR #31 `c12a1b3ee457efa732e803d720026a0125d23ca6`; fresh main remains `95b5c35`, drafts #2–#31 open, review timelines empty. Added a separate real Chrome scenario through the built investigator UI, localhost HTTP and PostgreSQL: enter the synthetic lab, create a case, observe blocked original registration, approve/revise authority, reload the selected case and end the session. Extracted shared browser HTTP lifecycle for both scenarios. No application/schema/dependency changes. Local checks and hosted acceptance pending; no completion claim.
+
+Fresh local namespace probe remains denied (`unshare -Urn true`); no parser executed or restriction bypassed. Next: extend actual browser coverage to original intake, source review and export; separately qualify hosted parser isolation before acquiring runtimes. Identity/MFA, recipient administration, full evidence/review browser flow, parser/runtime licences, device/offline/restore and broader product gates remain open. Nothing merged or deployed.
+
 ## 28 October: actual portal browser acceptance
 
 Based on PR #30 receipt `059bcf421391b7a041d6c105e51b61d5143c2058`; main remains `95b5c35`, drafts #2–#30 open and all their review timelines have no feedback. Draft PR #31 adds this slice. Added a first-party Chrome DevTools harness and required hosted browser scenario through built React, localhost HTTP, Fastify and PostgreSQL. Covers discovery, real verified download, explicit acknowledgement, withdrawal and logout. No added dependency or browser redistribution; Chrome sandbox remains enabled. See docs/50_PORTAL_BROWSER_ACCEPTANCE.md.
