@@ -14,6 +14,8 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   const [rows,setRows]=useState<Receipt[]>([]),[next,setNext]=useState<string|null>(null);
   const [busy,setBusy]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
   const [pending,setPending]=useState(false);
+  const [reviewHistory,setReviewHistory]=useState<Record<string,Array<{id:string;decision:string;reason:string;reviewerId:string;createdAt:string}>>>({});
+  const [verified,setVerified]=useState<Record<string,boolean>>({});
   const inFlight=useRef(false),alive=useRef(true);
   const base=`/api/cases/${caseId}/report-revisions`;
   useEffect(()=>{
@@ -54,7 +56,18 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     if(!alive.current)return;
     const url=URL.createObjectURL(new Blob([bytes],{type:'application/json'}));
     const link=document.createElement('a');link.href=url;link.download=`inveos-report-${row.id}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setVerified(old=>({...old,[row.id]:true}));
     setMessage('Exact revision bytes verified and downloaded. This remains an internal draft.');
+  }
+  async function reviews(row:Receipt){
+    const result=await json<{items:Array<{id:string;decision:string;reason:string;reviewerId:string;createdAt:string}>}>(`${base}/${row.id}/reviews`);
+    if(alive.current)setReviewHistory(old=>({...old,[row.id]:result.items}));
+  }
+  async function review(row:Receipt,data:FormData){
+    if(!verified[row.id])throw new Error('Download and verify this frozen revision before recording your review.');
+    await json(`${base}/${row.id}/reviews`,AbortSignal.timeout(30000),{sha256:row.sha256,decision:String(data.get('decision')),reason:String(data.get('reason'))},csrf);
+    if(alive.current)setMessage('Internal review recorded. This does not authorise client release.');
+    await reviews(row);
   }
   return <Panel title="Saved internal report revisions"><div className="panel-body">
     <Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
@@ -68,6 +81,15 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <p><strong>Internal draft · {new Date(row.createdAt).toLocaleString('en-GB',{timeZone:'UTC'})} UTC</strong></p>
       <label className="form-label">SHA-256 for revision {row.id}<input readOnly value={row.sha256}/></label>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
+      <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
+      {reviewHistory[row.id]?.map(item=><p key={item.id}>{item.decision} · reviewer {item.reviewerId} · {item.createdAt}: {item.reason}</p>)}
+      <details><summary>Review this frozen revision</summary><p>A different assigned reviewer must decide. Conflicting decisions remain separate; none releases the report. Download, verify and inspect its exact contents first.</p>
+        <form className="work-form" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void act(()=>review(row,data));}}><fieldset disabled={busy||!verified[row.id]}>
+          <label className="form-label">Decision<select name="decision"><option value="request_changes">Request changes</option><option value="accept_internal">Accept internal draft</option></select></label>
+          <label className="form-label">Review rationale<textarea name="reason" required minLength={10} maxLength={2000}/></label>
+          <label><input type="checkbox" required/> I inspected this exact frozen draft. This decision is permanent and does not approve client release.</label>
+          <button className="secondary" type="submit">Record internal review</button>
+        </fieldset></form></details>
     </li>)}</ul>
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Load older revisions</button>}
   </div></Panel>;

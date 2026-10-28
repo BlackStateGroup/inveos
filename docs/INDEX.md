@@ -81,3 +81,5 @@
 - [Upload staging maintenance](42_UPLOAD_STAGING_MAINTENANCE.md) — bounded expiry, reviewer cancellation and confirmed cancelled-request recovery.
 
 - [Upload receipt history](43_UPLOAD_RECEIPT_HISTORY.md) — bounded scoped history after tab/sign-in loss.
+
+- [Frozen internal report review](44_FROZEN_REPORT_REVIEW.md) — separate reviewer decisions bound to immutable snapshot fingerprints.

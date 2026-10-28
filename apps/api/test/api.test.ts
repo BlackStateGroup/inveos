@@ -1177,7 +1177,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2417,4 +2417,43 @@ test('upload history and cursors enforce owner, reviewer, case, tenant, role and
  assertError(await request('GET',base+'/history?before='+randomUUID(),context.demo!),404);
  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,user]);assertError(await request('GET',base+'/history',session),404);
  assertError(await request('GET',base+'/history'),401);
+});
+
+async function revisionReviewFixture(){
+ await context.app!.close();context.app=await createAppInstance();const fixture=await reportFixture();
+ const frozen=await request('POST',fixture.url,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(frozen.statusCode,200);const revision=JSON.parse(frozen.body);
+ const reviewer=await createMember(demoTenantId,'reviewer','Fictional independent report reviewer');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,fixture.kase.id,reviewer]);
+ return {...fixture,revision,reviewer,session:await issueTestSession(reviewer),reviewUrl:fixture.url+'/'+revision.id+'/reviews',input:{sha256:revision.sha256,decision:'accept_internal',reason:'Inspected this exact fictional internal draft.'}};
+}
+test('independent frozen report review is atomic, idempotent and immutable without changing draft bytes or client access',async()=>{
+ const f=await revisionReviewFixture();const app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0});
+ const send=async()=>{const r=await fetch(address+f.reviewUrl,{method:'POST',headers:{cookie:f.session.cookie,origin:localOrigin,'content-type':'application/json','x-csrf-token':f.session.csrf},body:JSON.stringify(f.input)});assert.equal(r.status,200);return r.json() as Promise<{status:string;authorityVersion:number}>;};
+ const [a,b]=await Promise.all([send(),send()]);assert.deepEqual(a,b);assert.equal(a.status,'internal_review_not_release');assert.equal(a.authorityVersion,1);
+ }finally{await app.close();}
+ await context.app!.close();context.app=await createAppInstance();
+ const history=await request('GET',f.reviewUrl,context.demo!);assert.equal(history.headers['cache-control'],'no-store');assert.equal(JSON.parse(history.body).items.length,1);
+ const download=await request('GET',f.url+'/'+f.revision.id,context.demo!);assert.equal(digest(download.body),f.revision.sha256);assert.equal(JSON.parse(download.body).status,'draft_not_released');
+ assertError(await request('POST',f.reviewUrl,f.session,{payload:{...f.input,decision:'request_changes'}}),409);
+ await assert.rejects(context.pool!.query("UPDATE report_revision_reviews SET decision='request_changes' WHERE revision_id=$1",[f.revision.id]));
+ await assert.rejects(context.schemaAdminPool!.query('DELETE FROM report_revision_reviews WHERE revision_id=$1',[f.revision.id]),/append|immutable/i);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE entity_id=$1 AND action='report_revision.reviewed'",[f.revision.id])).rows[0].n,1);
+});
+test('frozen report reviews reject self approval, wrong digest, forbidden roles, scope and revoked membership',async()=>{
+ const f=await revisionReviewFixture();assertError(await request('POST',f.reviewUrl,context.demo!,{payload:f.input}),403);
+ assertError(await request('POST',f.reviewUrl,f.session,{payload:{...f.input,sha256:'0'.repeat(64)}}),409);
+ assertError(await request('POST',f.reviewUrl,f.session,{payload:{...f.input,reason:'          '}}),422);
+ assertError(await request('POST',f.reviewUrl,f.session,{payload:f.input,csrfHeader:false}),403);
+ const investigator=await createMember(demoTenantId,'investigator','Fictional report author colleague');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,investigator]);assertError(await request('POST',f.reviewUrl,await issueTestSession(investigator),{payload:f.input}),403);
+ const client=await createMember(demoTenantId,'client','Fictional report recipient');const clientSession=await issueTestSession(client);assertError(await request('GET',f.reviewUrl,clientSession),403);assertError(await request('POST',f.reviewUrl,clientSession,{payload:f.input}),403);
+ const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/report-revisions/${f.revision.id}/reviews`,context.demo!),404);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,f.reviewer]);assertError(await request('POST',f.reviewUrl,f.session,{payload:f.input}),404);
+});
+test('report review audit failure rolls back and allows retry; changed authority is recorded without changing the snapshot',async()=>{
+ const f=await revisionReviewFixture();await approveAuthority(f.kase.id);
+ await context.schemaAdminPool!.query(`CREATE FUNCTION fail_report_review_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='report_revision.reviewed' THEN RAISE EXCEPTION 'fictional review audit failure'; END IF; RETURN NEW; END $$`);
+ await context.schemaAdminPool!.query('CREATE TRIGGER fail_report_review_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_report_review_test()');
+ try{assertError(await request('POST',f.reviewUrl,f.session,{payload:f.input}),500);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_report_review_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_report_review_test()');}
+ assert.equal(JSON.parse((await request('GET',f.reviewUrl,f.session)).body).items.length,0);
+ const result=await request('POST',f.reviewUrl,f.session,{payload:{...f.input,decision:'request_changes'}});assert.equal(result.statusCode,200);assert.equal(JSON.parse(result.body).authorityVersion,2);
+ assert.equal(digest((await request('GET',f.url+'/'+f.revision.id,context.demo!)).body),f.revision.sha256);
 });

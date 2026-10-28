@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: frozen internal report review
+
+Based on PR #24 receipt `d5d92bbebc2fed932282fd2b304588ecbd7a30c8`; main remains `95b5c35`, drafts #2–#24 open and #24 has no feedback. Added separate-reviewer immutable internal snapshot decisions, exact fingerprint binding, natural-key retry/conflict handling, atomic audit and current decision-time authority version. Added review inspection/form to report revisions with verified download and human attestation before submission. Migration 014; no release or client access. See docs/44_FROZEN_REPORT_REVIEW.md.
+
+Verification pending: local checks and hosted PostgreSQL suite will be recorded here. Three new scenarios cover concurrent TCP/restart, immutability, exact report bytes, permissions/digest/CSRF/self-review/revocation and audit rollback/authority changes. Browser/parser/device/offline/restore gates remain unrun. No dependency/source incorporation, merge or deployment.
+
+Next: verify this draft and record exact receipts. Continue explicit release preparation with separate scope/privilege/redaction/recipient gates; internal acceptance is never client publication. Real reviewer identity/administration, supported-host browser acceptance, parser isolation/licences/benchmarks, encrypted storage, native field/offline/restore and other requirements remain open. No essential user action.
+
 ## 28 October: scoped upload receipt history
 
 Based on PR #23 receipt `16cf1dcbbe5b40a1cfb588464e3179b17be66e0d`; main remains `95b5c35`, PRs #2–#23 open and #23 has no feedback. Added bounded history of all reservation states with owner/reviewer visibility, exact database keyset cursors and completed original receipt IDs. Added UI refresh/older-page controls without changing pending maintenance or cancellation recovery. Migration 013 adds history indexes. See docs/43_UPLOAD_RECEIPT_HISTORY.md.

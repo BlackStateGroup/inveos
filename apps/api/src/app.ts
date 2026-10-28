@@ -1434,6 +1434,36 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   function checkRevision(row: QueryResultRow) {
     if(createHash('sha256').update(row.report_bytes).digest('hex')!==row.digest.trim()) throw new ApiError(409,'Stored report revision integrity failed.');
   }
+  const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
+  for(const method of ['GET','POST'] as const)app.route({method,url:'/api/cases/:caseId/report-revisions/:revisionId/reviews',preHandler:method==='GET'?authenticate:requireCsrf,
+    schema:{params:reviewParams,...(method==='GET'?{}:{body:{type:'object',additionalProperties:false,required:['sha256','decision','reason'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},decision:{type:'string',enum:['accept_internal','request_changes']},reason:{type:'string',minLength:10,maxLength:2000}}}})},handler:async(request,reply)=>{
+    reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
+    return inTransaction(options.pool,async client=>{
+      await reportAccess(client,actor,caseId);
+      const kase=await findCase(client,actor,caseId,method==='POST');
+      const revision=(await client.query('SELECT * FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];
+      if(!revision)notFound();checkRevision(revision);
+      const receipt=(row:QueryResultRow)=>({id:row.id,revisionId,caseId,reviewerId:row.reviewer_id,authorityVersion:row.authority_version,sha256:row.digest.trim(),decision:row.decision,reason:row.reason,createdAt:iso(row.created_at),status:'internal_review_not_release'});
+      if(method==='GET'){
+        const rows=await client.query('SELECT * FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 ORDER BY created_at,id LIMIT 51',[actor.tenantId,caseId,revisionId]);
+        if(rows.rows.length>50)throw new ApiError(422,'Review listing limit exceeded.');
+        return {items:rows.rows.map(receipt)};
+      }
+      if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
+      if(revision.created_by===actor.userId)throw new ApiError(403,'A different reviewer must review this frozen revision.');
+      const input=request.body as {sha256:string;decision:string;reason:string};const reason=input.reason.trim();
+      if(reason.length<10)throw new ApiError(422,'Explain the internal review decision.');
+      if(input.sha256!==revision.digest.trim())throw new ApiError(409,'Review fingerprint does not match the frozen revision.');
+      const keys=[actor.tenantId,caseId,revisionId,actor.userId];
+      const prior=(await client.query('SELECT * FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND reviewer_id=$4',keys)).rows[0];
+      if(prior){if(prior.decision!==input.decision||prior.reason!==reason)throw new ApiError(409,'Review already recorded. Freeze a new revision for a changed decision.');return receipt(prior);}
+      if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved case authority required.');
+      const row=(await client.query(`INSERT INTO report_revision_reviews(tenant_id,case_id,revision_id,reviewer_id,id,authority_version,digest,decision,reason)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,[...keys,randomUUID(),kase.authority_version,input.sha256,input.decision,reason])).rows[0];
+      await writeAudit(client,actor,caseId,'report_revision.reviewed','report_revision',revisionId,'Frozen internal draft reviewed; not released',{reviewId:row.id,digest:input.sha256,decision:input.decision,authorityVersion:kase.authority_version});
+      return receipt(row);
+    });
+  }});
   app.get('/api/cases/:caseId/report-revisions/:revisionId',{preHandler:authenticate,schema:{params:{type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}}}},async(request,reply)=>{
     const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
     const row=await reportTransaction(async client=>{
