@@ -75,8 +75,7 @@ pages is only `unreviewed_text`, never verified completeness or a finding. This
 research contract is not yet wired into the application. It prevents silent empty
 page promotion in the experiment without weakening existing evidence semantics.
 
-Local 78 Python tests and foundation validation pass. Hosted expanded parser and
-application checks are pending; prior receipts cover only their recorded revision.
+Hosted [research run #12](https://github.com/BlackStateGroup/inveos/actions/runs/40760701434) passed at `89f7dd9a6474a6d286356cbfc4cca544d7f541b8`, tree `990ef68b3e0627f50f088460da702f4be25145d8`. Two fresh isolated runs returned successful parser status yet no text on mixed page 2, blank page 1 and raster-only page 1; the coverage receipt correctly requires page review. Original numbering and hashes were preserved; three-page and oversized originals were rejected. Repeated digital page/region truth and malformed rejection still pass. Total conversion/rejection time after imports was 0.02086/0.02124 seconds, peak process RSS 160956/160576 KiB: tiny-fixture observations only. Exact builds, native inventory, provider inspection and runtime containment passed. [Checks #121](https://github.com/BlackStateGroup/inveos/actions/runs/40760701507) passed at the same revision: 135 Node tests (98 PostgreSQL API/restore, five Chrome journeys, 32 helpers), zero failures/skips; 78 Python tests, lint/types/build/reference and service isolation. See [machine receipt](native-coverage-receipt.json). This follow-up changes only evidence/documentation; tested implementation is the revision above.
 No new dependencies, runtime artefacts or upstream source changes. Full native
 licence/security review, OCR/multilingual/table/encrypted inputs and application
 page review remain open. Reproduce with the same qualified-host command above.
