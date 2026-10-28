@@ -111,3 +111,5 @@
 - [Session recovery generations](56_SESSION_RECOVERY_GENERATIONS.md) — reject restored cookies using separately managed runtime configuration.
 
 - [Pinned Docling build](../research/runtime_artifacts/PINNED_BUILD.md) — isolated exact-source packaging, build dependency terms and whole-package provenance verification.
+
+- [Native runtime audit](../research/runtime_artifacts/NATIVE_AUDIT.md) — hash-bound ELF dependencies and independent static comparison.

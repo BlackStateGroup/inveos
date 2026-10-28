@@ -1,0 +1,6406 @@
+{
+  "schemaVersion": 1,
+  "executed": false,
+  "status": "static_declarations_not_loader_resolution",
+  "wheelCount": 47,
+  "expandedBytesInspected": 317397612,
+  "binaries": [
+    {
+      "distribution": "charset-normalizer",
+      "wheelSha256": "3d31298449090ab8d47b7b1b2a555ff73cac7ed438a08b7ac160980c7ebed649",
+      "path": "charset_normalizer/cd.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 178648,
+      "sha256": "c2f3063d035647a23fd2ac5243dbf6925056c3aba636696a980293516d240eca",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "charset-normalizer",
+      "wheelSha256": "3d31298449090ab8d47b7b1b2a555ff73cac7ed438a08b7ac160980c7ebed649",
+      "path": "charset_normalizer/md.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 340528,
+      "sha256": "f20c7da02510ade7b0968eda061d2cb1d6eb29ccaa77af92ddea82b326bc8c3b",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "docling-parse",
+      "wheelSha256": "635517412307310867a60b8d908a52f95b4f042faf200d1730b60041193ad401",
+      "path": "docling_parse/pdf_parsers.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 9936816,
+      "sha256": "ef18401390124801526784e5aa408fddcf0ecd276070fcf83de9be170c2ab701",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libz.so.1",
+        "libdl.so.2",
+        "librt.so.1",
+        "libresolv.so.2",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2",
+        "libgcc_s.so.1"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libdl.so.2",
+          "bundledCandidates": []
+        },
+        {
+          "name": "librt.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libresolv.so.2",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/_elementpath.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 209208,
+      "sha256": "f77129422dc7ebbb1cbde04f2cdb73f1ea13fbc900b94e751369326b070989c1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/builder.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 120952,
+      "sha256": "ad0dfd40d573c8221be85becf3fec4e8696b88b4c9c20b3a7805f8f42f1b108a",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/etree.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 5276624,
+      "sha256": "857d4774abd3ac4382f2de2e0e8e38d4e5bdbd18afb88781b6405cefee6fa02a",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "librt.so.1",
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "librt.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/objectify.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2920920,
+      "sha256": "e0bbc24c44024d06c001a5e399143ebac39c5218da976c5a2d8a0b4ea14cb569",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "librt.so.1",
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "librt.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/sax.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 186296,
+      "sha256": "8140b87f112d80cc7c60f13d45e74f80fc955e1a0ec40045226fc6fb67d91523",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/html/_difflib.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 533464,
+      "sha256": "ad763b547e6e68568475bbcd72a566fcbd5f30655c68864952d27a581107a968",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "lxml",
+      "wheelSha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "path": "lxml/html/diff.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 361496,
+      "sha256": "1012061f77f3ef4ba1dca8a84ac7af89509d16aae34f02d917e6e4d6618326ff",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_multiarray_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 146912,
+      "sha256": "01fbdfb35211b8e07d1b0c395f84f15f709e78859fe7a3f4a89915a5d7aa7309",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_multiarray_umath.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 10637297,
+      "sha256": "b185dfe64b07180bedc7c15fb2735b0d0f4f4e09eb9c15bd8e67f74568aebcbf",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas64_-f48b354e.so",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../numpy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas64_-f48b354e.so",
+          "bundledCandidates": [
+            {
+              "distribution": "numpy",
+              "path": "numpy.libs/libscipy_openblas64_-f48b354e.so"
+            }
+          ]
+        },
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_operand_flag_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 16800,
+      "sha256": "d985fc6e648abe43a0d11d9e9c1c49c15a3020936c6105c159cc9ab2ff2e41f0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": []
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_rational_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 65848,
+      "sha256": "78af03cdcfceda20ddb0063c7eb1b6fa149c79710173644c7e0a5b8b75142b91",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_simd.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1506088,
+      "sha256": "a9c824abd21fdfd4cd782116defce75bda96dde5bdf453107a7632dc766afd9d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_struct_ufunc_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 16936,
+      "sha256": "895b0c3376a227d8f2f9f35465876cd6b381daa177effa7a3070c7d31bba8688",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": []
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/_core/_umath_tests.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 50360,
+      "sha256": "56dcb67e8abfe3d9e5d8c1c8775d9e1c02b86042a5328556bc3d3ccaff1aa328",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/fft/_pocketfft_umath.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 539296,
+      "sha256": "29a1547b480b7ddc1e45cdc772b3f4b614cccced70204181bf5d3ad138a04ebb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/linalg/_umath_linalg.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 235897,
+      "sha256": "2e075f582c3a25a21fe97a55931a0fdb22ceb84f4fce8203a5040d405ccf65ce",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas64_-f48b354e.so",
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../numpy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas64_-f48b354e.so",
+          "bundledCandidates": [
+            {
+              "distribution": "numpy",
+              "path": "numpy.libs/libscipy_openblas64_-f48b354e.so"
+            }
+          ]
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/linalg/lapack_lite.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 30001,
+      "sha256": "9c876a665bd8c0c0467032fbe098edec962fd9c3f0bb08ab5b65fb8815628898",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas64_-f48b354e.so"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../numpy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas64_-f48b354e.so",
+          "bundledCandidates": [
+            {
+              "distribution": "numpy",
+              "path": "numpy.libs/libscipy_openblas64_-f48b354e.so"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_bounded_integers.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 317000,
+      "sha256": "73bf58f374a46edac9bd1fbb3fc16f199b4a8e8ed12a222a23897e722655adcd",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_common.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 258912,
+      "sha256": "232d131170bce32fbe3bfed38a5f14a0104d7efd7bff521162c2e0b6e2ac4bee",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_generator.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 845808,
+      "sha256": "e362c7a4c9d5d97404ee1fcbf00c2b345ecec945df50f6ea3e0f4631d4ab336e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_mt19937.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 139336,
+      "sha256": "3f06703c3971d813adda172ffd2de8af16df18875242e4b1542d9e8e8f33919f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_pcg64.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 151344,
+      "sha256": "61175f3da7d43f4811277cdf743906b8d405d1800cee79632a17fbca478e6964",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_philox.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 131184,
+      "sha256": "51f2c84d85fbd199adf32b234e2558b3add7f7a8b86d0797fb36d3ee068619ef",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/_sfc64.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 96336,
+      "sha256": "cb9c0d024e0e30dbc6bbec4bad8fbee6ba2aeaa4f444c5ea66473d8c8c31a609",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/bit_generator.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 245424,
+      "sha256": "3734537d37d6d54654e33890ec17cf6e54cca3aba8cfc5e6160786c236457df3",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy/random/mtrand.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 666552,
+      "sha256": "53a0dea25039fd6e55ce2a6c94789c9273fdfa1cc4bda60dde6e813f455c9bc5",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy.libs/libgfortran-83c28eba-468e71e5.so.5.0.0",
+      "bytes": 2862249,
+      "sha256": "a6a368328d02a5d8a149746f13f6268f8cc9192df5c18777b25c3c9b5ef52160",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libquadmath-2284e583-a9307bba.so.0.0.0",
+        "libz.so.1",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": "libgfortran-83c28eba-468e71e5.so.5.0.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libquadmath-2284e583-a9307bba.so.0.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "numpy",
+              "path": "numpy.libs/libquadmath-2284e583-a9307bba.so.0.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy.libs/libquadmath-2284e583-a9307bba.so.0.0.0",
+      "bytes": 275553,
+      "sha256": "6bc3069003caec1f075be3c51ae8355332f081fa9465910c4b5724e7fe7d8ad4",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": "libquadmath-2284e583-a9307bba.so.0.0.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "numpy",
+      "wheelSha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "path": "numpy.libs/libscipy_openblas64_-f48b354e.so",
+      "bytes": 24325657,
+      "sha256": "432e1c1739731468ba305771af96773939e43016643e2d630f58cb45b6670e96",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libgfortran-83c28eba-468e71e5.so.5.0.0",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": "libscipy_openblas64_-f48b354e.so",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgfortran-83c28eba-468e71e5.so.5.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "numpy",
+              "path": "numpy.libs/libgfortran-83c28eba-468e71e5.so.5.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/_cyutility.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 216840,
+      "sha256": "6de2c19ffd8de0bd93c6b3f15a18a7603b3a50236ff73caf52098256278ccf9b",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/_ujson.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 72832,
+      "sha256": "025998a088a4f6d04a6f01328f441cab8dbcdbe18444ec24d5a6a02887bce70b",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/algos.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2130960,
+      "sha256": "5b2429164d805ead0a81ef0a19128b726feb601c381310a9f7a2537d7b0ff765",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/arrays.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 116480,
+      "sha256": "82d69d26c4b94046645bc2afc27d84e60f455fc2e31f73fadb5c120a64064115",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/byteswap.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 35920,
+      "sha256": "988b5925bf757b42214eb8e7a74fc75e30a2a8215d19e588af373552bc556e43",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/groupby.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2170472,
+      "sha256": "432978ae2d99112d1381e0fd373ee844fe9f0ac0a8c15838f542d06b2e0be665",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/hashing.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 60656,
+      "sha256": "17639b60b6b29a60e245a5fbe8081d31ebab1eaab9c620b6647d91dd2191e449",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/hashtable.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2684080,
+      "sha256": "f2299c54b4da9b886e13d20a7c72b2edf5ad15bc92a1b7a73103d6467791a37e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/index.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 727520,
+      "sha256": "1fd0236eda1002eaff03e5ee4b472c71db7fae9d42b8487d5eb48c62d6e3a90c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/indexing.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 44624,
+      "sha256": "3ac7d54e0870b94cf300c8cbab95b33bab103a1196330aaf849c184995c843a5",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/internals.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 270208,
+      "sha256": "d129a36a79f4ccc17b3cf49dc95ae6f70e6f4cdf2faefdbfb333dd4fd9bd4064",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/interval.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1039696,
+      "sha256": "fa34db8f385b10c37b8c3c35c02ebe120e5994cecbdf64c7b75670bedae67b3c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/join.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 968816,
+      "sha256": "82377d450f8abb8fc914a7cbd17cffcc22ab1558121747daf1bf34ee2ad09ff6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/lib.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 643024,
+      "sha256": "2c5423fb96b879791e4a4a9409f012b46e6275421982770958f6b49d512d10a9",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/missing.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 168528,
+      "sha256": "2d118814a61d39a57ee54c7b239b7c42a6e021d13c49390473164dc5ce3e1275",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/ops.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 114000,
+      "sha256": "7855b2b409b13a31362279769ef729b5ae1edcc5b134a5a29ee48e0c4761a42e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/ops_dispatch.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 44112,
+      "sha256": "b23781f7f63160ba09cd491f27000fc1532e2cbede7d890e59f51db6ab047d4c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/pandas_datetime.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 39600,
+      "sha256": "b4e044bc52318e77d92401e28bfdb4b3ee3cb745e91316ca9f6842ce9f768fbb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/pandas_parser.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 88856,
+      "sha256": "563a24b37c5d79e89c8e6ef9ad082389b323aad02de9a188b8a3ad6c259a55a5",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/parsers.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 668232,
+      "sha256": "d0b2f42a641b951a91a5612047d87bc2bf8c2314e53147cb4845deed0b6ce8fa",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/properties.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 57424,
+      "sha256": "e206e3f546c384d4facd87b447b8063229c34506892fb27b9e7d7fc0c4985d91",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/reshape.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 134928,
+      "sha256": "59d02598c6494293ee751d202ac1af0faa7e749f701dff5579589db12b403575",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/sas.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 130864,
+      "sha256": "427316888f75f5ef5cc88565d851a5bf99638e69a8cddf3e908d7bc95ee2f4b4",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/sparse.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 736560,
+      "sha256": "cd52b8ce71f7e2c25b7d2f454dd460e876e81f39b900cde37d7820b5fb3421c1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/testing.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 134512,
+      "sha256": "24b52ffe38330dbc60a83ef44d8147be1f7d666256fc5ee6aaefc5e787c0280f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslib.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 163536,
+      "sha256": "bd9f89cbf667190c8dad4820479fb0b5d3cf351f5dac5d4eea7ec746b08eda9b",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/writers.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 81520,
+      "sha256": "59d4900686cf1ba6a64e67753e225671f1a4ec77ce46a99c77f3a1755f69944d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/base.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 36144,
+      "sha256": "2e8bbcb3be5382c3d0b15d89c3ed472d9ac284ce165f830a8177df631b714734",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/ccalendar.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 60624,
+      "sha256": "a4e05b0223daaa042f7979235ef1c7972073db94ee61abfb8373d7fd58b8b611",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/conversion.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 192592,
+      "sha256": "343b6603d9a339ee307799b7a7d70df4f9fda69d79a828de7b99bd2e781a501e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/dtypes.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 143664,
+      "sha256": "d82bef5dec1ebc85ca93803ad5b1a0d9f4a10b228207d4ff9196d689eb491fdf",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/fields.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 167824,
+      "sha256": "0b8d3c365e9332ad9da6558493d7af69cc35bb7c3c5f987024f5902a7b963329",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/nattype.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 178064,
+      "sha256": "b2e8b134fe1ef42d6d78edb70334581cc52dc15f78fb688a8ea8c463b25a7fb5",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/np_datetime.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 134576,
+      "sha256": "2b525c6c654b739e657db595e645d498060e3d6f044ba55c03a5b50e7e8c455f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/offsets.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1112960,
+      "sha256": "b7df2ac364334620a4b9491aae0d4aba832c6ff4f2c1d8838cfe8765b37c90b7",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/parsing.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 286648,
+      "sha256": "c904a3c6c97abc22897635c54c05ce6b6a8044f775c7b727a21a58517332b84d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/period.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 387664,
+      "sha256": "0d1cb72eda9eccbd3da4749202f4f2ec9d30e4f00a5dde2cbd99599b93ba7f76",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/strptime.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 217136,
+      "sha256": "0db5454ef9ac5a2d3d84bf9ba705ba6c7cb429dbdf140264850bc21f089fde4d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/timedeltas.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 540208,
+      "sha256": "aa29ab4635e33ec67690f96a972fffea0bd7786058db27d03293a4681b3a537e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/timestamps.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 503504,
+      "sha256": "e8e4e72e814f0607fc414df60bffc49ae7741b011f77deddcc0ac8536cb095fd",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/timezones.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 167408,
+      "sha256": "9298c766e4c68f8d9bbc109b46822058f88f6a7f2f13c19d5a151ec336c9e221",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/tzconversion.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 163664,
+      "sha256": "c06f93d67d4b1b848769ef15a96f728f2dca82055f5c4e44e34f4c81edf92e4f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/tslibs/vectorized.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 93552,
+      "sha256": "d2d9c7341a0fc7e9bda1cfba4075f328817cef9a20fe2fe22bbce75d3c847b55",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/window/aggregations.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 316232,
+      "sha256": "1d2243105a3831f165d05fe0d52ec32945c41770701cdc2a70ba3edfbe33f695",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pandas",
+      "wheelSha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "path": "pandas/_libs/window/indexers.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 52336,
+      "sha256": "9916eac3bc7e59e3fdcf650a0ebf885252395b5bee8c64166845b7750efba8d9",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_avif.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 97889,
+      "sha256": "642ebac0cc9ac2e53a6abfb815f392832da737cac2b1f91ebcff7732081c1b65",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libavif-c6062d5f.so.16.4.2",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../pillow.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libavif-c6062d5f.so.16.4.2",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libavif-c6062d5f.so.16.4.2"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_imaging.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 3482049,
+      "sha256": "d898ef14b7c4455374dd640484f463ecc7f4e88b8fb41503cd8d19edcd200bf6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libtiff-20b7e810.so.6.3.0",
+        "libjpeg-6dc8d115.so.62.4.0",
+        "libopenjp2-e530e1bf.so.2.5.4",
+        "libz.so.1",
+        "libxcb-9065bb12.so.1.1.0",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../pillow.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libtiff-20b7e810.so.6.3.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libtiff-20b7e810.so.6.3.0"
+            }
+          ]
+        },
+        {
+          "name": "libjpeg-6dc8d115.so.62.4.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libjpeg-6dc8d115.so.62.4.0"
+            }
+          ]
+        },
+        {
+          "name": "libopenjp2-e530e1bf.so.2.5.4",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libopenjp2-e530e1bf.so.2.5.4"
+            }
+          ]
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libxcb-9065bb12.so.1.1.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libxcb-9065bb12.so.1.1.0"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_imagingcms.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 159633,
+      "sha256": "e04cff5147dd848945d2151f7102da62d01cb7ce0021dbc8255fc3047df25a7c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "liblcms2-88eaba2f.so.2.0.19",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../pillow.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "liblcms2-88eaba2f.so.2.0.19",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/liblcms2-88eaba2f.so.2.0.19"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_imagingft.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 345281,
+      "sha256": "ec9b3071a11d90e5fbe0509f4ffa984a0fde3c848683e5fa2189800a42c248a0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libfreetype-57f805ba.so.6.20.6",
+        "libharfbuzz-fb49c9fc.so.0.61450.0",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../pillow.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libfreetype-57f805ba.so.6.20.6",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libfreetype-57f805ba.so.6.20.6"
+            }
+          ]
+        },
+        {
+          "name": "libharfbuzz-fb49c9fc.so.0.61450.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libharfbuzz-fb49c9fc.so.0.61450.0"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_imagingmath.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 142280,
+      "sha256": "5bf62104099491a767ab62e72f7fb1f70024c4ad6734466fac4c904a45bebf02",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_imagingmorph.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 39400,
+      "sha256": "981baa3207a79f8bd46dff2bd80350f66950c4cd51d6769320b330fbb395f455",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_imagingtk.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 47200,
+      "sha256": "64ef97cc24e52c8752ba704821945139def64bdeb2d4cc8c0522f76e2ca4971c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "PIL/_webp.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 110617,
+      "sha256": "101c37ad4308d511d1fb4fe9220d68a910ec64ec299f05739ed7aeca63fa4c02",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libwebp-51b0b3f7.so.7.2.0",
+        "libwebpmux-8fb1c9f6.so.3.1.2",
+        "libwebpdemux-9fe2abcc.so.2.0.17",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../pillow.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libwebp-51b0b3f7.so.7.2.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libwebp-51b0b3f7.so.7.2.0"
+            }
+          ]
+        },
+        {
+          "name": "libwebpmux-8fb1c9f6.so.3.1.2",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libwebpmux-8fb1c9f6.so.3.1.2"
+            }
+          ]
+        },
+        {
+          "name": "libwebpdemux-9fe2abcc.so.2.0.17",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libwebpdemux-9fe2abcc.so.2.0.17"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libXau-154567c4.so.6.0.0",
+      "bytes": 2100545,
+      "sha256": "8b5a93469805d3550471766696d4755f05bc6ca0587f22c03037ca7d12545c8b",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": "libXau-154567c4.so.6.0.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libavif-c6062d5f.so.16.4.2",
+      "bytes": 4918457,
+      "sha256": "d12ec0b696860b292114b130ecac6082fc75c198c1b4fa57b26089e9b0a7eb6a",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libdl.so.2",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libavif-c6062d5f.so.16.4.2",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libdl.so.2",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libbrotlicommon-53534446.so.1.2.0",
+      "bytes": 146089,
+      "sha256": "72c1ab487e4bd44c906336747bf1926cbf5f164f9d05e0b4fd18b7d8d113b7fe",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": "libbrotlicommon-53534446.so.1.2.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libbrotlidec-7e5462ba.so.1.2.0",
+      "bytes": 68105,
+      "sha256": "1b497acc3d8d8e1fc286088f0c288be7c0c54bf5a8fa94b12b23e54de205d48c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libbrotlicommon-53534446.so.1.2.0",
+        "libc.so.6"
+      ],
+      "soname": "libbrotlidec-7e5462ba.so.1.2.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libbrotlicommon-53534446.so.1.2.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libbrotlicommon-53534446.so.1.2.0"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libfreetype-57f805ba.so.6.20.6",
+      "bytes": 1179825,
+      "sha256": "5be086dea47fd1c3fadd431ee79fe0b5e5a0c6c38e78f1db55cf2dad17dea430",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpng16-1d1ba958.so.16.58.0",
+        "libz.so.1",
+        "libm.so.6",
+        "libharfbuzz-fb49c9fc.so.0.61450.0",
+        "libbrotlidec-7e5462ba.so.1.2.0",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libfreetype-57f805ba.so.6.20.6",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpng16-1d1ba958.so.16.58.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libpng16-1d1ba958.so.16.58.0"
+            }
+          ]
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libharfbuzz-fb49c9fc.so.0.61450.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libharfbuzz-fb49c9fc.so.0.61450.0"
+            }
+          ]
+        },
+        {
+          "name": "libbrotlidec-7e5462ba.so.1.2.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libbrotlidec-7e5462ba.so.1.2.0"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libharfbuzz-fb49c9fc.so.0.61450.0",
+      "bytes": 1529553,
+      "sha256": "4a30b9e3a12a72691b70b14945f3e8adaa8c2bc191bd8b706aae6ed0f0fa9fc0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libfreetype-57f805ba.so.6.20.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libharfbuzz-fb49c9fc.so.0.61450.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libfreetype-57f805ba.so.6.20.6",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libfreetype-57f805ba.so.6.20.6"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libjpeg-6dc8d115.so.62.4.0",
+      "bytes": 859489,
+      "sha256": "cc04bc42fd6296e81d24d13955fb95bd829624f6c74105eaf4a7fcf2ce42e048",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": "libjpeg-6dc8d115.so.62.4.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/liblcms2-88eaba2f.so.2.0.19",
+      "bytes": 422689,
+      "sha256": "4cf9f69016c7804bcb4fa56f5bbc55640cb1b7196ac7b93ba29ed9df9bd9ff4d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "liblcms2-88eaba2f.so.2.0.19",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/liblzma-de26b416.so.5.8.4",
+      "bytes": 202625,
+      "sha256": "ab4d2f260d6777088cc4bd96ce4997a5199d20b94e146a764b02c37d42477ce9",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "liblzma-de26b416.so.5.8.4",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libopenjp2-e530e1bf.so.2.5.4",
+      "bytes": 476905,
+      "sha256": "eea7a2058e0f2084d41ba88c561bddc866bd38e74f76b5ca4fccb965e2fb1c24",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libopenjp2-e530e1bf.so.2.5.4",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libpng16-1d1ba958.so.16.58.0",
+      "bytes": 226481,
+      "sha256": "38d5a01026f61afba1bb94698846722840067fc87b2ee9003fe8dcccf1bc155f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libz.so.1",
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": "libpng16-1d1ba958.so.16.58.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libsharpyuv-0066295b.so.0.1.2",
+      "bytes": 47841,
+      "sha256": "8abd5c39ee3b26330288b2e833d4d9b5d4b5ed4c881649057354df17326b6996",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libsharpyuv-0066295b.so.0.1.2",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libtiff-20b7e810.so.6.3.0",
+      "bytes": 617449,
+      "sha256": "729883f61144533eb3215d405e4daad528a68f89e9a1fccf51e9862819f30020",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libzstd-40ad5e7e.so.1.5.7",
+        "liblzma-de26b416.so.5.8.4",
+        "libjpeg-6dc8d115.so.62.4.0",
+        "libz.so.1",
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libtiff-20b7e810.so.6.3.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libzstd-40ad5e7e.so.1.5.7",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libzstd-40ad5e7e.so.1.5.7"
+            }
+          ]
+        },
+        {
+          "name": "liblzma-de26b416.so.5.8.4",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/liblzma-de26b416.so.5.8.4"
+            }
+          ]
+        },
+        {
+          "name": "libjpeg-6dc8d115.so.62.4.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libjpeg-6dc8d115.so.62.4.0"
+            }
+          ]
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libwebp-51b0b3f7.so.7.2.0",
+      "bytes": 745233,
+      "sha256": "6a97159a7c36acacb112618eb74720c97bbab4ecc499a8bfeb495dd726285259",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libsharpyuv-0066295b.so.0.1.2",
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libwebp-51b0b3f7.so.7.2.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libsharpyuv-0066295b.so.0.1.2",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libsharpyuv-0066295b.so.0.1.2"
+            }
+          ]
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libwebpdemux-9fe2abcc.so.2.0.17",
+      "bytes": 35985,
+      "sha256": "5d728787db553c48c74dccd93d2763ec88234850a5f2f821df11483c8d28d2a7",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libwebp-51b0b3f7.so.7.2.0",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libwebpdemux-9fe2abcc.so.2.0.17",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libwebp-51b0b3f7.so.7.2.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libwebp-51b0b3f7.so.7.2.0"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libwebpmux-8fb1c9f6.so.3.1.2",
+      "bytes": 65921,
+      "sha256": "6bdb41f738f088e7420374d67a4a6523cc4786f340d355d2bf4f124dcf3d5820",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libwebp-51b0b3f7.so.7.2.0",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libwebpmux-8fb1c9f6.so.3.1.2",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libwebp-51b0b3f7.so.7.2.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libwebp-51b0b3f7.so.7.2.0"
+            }
+          ]
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libxcb-9065bb12.so.1.1.0",
+      "bytes": 228569,
+      "sha256": "f3707868b0b2e78dbdac0994d2977b0ec4303c9c6250f03576b1bd93c42cad63",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libXau-154567c4.so.6.0.0",
+        "libc.so.6"
+      ],
+      "soname": "libxcb-9065bb12.so.1.1.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libXau-154567c4.so.6.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "pillow",
+              "path": "pillow.libs/libXau-154567c4.so.6.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pillow",
+      "wheelSha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "path": "pillow.libs/libzstd-40ad5e7e.so.1.5.7",
+      "bytes": 815025,
+      "sha256": "95a5af7845018639470635243c36b428f90af32b728804af6d951e7fcb08bbea",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": "libzstd-40ad5e7e.so.1.5.7",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pydantic_core",
+      "wheelSha256": "93ba4e9d8210d941c200431a56b2c0400b131865947903937ed3ec5404307d2e",
+      "path": "pydantic_core/_pydantic_core.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 4843520,
+      "sha256": "e9bf4980b91a7d83aaab8369bc4b349a1ae035b1bce7adfaf8a0b6a5044f0f60",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libgcc_s.so.1",
+        "librt.so.1",
+        "libpthread.so.0",
+        "libdl.so.2",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "librt.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libdl.so.2",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "pypdfium2",
+      "wheelSha256": "11f281613fa22313d9c7ab89947665e84eccf8ebe40e1198a84a88352305648d",
+      "path": "pypdfium2_raw/libpdfium.so",
+      "bytes": 7834920,
+      "sha256": "fd4de9f91f183476d04b1bc3fd17dacd95aba349c55d2c376512d95e082b441e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": "libpdfium.so",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "PyYAML",
+      "wheelSha256": "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc",
+      "path": "yaml/_yaml.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2679264,
+      "sha256": "957a099a4521c1f7669306fb6f79ca63fa4b9a0b4c463f7cac833a65a5c5c0cb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "rpds-py",
+      "wheelSha256": "addeda51556dac7c1a2f14cda62db8b621cd12afba3091d03a96c72932387eab",
+      "path": "rpds/rpds.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1039656,
+      "sha256": "1e3c483ab69b4b0637cbcbf0a7e3989e350f8195388724ce4f7d8efe4b6fe05e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "rtree",
+      "wheelSha256": "12de4578f1b3381a93a655846900be4e3d5f4cd5e306b8b00aa77c1121dc7e8c",
+      "path": "rtree.libs/libspatialindex-e5350069.so",
+      "bytes": 1454649,
+      "sha256": "e4eec0695dee7d3864e5d6e6ec3b3ba80a5adf8e65e7586bf0d8ed4584b91449",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": "libspatialindex-e5350069.so",
+      "rpath": null,
+      "runpath": "$ORIGIN",
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_cyutility.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 210768,
+      "sha256": "3225d1b8f1ad1d6f1afb368438280f8cea6e92ebe1649a14ea75b08aae664a02",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/_ccallback_c.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 96040,
+      "sha256": "ab7da52b20ea012230d96fb55cfe41f9382e32f2f92a2c47830452cfedcc69e1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/_fpumode.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 16288,
+      "sha256": "4289aae89227eef1998a05715da4ecf835fb37cdf8a6da22941083c425b0a9ed",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": []
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/_test_ccallback.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 23088,
+      "sha256": "1ede4895971c5028d8887880136d8fa6db6eb882be5f2ca8d28558e885e44bd4",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/_test_deprecation_call.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 49912,
+      "sha256": "69e0545126a13967244226977ca110a6cc6fee032aa6bbe3a40d7dae1f2c82e6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/_test_deprecation_def.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 28264,
+      "sha256": "08185979df2225a7f6ca39d04be706506553b13d0332c5c8484bf081e14c4efb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/messagestream.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 83816,
+      "sha256": "2935425d9b8088677b938bf65277ca28472beb7aeea76bb11e6149b06e7a53bf",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/_lib/_uarray/_uarray.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 115080,
+      "sha256": "ca83664f94c09db3b054260ec762112b16fc6543d259b3477f26fa6f6639c7c0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/cluster/hierarchy/_hierarchy.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 254472,
+      "sha256": "a0cf8c91c53d84f4c4786866faaa5c9d672925620b1192b777904ed90c593d33",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/cluster/hierarchy/_optimal_leaf_ordering.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 179248,
+      "sha256": "f8a4de7eefb74603cb803c118ef6739c7c4a1b009e9fddbb7e33ae9f6e62ab9e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/cluster/vq/_vq.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 123064,
+      "sha256": "758e46021be3085f56e24ec72d8cea2bdb7ca688144f59038a6dfd91b189c4bb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/fft/_duccfft/pyduccfft.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2389288,
+      "sha256": "37411194f8151a3535904980eefcb60a3a2a3b0a240d1cbda3f73e7a86ff5904",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/fftpack/convolve.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 129784,
+      "sha256": "5b28e0f1444e647494ed8ac89cf2d4448450922b461c6d00b81e292f4ff85fc0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/integrate/_dop.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 59384,
+      "sha256": "c218d9268d2e216a70ee1a970358ce3e490276373d3c589b05332f1b9e7ebf67",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/integrate/_odepack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 79337,
+      "sha256": "a472306970ad06962fedb00096e84b9dba3be7a1dc61a995c61d0a6a2e2285b8",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/integrate/_quadpack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 119920,
+      "sha256": "df03afae0c0121e722aa8b41643fc17ecd4e6cdf667dc1526cff04bd1db81e67",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/integrate/_test_multivariate.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 16816,
+      "sha256": "d8421941f02d2e7dd188d887d7240be1b77e1822682f625687bf9c3931d13ba7",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/integrate/_vode.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 120369,
+      "sha256": "7e0573704c049ea2a9b6d82fa4a6b4214ddbf902d1c2d171770430da6a4b6c99",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/interpolate/_dierckx.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 129337,
+      "sha256": "d2d26df8de759f25eada97a6a47dbcb916991ba191e8b11964288499727de808",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/interpolate/_fitpack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 342504,
+      "sha256": "ef8f928f777cffbefdd22f053765224196b23736554595ae965885ba0a0bb396",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/interpolate/_interpnd.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 255936,
+      "sha256": "b42390ecb266086a1158d593fc45fa0c3b6f83caa07c876a79d79febfc1428e4",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/interpolate/_ppoly.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 222784,
+      "sha256": "2e8b80cb46e559663aefaee45ff519f7dcbccf9d60aee3f1ce959b0a61c3d35f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/interpolate/_rbfinterp_pythran.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 248184,
+      "sha256": "221cfc526838f78a7e9d18da0c06ec819a652c987b52c081a48a2c9bf38e78cc",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/interpolate/_rgi_cython.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 128016,
+      "sha256": "936ce7dc812c28ea1b2c379a9bf9dbde6caad44abeb96b7c069c02e1b29730d1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/io/_fast_matrix_market/_fmm_core.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 4098088,
+      "sha256": "120a09a04f988fcf2ba5d67dc27c60b24cd7ea5b8847915d5944eba05f5e22a3",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/io/matlab/_mio5_utils.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 224152,
+      "sha256": "6cbebdd55a404b8e705a8c8a310086ca871cd064355b7b903ebcc94e4de15fd1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/io/matlab/_mio_utils.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 72512,
+      "sha256": "31e361922b8bd8b15a29454e214bc4855fab1b115d0501daf8c12519ae0ffee1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/io/matlab/_streams.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 138936,
+      "sha256": "c4e87d30fb965f3b029b55e0e623fc9faaf635f51cbc2befe3d307ca2af07fbb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_batched_linalg.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 360465,
+      "sha256": "355935cea298bca9349fcf05d9747df11a3c34dbf4fba2564b83aec2fe689d33",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_cythonized_array_utils.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 226040,
+      "sha256": "3a1a61b7b58a79810a96f009f631980e6ad707fbb7a69aad53a17e24c92ccd27",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_decomp_interpolative.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 740424,
+      "sha256": "3a737ff7f297189b5f751574de6d147db90de82a4e3c315b7241f9219d19be5f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_decomp_update.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 333520,
+      "sha256": "943013cc1dbb23aeb8b09e93171dde39ccdf77e0836cd7b2b13cafa92f182f72",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_fblas.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1036825,
+      "sha256": "d435d06d1822fe2e7a8b31fa0a889cdd209252b931715f1ecf6fab988e314f0f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libgfortran-83c28eba.so.5.0.0",
+        "libm.so.6",
+        "libc.so.6",
+        "libgcc_s.so.1"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libgfortran-83c28eba.so.5.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libgfortran-83c28eba.so.5.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_flapack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2572905,
+      "sha256": "00fc3e3414d7f42f023d5ba1f1b616d3d81da8da0f5cc6b17279af70be963b9c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_internal_matfuncs.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 182105,
+      "sha256": "e98f03e852b7acf316c6a6d2294360ed2fb98ee4b1e9c8eccffd123f9c1dc74f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_linalg_pythran.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 121680,
+      "sha256": "2fe8e8d428897533d47f25fcc1028d9f5fcd16651b9d1e919ef52af812fc1a38",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_matfuncs_sqrtm_triu.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 110600,
+      "sha256": "ba3d3c38ad64f1a63a6b936cac7f2a1485712fb82742f12d2334bb4675569c39",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/_solve_toeplitz.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 127536,
+      "sha256": "0fd9f45797544caea1341c035e7c7526731ad5f30b5208cfa39214feda3bd541",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/cython_blas.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 176817,
+      "sha256": "ac79405ae0d508617382a9515cd5c16aeefc331f54757f16a905fde4ddeb89c9",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/linalg/cython_lapack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 588937,
+      "sha256": "d710277f4b904741c7d63fcac377f17578356f1f926637ef7ffd2db244d08a53",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/ndimage/_ctest.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 16968,
+      "sha256": "08b9335fc4a54482cc66c73279d59e3a84176f4e9c070ce3cb47bc730617afc2",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": []
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/ndimage/_cytest.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 94416,
+      "sha256": "7b2959755485b557d63c0beab52e5680de199de82596cb2eff8eb78cc51dd439",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/ndimage/_nd_image.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 175576,
+      "sha256": "100424b75cdc0e0d0a42ef8a9df2f205597706c3567100bfe929f246b2a33df0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/ndimage/_ni_label.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 228496,
+      "sha256": "639e113aee21ad4d53663fa9023f66aaff72c9706ed093aaf2f18c8cde8e4908",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/ndimage/_rank_filter_1d.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 27048,
+      "sha256": "18d659c21bb4569fe63f0e3e09bed87ce3f67824af26123332bad0e0a33c0304",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/odr/__odrpack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 630745,
+      "sha256": "a03bb0e4369c150cfbbea4dcc52ebc441cc0acf2dee44e3cc14d7dd020b53675",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libscipy_openblas-5f890258.so",
+        "libgfortran-83c28eba.so.5.0.0",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libgfortran-83c28eba.so.5.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libgfortran-83c28eba.so.5.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_bglu_dense.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 191104,
+      "sha256": "18c2834fba6309326fbd70c99e92622669718397c3b965de131894fd99cdab6f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_direct.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 47520,
+      "sha256": "228677b02cb6a2b1fc5178f346fc2e7e16aa1cbc618e0b3370cbba6626cc57ef",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_group_columns.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 87584,
+      "sha256": "a5eadac1bb2e46861e48b35a36c28a7fa977a57f8d50a95479a90301f315837e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_lbfgsb.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 54465,
+      "sha256": "23d19ac49896c4ab452fc0bc807312bba273482ea01530ad6c0bc020ac8ccddb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_lsap.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 25128,
+      "sha256": "67871ca804df8da4fadf4e9238ea0536d92ff0915ddae885b368c65ce43e5b3f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_minpack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 104416,
+      "sha256": "88bb938afe7b847da09817c03d0a655930f6430b745f63e2ba24775f8019bf60",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_moduleTNC.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 147560,
+      "sha256": "97ff75823ff461f05f7fe0d696dfd5dc27f4f06beec1f9545e03cc135788acea",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_pava_pybind.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 202576,
+      "sha256": "7a3d9b3ae2c6f26621e34c9a6d0384ca0cd9d58534c7c8d3a1ce2e4a9edb7a69",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_slsqplib.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 63009,
+      "sha256": "7f2c4849f04a0f3f7ced406bd763e8a51d38e9e7fcf86fb8218b9af2913b1db9",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_zeros.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 24920,
+      "sha256": "53e48a69c5cfae5a592f436faa15f2dff22a88a8ea084e3142cd03407992b26a",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_highspy/_core.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 6755920,
+      "sha256": "33fb5a6a86b8fb914b26e69f8f046274b0b043d202511109365d3fde180c540d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_highspy/_highs_options.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 400104,
+      "sha256": "116ed72be9accceafcdeb58d5d02308e5023b9bc98118303a79d3bc24fe171d6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_lsq/givens_elimination.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 65264,
+      "sha256": "e4778da0717f9fc3f0ed782a71a3dac1aab96f277a8ad2a17eb36a39f95fa46c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/_trlib/_trlib.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 224849,
+      "sha256": "a2e573ef1df540a59a1edd08ff790ca73e8ce60dd50ec99f53c5d233d3abc853",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/optimize/cython_optimize/_zeros.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 109864,
+      "sha256": "4ab22cac4f6a5949aac458202d6180c6777fb5ba4f8fb09ae2ed19005b45f6f8",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/signal/_max_len_seq_inner.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 56976,
+      "sha256": "bd264935ba6c06d8971f196639f173ecd940043c916d64b886772951cbdc8c10",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/signal/_peak_finding_utils.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 146760,
+      "sha256": "9236e3ea016a8a087c8fd989e15aa475286e0578a0389c066be771717999e4d6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/signal/_sigtools.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 108416,
+      "sha256": "871a3c0d9eac002e8d7bedba2f38c37b729d9f19b1b23e66ca19a32565a5ea1f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/signal/_sosfilt.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 119096,
+      "sha256": "66066fa7bfc3e6b2196053b85d78330f420155bb530aa54b88a190c63aeee35d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/signal/_spline.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 59680,
+      "sha256": "3bac4dbcf3bffa4961a02a487075dcd9f2687a4b73a6b16b634c917f307058ca",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/signal/_upfirdn_apply.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 207424,
+      "sha256": "762f45e575797c016b1398918efc30fb7f2865f3ba6b4d6b07885d0c86f486bf",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/_csparsetools.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 442320,
+      "sha256": "16206b6cff50ea02890ba1129e37385948fc47547583c587e039e710bde8b83e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/_sparsetools.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 4554512,
+      "sha256": "1e7673745a9755074b9bd8872b24d0cc620bce6c8d0ab89a62c99cb0ba68ca77",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_flow.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 188912,
+      "sha256": "7102bed85a8060ea5e7d2059768d33315d6133965948abc0ee515ba94f9186d7",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_matching.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 183632,
+      "sha256": "dc885ea71e205811dde13bc939d0e907bc92920687486bc944f213d8d13632d0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_min_spanning_tree.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 99832,
+      "sha256": "af3afb98292fa44319ac3b53be5264556c67b18e24f715a1ab61322ae16270e7",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_reordering.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 153776,
+      "sha256": "1e77a1ded421be1f353f37e2211c28dd5eec3dc89d401fa3969d9137afb9bd6e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_shortest_path.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 503920,
+      "sha256": "dbf4d0563fc44f24abfffda0ca71e54218305b9ec1c1c7467d50c3146b9c5e7c",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_tools.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 183912,
+      "sha256": "767beb6d829e08b13a40b0c7e7f68349d6afb979ca3e952c6f7abc8ab6f7cdad",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/csgraph/_traversal.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 359960,
+      "sha256": "80b9cd140f3dc513af8815210c1a79b3143d1fe695337d02d5bf5f84c01293b1",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/linalg/_propack.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 149313,
+      "sha256": "ec7288a821bbccb8e3c8fb50990bd73f8406144e91d4a90deefe46d5252481b0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/linalg/_dsolve/_superlu.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 436625,
+      "sha256": "3312d4b53c769c7ab911a2fce4a74a8f8c1ec7eff1d96199ae87deda3f4006ef",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/sparse/linalg/_eigen/arpack/_arpacklib.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 223721,
+      "sha256": "b5d9e3e7808bc44c3518a6fb872708813b23bac707e63160a3fd85c6eb6c81f0",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libscipy_openblas-5f890258.so",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": "$ORIGIN/../../../../../scipy.libs",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libscipy_openblas-5f890258.so",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libscipy_openblas-5f890258.so"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/_ckdtree.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 782424,
+      "sha256": "29316ed1bf1f2b1c4915740fcfe8014df17524a6537b707c1f1347b51c75ddf4",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/_distance_pybind.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 616336,
+      "sha256": "e11e762210262b10593a77a1b5f433b14114d12da089f5516044641aced41ada",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/_distance_wrap.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 120904,
+      "sha256": "6a3e43a949ae6864b62c6dfd0aa2b483b65a780794167f49c071d3a0e335b82f",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/_hausdorff.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 95560,
+      "sha256": "e10495f6b50a8000748d777cd1ee253baa7471c9b33859cdbc4126036f8a1c64",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/_qhull.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 936280,
+      "sha256": "cf68d90efc1bb8b6e28a138113b2f4a1dc832e98ff1b9b25084f19332e2c792d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/_voronoi.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 82944,
+      "sha256": "bb96ef61acbd869fca0bcb371a659c116355ab83a6617c056fdf7d5c4561afcb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/transform/_rigid_transform_cy.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 250368,
+      "sha256": "b0b7e888d54f37eea38b7ac131ea22b09bc933d95f48548c44c828102b56d7da",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/spatial/transform/_rotation_cy.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 574512,
+      "sha256": "f796ff7d1d45eb96faea689795fbbec58a8468c053684fb4d8d0c454f37545e5",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_comb.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 63432,
+      "sha256": "ed06f2dcb4cd92faee28fe22ee9798653e788b3883bad8c1409c824c0966f7ea",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_ellip_harm_2.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 128128,
+      "sha256": "5995828952adcd2d2732682eba3f0531fe610baf839a75707e21b8d62ea8337e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_gufuncs.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 975792,
+      "sha256": "c9d0b6f8270524a384d70852a0f1378b1e2d051c3aa9ceeb80c15a20b3fda01a",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_specfun.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 233000,
+      "sha256": "d3cec85106fc2efdb8424ffc3c382cd2ab4037615b941cf68f949c6900790ac6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_special_ufuncs.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1659864,
+      "sha256": "01d1decd4225eb447ea98f4ba51b4efbeb4b46ee344ef74accedd01e9e7fc1bc",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_test_internal.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 92552,
+      "sha256": "88c2a64e0568b72dc043f39f6507f696b6291db9e1178a369e24a44805224583",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_ufuncs.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1496784,
+      "sha256": "4136c006138bbf3439006e3ac72297b3e06e2e4d384cc0674f1b07264290f264",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/_ufuncs_cxx.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2081448,
+      "sha256": "2d2c013bb071626df39fcb2f71c63ccd99e568592a989762d1056d45edbe45bd",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/special/cython_special.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 2454784,
+      "sha256": "fcbfaf3535798a6821d8afe1b5502701772a4dc1e6eefcc582540a6116a37303",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_ansari_swilk_statistics.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 108400,
+      "sha256": "13968f3d10f695d017722e9051ced30bb77acba477fa3611e1c39887a2a5a6db",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_biasedurn.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 239568,
+      "sha256": "49b1fadb555b9f5e80d93f2ab5b4d9910c47319ef83fb94cbbbfebef9abf0c74",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_qmc_cy.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 134800,
+      "sha256": "380316a38d74d214f834b41b674b511f51cb3ba7064646ec8a9d914d52672ea7",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_qmvnt_cy.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 135192,
+      "sha256": "1410f5f0735b0d90b8738fb9eddaf56b5599e2aa5620a923428d5a9c99cee542",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_sobol.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 185416,
+      "sha256": "76fa218da7c4fdc5daf8ca3d0900af5a2249a57072a354f9906ca2ce00853675",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_stats.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 502096,
+      "sha256": "6ccbb930f99601864c93f92622fc9bd5ec65b86f4387a284875f191350d17f29",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_stats_pythran.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 136848,
+      "sha256": "eea2b8c755b166f51249605642d9dc7946bb5590a0b1d65e46a31052491dbd00",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libstdc++.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_levy_stable/levyst.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 66392,
+      "sha256": "db88f67477449dcf59692d975299cb843d172c85a54c86630fef53989535c96e",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_rcont/rcont.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 108424,
+      "sha256": "386c4510ac183eb266ce540cc35415a980b62d2f169c30e9691a849a9475b99d",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy/stats/_unuran/unuran_wrapper.cpython-312-x86_64-linux-gnu.so",
+      "bytes": 1335480,
+      "sha256": "85894ace6fcd620c2b5d255df2e91116dc39d0a8de9e24ee1df89e785d690abb",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": null,
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy.libs/libgfortran-040039e1-0352e75f.so.5.0.0",
+      "bytes": 2833617,
+      "sha256": "c6090048eccc763522c12ef016f81da6b627cb3a044f55cf0479a839c41c0980",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libquadmath-96973f99-934c22de.so.0.0.0",
+        "libz.so.1",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": "libgfortran-040039e1-0352e75f.so.5.0.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libquadmath-96973f99-934c22de.so.0.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libquadmath-96973f99-934c22de.so.0.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy.libs/libgfortran-83c28eba.so.5.0.0",
+      "bytes": 2751569,
+      "sha256": "468e71e59e1d784821a76702e5ecd1e0dbcfc024499f74a552d1bea4b26f27ad",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libquadmath-2284e583.so.0.0.0",
+        "libz.so.1",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "soname": "libgfortran-83c28eba.so.5.0.0",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libquadmath-2284e583.so.0.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libquadmath-2284e583.so.0.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libz.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgcc_s.so.1",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy.libs/libquadmath-2284e583.so.0.0.0",
+      "bytes": 272193,
+      "sha256": "a9307bbaa353623fa014e8b682d50c4629f5e5c7d61daa9a8652f7d165cd421a",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": "libquadmath-2284e583.so.0.0.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy.libs/libquadmath-96973f99-934c22de.so.0.0.0",
+      "bytes": 250985,
+      "sha256": "6ed5137f412781ad7863439fb543613f620b43c32b63292a0029246162f5bbc6",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "soname": "libquadmath-96973f99-934c22de.so.0.0.0",
+      "rpath": null,
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        }
+      ]
+    },
+    {
+      "distribution": "scipy",
+      "wheelSha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "path": "scipy.libs/libscipy_openblas-5f890258.so",
+      "bytes": 25094609,
+      "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981",
+      "format": "ELF64",
+      "machine": "x86_64",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libgfortran-040039e1-0352e75f.so.5.0.0",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "soname": "libscipy_openblas-5f890258.so",
+      "rpath": "$ORIGIN",
+      "runpath": null,
+      "neededCandidates": [
+        {
+          "name": "libm.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libpthread.so.0",
+          "bundledCandidates": []
+        },
+        {
+          "name": "libgfortran-040039e1-0352e75f.so.5.0.0",
+          "bundledCandidates": [
+            {
+              "distribution": "scipy",
+              "path": "scipy.libs/libgfortran-040039e1-0352e75f.so.5.0.0"
+            }
+          ]
+        },
+        {
+          "name": "libc.so.6",
+          "bundledCandidates": []
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "bundledCandidates": []
+        }
+      ]
+    }
+  ],
+  "unmatchedNeededNames": [
+    "ld-linux-x86-64.so.2",
+    "libc.so.6",
+    "libdl.so.2",
+    "libgcc_s.so.1",
+    "libm.so.6",
+    "libpthread.so.0",
+    "libresolv.so.2",
+    "librt.so.1",
+    "libstdc++.so.6",
+    "libz.so.1"
+  ],
+  "independentComparison": {
+    "matchedBinaries": 219,
+    "tool": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
+  }
+}

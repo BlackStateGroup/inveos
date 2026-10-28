@@ -9,6 +9,9 @@ on:
       - 'tools/probe_worker_isolation.py'
       - 'research/runtime_artifacts/docling-build.*'
       - 'tests/test_docling_research_build.py'
+      - 'tools/audit_native_wheels.py'
+      - 'tests/test_native_wheel_audit.py'
+      - 'research/runtime_artifacts/docling-native-*.json'
   workflow_dispatch:
 
 permissions:
@@ -34,5 +37,22 @@ jobs:
         run: timeout 120s docker pull python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487
       - name: Qualify image then build exact source twice without network
         run: timeout 180s python3 tools/build_docling_research.py --source .research-cache/sources/docling-project/docling --wheels .research-cache/docling-build-wheels
+      - name: Acquire locked runtime wheels for static inspection only
+        run: |
+          timeout 120s python3 -m pip download --only-binary=:all: --require-hashes -r research/runtime_artifacts/docling-native-cp312.lock --dest .research-cache/docling-locked-cp312
+      - name: Independently verify native dependency inventory without loading binaries
+        run: |
+          python3 tools/audit_native_wheels.py .research-cache/docling-locked-cp312 --inventory research/runtime_artifacts/docling-native-cp312.json --output .research-cache/native-elf.json --compare-readelf
+          python3 - <<'PYTHON'
+          import json
+          from pathlib import Path
+          actual=json.loads(Path('.research-cache/native-elf.json').read_text())
+          expected=json.loads(Path('research/runtime_artifacts/docling-native-elf.json').read_text())
+          print(actual.pop('independentComparison'))
+          expected.pop('independentComparison')
+          if actual != expected:
+              raise SystemExit('Native inventory drift')
+          print('Native inventory reproduced exactly')
+          PYTHON
       - name: Keep all acquired and generated third-party files untracked
         run: git diff --exit-code
