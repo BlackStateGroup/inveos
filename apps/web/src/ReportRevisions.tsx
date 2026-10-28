@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {verifyRevisionDownload} from './reportDownload';
 import {pendingReportFreeze, recoverableReportFreeze, reportRecoveryScope} from './reportRecovery';
 import {Panel, Notice} from './ui';
+import {DisclosureHistory} from './DisclosureHistory';
 
 type Receipt={id:string;caseId:string;status:string;sha256:string;createdAt:string};
 type Page={items:Receipt[];nextBefore:string|null};
@@ -74,7 +75,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     if(alive.current)setMessage('Internal review recorded. This does not authorise client release.');
     await reviews(row);
   }
-  return <Panel title="Saved internal report revisions"><div className="panel-body">
+  return <><DisclosureHistory key={`${caseId}:${csrf}`} caseId={caseId} csrf={csrf}/><Panel title="Saved internal report revisions"><div className="panel-body">
     <Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
     <div className="report-export-actions"><button className="primary" disabled={busy} onClick={()=>void act(freeze)}>{pending?'Recover pending freeze':'Freeze current internal draft'}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh revisions</button></div>
@@ -98,5 +99,5 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
         </fieldset></form></details>
     </li>)}</ul>
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Load older revisions</button>}
-  </div></Panel>;
+  </div></Panel></>;
 }

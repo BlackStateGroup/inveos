@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: reviewer disclosure oversight
+
+Based on PR #29 receipt `b3141db258e47349a2a16d03c503f8fac3434963`; fresh main remains `95b5c35`, drafts #2–#29 open and #29 has no feedback. Added bounded assigned-reviewer case history with exact database keysets, historical acknowledgement/revocation details and a separate current access-policy flag. Added Reports panel with reasoned revocation through the existing endpoint. Migration 018 is index-only; no report bytes are loaded by listing. See docs/49_DISCLOSURE_OVERSIGHT.md.
+
+Local checks and three new PostgreSQL scenarios are being verified. Namespace isolation remains denied by a fresh probe; no parser execution or bypass. Browser/device/offline/restore checks remain unrun.
+
+Next: record hosted evidence, then continue from this draft after fresh main/review checks. Recipient administration, real identity/session lifecycle and explicit grant-creation controls remain next; obtain actual browser acceptance on a supported host. Redaction, page/region processing, native field/offline/restore and wider product gates stay open. No merge/deployment or essential user action.
+
 ## 28 October: explicit client receipt acknowledgement
 
 Based on PR #28 receipt `1840493c334de0ef125cd2105c76d966960a137d`; fresh main is still `95b5c35`, drafts #2–#28 open, and all their review timelines have no feedback. Draft PR #29 adds this slice. Added append-only fingerprint-bound recipient acknowledgements with case-serialised eligibility/integrity revalidation, atomic audit and retry receipts. Fixed client sign-out while retaining internal mutation denial. Portal offers an explicit acknowledgement only after a verified download. Migration 017; see docs/48_DISCLOSURE_ACKNOWLEDGEMENT.md.

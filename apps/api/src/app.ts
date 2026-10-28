@@ -1494,6 +1494,24 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
        AND NOT EXISTS(SELECT 1 FROM report_revision_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.revision_id=d.revision_id AND rr.decision='request_changes')
        AND EXISTS(SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=d.tenant_id AND m.user_id=d.created_by AND m.role='reviewer' AND cm.case_id=d.case_id)
        AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)`;
+  app.get('/api/cases/:caseId/disclosures',{preHandler:authenticate,schema:{params:caseParamsSchema,querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!,{caseId}=request.params as {caseId:string};
+    if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
+    const {before,limit=25}=request.query as {before?:string;limit?:number};
+    return reportTransaction(async client=>{
+      await findCase(client,actor,caseId);
+      if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,before]);if(!anchor.rowCount)notFound();}
+      const rows=await client.query(`SELECT d.*,v.revoked_by,v.reason AS revocation_reason,v.created_at AS revoked_at,a.acknowledged_at,
+        (d.expires_at>clock_timestamp() AND ${disclosureEligibility} AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')) AS access_policy_eligible
+        FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+        LEFT JOIN report_disclosure_revocations v ON v.tenant_id=d.tenant_id AND v.disclosure_id=d.id
+        LEFT JOIN report_disclosure_acknowledgements a ON a.tenant_id=d.tenant_id AND a.disclosure_id=d.id
+        WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3))
+        ORDER BY d.created_at DESC,d.id DESC LIMIT $4`,[actor.tenantId,caseId,before??null,limit+1]);
+      return {items:rows.rows.slice(0,limit).map(r=>({...disclosureReceipt(r),createdBy:r.created_by,reason:r.reason,accessPolicyEligible:r.access_policy_eligible,acknowledgedAt:r.acknowledged_at?iso(r.acknowledged_at):null,revocation:r.revoked_at?{revokedBy:r.revoked_by,reason:r.revocation_reason,createdAt:iso(r.revoked_at)}:null})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+    });
+  });
   app.get('/api/portal/disclosures',{preHandler:authenticate,schema:{querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
     const actor=request.actor!;
