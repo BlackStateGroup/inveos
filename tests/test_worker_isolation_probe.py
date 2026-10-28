@@ -10,6 +10,7 @@ class WorkerIsolationPolicyTests(unittest.TestCase):
     def setUp(self):
         self.info = {'Config': {'User': '65534:65534'}, 'HostConfig': {
             'NetworkMode': 'none', 'ReadonlyRootfs': True, 'CapDrop': ['ALL'],
+            'LogConfig': {'Type': 'none'},
             'Privileged': False, 'SecurityOpt': ['no-new-privileges:true'],
             'Tmpfs': {'/scratch': SCRATCH, '/output': SCRATCH},
             'Memory': 134217728, 'MemorySwap': 134217728,
@@ -26,6 +27,10 @@ class WorkerIsolationPolicyTests(unittest.TestCase):
                 info['HostConfig'][field] = value
                 with self.assertRaises(ValueError):
                     check_configuration(info)
+        info = copy.deepcopy(self.info)
+        info['HostConfig']['LogConfig']['Type'] = 'json-file'
+        with self.assertRaises(ValueError):
+            check_configuration(info)
 
     def test_rejects_root_and_writable_original(self):
         check_configuration(self.info)
@@ -44,6 +49,7 @@ class WorkerIsolationPolicyTests(unittest.TestCase):
         args = container_args('test', 'sha256:' + 'a' * 64,
                               '/fictional path/$(no-execution)')
         self.assertIn('--pull=never', args)
+        self.assertIn('--log-driver=none', args)
         self.assertIn('type=bind,src=/fictional path/$(no-execution),dst=/original,readonly', args)
         self.assertNotIn('--privileged', args)
 

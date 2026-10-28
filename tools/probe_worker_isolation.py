@@ -14,10 +14,19 @@ import tempfile
 import uuid
 from pathlib import Path
 
+if __package__:
+    from .bounded_process import ProcessLimitExceeded, run_bounded
+else:
+    from bounded_process import ProcessLimitExceeded, run_bounded
 
-def command(*args, timeout=20, check=True):
-    return subprocess.run(['docker', *args], capture_output=True, text=True,
-                          timeout=timeout, check=check)
+
+def command(*args, timeout=20, check=True, max_output=1024 * 1024):
+    result = run_bounded(['docker', *args], timeout=timeout, max_output=max_output)
+    if check and result.returncode:
+        # Do not include arbitrary container output in exception/log messages.
+        raise subprocess.CalledProcessError(result.returncode, ['docker', args[0]])
+    return subprocess.CompletedProcess(['docker', *args], result.returncode,
+        result.stdout.decode('utf-8', errors='replace'), result.stderr.decode('utf-8', errors='replace'))
 
 
 def require(condition, message='Isolation policy rejected'):
@@ -45,6 +54,7 @@ def container_args(name, image_id, original, volumes=()):
         raise ValueError('An immutable local image ID is required')
     overrides = volume_overrides(volumes)
     return ['create', '--pull=never', '--name', name, '--network=none',
+            '--log-driver=none',
             '--user=65534:65534', '--read-only', '--cap-drop=ALL',
             '--security-opt=no-new-privileges:true', '--memory=128m',
             '--memory-swap=128m', '--cpus=0.5', '--pids-limit=32',
@@ -58,6 +68,7 @@ def check_configuration(info, volumes=()):
     host = info['HostConfig']
     require(info['Config']['User'] == '65534:65534')
     require(host['NetworkMode'] == 'none' and host['ReadonlyRootfs'])
+    require(host['LogConfig']['Type'] == 'none', 'Daemon logging must be disabled')
     require(host['CapDrop'] == ['ALL'] and (not host['Privileged']))
     require('no-new-privileges:true' in host['SecurityOpt'])
     require(host['Memory'] == 128 * 1024 * 1024)
@@ -119,22 +130,64 @@ printf 'ISOLATION_PROBE_OK\\n'
 '''
             for volume in volumes:
                 checks = f'if (echo changed > {volume}/write-probe) 2>/dev/null; then exit 47; fi\n' + checks
-            for label, script, deadline in [('boundaries', checks, 20),
-                                             ('timeout', 'sleep 30', 1)]:
+            probes = [
+                ('boundaries', checks, 20),
+                ('timeout', 'sleep 30', 1),
+                ('stdout_limit', 'while :; do printf "%65536s" x; done', 10),
+                ('stderr_limit', 'while :; do printf "%65536s" x >&2; done', 10),
+                # Grow the main process heap; swap is capped at the RAM limit.
+                ('memory', 'value=$(printf "%65536s" x); while :; do value=$value$value; done', 20),
+                # The cap must actually deny a fork. Short-lived children allow
+                # the shell to recover and inspect the kernel's denial counter.
+                ('pids', '''
+for i in {1..40}; do /bin/sleep 2 & done
+wait
+while read -r key value; do
+  if [ "$key" = max ]; then printf 'PID_DENIALS=%s\\n' "$value"; fi
+done < /sys/fs/cgroup/pids.events
+''', 20),
+                ('cpu', '''
+before=0
+while read -r key value; do
+  if [ "$key" = throttled_usec ]; then before=$value; fi
+done < /sys/fs/cgroup/cpu.stat
+deadline=$((SECONDS+3))
+while (( SECONDS < deadline )); do :; done
+while read -r key value; do
+  if [ "$key" = throttled_usec ]; then printf 'CPU_THROTTLED_USEC=%s\\n' "$((value-before))"; fi
+done < /sys/fs/cgroup/cpu.stat
+''', 10),
+            ]
+            resource_evidence = {}
+            for label, script, deadline in probes:
                 name = 'inveos-probe-' + uuid.uuid4().hex
                 try:
                     command(*container_args(name, image_id, original, volumes), script)
                     info = json.loads(command('inspect', name).stdout)[0]
                     check_configuration(info, volumes)
-                    timed_out = False
+                    limit = None
+                    result = None
                     try:
-                        result = command('start', '-a', name, timeout=deadline)
-                    except subprocess.TimeoutExpired:
-                        timed_out = True
+                        result = command('start', '-a', name, timeout=deadline,
+                                         max_output=16384, check=False)
+                    except ProcessLimitExceeded as error:
+                        limit = error.reason
                     if label == 'timeout':
-                        require(timed_out, 'Timeout probe unexpectedly completed')
+                        require(limit == 'wall_time', 'Timeout probe did not reach its wall-time bound')
+                    elif label in ('stdout_limit', 'stderr_limit'):
+                        require(limit == 'output_bytes', 'Output flood did not reach its byte bound')
+                    elif label == 'memory':
+                        require(limit is None and result.returncode == 137, 'Memory probe did not exit on SIGKILL')
+                        state = json.loads(command('inspect', name).stdout)[0]['State']
+                        require(state['OOMKilled'] is True, 'Kernel OOM kill was not recorded')
+                        resource_evidence['oomKilled'] = True
+                    elif label in ('pids', 'cpu'):
+                        prefix = 'PID_DENIALS=' if label == 'pids' else 'CPU_THROTTLED_USEC='
+                        require(limit is None and result.returncode == 0, 'Resource probe failed')
+                        require(bool(re.fullmatch(re.escape(prefix)+r'[1-9][0-9]*\n', result.stdout)), 'No resource enforcement observed')
+                        resource_evidence[label] = int(result.stdout.strip().split('=')[1])
                     else:
-                        require(not timed_out and result.stdout.strip() == 'ISOLATION_PROBE_OK')
+                        require(limit is None and result.returncode == 0 and result.stdout.strip() == 'ISOLATION_PROBE_OK')
                     receipts.append(label)
                 finally:
                     command('rm', '-f', '-v', name)
@@ -143,7 +196,9 @@ printf 'ISOLATION_PROBE_OK\\n'
     return {'status': 'host_probe_passed', 'imageId': image_id,
             'repoDigests': image_info.get('RepoDigests', []), 'checks': receipts,
             'originalSha256': expected, 'parserExecuted': False, 'imageVolumeOverrides': list(volumes),
-            'limits': 'Configured/cgroup-visible CPU, RAM and PID caps; actual scratch/output exhaustion, image-volume write denial and timeout cleanup. No exploit resistance certification.'}
+            'resourceEvidence': resource_evidence, 'combinedCaptureLimitBytes': 16384,
+            'daemonLogging': False,
+            'limits': 'Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification.'}
 
 
 def main():
@@ -152,7 +207,7 @@ def main():
     args = parser.parse_args()
     try:
         print(json.dumps(run_probe(args.image), indent=2))
-    except (OSError, subprocess.SubprocessError, ValueError, AssertionError, KeyError) as error:
+    except (OSError, subprocess.SubprocessError, ProcessLimitExceeded, ValueError, AssertionError, KeyError) as error:
         print(json.dumps({'status': 'host_probe_failed', 'errorType': type(error).__name__,
                           'parserExecuted': False}))
         return 1
