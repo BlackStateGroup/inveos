@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: scoped report disclosure API
+
+Based on PR #26 receipt `1797beb1d206a1f70b7b062f40a4cee04c87a9c6`; main remains `95b5c35`, drafts #2–#26 open and #26 has no feedback. Added explicit full-snapshot recipient grants, current independent review/authority gates, source revalidation in the grant transaction, bounded expiry, immutable revocation and exact-recipient audited download. No generic client case/evidence permission; frozen bytes remain unchanged. Migration 015. API-only synthetic lab, not portal UI or production release. See docs/46_SCOPED_REPORT_DISCLOSURE.md for full embedded-original disclosure semantics and remaining gates.
+
+Local lint/types/build and 42 Python tests passed. Three new PostgreSQL scenarios await hosted verification: concurrent grants/TCP exact bytes, recipient/internal API denials, durable revoke, missing approvals/attestation, expiry, stale authority, corruption, audit rollback and later dissent. Browser/device/offline/restore and parser checks remain unrun. No new dependencies/source, merge, live delivery or deployment.
+
+Next: verify and record exact receipts, then implement scoped portal listing/download controls and recipient administration; retain explicit full-snapshot warning and never treat grants as redaction. Separate release artifact/schema, redaction derivatives, formal privilege/legal gates, production identity/storage, isolated parsers, native field/offline/restore and other product requirements remain open. No essential user action.
+
 ## 28 October: frozen report source revalidation
 
 Based on PR #25 receipt `7df28f95868dade6716aa321dc2130c45aa7a42a`; main remains `95b5c35`, drafts #2–#25 open and #25 has no feedback. Added explicit scoped verification of frozen report fingerprints against their current cited original bytes, exact spans, accepted review links and source policies. Reuses bounded report assembly for only the frozen finding set, excluding later findings and working context. Successful checks commit audit before returning a point-in-time receipt; no release/review state changes. Added UI action and receipt guard. No migration/dependency. See docs/45_FROZEN_SOURCE_VERIFICATION.md.

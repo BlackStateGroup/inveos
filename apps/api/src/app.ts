@@ -1435,12 +1435,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   function checkRevision(row: QueryResultRow) {
     if(createHash('sha256').update(row.report_bytes).digest('hex')!==row.digest.trim()) throw new ApiError(409,'Stored report revision integrity failed.');
   }
-  const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
-  app.post('/api/cases/:caseId/report-revisions/:revisionId/verify-sources',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}}}}},async(request,reply)=>{
-    reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
-    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string},{sha256:expected}=request.body as {sha256:string};
-    return reportTransaction(async client=>{
-      await reportAccess(client,actor,caseId);
+  async function verifyFrozenSources(client:PoolClient,actor:Actor,caseId:string,revisionId:string,expected:string){
       const revision=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];
       if(!revision)notFound();checkRevision(revision);
       if(expected!==revision.digest.trim())throw new ApiError(409,'Verification fingerprint does not match the frozen revision.');
@@ -1452,6 +1447,66 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const current=await buildReport(client,actor,caseId,ids);
       // Preserve the exact frozen claim/review/source/policy representation, including byte spans and embedded originals.
       if(JSON.stringify(current.findings)!==JSON.stringify(frozen.findings))throw new ApiError(409,'Frozen findings no longer match their current source records.');
+      return {ids,revision};
+  }
+  const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
+  const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
+  const disclosureReceipt=(r:QueryResultRow)=>({id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:r.digest.trim(),authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'});
+  app.post('/api/cases/:caseId/report-revisions/:revisionId/disclosures',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256','recipientId','idempotencyKey','expiresAt','reason','confirmFullDisclosure'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},recipientId:uuidSchema,idempotencyKey:uuidSchema,expiresAt:{type:'string',maxLength:40},reason:{type:'string',minLength:10,maxLength:2000},confirmFullDisclosure:{const:true}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
+    if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
+    const input=request.body as {sha256:string;recipientId:string;idempotencyKey:string;expiresAt:string;reason:string};const reason=input.reason.trim(),expiry=Date.parse(input.expiresAt);
+    if(reason.length<10||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(input.expiresAt)||!Number.isFinite(expiry))throw new ApiError(422,'Valid UTC expiry and disclosure reason required.');
+    return inTransaction(options.pool,async client=>{
+      const kase=await findCase(client,actor,caseId,true);
+      const old=(await client.query('SELECT * FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
+      if(old){if(old.revision_id!==revisionId||old.recipient_id!==input.recipientId||old.digest.trim()!==input.sha256||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason)throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
+      if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
+      const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();
+      if(expiry<=clock||expiry>clock+7*86400000)throw new ApiError(422,'Expiry must be within seven days.');
+      const recipient=await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role='client'",[actor.tenantId,input.recipientId]);if(!recipient.rowCount)throw new ApiError(422,'Recipient must be a client in this tenant.');
+      const reviews=await client.query(`SELECT r.* FROM report_revision_reviews r JOIN memberships m ON m.tenant_id=r.tenant_id AND m.user_id=r.reviewer_id
+       JOIN case_memberships cm ON cm.tenant_id=r.tenant_id AND cm.case_id=r.case_id AND cm.user_id=r.reviewer_id
+       WHERE r.tenant_id=$1 AND r.case_id=$2 AND r.revision_id=$3 AND m.role='reviewer' AND r.authority_version=$4 AND r.digest=$5`,[actor.tenantId,caseId,revisionId,kase.authority_version,input.sha256]);
+      const rejected=await client.query("SELECT 1 FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND decision='request_changes' LIMIT 1",[actor.tenantId,caseId,revisionId]);
+      if(rejected.rowCount||!reviews.rows.some(r=>r.decision==='accept_internal'))throw new ApiError(409,'Current independent acceptance and no change requests required.');
+      await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256);
+      const row=(await client.query(`INSERT INTO report_disclosures(tenant_id,case_id,id,revision_id,recipient_id,created_by,idempotency_key,authority_version,digest,reason,expires_at)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[actor.tenantId,caseId,randomUUID(),revisionId,input.recipientId,actor.userId,input.idempotencyKey,kase.authority_version,input.sha256,reason,new Date(expiry)])).rows[0];
+      await writeAudit(client,actor,caseId,'report.disclosed','report_disclosure',row.id,'Full frozen snapshot disclosure approved',{revisionId,recipientId:input.recipientId,digest:input.sha256,fullDisclosureConfirmed:true});return disclosureReceipt(row);
+    });
+  });
+  app.post('/api/cases/:caseId/disclosures/:disclosureId/revoke',{preHandler:requireCsrf,schema:{params:disclosureParams,body:{type:'object',additionalProperties:false,required:['reason'],properties:{reason:{type:'string',minLength:10,maxLength:2000}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,disclosureId}=request.params as {caseId:string;disclosureId:string},reason=(request.body as {reason:string}).reason.trim();
+    if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');if(reason.length<10)throw new ApiError(422,'Explain revocation.');
+    return inTransaction(options.pool,async client=>{
+      await findCase(client,actor,caseId,true);const row=(await client.query('SELECT * FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,disclosureId])).rows[0];if(!row)notFound();
+      const inserted=await client.query('INSERT INTO report_disclosure_revocations VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING disclosure_id',[actor.tenantId,disclosureId,actor.userId,reason]);
+      if(inserted.rowCount)await writeAudit(client,actor,caseId,'report.disclosure_revoked','report_disclosure',disclosureId,'Recipient disclosure revoked');return {id:disclosureId,caseId,status:'revoked'};
+    });
+  });
+  app.get('/api/portal/disclosures/:disclosureId',{preHandler:authenticate,schema:{params:{type:'object',additionalProperties:false,required:['disclosureId'],properties:{disclosureId:uuidSchema}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
+    if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
+    const row=await inTransaction(options.pool,async client=>{
+      const found=await client.query(`SELECT d.*,r.report_bytes FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
+       JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+       WHERE d.tenant_id=$1 AND d.id=$2 AND d.recipient_id=$3 AND d.expires_at>clock_timestamp()
+       AND c.status='Active' AND c.authority_version=d.authority_version
+       AND NOT EXISTS(SELECT 1 FROM report_revision_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.revision_id=d.revision_id AND rr.decision='request_changes')
+       AND EXISTS(SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=d.tenant_id AND m.user_id=d.created_by AND m.role='reviewer' AND cm.case_id=d.case_id)
+       AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)`,[actor.tenantId,disclosureId,actor.userId]);
+      const value=found.rows[0];if(!value)notFound();checkRevision(value);
+      await writeAudit(client,actor,value.case_id,'report.disclosure_downloaded','report_disclosure',disclosureId,'Recipient snapshot prepared for download',{digest:value.digest.trim()});return value;
+    });
+    return reply.header('Content-Disposition',`attachment; filename="disclosure-${disclosureId}.json"`).header('X-INVEOS-Report-SHA256',row.digest.trim()).type('application/json').send(row.report_bytes);
+  });
+  app.post('/api/cases/:caseId/report-revisions/:revisionId/verify-sources',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string},{sha256:expected}=request.body as {sha256:string};
+    return reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);
+      const {ids}=await verifyFrozenSources(client,actor,caseId,revisionId,expected);
       const verificationId=randomUUID();
       await writeAudit(client,actor,caseId,'report_revision.sources_verified','report_revision',revisionId,'Frozen cited sources reverified; not a release',{verificationId,digest:expected,findingCount:ids.length});
       return {verificationId,caseId,revisionId,sha256:expected,findingCount:ids.length,status:'snapshot_sources_verified_not_released'};

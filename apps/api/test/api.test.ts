@@ -1177,7 +1177,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -2501,4 +2501,49 @@ test('source verification audit failure rolls back its receipt and changed revie
  await corruptClaim('UPDATE claims SET source_start_byte=source_start_byte+1 WHERE tenant_id=$1 AND case_id=$2',[demoTenantId,f.kase.id]);
  assertError(await request('POST',url,context.demo!,{payload}),409);
  assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE entity_id=$1 AND action='report_revision.sources_verified'",[f.revision.id])).rows[0].n,1);
+});
+
+async function disclosureFixture(){
+ const f=await revisionReviewFixture();const client=await createMember(demoTenantId,'client','Fictional approved recipient');
+ const input={sha256:f.revision.sha256,recipientId:client,idempotencyKey:randomUUID(),expiresAt:new Date(Date.now()+3600000).toISOString(),reason:'Fictional full snapshot disclosure approved; scope, privilege and all embedded originals reviewed.',confirmFullDisclosure:true};
+ return {...f,client,clientSession:await issueTestSession(client),disclosureUrl:f.url+'/'+f.revision.id+'/disclosures',disclosureInput:input};
+}
+test('approved disclosure gives exactly one client the frozen bytes over HTTP and durable revocation removes future access',async()=>{
+ const f=await disclosureFixture();assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput}),409);
+ await request('POST',f.reviewUrl,f.session,{payload:f.input});
+ const results=await Promise.all([request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput}),request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput})]);results.forEach(r=>assert.equal(r.statusCode,200,r.body));assert.deepEqual(JSON.parse(results[0]!.body),JSON.parse(results[1]!.body));const grant=JSON.parse(results[0]!.body);
+ const app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0});const response=await fetch(address+'/api/portal/disclosures/'+grant.id,{headers:{cookie:f.clientSession.cookie}});assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(digest(await response.text()),f.revision.sha256);}finally{await app.close();}
+ assertError(await request('GET',f.url+'/'+f.revision.id,f.clientSession),403);
+ assertError(await request('GET',`/api/cases/${f.kase.id}/evidence/${f.evidence.id}/original`,f.clientSession),403);
+ const other=await createMember(demoTenantId,'client','Fictional other recipient');assertError(await request('GET','/api/portal/disclosures/'+grant.id,await issueTestSession(other)),404);
+ assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,recipientId:other}}),409);
+ const revoke=`/api/cases/${f.kase.id}/disclosures/${grant.id}/revoke`;for(let i=0;i<2;i++)assert.equal((await request('POST',revoke,context.demo!,{payload:{reason:'Fictional delivery withdrawn'}})).statusCode,200);
+ await context.app!.close();context.app=await createAppInstance();assertError(await request('GET','/api/portal/disclosures/'+grant.id,f.clientSession),404);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE entity_id=$1 AND action='report.disclosed'",[grant.id])).rows[0].n,1);
+ assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE entity_id=$1 AND action='report.disclosure_revoked'",[grant.id])).rows[0].n,1);
+});
+test('disclosures fail closed for missing attestations, expiry, conflicting reviews, stale authority and corrupt source',async()=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});
+ assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,confirmFullDisclosure:false}}),422);
+ assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput,csrfHeader:false}),403);
+ for(const expiresAt of [new Date(Date.now()-1000).toISOString(),new Date(Date.now()+8*86400000).toISOString(),'not a timestamp'])assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,expiresAt}}),422);
+ assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,recipientId:demoUserId}}),422);
+ const grant=JSON.parse((await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput})).body);
+ await approveAuthority(f.kase.id);assertError(await request('GET','/api/portal/disclosures/'+grant.id,f.clientSession),404);
+ assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}}),409);
+ const another=await createMember(demoTenantId,'reviewer','Fictional current reviewer');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,another]);await request('POST',f.reviewUrl,await issueTestSession(another),{payload:f.input});
+ const path=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.evidence.id])).rows[0].object_path;await writeFile(join(context.storageRoot!,path),'Fictional corruption');assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}}),409);
+});
+test('disclosure audit rollback denies creation and download; expiry and change requests deny previously granted access',async()=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});
+ await context.schemaAdminPool!.query(`CREATE FUNCTION fail_disclosure_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action IN ('report.disclosed','report.disclosure_downloaded') THEN RAISE EXCEPTION 'fictional disclosure audit failure'; END IF; RETURN NEW; END $$`);await context.schemaAdminPool!.query('CREATE TRIGGER fail_disclosure_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_disclosure_test()');
+ try{assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput}),500);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_disclosure_test ON audit_events');}
+ assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_disclosures WHERE case_id=$1',[f.kase.id])).rows[0].n,0);
+ const grant=JSON.parse((await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput})).body);const url='/api/portal/disclosures/'+grant.id;
+ await context.schemaAdminPool!.query('CREATE TRIGGER fail_disclosure_test BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION fail_disclosure_test()');try{assertError(await request('GET',url,f.clientSession),500);}finally{await context.schemaAdminPool!.query('DROP TRIGGER fail_disclosure_test ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION fail_disclosure_test()');}
+ assert.equal((await request('GET',url,f.clientSession)).statusCode,200);
+ await context.schemaAdminPool!.query('ALTER TABLE report_disclosures DISABLE TRIGGER disclosure_append_only');try{await context.schemaAdminPool!.query("UPDATE report_disclosures SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[grant.id]);}finally{await context.schemaAdminPool!.query('ALTER TABLE report_disclosures ENABLE TRIGGER disclosure_append_only');}assertError(await request('GET',url,f.clientSession),404);
+ const next=JSON.parse((await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}})).body);
+ const dissent=await createMember(demoTenantId,'reviewer','Fictional disclosure dissent');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,dissent]);await request('POST',f.reviewUrl,await issueTestSession(dissent),{payload:{...f.input,decision:'request_changes'}});
+ assertError(await request('GET','/api/portal/disclosures/'+next.id,f.clientSession),404);assertError(await request('POST',f.disclosureUrl,context.demo!,{payload:{...f.disclosureInput,idempotencyKey:randomUUID()}}),409);
 });

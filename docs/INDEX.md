@@ -85,3 +85,5 @@
 - [Frozen internal report review](44_FROZEN_REPORT_REVIEW.md) — separate reviewer decisions bound to immutable snapshot fingerprints.
 
 - [Frozen source verification](45_FROZEN_SOURCE_VERIFICATION.md) — audited revalidation of a frozen revision’s cited originals and review links.
+
+- [Scoped report disclosure](46_SCOPED_REPORT_DISCLOSURE.md) — explicit recipient grants, expiry, revocation and audited snapshot delivery.
