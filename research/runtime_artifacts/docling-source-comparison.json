@@ -1,0 +1,24 @@
+{
+  "sourceRevision": "90234a71b16785d08fd2f46ec62668dd2396db76",
+  "wheelSha256": "8013da3da0692b51406e6192c3b2aba4c241da92ff055af106dbe6b723b7f528",
+  "files": [
+    {
+      "path": "docling/pipeline/native_pdf_pipeline.py",
+      "wheelSha256": "599a3c41bfdddb58bec4d2f710e05e45d4a9ef1a3323e525b78432436c756f98",
+      "pinnedSourceSha256": "599a3c41bfdddb58bec4d2f710e05e45d4a9ef1a3323e525b78432436c756f98",
+      "equal": true
+    },
+    {
+      "path": "docling/backend/pdf_backend.py",
+      "wheelSha256": "70c610a7129314743be556169d0f31d5f5b9658672293d8166fbb1fbd2229742",
+      "pinnedSourceSha256": "70c610a7129314743be556169d0f31d5f5b9658672293d8166fbb1fbd2229742",
+      "equal": true
+    },
+    {
+      "path": "docling/document_converter.py",
+      "wheelSha256": "50f0af029f7ae04f925f769e1ec4c004dae842f6032d24df70dc8c459b772977",
+      "pinnedSourceSha256": "ce8407bb8ddd8d8b8b518b413ced86cded5aa153606cd7ee2cf092232fa9ea65",
+      "equal": false
+    }
+  ]
+}
