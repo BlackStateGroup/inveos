@@ -43,7 +43,7 @@ jobs:
       - name: Acquire digest-pinned disposable Python build image
         run: timeout 120s docker pull python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487
       - name: Qualify image then build exact source twice without network
-        run: timeout 180s python3 tools/build_docling_research.py --source .research-cache/sources/docling-project/docling --wheels .research-cache/docling-build-wheels
+        run: timeout 180s python3 tools/build_docling_research.py --source .research-cache/sources/docling-project/docling --wheels .research-cache/docling-build-wheels --retain-wheel
       - name: Acquire locked runtime wheels for static inspection only
         run: |
           timeout 120s python3 -m pip download --only-binary=:all: --require-hashes -r research/runtime_artifacts/docling-native-cp312.lock --dest .research-cache/docling-locked-cp312

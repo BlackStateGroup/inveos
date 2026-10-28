@@ -108,7 +108,7 @@ python -c 'import base64,pathlib,sys; files=list(pathlib.Path("/output").glob("*
 '''
 
 
-def experiment(repository, wheels):
+def experiment(repository, wheels, *, retain_wheel=False):
     inventory_path = ROOT / 'research/runtime_artifacts/docling-build.json'
     lock_path = ROOT / 'research/runtime_artifacts/docling-build.lock'
     inventory = json.loads(inventory_path.read_text())['artifacts']
@@ -150,6 +150,15 @@ def experiment(repository, wheels):
         # Re-read all mounted files after both runs; none may have changed.
         for path, item in manifest.items():
             require(digest((bundle/'source'/path).read_bytes()) == item['sha256'], 'Source changed during build')
+        if retain_wheel:
+            retained=cache/'docling-exact'
+            retained.mkdir(exist_ok=True)
+            target=retained/'docling_slim-2.142.1-py3-none-any.whl'
+            if target.exists():
+                require(digest(target.read_bytes())==digest(data),'Refusing to replace a different retained wheel')
+            else:
+                with target.open('xb') as stream:stream.write(data)
+
     return {'status': 'pinned_source_wheel_built_twice', 'sourcePin': PIN,
             'sourceManifestSha256': digest(json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()),
             'buildInventorySha256': digest(inventory_path.read_bytes()),
@@ -163,8 +172,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--wheels', type=Path, required=True)
+    parser.add_argument('--retain-wheel', action='store_true', help='Keep verified wheel only in ignored research cache')
     args = parser.parse_args()
-    print(json.dumps(experiment(args.source.resolve(), args.wheels.resolve()), indent=2))
+    print(json.dumps(experiment(args.source.resolve(), args.wheels.resolve(), retain_wheel=args.retain_wheel), indent=2))
 
 
 if __name__ == '__main__':

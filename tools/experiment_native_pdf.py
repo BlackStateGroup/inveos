@@ -2,7 +2,7 @@
 """Bounded research execution, not product incorporation or licence clearance."""
 import json,hashlib,shutil,tempfile,uuid,zipfile,stat
 from pathlib import Path
-from build_docling_research import IMAGE,PIN,snapshot_source
+from build_docling_research import IMAGE,PIN,snapshot_source,verify_built_wheel
 from audit_runtime_wheels import audit_directory
 from probe_worker_isolation import run_probe,command,container_args,check_configuration,require
 from synthetic_pdf import digital_pdf
@@ -20,11 +20,15 @@ def experiment():
         manifest=snapshot_source(ROOT/'.research-cache/sources/docling-project/docling',bundle/'source')
         # Expand already hash-verified wheels as data, never install/import on
         # the host. The private tree is mounted read-only into the container.
+        exact=ROOT/'.research-cache/docling-exact/docling_slim-2.142.1-py3-none-any.whl'
+        receipt=json.loads((ROOT/'research/runtime_artifacts/docling-build-receipt.json').read_text())
+        require(hashlib.sha256(exact.read_bytes()).hexdigest()==receipt['builds'][0]['wheelSha256'],'Exact-source wheel digest mismatch')
+        verify_built_wheel(exact.read_bytes(),manifest)
         runtime=bundle/'runtime';runtime.mkdir()
         total=0
         for r in actual:
-            if r['name']=='docling-slim':continue
-            with zipfile.ZipFile(wheels/r['filename']) as archive:
+            selected=exact if r['name']=='docling-slim' else wheels/r['filename']
+            with zipfile.ZipFile(selected) as archive:
                 for member in archive.infolist():
                     if member.is_dir():continue
                     require('.data/' not in member.filename and not member.filename.endswith('.pth'),'Unsupported wheel install mapping')
