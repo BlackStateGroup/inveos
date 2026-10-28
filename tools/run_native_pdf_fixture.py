@@ -1,6 +1,7 @@
 """Runs only inside the isolated research container, against fictional PDFs."""
 import hashlib,json,math,resource,time
 from pathlib import Path
+from pdf_text_coverage import text_coverage
 from docling.datamodel.base_models import InputFormat,ConversionStatus
 from docling.datamodel.pipeline_options import NativePdfPipelineOptions
 from docling.pipeline.native_pdf_pipeline import NativePdfPipeline
@@ -41,4 +42,28 @@ try:
 except Exception as error:malformed=type(error).__name__
 if malformed=='not_rejected':raise ValueError('Malformed PDF accepted')
 if hashlib.sha256(original.read_bytes()).hexdigest()!=before:raise ValueError('Original changed')
-print(json.dumps({'parserExecuted':True,'originalSha256':before,'rows':rows,'malformedOutcome':malformed,'elapsedSeconds':time.monotonic()-started,'maxRssKiB':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss},sort_keys=True))
+coverage_cases={}
+for name,expected_pages,missing in [('mixed',2,[2]),('blank',2,[1]),('raster',1,[1])]:
+    path=Path('/original')/(name+'.pdf')
+    digest=hashlib.sha256(path.read_bytes()).hexdigest()
+    converted=convert(path)
+    if converted.status!=ConversionStatus.SUCCESS:raise ValueError('Coverage fixture conversion failed')
+    if len(converted.document.pages)!=expected_pages:raise ValueError('Lost original pages')
+    extracted=[{'page':p.page_no,'text':item.text} for item in converted.document.texts for p in item.prov]
+    coverage=text_coverage(expected_pages,extracted,True)
+    if coverage['pagesWithoutText']!=missing:raise ValueError('Unexpected page coverage')
+    if any(r['text']!=quote for r in extracted):raise ValueError('Fabricated raster text')
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=digest:raise ValueError('Original changed')
+    coverage_cases[name]={'originalSha256':digest,'rows':extracted,'coverage':coverage}
+for name in ('overpages','oversize'):
+    path=Path('/original')/(name+'.pdf')
+    digest=hashlib.sha256(path.read_bytes()).hexdigest()
+    rejected=False
+    try:
+        converted=convert(path)
+        rejected=converted.status!=ConversionStatus.SUCCESS
+    except ValueError:rejected=True
+    if not rejected:raise ValueError('Input limit was not enforced')
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=digest:raise ValueError('Rejected original changed')
+    coverage_cases[name]={'originalSha256':digest,'rejected':True}
+print(json.dumps({'parserExecuted':True,'originalSha256':before,'rows':rows,'malformedOutcome':malformed,'coverageCases':coverage_cases,'elapsedSeconds':time.monotonic()-started,'maxRssKiB':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss},sort_keys=True))

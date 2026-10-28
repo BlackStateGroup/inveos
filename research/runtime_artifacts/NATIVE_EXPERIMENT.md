@@ -59,3 +59,24 @@ copy lives only at `.research-cache/docling-exact/`; a differing existing copy i
 rejected rather than overwritten. Nothing is uploaded as a third-party artifact.
 The implementation revision above was tested; the receipt follow-up changes only
 documentation and the recorded result.
+
+## Page coverage extension
+
+The extended experiment adds digital/raster and blank/digital two-page PDFs, a
+raster-only PDF, three-page input beyond the configured two-page maximum and an
+input above 65,536 bytes. The raster is a first-party checkerboard, not a scan or
+OCR-language benchmark. Every case binds its original SHA-256. Two fresh runs must
+agree on page coverage and rejections. Text rows keep original page numbering.
+
+`tools/pdf_text_coverage.py` deliberately reports pages without text and marks
+them `needs_page_review`, even when the parser reports success. It cannot decide
+whether a page is blank, scanned, unsupported or partially lost. Even text on all
+pages is only `unreviewed_text`, never verified completeness or a finding. This
+research contract is not yet wired into the application. It prevents silent empty
+page promotion in the experiment without weakening existing evidence semantics.
+
+Local 78 Python tests and foundation validation pass. Hosted expanded parser and
+application checks are pending; prior receipts cover only their recorded revision.
+No new dependencies, runtime artefacts or upstream source changes. Full native
+licence/security review, OCR/multilingual/table/encrypted inputs and application
+page review remain open. Reproduce with the same qualified-host command above.

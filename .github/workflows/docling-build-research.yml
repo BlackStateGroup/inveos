@@ -14,6 +14,8 @@ on:
       - 'tools/experiment_native_pdf.py'
       - 'tools/run_native_pdf_fixture.py'
       - 'tools/synthetic_pdf.py'
+      - 'tools/pdf_text_coverage.py'
+      - 'tests/test_pdf_text_coverage.py'
       - 'tests/test_synthetic_pdf.py'
       - 'tools/inspect_image_libraries.py'
       - 'tests/test_runtime_image_audit.py'

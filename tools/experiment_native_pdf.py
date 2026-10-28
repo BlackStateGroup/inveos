@@ -5,7 +5,7 @@ from pathlib import Path
 from build_docling_research import IMAGE,PIN,snapshot_source,verify_built_wheel
 from audit_runtime_wheels import audit_directory
 from probe_worker_isolation import run_probe,command,container_args,check_configuration,require
-from synthetic_pdf import digital_pdf
+from synthetic_pdf import digital_pdf,coverage_pdf
 ROOT=Path(__file__).resolve().parent.parent
 
 
@@ -40,6 +40,10 @@ def experiment():
                     with target.open('xb') as stream:stream.write(archive.read(member))
                     target.chmod(0o444)
         (bundle/'digital.pdf').write_bytes(digital_pdf());(bundle/'malformed.pdf').write_bytes(b'%PDF-1.4\nFICTIONAL malformed\n')
+        for name,kinds in {'mixed':['text','raster'],'blank':['blank','text'],'raster':['raster'],'overpages':['text']*3}.items():
+            (bundle/(name+'.pdf')).write_bytes(coverage_pdf(kinds))
+        (bundle/'oversize.pdf').write_bytes(digital_pdf()+b' '*65536)
+        shutil.copyfile(ROOT/'tools/pdf_text_coverage.py',bundle/'pdf_text_coverage.py')
         shutil.copyfile(ROOT/'tools/run_native_pdf_fixture.py',bundle/'run.py')
         reports=[]
         for attempt in range(2):
@@ -59,6 +63,7 @@ python /original/run.py
                 command('rm','-f','-v',name)
                 require(command('inspect',name,check=False).returncode!=0,'Cleanup failed')
         require(reports[0]['rows']==reports[1]['rows'],'Repeated source references differ')
+        require(reports[0]['coverageCases']==reports[1]['coverageCases'],'Coverage results differ')
         for path,item in manifest.items():require(hashlib.sha256((bundle/'source'/path).read_bytes()).hexdigest()==item['sha256'],'Pinned source changed')
     return {'status':'synthetic_native_pdf_passed','sourcePin':PIN,'image':IMAGE,'qualification':qualification,'runs':reports,'approval':'research_only_not_product_or_licence_approval'}
 
