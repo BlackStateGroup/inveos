@@ -50,7 +50,7 @@ x86-64 executable/shared objects and fails closed on malformed or unsupported EL
 It does not extract or execute wheel members. Independent comparison additionally
 requires `readelf`; it is bounded by the existing subprocess helper. The separate
 research CI workflow reproduces the entire inventory and independently compares
-all binaries. Hosted verification is pending.
+all binaries. Hosted [research run #4](https://github.com/BlackStateGroup/inveos/actions/runs/40737697192) passed at `05c73994234b72fd30d3cb7338c8a88acad152cf`, tree `a10bdf0e9548ea8b08dd11734fec2b009365eff3`: hash-locked reacquisition reproduced the native inventory exactly; GNU readelf 2.42 independently matched all 219 binaries. The exact-source Docling wheel also rebuilt twice to the prior recorded digest and all builder-image isolation probes passed. [Checks run #113](https://github.com/BlackStateGroup/inveos/actions/runs/40737697501) passed at the same revision: 135 Node tests (98 PostgreSQL API/restore, five real Chrome journeys, 32 helpers), zero failures/skips; 68 Python tests, lint/types/build/reference and service-image isolation checks. The receipt follow-up changes documentation only.
 
 Next: map these ten names and native component notices to the exact image, inspect
 statically included components and security advisories, then install only the
