@@ -2767,10 +2767,10 @@ async function binaryBrowserControls(b:Awaited<ReturnType<typeof launchBrowser>>
 
 test('real browser pauses committed chunks, reloads and recovers a lost completion without duplicate originals', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async t=>{
  const kase=await createCase();await approveAuthority(kase.id);
- let held=false,dropped=false;const requests:string[]=[];
+ let held=false,dropped=false,allowCompletion=false;const requests:string[]=[];
  const probe:BrowserProxyProbe={request:(path,method)=>{if(method==='POST'&&path.includes('/uploads'))requests.push(path);},response:(path,status)=>{
   if(status===200&&path.endsWith('/chunk')&&!held){held=true;return 'hold';}
-  if(status===200&&path.endsWith('/complete')&&!dropped){dropped=true;return 'drop';}
+  if(status===200&&path.endsWith('/complete')&&!allowCompletion){dropped=true;return 'drop';}
  }};
  await withBrowserApp(async(b,origin)=>{
   t.diagnostic('Binary recovery browser runtime: '+JSON.stringify(await b.send('Browser.getVersion')));
@@ -2787,7 +2787,7 @@ test('real browser pauses committed chunks, reloads and recovers a lost completi
   await eventually(async()=>dropped,'completed original response deliberately lost');await eventually(async()=>await b.evaluate("!document.querySelector('form[aria-label=\"Binary original intake\"] fieldset').disabled"),'failed completion unlocks retry');
   assert.equal(requests.filter(p=>p.endsWith('/chunk')).length,3,'only two missing chunks transmitted on recovery');
   const rows=(await context.pool!.query('SELECT id,status,evidence_id FROM upload_reservations WHERE case_id=$1',[kase.id])).rows;assert.equal(rows.length,1);assert.equal(rows[0].status,'completed');assert.ok(rows[0].evidence_id);assert.deepEqual(await ui.pending(),pending);
-  await ui.reload();await ui.fill(path);await ui.click('Recover original receipt');await eventually(async()=> (await ui.text()).includes('confirmed in quarantine.'),'receipt confirmed after response loss');
+  await ui.reload();allowCompletion=true;await ui.fill(path);await ui.click('Recover original receipt');await eventually(async()=> (await ui.text()).includes('confirmed in quarantine.'),'receipt confirmed after response loss');
   assert.deepEqual(await ui.pending(),[]);assert.equal(requests.filter(p=>p.endsWith('/chunk')).length,3,'completed recovery sends no chunk again');
   assert.deepEqual((await context.pool!.query("SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM audit_events WHERE case_id=$1 AND action='evidence.received') AS receipts",[kase.id])).rows[0],{originals:1,receipts:1});
   await eventually(async()=> (await ui.text()).includes('Binary original quarantined'),'quarantine preview shown');assert.equal(await b.evaluate("[...document.querySelectorAll('.evidence-inspector button')].find(b=>b.textContent.startsWith('Propose claim')).disabled"),true);assert.equal(await b.evaluate("document.querySelector('.evidence-inspector').textContent.includes('TEXT REPRESENTATION')"),false);
