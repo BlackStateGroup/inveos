@@ -1,5 +1,13 @@
 # INVEOS engineering handoff
 
+## 28 October: actual portal browser acceptance
+
+Based on PR #30 receipt `059bcf421391b7a041d6c105e51b61d5143c2058`; main remains `95b5c35`, drafts #2–#30 open and #30 has no feedback. Added a first-party Chrome DevTools harness and required hosted browser scenario through built React, localhost HTTP, Fastify and PostgreSQL. Covers discovery, real verified download, explicit acknowledgement, withdrawal and logout. No added dependency or browser redistribution; Chrome sandbox remains enabled. See docs/50_PORTAL_BROWSER_ACCEPTANCE.md.
+
+Local lint/type checks and hosted execution pending. Local Chrome is absent; no local browser success claimed. Production identity, other browser/device/offline/restore and actual parser gates remain open.
+
+Next: resolve any supported-host browser failures without disabling isolation, record exact results, then continue recipient administration and real identity/session lifecycle after fresh main/review checks. No merge/deployment or essential user action.
+
 ## 28 October: reviewer disclosure oversight
 
 Based on PR #29 receipt `b3141db258e47349a2a16d03c503f8fac3434963`; fresh main remains `95b5c35`, drafts #2–#29 open and all review timelines have no feedback. Draft PR #30 adds this slice. Added bounded assigned-reviewer case history with exact database keysets, historical acknowledgement/revocation details and a separate current access-policy flag. Added Reports panel with reasoned revocation through the existing endpoint. Migration 018 is index-only; no report bytes are loaded by listing. See docs/49_DISCLOSURE_OVERSIGHT.md.

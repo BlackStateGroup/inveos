@@ -1,3 +1,5 @@
+import {createServer,request as proxyRequest} from 'node:http';
+import {launchBrowser,eventually} from './support/browser.js';
 import {uploadBinaryChunks} from '../../web/src/chunkUpload.js';
 import {prepareBinary,binaryIntakeScope,sendBinaryRecoverably} from '../../web/src/binaryIntake.js';
 import { fileURLToPath } from 'node:url';
@@ -2655,4 +2657,36 @@ test('disclosure oversight denies unrelated roles, case and tenant cursors and r
  for(const query of ['limit=0','limit=51','before=invalid','recipientId='+f.client])assertError(await request('GET',url+'?'+query,context.demo!),422);
  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);assertError(await request('GET',url,context.demo!),404);assert.equal(JSON.parse((await request('GET',url,f.session)).body).items[0].accessPolicyEligible,false);
  await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,demoUserId]);await approveAuthority(f.kase.id);assert.equal(JSON.parse((await request('GET',url,context.demo!)).body).items[0].accessPolicyEligible,false);
+});
+
+test('real sandboxed browser verifies portal downloads, acknowledgement, revoked access and sign-out', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async t=>{
+ const f=await disclosureFixture();await request('POST',f.reviewUrl,f.session,{payload:f.input});const grantResponse=await request('POST',f.disclosureUrl,context.demo!,{payload:f.disclosureInput});assert.equal(grantResponse.statusCode,200,grantResponse.body);const grant=JSON.parse(grantResponse.body);
+ const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';
+ const server=createServer((req,res)=>{void(async()=>{
+  const pathname=new URL(req.url!,'http://localhost').pathname;
+  if(pathname.startsWith('/api/')){const upstream=proxyRequest(apiAddress+req.url,{method:req.method,headers:req.headers},response=>{res.writeHead(response.statusCode!,response.headers);response.pipe(res);});upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;}
+  if(pathname==='/portal'){res.setHeader('content-type','text/html');res.end(await readFile(join(dist,'index.html')));return;}
+  if(/^\/assets\/[A-Za-z0-9_.-]+\.(js|css)$/.test(pathname)){res.setHeader('content-type',pathname.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(join(dist,pathname.slice(1))));return;}
+  res.statusCode=404;res.end();
+ })().catch(()=>{res.statusCode=500;res.end();});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address() as {port:number};const origin='http://127.0.0.1:'+address.port;
+ const app=await createApp({pool:context.pool!,storageRoot:context.storageRoot!,allowedOrigins:[...allowedOrigins,origin],demoTenantId,demoUserId,sessionTtlSeconds:3600});
+ let browser:Awaited<ReturnType<typeof launchBrowser>>|undefined;
+ try{
+  apiAddress=await app.listen({host:'127.0.0.1',port:0});browser=await launchBrowser();const b=browser;
+  t.diagnostic('Browser runtime: '+JSON.stringify(await b.send('Browser.getVersion')));
+  await b.send('Network.enable');for(const pair of f.clientSession.cookie.split('; ')){const split=pair.indexOf('=');await b.send('Network.setCookie',{name:pair.slice(0,split),value:pair.slice(split+1),url:origin,path:'/',sameSite:'Strict',httpOnly:pair.startsWith('inveos_session=')});}
+  const downloads=join(b.root,'downloads');await mkdir(downloads);await b.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloads});
+  await b.send('Page.navigate',{url:origin+'/portal'});
+  const text=()=>b.evaluate<string>('document.body.innerText');
+  const click=async(label:string)=>{await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});if(!button||button.disabled)throw new Error('Button unavailable');button.click();})()`);};
+  await eventually(async()=> (await text()).includes('Refresh disclosures'),'portal render');await click('Refresh disclosures');await eventually(async()=> (await text()).includes(grant.id),'recipient grant discovery');
+  assert.equal(await b.evaluate("fetch('/api/workspace').then(r=>r.status)"),403);
+  await click('Verify and download snapshot');await eventually(async()=> (await readdir(downloads)).includes('disclosure-'+grant.id+'.json'),'actual browser download');assert.equal(createHash('sha256').update(await readFile(join(downloads,'disclosure-'+grant.id+'.json'))).digest('hex'),grant.sha256);
+  await eventually(async()=> (await text()).includes('Acknowledge receipt'),'receipt controls');await b.evaluate("document.querySelector('input[type=checkbox]').click()");await click('Acknowledge receipt');await eventually(async()=> (await text()).includes('Receipt acknowledged at'),'acknowledgement confirmation');
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_disclosure_acknowledgements WHERE disclosure_id=$1',[grant.id])).rows[0].n,1);
+  await request('POST',`/api/cases/${f.kase.id}/disclosures/${grant.id}/revoke`,context.demo!,{payload:{reason:'Fictional browser withdrawal check'}});await click('Verify and download snapshot');await eventually(async()=> (await text()).includes('Download denied or unavailable'),'stale grant denied');
+  await click('Refresh disclosures');await eventually(async()=> (await text()).includes('No currently available disclosures'),'withdrawn grant disappears');
+  await click('Sign out');await eventually(async()=> (await text()).includes('Session ended.'),'client sign-out');assert.equal(await b.evaluate("fetch('/api/portal/disclosures').then(r=>r.status)"),401);
+ }finally{await browser?.close();await app.close();server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
 });

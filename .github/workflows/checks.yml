@@ -35,6 +35,7 @@ jobs:
       # Disposable service credentials, never production credentials or secrets.
       INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
       INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_BROWSER: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

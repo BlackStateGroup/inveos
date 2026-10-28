@@ -93,3 +93,5 @@
 - [Disclosure acknowledgement](48_DISCLOSURE_ACKNOWLEDGEMENT.md) — explicit fingerprint-bound receipt assertions and client sign-out.
 
 - [Case disclosure oversight](49_DISCLOSURE_OVERSIGHT.md) — reviewer-scoped grant, acknowledgement and revocation history.
+
+- [Portal browser acceptance](50_PORTAL_BROWSER_ACCEPTANCE.md) — real sandboxed Chrome, HTTP and PostgreSQL test harness.
