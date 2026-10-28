@@ -54,7 +54,7 @@ Reproduce with `python3 -m unittest tests.test_bounded_process tests.test_worker
 and, on the supported host with its already-present test image,
 `timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15`.
 Local subprocess/policy tests passed; local Docker is absent and its probe fails
-closed. Hosted resource observations are pending publication and CI verification.
+closed. Hosted [Checks run #108](https://github.com/BlackStateGroup/inveos/actions/runs/40726659983) passed at `211d21151dba7c3c17335cc29f01eea9f720432f`, tree `f25da176f07dcaace7d36d5665a2a929aae102cd`: all 135 Node tests (98 PostgreSQL API/restore, five actual Chrome journeys, 32 helpers), zero failures/skips; 58 Python tests, lint/types/build/reference and all seven actual isolation/resource probes passed. The receipt records OOMKilled=true, two PID denials, 1,185,888 throttled CPU microseconds, 16 KiB combined capture, disabled daemon logs, original hash unchanged and container removal. The existing PostgreSQL image ID/digest are unchanged. The PID fixture now runs its exhaustion burst in a subshell because Bash exits 254 on failed forks even without errexit; the parent verifies the kernel counter. This is observed enforcement, not a parser or performance benchmark.
 
 This still executes only first-party shell fixtures. Exact-source Docling builds,
 native dependency/SBOM/licence review, selected parser image qualification,
