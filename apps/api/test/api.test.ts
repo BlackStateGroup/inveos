@@ -14,6 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { claimIntegrityJob, renewIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
+import { runLeasedWorker } from '../src/leased-worker.js';
 import {jobRequestScope,queueRecoverably} from '../../web/src/jobRequest.js';
 import { inspectTextDerivative, type InspectionJob } from '../../web/src/derivativeInspection.js';
 import { recoverableReportFreeze, reportRecoveryScope, type RecoveryStore } from '../../web/src/reportRecovery.js';
@@ -3004,4 +3005,29 @@ test('renewal lock timeout leaves lease unchanged and can be retried after conte
     assert.deepEqual(after,before);
   } finally {await blocker.query('ROLLBACK');blocker.release();}
   assert.ok(await renewIntegrityJob(context.pool!,scope,lease.token));
+});
+
+
+test('actual leased subprocess stops on database cancellation and changed authority without completing job',async()=>{
+  for(const change of ['cancel','authority']) {
+    const {scope,lease,url}=await renewalFixture();
+    const marker=join(context.storageRoot!,`fictional-worker-${randomUUID()}.txt`);
+    const script=`const fs=require('node:fs');let n=0;setInterval(()=>fs.writeFileSync(${JSON.stringify(marker)},String(++n)),10)`;
+    const stopped=assert.rejects(runLeasedWorker(context.pool!,scope,lease.token,{
+      command:process.execPath,args:['-e',script],cwd:context.storageRoot!,heartbeatMs:30,timeoutMs:5000,
+    }),/lease_lost/);
+    for(let i=0;i<100;i++) {
+      if(await stat(marker).then(()=>true,()=>false))break;
+      await new Promise(resolve=>setTimeout(resolve,20));
+    }
+    assert.ok(await stat(marker));
+    if(change==='cancel')assert.equal((await request('POST',`${url}/${scope.jobId}/cancel`,context.demo!,{payload:{}})).statusCode,200);
+    else await approveAuthority(scope.caseId);
+    await stopped;
+    const count=await readFile(marker,'utf8');await new Promise(resolve=>setTimeout(resolve,80));
+    assert.equal(await readFile(marker,'utf8'),count);
+    const row=(await context.pool!.query('SELECT status FROM integrity_jobs WHERE id=$1',[scope.jobId])).rows[0];
+    assert.equal(row.status,'cancelled');
+    assert.equal(await finishIntegrityJob(context.pool!,scope,lease.token,null),null);
+  }
 });
