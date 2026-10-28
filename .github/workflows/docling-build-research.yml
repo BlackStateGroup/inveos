@@ -1,0 +1,37 @@
+name: Pinned Docling research build
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/docling-build-research.yml'
+      - 'tools/build_docling_research.py'
+      - 'tools/bounded_process.py'
+      - 'tools/probe_worker_isolation.py'
+      - 'research/runtime_artifacts/docling-build.*'
+      - 'tests/test_docling_research_build.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-source-wheel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Acquire exact source without executing it
+        run: timeout 120s python3 tools/mine_sources.py --fetch docling-project/docling
+      - name: Acquire only hash-locked build wheels without installation
+        run: timeout 120s python3 -m pip download --only-binary=:all: --require-hashes -r research/runtime_artifacts/docling-build.lock --dest .research-cache/docling-build-wheels
+      - name: Acquire digest-pinned disposable Python build image
+        run: timeout 120s docker pull python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487
+      - name: Qualify image then build exact source twice without network
+        run: timeout 180s python3 tools/build_docling_research.py --source .research-cache/sources/docling-project/docling --wheels .research-cache/docling-build-wheels
+      - name: Keep all acquired and generated third-party files untracked
+        run: git diff --exit-code

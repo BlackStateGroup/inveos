@@ -30,3 +30,7 @@ The scanner reads ZIP metadata and notices without extracting/importing. It reje
 ## Verification receipt
 
 [Hosted Checks run #87](https://github.com/BlackStateGroup/inveos/actions/runs/40674249770) passed at `541c3a69f449676dd65473ce1aee5d992c13d2ad`, tree `e579c026338461881904780a985c4ffafad9ad12`: 123 Node tests with zero skips/failures, 49 Python tests, lint/types/build/reference and actual host-isolation probes. Locally, a fresh ignored directory was populated with `pip download --no-index --find-links .research-cache/docling-native-cp312 --only-binary=:all: --require-hashes -r research/runtime_artifacts/docling-native-cp312.lock`; re-audit reproduced the inventory and lock byte-for-byte. This proves the acquired closure can replay, not that it imports, parses documents or satisfies the selected pipeline.
+
+## Exact-source follow-up
+
+See [the pinned build experiment](PINNED_BUILD.md) for the isolated packaging path and its separate verification status. It does not install or approve the 47 parser runtime wheels listed here.

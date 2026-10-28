@@ -109,3 +109,5 @@
 - [Other-session revocation](55_OTHER_SESSION_REVOCATION.md) — bounded self-service session control and atomic audit.
 
 - [Session recovery generations](56_SESSION_RECOVERY_GENERATIONS.md) — reject restored cookies using separately managed runtime configuration.
+
+- [Pinned Docling build](../research/runtime_artifacts/PINNED_BUILD.md) — isolated exact-source packaging, build dependency terms and whole-package provenance verification.
