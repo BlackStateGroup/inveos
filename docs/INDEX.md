@@ -113,3 +113,5 @@
 - [Pinned Docling build](../research/runtime_artifacts/PINNED_BUILD.md) — isolated exact-source packaging, build dependency terms and whole-package provenance verification.
 
 - [Native runtime audit](../research/runtime_artifacts/NATIVE_AUDIT.md) — hash-bound ELF dependencies and independent static comparison.
+
+- [Pinned image providers](../research/runtime_artifacts/IMAGE_AUDIT.md) — isolated native library and package provenance inspection.

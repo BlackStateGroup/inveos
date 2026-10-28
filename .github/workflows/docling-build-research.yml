@@ -10,6 +10,9 @@ on:
       - 'research/runtime_artifacts/docling-build.*'
       - 'tests/test_docling_research_build.py'
       - 'tools/audit_native_wheels.py'
+      - 'tools/audit_runtime_image.py'
+      - 'tools/inspect_image_libraries.py'
+      - 'tests/test_runtime_image_audit.py'
       - 'tests/test_native_wheel_audit.py'
       - 'research/runtime_artifacts/docling-native-*.json'
   workflow_dispatch:
@@ -54,5 +57,7 @@ jobs:
               raise SystemExit('Native inventory drift')
           print('Native inventory reproduced exactly')
           PYTHON
+      - name: Inspect native library candidates and package notices in the pinned image
+        run: timeout 120s python3 tools/audit_runtime_image.py --output .research-cache/image-inspection.json
       - name: Keep all acquired and generated third-party files untracked
         run: git diff --exit-code
