@@ -2679,11 +2679,20 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
  });
 });
 
-async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,origin:string)=>Promise<void>){
+type BrowserProxyProbe={request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
+async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,origin:string)=>Promise<void>,probe:BrowserProxyProbe={}){
  const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';
  const server=createServer((req,res)=>{void(async()=>{
   const pathname=new URL(req.url!,'http://localhost').pathname;
-  if(pathname.startsWith('/api/')){const upstream=proxyRequest(apiAddress+req.url,{method:req.method,headers:req.headers},response=>{res.writeHead(response.statusCode!,response.headers);response.pipe(res);});upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;}
+  if(pathname.startsWith('/api/')){
+   probe.request?.(pathname,req.method!);
+   const upstream=proxyRequest(apiAddress+req.url,{method:req.method,headers:req.headers},response=>{
+    const fault=probe.response?.(pathname,response.statusCode!);
+    // Consume an actual committed API response without delivering it to Chrome.
+    if(fault){response.resume();if(fault==='drop')res.destroy();return;}
+    res.writeHead(response.statusCode!,response.headers);response.pipe(res);
+   });upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;
+  }
   if(pathname==='/portal'||pathname==='/'){res.setHeader('content-type','text/html');res.end(await readFile(join(dist,'index.html')));return;}
   if(/^\/assets\/[A-Za-z0-9_.-]+\.(js|css)$/.test(pathname)){res.setHeader('content-type',pathname.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(join(dist,pathname.slice(1))));return;}
   res.statusCode=404;res.end();
@@ -2737,4 +2746,67 @@ test('real browser creates a case, enforces authority and restores versioned sco
   await writeFile(reportFile,Buffer.concat([bytes,Buffer.from('tampered')]));await assert.rejects(promisify(execFile)('python3',[verifier,reportFile,'--expected-sha256',createHash('sha256').update(bytes).digest('hex')],{timeout:10000}));
   await click('Workspace details');await click('End lab session & return to prototype');await eventually(async()=> (await text()).includes('INTERACTIVE PROTOTYPE'),'investigator sign-out');assert.equal(await b.evaluate("fetch('/api/workspace').then(r=>r.status)"),401);
  });
+});
+
+async function binaryBrowserControls(b:Awaited<ReturnType<typeof launchBrowser>>,origin:string,caseId:string){
+ const text=()=>b.evaluate<string>("document.body?.innerText||''");
+ const click=async(label:string)=>{await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)}&&b.getClientRects().length);if(!button||button.disabled)throw new Error('Button unavailable: '+${JSON.stringify(label)});button.click();})()`);};
+ await b.send('Network.enable');
+ for(const pair of context.demo!.cookie.split('; ')){const split=pair.indexOf('=');await b.send('Network.setCookie',{name:pair.slice(0,split),value:pair.slice(split+1),url:origin,path:'/',sameSite:'Strict',httpOnly:pair.startsWith('inveos_session=')});}
+ await b.send('Page.navigate',{url:origin+'/#case='+caseId+'&view=Evidence'});
+ await eventually(async()=> (await text()).includes('Register a binary original'),'binary intake render');
+ const fill=async(path:string)=>{
+  const dom=await b.send<{root:{nodeId:number}}>('DOM.getDocument');const input=await b.send<{nodeId:number}>('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'form[aria-label="Binary original intake"] input[name=file]'});
+  await b.send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[path]});
+  await b.evaluate(`(()=>{const form=document.querySelector('form[aria-label="Binary original intake"]');for(const [name,value] of Object.entries({sourceTime:'2026-10-01T09:00:00+01:00',method:'Fictional supplied bytes for browser recovery'})){const field=form.elements.namedItem(name);field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));}if(!form.checkValidity())throw new Error('Invalid binary fixture form');})()`);
+ };
+ const reload=async()=>{const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous,'fresh recovery document');await eventually(async()=> (await text()).includes('Unconfirmed intake:'),'retry recovered from tab storage');assert.equal(await b.evaluate("document.querySelector('form[aria-label=\"Binary original intake\"] input[name=file]').files.length"),0);};
+ const pending=()=>b.evaluate<Array<[string,string]>>("Object.entries(sessionStorage).filter(([key])=>key.includes('binary-intake'))");
+ return {text,click,fill,reload,pending};
+}
+
+test('real browser pauses committed chunks, reloads and recovers a lost completion without duplicate originals', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async t=>{
+ const kase=await createCase();await approveAuthority(kase.id);
+ let held=false,dropped=false;const requests:string[]=[];
+ const probe:BrowserProxyProbe={request:(path,method)=>{if(method==='POST'&&path.includes('/uploads'))requests.push(path);},response:(path,status)=>{
+  if(status===200&&path.endsWith('/chunk')&&!held){held=true;return 'hold';}
+  if(status===200&&path.endsWith('/complete')&&!dropped){dropped=true;return 'drop';}
+ }};
+ await withBrowserApp(async(b,origin)=>{
+  t.diagnostic('Binary recovery browser runtime: '+JSON.stringify(await b.send('Browser.getVersion')));
+  const ui=await binaryBrowserControls(b,origin,kase.id),bytes=Buffer.alloc(65537);for(let i=0;i<bytes.length;i++)bytes[i]=i%256;
+  const path=join(b.root,'fictional-recovery.bin');await writeFile(path,bytes);await ui.fill(path);await ui.click('Register in quarantine');
+  await eventually(async()=>held,'first chunk committed but acknowledgement held');
+  assert.deepEqual((await context.pool!.query('SELECT ordinal FROM upload_chunks WHERE case_id=$1 ORDER BY ordinal',[kase.id])).rows,[{ordinal:0}]);
+  await ui.click('Pause transfer');await eventually(async()=> (await ui.text()).includes('Transfer paused.'),'explicit paused state');
+  const pending=await ui.pending();assert.equal(pending.length,1);assert.deepEqual(Object.keys(JSON.parse(pending[0]![1])).sort(),['fingerprint','key']);assert.ok(pending[0]![0].endsWith(':chunks-v1'));assert.ok(!JSON.stringify(pending).includes('fictional-recovery'));
+  await ui.reload();assert.deepEqual(await ui.pending(),pending);
+  await ui.fill(path);await writeFile(path,Buffer.alloc(bytes.length,254));await ui.fill(path);const before=requests.length;await ui.click('Recover original receipt');
+  await eventually(async()=> (await ui.text()).includes('An unconfirmed intake exists.'),'changed file denied');assert.equal(requests.length,before);assert.deepEqual(await ui.pending(),pending);
+  await writeFile(path,bytes);await ui.fill(path);await ui.click('Recover original receipt');
+  await eventually(async()=>dropped,'completed original response deliberately lost');await eventually(async()=>await b.evaluate("!document.querySelector('form[aria-label=\"Binary original intake\"] fieldset').disabled"),'failed completion unlocks retry');
+  assert.equal(requests.filter(p=>p.endsWith('/chunk')).length,3,'only two missing chunks transmitted on recovery');
+  const rows=(await context.pool!.query('SELECT id,status,evidence_id FROM upload_reservations WHERE case_id=$1',[kase.id])).rows;assert.equal(rows.length,1);assert.equal(rows[0].status,'completed');assert.ok(rows[0].evidence_id);assert.deepEqual(await ui.pending(),pending);
+  await ui.reload();await ui.fill(path);await ui.click('Recover original receipt');await eventually(async()=> (await ui.text()).includes('confirmed in quarantine.'),'receipt confirmed after response loss');
+  assert.deepEqual(await ui.pending(),[]);assert.equal(requests.filter(p=>p.endsWith('/chunk')).length,3,'completed recovery sends no chunk again');
+  assert.deepEqual((await context.pool!.query("SELECT (SELECT count(*)::int FROM evidence WHERE case_id=$1) AS originals,(SELECT count(*)::int FROM audit_events WHERE case_id=$1 AND action='evidence.received') AS receipts",[kase.id])).rows[0],{originals:1,receipts:1});
+  await eventually(async()=> (await ui.text()).includes('Binary original quarantined'),'quarantine preview shown');assert.equal(await b.evaluate("[...document.querySelectorAll('.evidence-inspector button')].find(b=>b.textContent.startsWith('Propose claim')).disabled"),true);assert.equal(await b.evaluate("document.querySelector('.evidence-inspector').textContent.includes('TEXT REPRESENTATION')"),false);
+  const result=await b.evaluate<{status:number;bytes:number[]}>(`fetch('/api/cases/${kase.id}/evidence/${rows[0].evidence_id}/original').then(async r=>({status:r.status,bytes:Array.from(new Uint8Array(await r.arrayBuffer()))}))`);assert.equal(result.status,200);assert.deepEqual(Buffer.from(result.bytes),bytes);
+  const original=(await context.pool!.query('SELECT digest,source_time,original_kind,status FROM evidence WHERE case_id=$1',[kase.id])).rows[0];assert.equal(original.digest,createHash('sha256').update(bytes).digest('hex'));assert.equal(original.source_time,'2026-10-01T09:00:00+01:00');assert.equal(original.original_kind,'opaque_binary');assert.equal(original.status,'Quarantined');
+  await ui.click('Refresh upload history');await eventually(async()=> (await ui.text()).includes('Original receipt: '+rows[0].evidence_id),'persisted completion history');
+ },probe);
+});
+
+test('real browser cancels paused staging and clears only its confirmed retry before replacement', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const kase=await createCase();await approveAuthority(kase.id);let held=false;
+ await withBrowserApp(async(b,origin)=>{
+  const ui=await binaryBrowserControls(b,origin,kase.id),path=join(b.root,'fictional-cancel.bin');await writeFile(path,Buffer.alloc(32769,255));await ui.fill(path);await ui.click('Register in quarantine');
+  await eventually(async()=>held,'staging committed before pause');await ui.click('Pause transfer');await eventually(async()=> (await ui.text()).includes('Transfer paused.'),'pause settled');
+  const pending=await ui.pending();await ui.click('Confirm cancellation and clear this retry');await eventually(async()=> (await ui.text()).includes('Cancellation is not confirmed.'),'open reservation cannot be abandoned');assert.deepEqual(await ui.pending(),pending);
+  await ui.click('Refresh pending uploads');await eventually(async()=> (await ui.text()).includes('Cancel this pending upload'),'pending reservation visible');await ui.click('Cancel this pending upload');await eventually(async()=> (await ui.text()).includes('Staging removed; history retained.'),'server cancellation receipt');assert.deepEqual(await ui.pending(),pending);
+  const cancelled=(await context.pool!.query('SELECT id,status,evidence_id FROM upload_reservations WHERE case_id=$1',[kase.id])).rows[0];assert.equal(cancelled.status,'cancelled');assert.equal(cancelled.evidence_id,null);assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM upload_chunks WHERE case_id=$1',[kase.id])).rows[0].n,0);
+  await ui.click('Confirm cancellation and clear this retry');await eventually(async()=> (await ui.text()).includes('Cancelled reservation confirmed.'),'terminal cancellation clears retry');assert.deepEqual(await ui.pending(),[]);
+  await ui.fill(path);await ui.click('Register in quarantine');await eventually(async()=> (await ui.text()).includes('confirmed in quarantine.'),'replacement original confirmed');assert.deepEqual(await ui.pending(),[]);
+  const rows=(await context.pool!.query('SELECT status,id FROM upload_reservations WHERE case_id=$1 ORDER BY created_at',[kase.id])).rows;assert.deepEqual(rows.map(r=>r.status),['cancelled','completed']);assert.notEqual(rows[0].id,rows[1].id);assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM evidence WHERE case_id=$1',[kase.id])).rows[0].n,1);
+ },{response:(path,status)=>{if(status===200&&path.endsWith('/chunk')&&!held){held=true;return 'hold';}}});
 });

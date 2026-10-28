@@ -99,3 +99,5 @@
 - [Worker host qualification](51_WORKER_HOST_QUALIFICATION.md) — first-party isolation probes before parser runtime selection.
 
 - [Selected Docling artifacts](../research/runtime_artifacts/README.md) — exact wheel hashes, nested notice inventory and pinned-source mismatch.
+
+- [Binary browser recovery](52_BINARY_BROWSER_RECOVERY.md) — pause, lost acknowledgement, reload and explicit cancellation acceptance.
