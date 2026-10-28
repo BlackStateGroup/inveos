@@ -101,3 +101,5 @@
 - [Selected Docling artifacts](../research/runtime_artifacts/README.md) — exact wheel hashes, nested notice inventory and pinned-source mismatch.
 
 - [Binary browser recovery](52_BINARY_BROWSER_RECOVERY.md) — pause, lost acknowledgement, reload and explicit cancellation acceptance.
+
+- [Verified original downloads](53_VERIFIED_ORIGINAL_DOWNLOAD.md) — bounded browser byte verification through existing audited access.

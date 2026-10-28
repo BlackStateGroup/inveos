@@ -1,5 +1,11 @@
 # INVEOS engineering handoff
 
+## 28 October: verified browser original downloads
+
+Continues from draft PR #36 receipt `96a65b5ca29ce028a8c3ee7829e24ed90c83ca20`. Added explicit internal original download control with exact size/SHA-256 verification, quarantine/state checks, bounded streaming and cancelled late responses. The binary recovery browser journey now verifies an actual saved .bin and denies a stale download after membership withdrawal. No API/schema/dependency change. See docs/53_VERIFIED_ORIGINAL_DOWNLOAD.md.
+
+Local types/build and three new helper tests pass; hosted API/browser/isolation checks are pending. The previous PR #36 receipt remains valid for its exact code, not these new changes. Next: record hosted results, resume exact pinned-source parser build/runtime review, real identity and recipient administration, then remaining device/offline/restore/product gates. All parser benchmarks remain unrun. Nothing merged or deployed.
+
 ## 28 October: binary browser interruption and recovery
 
 Based on PR #35 `46c3c2af3c072d325a68f143a8bd4169cddb5bc1`; fresh main remains `95b5c35`, drafts #2–#35 unchanged and all review timelines empty. Added two real-browser scenarios for pause after committed chunk, reload/mismatched-file denial, dropped completion recovery and explicit cancellation/replacement. Corrected the binary inspector's empty text preview and enabled text-claim action; added clear pause instructions. Reuses the existing APIs and storage, with no new dependency/migration. See docs/52_BINARY_BROWSER_RECOVERY.md.
