@@ -2820,7 +2820,8 @@ test('quiesced PostgreSQL and original-store backup restores exact reports, auth
  const previous={...context},schema='api_test_restore_'+randomUUID().replaceAll('-','');
  assert.match(schema,/^api_test_restore_[a-f0-9]{32}$/);
  const root=await mkdtemp(join(process.cwd(),'.local-data','restore-')),objects=join(root,'objects'),backup=join(root,'backup');
- const command=async(name:string,args:string[])=>promisify(execFile)(name,args,{timeout:20000,maxBuffer:1024*1024,env:{...process.env,PGDATABASE:adminDatabaseUrl!}});
+ const db=new URL(adminDatabaseUrl!);
+ const command=async(name:string,args:string[])=>promisify(execFile)(name,args,{timeout:20000,maxBuffer:1024*1024,env:{...process.env,PGHOST:db.hostname,PGPORT:db.port||'5432',PGUSER:decodeURIComponent(db.username),PGPASSWORD:decodeURIComponent(db.password),PGDATABASE:db.pathname.slice(1)}});
  const checksum=(b:Buffer)=>createHash('sha256').update(b).digest('hex');
  try{
   await mkdir(objects);await mkdir(backup,{mode:0o700});await runMigrations(previous.adminPool!,schema);
@@ -2840,7 +2841,7 @@ test('quiesced PostgreSQL and original-store backup restores exact reports, auth
   await previous.adminPool!.query(`DROP SCHEMA "${schema}" CASCADE`);await rm(objects,{recursive:true});await mkdir(objects);
   assert.equal((await previous.adminPool!.query('SELECT 1 FROM pg_namespace WHERE nspname=$1',[schema])).rows.length,0);
   assert.equal(checksum(await readFile(archive)),backupHash);
-  await command('pg_restore',['--exit-on-error','--single-transaction','--no-owner','--dbname='+adminDatabaseUrl!,archive]);
+  await command('pg_restore',['--exit-on-error','--single-transaction','--no-owner','--dbname='+db.pathname.slice(1),archive]);
   context.schemaAdminPool=createPool(adminDatabaseUrl!,schema,2);context.pool=createPool(databaseUrl!,schema,4);context.app=await createAppInstance();
   assert.deepEqual((await context.schemaAdminPool!.query('SELECT * FROM schema_migrations ORDER BY filename')).rows,migrationsBefore);
   assert.deepEqual((await context.pool!.query('SELECT * FROM authority_records ORDER BY id')).rows,authorityBefore);
