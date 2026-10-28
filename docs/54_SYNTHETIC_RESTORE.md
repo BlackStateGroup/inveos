@@ -20,7 +20,7 @@ npm test --workspace @inveos/api
 
 The existing database URL checks require `inveos_test`. Never point these administrative test credentials at operational data. Each dump/restore command is limited to 20 seconds, the scenario to 90 seconds and the hosted Node suite to 180 seconds. Credentials are supplied by the existing disposable test environment; no production credentials or backup artifacts are published. Fictional fixtures only.
 
-Local lint/type verification and hosted execution are pending at the initial checkpoint. Record exact passing run/commit before counting this restore as tested.
+Hosted [Checks run #97](https://github.com/BlackStateGroup/inveos/actions/runs/40697881625) passed at `e7ac35dc4f211395983a42e02ae195c7aedc7ae9`, tree `3148f0370e621f50f025d94425510abdd2b2066d`: all 129 Node tests (94 PostgreSQL API/restore scenarios, four real browser journeys, 31 helpers), zero failures/skips; 52 Python tests, lint/types/build/reference and actual isolation probes passed. The dump/drop/restore scenario passed in 0.879 seconds; this is a tiny fixture timing, not an RTO or capacity claim. Its ephemeral dump SHA-256 was `f48aafefb4457101ff085ecc11baf5f1fae7525dfdb3935225790356af4e9140`. The initial client connection failure was corrected with explicit PostgreSQL connection environment fields. Draft PR #38 contains this slice; this follow-up records documentation only. Local lint/types, foundation and 52 Python tests also passed.
 
 ## Remaining gates
 
