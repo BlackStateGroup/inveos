@@ -18,6 +18,8 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
   const [inspection,setInspection]=useState<InspectedDerivative|null>(null),[linePage,setLinePage]=useState(0);
   const [raster,setRaster]=useState<InspectedRaster|null>(null);
   const [document,setDocument]=useState<InspectedDocument|null>(null);
+  const documentRegion=useRef<HTMLElement|null>(null);
+  useEffect(()=>{if(document){documentRegion.current?.scrollIntoView({block:'start'});documentRegion.current?.focus({preventScroll:true});}},[document]);
   const [history,setHistory]=useState<{jobId:string;items:Event[];nextAfter:string|null}|null>(null);
   const alive=useRef(true),locked=useRef(false),base=`/api/cases/${caseId}/integrity-jobs`;
   async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const value=await r.json();if(!r.ok){if([401,403,404].includes(r.status)&&alive.current){setRows([]);setNext(null);setInspection(null);setDocument(null);setRaster(null);setHistory(null);setPending(null);await onDenied?.();}throw new Error(value.error||'Processing history unavailable.');}return value;}
@@ -106,7 +108,7 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
       <button className="secondary" disabled={linePage===0} onClick={()=>setLinePage(p=>p-1)}>Previous lines</button>
       <button className="secondary" disabled={(linePage+1)*100>=inspection.lines.length} onClick={()=>setLinePage(p=>p+1)}>Next lines</button>
     </section>}
-    {document&&<section aria-label="Verified unreviewed document derivative">
+    {document&&<section ref={documentRegion} tabIndex={-1} aria-label="Verified unreviewed document derivative">
       <h3>{document.method==='ocr'?'Unreviewed OCR words':'Unreviewed document passages'}</h3>{document.method==='ocr'&&<Notice>OCR may misread words, numbers and reading order. Compare each selected occurrence with the original page before independent review.</Notice>}<Notice>Extracted text and coordinates need comparison with the original PDF. This inspection does not approve a citation, clear quarantine or establish complete extraction.</Notice>
       <p>Job {document.jobId} · evidence {document.evidenceId} · authority version {document.authorityVersion}</p>
       <p>{document.pageCount} original pages · processed {document.processedAt}</p>
