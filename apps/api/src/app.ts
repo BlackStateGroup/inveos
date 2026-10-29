@@ -1,3 +1,5 @@
+import {registerCaseGraph} from './case-graph.js';
+import type {ChronologySource} from '@inveos/contracts';
 import {registerWorkDiscussions} from './work-discussions.js';
 import {registerCaseSearch} from './case-search.js';
 import {identityRoutes} from './identity-routes.js';
@@ -630,18 +632,20 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
-  registerChronology(app, {
-    pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,
-    source:async(client,actor,caseId,reference)=>{
+  const verifiedFinding=async(client:PoolClient,actor:Actor,caseId:string,reference:ChronologySource)=>{
       const kase=await findCase(client,actor,caseId);
+      const table=reference.kind==='text_finding'?'findings':'document_findings';
+      if(!(await client.query(`SELECT id FROM ${table} WHERE tenant_id=$1 AND case_id=$2 AND id=$3`,[actor.tenantId,caseId,reference.findingId])).rowCount)notFound();
       const selected=await buildReport(client,actor,caseId,reference.kind==='text_finding'?[reference.findingId]:[],reference.kind==='document_finding'?[reference.findingId]:[]);
       const finding=reference.kind==='text_finding'?selected.findings.find(f=>f.id===reference.findingId):selected.documentFindings?.find(f=>f.id===reference.findingId);
       if(!finding)notFound();
       const authorityVersion='policy' in finding.source?finding.source.policy.authorityVersion:finding.source.authorityVersion;
-      if(kase.status!=='Active'||kase.authority_version!==authorityVersion)throw new ApiError(409,'The chronology source requires current case authority. Historical entries remain available.');
+      if(kase.status!=='Active'||kase.authority_version!==authorityVersion)throw new ApiError(409,'The source requires current case authority. Historical entries remain available.');
       return finding;
-    },
-  });
+  };
+  const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
+  registerChronology(app,investigationServices);
+  registerCaseGraph(app,investigationServices);
 
   app.post(
     '/api/session/start',

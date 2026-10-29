@@ -175,3 +175,5 @@
 
 
 - [Internal work discussions and case mentions](86_WORK_DISCUSSIONS.md): attributed comments, immutable corrections, scoped mentions and explicit per-version read state.
+
+- [Reviewed case graph](87_CASE_GRAPH.md) — separate ambiguous entities, pinned source-linked relationship proposals, independent decisions and immutable history.

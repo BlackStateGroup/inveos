@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {CaseSearchFilter,CaseSearchKind,CaseSearchResult,SavedCaseView} from '@inveos/contracts';
 import {Badge,Notice,Panel} from './ui';
-const labels:Record<CaseSearchKind,string>={original:'Original metadata',claim:'Text source claim',document_claim:'Document interpretation claim',text_finding:'Reviewed text finding',document_finding:'Reviewed document finding',work:'Case work',chronology:'Alleged account'};
+const labels:Record<CaseSearchKind,string>={original:'Original metadata',claim:'Text source claim',document_claim:'Document interpretation claim',text_finding:'Reviewed text finding',document_finding:'Reviewed document finding',work:'Case work',chronology:'Alleged account',entity:'Entity record',relationship:'Relationship interpretation'};
 const empty:CaseSearchFilter={query:'',kind:'all',status:''};
 export function CaseSearch({caseId,csrf,go,inspect}:{caseId:string;csrf:string;go:(page:string)=>void;inspect:(id:string)=>void}){
  const [filter,setFilter]=useState<CaseSearchFilter>(empty),[result,setResult]=useState<CaseSearchResult|null>(null),[views,setViews]=useState<SavedCaseView[]>([]),[current,setCurrent]=useState<SavedCaseView|null>(null),[name,setName]=useState(''),[history,setHistory]=useState<Array<{snapshot:SavedCaseView;recordedAt:string}>|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);

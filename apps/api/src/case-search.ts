@@ -7,7 +7,7 @@ import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
 
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};
-const kinds=['original','claim','document_claim','text_finding','document_finding','work','chronology'];
+const kinds=['original','claim','document_claim','text_finding','document_finding','work','chronology','entity','relationship'];
 const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'};
 const filterProperties={query:{type:'string',maxLength:200},kind:{enum:['all',...kinds]},status:{type:'string',maxLength:40}};
 const filterSchema={type:'object',additionalProperties:false,required:Object.keys(filterProperties),properties:filterProperties};
@@ -17,6 +17,9 @@ const clean=(s:string)=>Buffer.from(s).toString('utf8')===s&&!/[\u0000-\u001f\u0
 function validate(filter:CaseSearchFilter){if(!clean(filter.query)||!clean(filter.status))throw new ApiError(422,'Use a plain search phrase and status.');}
 // Search describes current stored records. It never asserts source-byte verification or evidential truth.
 const records=`
+ SELECT 'entity' kind,e.id,r.snapshot->>'label' title,(r.snapshot->>'label')||' '||(r.snapshot->>'detail') body,CASE WHEN (r.snapshot->>'withdrawn')::boolean THEN 'Withdrawn entity' ELSE 'Entity record' END status,NULL::uuid evidence_id,'Intelligence' page FROM graph_entities e JOIN graph_entity_revisions r ON r.tenant_id=e.tenant_id AND r.case_id=e.case_id AND r.entity_id=e.id AND r.version=e.version WHERE e.tenant_id=$1 AND e.case_id=$2
+ UNION ALL SELECT 'relationship',e.id,r.snapshot->>'relationship',(r.snapshot->>'relationship')||' '||(r.snapshot->>'account'),CASE WHEN (r.snapshot->>'withdrawn')::boolean THEN 'Withdrawn relationship' WHEN v.accepted THEN 'Recorded graph review' WHEN v.accepted=false THEN 'Rejected interpretation' ELSE 'Candidate interpretation' END,NULL::uuid,'Intelligence' FROM graph_relationships e JOIN graph_relationship_revisions r ON r.tenant_id=e.tenant_id AND r.case_id=e.case_id AND r.relationship_id=e.id AND r.version=e.version LEFT JOIN graph_relationship_reviews v ON v.tenant_id=r.tenant_id AND v.case_id=r.case_id AND v.relationship_id=r.relationship_id AND v.version=r.version WHERE e.tenant_id=$1 AND e.case_id=$2
+ UNION ALL
  SELECT 'original' kind,id,filename title,filename||' '||method body,status,id evidence_id,'Evidence' page FROM evidence WHERE tenant_id=$1 AND case_id=$2
  UNION ALL SELECT 'claim',id,left(text,120),text||' '||quote,status,evidence_id,'Findings' FROM claims WHERE tenant_id=$1 AND case_id=$2
  UNION ALL SELECT 'document_claim',c.id,left(c.text,120),c.text,CASE WHEN d.accepted IS NULL THEN 'Pending interpretation review' WHEN d.accepted THEN 'Accepted interpretation' ELSE 'Rejected interpretation' END,j.evidence_id,'Evidence' FROM document_claims c JOIN integrity_jobs j ON j.tenant_id=c.tenant_id AND j.case_id=c.case_id AND j.id=c.job_id LEFT JOIN document_claim_decisions d ON d.tenant_id=c.tenant_id AND d.case_id=c.case_id AND d.job_id=c.job_id AND d.citation_id=c.citation_id AND d.claim_id=c.id WHERE c.tenant_id=$1 AND c.case_id=$2
