@@ -28,3 +28,5 @@ Representative long-document/capacity measurements, richer facets, shared views 
 
 
 Review head `a1b2a1f` passed Research 40971770591; Checks 40971770600 passed 330/331 tests and failed an existing supplied-source selection race. The test waited only for the panel heading before clicking a row that had not loaded. Its selector now waits for the enabled record and loaded selected context. Lifecycle cleanup, search focus/keyboard/retry and the other tests passed. The corrected full run is required before merge; no failed run is relabelled successful.
+
+Final source-readiness correction `17b90d62de5261b0384f0d81f8c59551b57e87aa` passed Checks 40972596838 (job 123792728784, 331 Node/124 Python, zero failures/skips, 29 browsers) and Research 40972596843 (job 123792728805, actual supplier search/OCR/native/package/PDF/browser, corpus, raster and five daemon tests). Reviewed and merged as `096c25f0588bfc4e062903bfed2900916761228c`. Resulting-main Checks 40973473163 passed 331 Node/124 Python with no failures/skips.

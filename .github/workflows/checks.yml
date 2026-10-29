@@ -161,6 +161,14 @@ jobs:
           path: output/evals/case-time-desktop.png
           if-no-files-found: ignore
           retention-days: 14
+      - name: Retain fictional attention browser render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: attention-browser
+          path: output/evals/attention-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Check tracked sources remain unchanged
         run: git diff --exit-code
       - name: Retain fictional document search browser render
