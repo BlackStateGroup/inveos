@@ -1181,7 +1181,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -3211,6 +3211,8 @@ test('renewal waits for the case before locking the job, avoiding cancellation l
 
 
 async function rasterFixture(){
+  // Each fixture owns a fresh HTTP rate-limit window; durable database state is retained.
+  await context.app!.close();context.app=await createAppInstance();
   const f=await documentFixture();
   const payload={...f.payload,idempotencyKey:randomUUID(),kind:'pdf_raster_lab_v1'};
   const queued=await f.app.inject({method:'POST',url:`/api/cases/${f.scope.caseId}/integrity-jobs`,headers:{cookie:context.demo!.cookie,origin:localOrigin,'x-csrf-token':context.demo!.csrf},payload});
@@ -3259,7 +3261,7 @@ test('raster delivery denies wrong cases and fails closed after original corrupt
     await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
     const other=await createCase();
     assertError(await request('GET',f.pageUrl.replace(f.scope.caseId,other.id),context.demo!),404);
-    assertError(await request('GET',f.pageUrl.replace('/2','/3'),context.demo!),400);
+    assertError(await request('GET',f.pageUrl.replace(/2$/,'3'),context.demo!),422);
     const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];
     await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional altered original');
     assertError(await request('GET',f.pageUrl,context.demo!),409);assertError(await request('GET',f.url,context.demo!),409);
