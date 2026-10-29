@@ -1,3 +1,4 @@
+import {registerManualSources} from './manual-sources.js';
 import {registerCaseGraph} from './case-graph.js';
 import type {ChronologySource} from '@inveos/contracts';
 import {registerWorkDiscussions} from './work-discussions.js';
@@ -630,6 +631,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   });
 
+  registerManualSources(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
   registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   const verifiedFinding=async(client:PoolClient,actor:Actor,caseId:string,reference:ChronologySource)=>{
