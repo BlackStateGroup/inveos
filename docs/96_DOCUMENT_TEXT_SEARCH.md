@@ -8,7 +8,7 @@ The existing literal, case-insensitive phrase semantics, exact-status filter, ty
 
 **Verify and inspect extraction** opens the exact processing job, including an older job absent from the first history page. The existing inspection API rechecks original bytes, raw output, frozen profile and derivative identity before display. The browser also validates its receipt and shows original-page references, extracted offsets and OCR limitations. Search excerpts are not citations. Select and review the actual occurrence through the existing page/citation workflow. A stored match can remain searchable after bytes become unavailable or disputed; inspection then fails visibly. Existing report and release gates remain unchanged.
 
-The selected job is kept in the case URL fragment for reload, without search text or source contents. Each reload re-authenticates and checks membership; an ID is not an access grant. Case navigation clears the previous target. Denied processing access clears loaded passages, images, jobs and history and refreshes the surrounding workspace. The ordinary original source button remains available.
+The searched job is kept in the case URL fragment for reload, without search text or source contents. Each reload re-authenticates and checks membership; an ID is not an access grant. Case navigation clears the previous target. Denied processing access clears loaded passages, images, jobs and history and refreshes the surrounding workspace. The ordinary original source button remains available. **Retry searched extraction** rechecks that specific target after an error. The fragment retains the searched job; manually inspecting another processing-history entry does not change that saved target.
 
 ## Verification and reproduction
 
