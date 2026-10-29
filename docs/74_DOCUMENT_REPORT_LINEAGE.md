@@ -31,7 +31,7 @@ INVEOS_TEST_BROWSER=1 npm test --workspace @inveos/api
 
 The API harness requires `INVEOS_TEST_ADMIN_DATABASE_URL` and `INVEOS_TEST_DATABASE_URL` for a disposable database. The hosted Checks workflow supplies them and sandboxed Chrome. Four new actual-database/browser scenarios cover document-only snapshots, concurrent retries/restart, exact hashes, independent-review and disclosure denial, scoped access, stale review/authority, historical-byte preservation, audit rollback, changed originals and browser print preparation/clearing. A Python regression prevents ignored derivative fields. Fixtures reuse recorded fictional native-parser output: these are not fresh parser benchmarks.
 
-Local lint/types/build and 102 Python tests passed. Hosted database/browser execution is pending publication; no passing result is claimed here until its exact receipt is recorded.
+Draft [PR #64](https://github.com/BlackStateGroup/inveos/pull/64) passed [Checks #168](https://github.com/BlackStateGroup/inveos/actions/runs/40872865966), job 123444124604, at `f931cd5ae2ad0ba07df1dd4080e81793cc0e5492`, tree `f460e2e4c66cc750b516ee4d9a38a6ab6ef94bb5`: 214 Node tests and 102 Python tests, zero failures/skips, plus lint/types/build/reference, actual PostgreSQL/browser/restore and host-isolation checks. All four new database/browser scenarios passed. Local lint/types/build, 25 focused helper tests and all 102 Python tests pass. The first hosted attempt caught an unnecessary lock changing legacy snapshot selection and a browser assertion quoting error; both were fixed without weakening assertions or isolation. This evidence follow-up changes documentation only.
 
 ## Privacy, rollback and remaining work
 
