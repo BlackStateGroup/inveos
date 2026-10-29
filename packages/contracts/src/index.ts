@@ -195,3 +195,6 @@ export type CaseAccessAction='member_added'|'member_removed'|'owner_transferred'
 export type CaseAccessMember={id:string;name:string;role:'reviewer'|'investigator'|'client';joinedAt:string};
 export type CaseAccessState={version:number;ownerId:string;canManage:boolean;members:CaseAccessMember[];next:string|null};
 export type CaseAccessEvent={id:string;version:number;action:CaseAccessAction|'case_created'|'legacy_checkpoint';ownerId:string;subjectId:string|null;subjectName:string|null;actorId:string|null;actorName:string|null;reason:string;recordedAt:string};
+
+export type CaseTimeFields={startedAt:string;minutes:number;description:string;billable:boolean};
+export type CaseTimeEntry=CaseTimeFields&{id:string;version:number;startedAtUtc:string;status:'active'|'withdrawn';action:'recorded'|'corrected'|'withdrawn';reason:string;authorId:string;author:string;createdAt:string;actorId:string;actorName:string;recordedAt:string;canCorrect:boolean};

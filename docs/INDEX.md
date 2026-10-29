@@ -187,3 +187,5 @@
 - [91 — Supplied transcript lineage](91_SUPPLIED_TRANSCRIPTS.md)
 
 - [92 — Case collaborators and ownership](92_CASE_ACCESS.md)
+
+- [Case time ledger](93_CASE_TIME_LEDGER.md) — attributed declared time, recorder-only corrections and withdrawal, bounded reviewer visibility and immutable history.
