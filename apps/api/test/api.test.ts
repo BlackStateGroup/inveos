@@ -1081,6 +1081,31 @@ test('real browser filters personal assignments, opens the correct case and clea
  });
 });
 
+
+test('source-linked transcript preserves raw segments and appends bounded speaker corrections', async () => {
+  context.demo = await issueTestSession(demoUserId);
+  const kase = await createCase();
+  assert.equal((await approveAuthority(kase.id)).statusCode, 200);
+  const evidence = parseBody<Evidence>(await uploadEvidence(kase.id));
+  const transcriptId = randomUUID(), segmentId = randomUUID();
+  const create = await request('POST', `/api/cases/${kase.id}/interviews`, context.demo!, {payload:{
+    id:transcriptId,evidenceId:evidence.id,title:'Fictional supplier interview',
+    segments:[{id:segmentId,startMs:0,endMs:4200,speakerLabel:'Speaker A',speakerUncertain:true,text:'The fictional dispatch record may have been copied later.'}],
+  }});
+  assert.equal(create.statusCode,200,create.body);
+  const saved = await request('GET', `/api/cases/${kase.id}/interviews/${transcriptId}`, context.demo!);
+  assert.equal(saved.statusCode,200,saved.body);
+  assert.equal(saved.json().segments[0].raw.speakerUncertain,true);
+  const corrected=await request('POST',`/api/cases/${kase.id}/interviews/${transcriptId}/segments/${segmentId}/corrections`,context.demo!,{payload:{expectedVersion:0,speakerLabel:'Interviewee',speakerUncertain:false,text:'The fictional dispatch record may have been copied later.',reason:'Clarified the speaker after replaying the fictional audio.'}});
+  assert.equal(corrected.statusCode,200,corrected.body);
+  assertError(await request('POST',`/api/cases/${kase.id}/interviews/${transcriptId}/segments/${segmentId}/corrections`,context.demo!,{payload:{expectedVersion:0,speakerLabel:'Interviewee',speakerUncertain:false,text:'Different fictional transcript.',reason:'Stale correction must not overwrite history.'}}),409);
+  const current=await request('GET',`/api/cases/${kase.id}/interviews/${transcriptId}`,context.demo!);
+  assert.equal(current.json().segments[0].raw.speakerLabel,'Speaker A');
+  assert.equal(current.json().segments[0].current.version,1);
+  const clientId=await createMember(demoTenantId,'client','Fictional excluded transcript client'),client=await issueTestSession(clientId);
+  assertError(await request('GET',`/api/cases/${kase.id}/interviews`,client),403);
+});
+
 test('persistent objectives, questions, hypotheses, tasks, notes and handovers share case state and survive restart', async () => {
   context.demo = await issueTestSession(demoUserId);
   const kase = await createCase();
