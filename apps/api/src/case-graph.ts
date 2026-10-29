@@ -1,0 +1,110 @@
+import {createHash} from 'node:crypto';
+import type {FastifyInstance,FastifyRequest} from 'fastify';
+import type {Pool,PoolClient} from 'pg';
+import type {CaseGraph,ChronologySource,DocumentReportFinding,GraphEntity,GraphEntityInput,GraphEntityRef,GraphProposal,GraphProposalInput,GraphRelationship,GraphReview,GraphSource,ReportDraft} from '@inveos/contracts';
+import type {Actor} from './app.js';
+import {inTransaction} from './db.js';
+import {ApiError,notFound} from './errors.js';
+type Finding=ReportDraft['findings'][number]|DocumentReportFinding;
+type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;source:(c:PoolClient,a:Actor,caseId:string,source:ChronologySource)=>Promise<Finding>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};
+const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'},version={type:'integer',minimum:1,maximum:100};
+const text=(maxLength:number,minLength=1)=>({type:'string',minLength,maxLength});
+const params={type:'object',additionalProperties:false,required:['caseId'],properties:{caseId:uuid}};
+const itemParams={...params,required:['caseId','id'],properties:{...params.properties,id:uuid}};
+const sourceSchema={type:'object',additionalProperties:false,required:['kind','findingId'],properties:{kind:{enum:['text_finding','document_finding']},findingId:uuid}};
+const endpoint={type:'object',additionalProperties:false,required:['id','version'],properties:{id:uuid,version}};
+const entityFields={label:text(200,3),detail:text(2000)};
+const edgeFields={from:endpoint,to:endpoint,relationship:text(100,3),account:text(4000),sources:{type:'array',minItems:1,maxItems:5,items:sourceSchema}};
+const body=(properties:Record<string,unknown>)=>({type:'object',additionalProperties:false,required:Object.keys(properties),properties});
+const clean=(s:string)=>s.trim().length>0&&Buffer.from(s).toString('utf8')===s&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(s);
+function validate(...values:string[]){if(values.some(v=>!clean(v)))throw new ApiError(422,'Enter meaningful graph text without control characters.');}
+const canonical=(v:unknown):unknown=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,x])=>[k,canonical(x)])):v;
+const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(canonical(v))).digest('hex');
+function proposalDigest(value:GraphProposal){return hash(Object.fromEntries(Object.entries(value).filter(([key])=>key!=='digest')));}
+const entityRef=(e:GraphEntity):GraphEntityRef=>({id:e.id,version:e.version,kind:e.kind,label:e.label});
+const sourceRef=(s:GraphSource):ChronologySource=>({kind:s.kind,findingId:s.findingId});
+const internal=(actor:Actor)=>{if(actor.role==='client')throw new ApiError(403,'Internal investigation graph only.');};
+function active(kase:unknown){const c=kase as {status:string;authority_version:number};if(c.status!=='Active'||!c.authority_version)throw new ApiError(409,'Current case authority is required for active graph records.');}
+async function entities(c:PoolClient,a:Actor,caseId:string){
+ const result=await c.query(`SELECT e.id,e.version,e.created_by,r.snapshot FROM graph_entities e JOIN graph_entity_revisions r ON r.tenant_id=e.tenant_id AND r.case_id=e.case_id AND r.entity_id=e.id AND r.version=e.version WHERE e.tenant_id=$1 AND e.case_id=$2 ORDER BY e.id LIMIT 201`,[a.tenantId,caseId]);
+ if(result.rows.length>200)throw new ApiError(422,'Graph entity limit exceeded.');
+ return result.rows.map(r=>{const item=r.snapshot as GraphEntity;if(item.id!==r.id||item.caseId!==caseId||item.version!==r.version||item.createdBy!==r.created_by)throw new ApiError(409,'Graph entity history is inconsistent.');return item;});
+}
+async function relationships(c:PoolClient,a:Actor,caseId:string,entityRows:GraphEntity[],caseCurrent:boolean,id?:string,history=false):Promise<GraphRelationship[]>{
+ const rows=(await c.query(`SELECT r.relationship_id,r.version,r.actor_id,r.recorded_at AS proposed_at,r.snapshot,r.digest,f.snapshot AS from_snapshot,t.snapshot AS to_snapshot,
+  v.id AS review_id,v.digest AS review_digest,v.accepted,v.reason,v.reviewer_id,v.reviewer_name,v.recorded_at,
+  EXISTS(SELECT 1 FROM graph_relationship_revisions authored WHERE authored.tenant_id=r.tenant_id AND authored.case_id=r.case_id AND authored.relationship_id=r.relationship_id AND authored.actor_id=$3) AS authored
+  FROM graph_relationships e JOIN graph_relationship_revisions r ON r.tenant_id=e.tenant_id AND r.case_id=e.case_id AND r.relationship_id=e.id ${history?'':'AND r.version=e.version'}
+  JOIN graph_entity_revisions f ON f.tenant_id=r.tenant_id AND f.case_id=r.case_id AND f.entity_id=r.from_id AND f.version=r.from_version
+  JOIN graph_entity_revisions t ON t.tenant_id=r.tenant_id AND t.case_id=r.case_id AND t.entity_id=r.to_id AND t.version=r.to_version
+  LEFT JOIN graph_relationship_reviews v ON v.tenant_id=r.tenant_id AND v.case_id=r.case_id AND v.relationship_id=r.relationship_id AND v.version=r.version
+  WHERE e.tenant_id=$1 AND e.case_id=$2 AND ($4::uuid IS NULL OR e.id=$4) ORDER BY e.id,r.version DESC LIMIT 401`,[a.tenantId,caseId,a.userId,id??null])).rows;
+ if(rows.length>400)throw new ApiError(422,'Graph relationship limit exceeded.');
+ const sourceRows=(await c.query(`SELECT s.* FROM graph_relationship_sources s JOIN graph_relationships e ON e.tenant_id=s.tenant_id AND e.case_id=s.case_id AND e.id=s.relationship_id ${history?'':'AND e.version=s.version'} WHERE s.tenant_id=$1 AND s.case_id=$2 AND ($3::uuid IS NULL OR s.relationship_id=$3) ORDER BY s.relationship_id,s.version,s.ordinal LIMIT 2001`,[a.tenantId,caseId,id??null])).rows;
+ if(sourceRows.length>2000)throw new ApiError(422,'Graph source limit exceeded.');
+ const grouped=new Map<string,GraphSource[]>();for(const r of sourceRows){const key=r.relationship_id+':'+r.version,list=grouped.get(key)??[];if(r.ordinal!==list.length)throw new ApiError(409,'Graph source history is incomplete.');list.push({kind:r.text_finding_id?'text_finding':'document_finding',findingId:r.text_finding_id??r.document_finding_id,sha256:r.source_hash.trim(),authorityVersion:r.authority_version});grouped.set(key,list);}
+ return rows.map(r=>{
+  const proposal=r.snapshot as GraphProposal,from=entityRows.find(e=>e.id===proposal.from.id),to=entityRows.find(e=>e.id===proposal.to.id);
+  if(!from||!to||proposal.id!==r.relationship_id||proposal.version!==r.version||proposal.proposedBy!==r.actor_id||proposal.proposedAt!==r.proposed_at.toISOString()||proposal.caseId!==caseId||proposal.digest!==r.digest.trim()||proposalDigest(proposal)!==proposal.digest||hash(proposal.from)!==hash(entityRef(r.from_snapshot))||hash(proposal.to)!==hash(entityRef(r.to_snapshot))||hash(proposal.sources)!==hash(grouped.get(proposal.id+':'+proposal.version)??null)||!proposal.sources.length)throw new ApiError(409,'Graph relationship history is inconsistent.');
+  const review:GraphReview|null=r.review_id?{id:r.review_id,accepted:r.accepted,reason:r.reason,reviewerId:r.reviewer_id,reviewerName:r.reviewer_name,recordedAt:r.recorded_at.toISOString(),digest:r.review_digest.trim()}:null;
+  if(review&&review.digest!==proposal.digest)throw new ApiError(409,'Graph review does not bind this proposal.');
+  const stale=!caseCurrent||from.version!==proposal.from.version||to.version!==proposal.to.version||from.withdrawn||to.withdrawn;
+  const state=proposal.withdrawn?'withdrawn':review&&!review.accepted?'rejected':stale?'needs_review':review?.accepted?'confirmed':'candidate';
+  return {proposal,review,state,canReview:a.role==='reviewer'&&!r.authored&&!review&&!proposal.withdrawn};
+ });
+}
+
+export function registerCaseGraph(app:FastifyInstance,s:Services){
+ const base='/api/cases/:caseId/graph';
+ const read=async(r:FastifyRequest)=>{await s.authenticate(r);internal(r.actor!);};
+ const current=async(c:PoolClient,a:Actor,caseId:string,id?:string,history=false)=>{const kase=await s.findCase(c,a,caseId) as {status:string;authority_version:number};const nodes=await entities(c,a,caseId),edges=await relationships(c,a,caseId,nodes,kase.status==='Active',id,history);for(const edge of edges)if(edge.state!=='withdrawn'&&edge.state!=='rejected'&&edge.proposal.sources.some(source=>source.authorityVersion!==kase.authority_version))edge.state='needs_review';return {entities:nodes,relationships:edges,sourceVerification:'not_checked_on_listing' as const};};
+ const verifySources=async(c:PoolClient,a:Actor,caseId:string,refs:ChronologySource[])=>{if(new Set(refs.map(v=>v.kind+v.findingId)).size!==refs.length)throw new ApiError(422,'Choose distinct source findings.');const sources:GraphSource[]=[],findings:Finding[]=[];for(const ref of refs){const finding=await s.source(c,a,caseId,ref);sources.push({...ref,sha256:hash(finding),authorityVersion:'policy' in finding.source?finding.source.policy.authorityVersion:finding.source.authorityVersion});findings.push(finding);}return {sources,findings};};
+ app.get(base,{preHandler:read,schema:{params,querystring:{type:'object',additionalProperties:false,properties:{focus:uuid}}}},async r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");
+  const {caseId}=r.params as {caseId:string},graph=await current(c,r.actor!,caseId),{focus}=r.query as {focus?:string};if(!focus)return graph satisfies CaseGraph;
+  if(!graph.entities.some(e=>e.id===focus))notFound();const edges=graph.relationships.filter(e=>e.proposal.from.id===focus||e.proposal.to.id===focus),ids=new Set([focus,...edges.flatMap(e=>[e.proposal.from.id,e.proposal.to.id])]);return {...graph,entities:graph.entities.filter(e=>ids.has(e.id)),relationships:edges};
+ }));
+ const saveEntity=async(r:FastifyRequest,edit:boolean)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");
+  const a=r.actor!;internal(a);const {caseId,id:routeId}=r.params as {caseId:string;id?:string},input=r.body as GraphEntityInput&{expectedVersion:number;reason:string;withdrawn:boolean};validate(input.label,input.detail,...(edit?[input.reason]:[]));
+  const kase=await s.findCase(c,a,caseId,true),nodes=await entities(c,a,caseId),id=edit?routeId!:input.id,old=nodes.find(e=>e.id===id),requestHash=hash([input.kind,input.label,input.detail]);
+  if(!edit&&old){const row=(await c.query('SELECT request_hash,created_by FROM graph_entities WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,id])).rows[0];if(row.created_by!==a.userId||row.request_hash!==requestHash)throw new ApiError(409,'Entity identity already used.');return old;}
+  if(edit&&!old)notFound();if(edit&&old!.version!==input.expectedVersion)throw new ApiError(409,'Entity changed. Refresh and compare.');if(edit&&old!.version>=100)throw new ApiError(422,'Entity revision limit reached.');if(!edit&&nodes.length>=200)throw new ApiError(422,'Graph entity limit reached.');
+  if(!edit||!input.withdrawn)active(kase);
+  const at=(await c.query('SELECT clock_timestamp() at')).rows[0].at.toISOString(),snapshot:GraphEntity={id,caseId,kind:old?.kind??input.kind,label:input.label,detail:input.detail,version:old?old.version+1:1,withdrawn:edit?input.withdrawn:false,createdBy:old?.createdBy??a.userId,recordedAt:at};
+  if(old)await c.query('UPDATE graph_entities SET version=$4 WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,id,snapshot.version]);else await c.query('INSERT INTO graph_entities(tenant_id,case_id,id,request_hash,created_by) VALUES($1,$2,$3,$4,$5)',[a.tenantId,caseId,id,requestHash,a.userId]);
+  await c.query('INSERT INTO graph_entity_revisions(tenant_id,case_id,entity_id,version,snapshot,actor_id,reason,recorded_at) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8)',[a.tenantId,caseId,id,snapshot.version,JSON.stringify(snapshot),a.userId,edit?input.reason:'Entity candidate recorded',at]);await s.audit(c,a,caseId,'graph.entity_revised','graph_entity',id,`Entity revision ${snapshot.version}`);return snapshot;
+ });
+ app.post(base+'/entities',{preHandler:s.requireCsrf,schema:{params,body:body({id:uuid,kind:{enum:['person','organisation','asset','place','incident','document']},...entityFields})}},r=>saveEntity(r,false));
+ app.post(base+'/entities/:id/revise',{preHandler:s.requireCsrf,schema:{params:itemParams,body:body({...entityFields,withdrawn:{type:'boolean'},expectedVersion:version,reason:text(3000)})}},r=>saveEntity(r,true));
+ app.get(base+'/entities/:id/history',{preHandler:read,schema:{params:itemParams}},async r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");const a=r.actor!,{caseId,id}=r.params as {caseId:string;id:string};await s.findCase(c,a,caseId);const rows=(await c.query('SELECT snapshot,reason,actor_id AS "actorId",recorded_at AS "recordedAt" FROM graph_entity_revisions WHERE tenant_id=$1 AND case_id=$2 AND entity_id=$3 ORDER BY version DESC LIMIT 100',[a.tenantId,caseId,id])).rows;if(!rows.length)notFound();return rows;}));
+ const saveProposal=async(r:FastifyRequest,edit:boolean,withdraw=false)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");
+  const a=r.actor!;internal(a);const {caseId,id:routeId}=r.params as {caseId:string;id?:string},input=r.body as GraphProposalInput&{expectedVersion:number;reason:string};if(edit)validate(input.reason);if(!withdraw)validate(input.relationship,input.account);
+  await s.findCase(c,a,caseId,true);const graph=await current(c,a,caseId),id=edit?routeId!:input.id,old=graph.relationships.find(e=>e.proposal.id===id)?.proposal;
+  const requestHash=withdraw?'':hash([input.from,input.to,input.relationship,input.account,input.sources]);
+  if(!edit&&old){const row=(await c.query('SELECT request_hash,created_by FROM graph_relationships WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,id])).rows[0];if(row.created_by!==a.userId||row.request_hash!==requestHash)throw new ApiError(409,'Relationship identity already used.');return old;}
+  if(edit&&!old)notFound();if(edit&&old!.version!==input.expectedVersion)throw new ApiError(409,'Relationship changed. Refresh and compare.');if(edit&&old!.version>=100)throw new ApiError(422,'Relationship revision limit reached.');if(!edit&&graph.relationships.length>=400)throw new ApiError(422,'Graph relationship limit reached.');
+  if(withdraw&&old!.withdrawn)throw new ApiError(409,'Relationship already withdrawn.');
+  const resolve=(ref:GraphProposalInput['from'])=>{const node=graph.entities.find(e=>e.id===ref.id);if(!node||node.withdrawn)throw new ApiError(422,'Choose active entities from this case.');if(node.version!==ref.version)throw new ApiError(409,'An endpoint changed. Refresh and compare before proposing.');return entityRef(node);};
+  const from=withdraw?old!.from:resolve(input.from),to=withdraw?old!.to:resolve(input.to);if(from.id===to.id)throw new ApiError(422,'Choose distinct entities; identity equivalence is never inferred.');
+  const sources=withdraw?old!.sources:(await verifySources(c,a,caseId,input.sources)).sources,at=(await c.query('SELECT clock_timestamp() at')).rows[0].at.toISOString();
+  const snapshot:GraphProposal={id,caseId,version:old?old.version+1:1,from,to,relationship:withdraw?old!.relationship:input.relationship,account:withdraw?old!.account:input.account,sources,proposedBy:a.userId,proposedAt:at,withdrawn:withdraw,digest:''};snapshot.digest=proposalDigest(snapshot);
+  if(old)await c.query('UPDATE graph_relationships SET version=$4 WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,id,snapshot.version]);else await c.query('INSERT INTO graph_relationships(tenant_id,case_id,id,request_hash,created_by) VALUES($1,$2,$3,$4,$5)',[a.tenantId,caseId,id,requestHash,a.userId]);
+  await c.query('INSERT INTO graph_relationship_revisions(tenant_id,case_id,relationship_id,version,from_id,from_version,to_id,to_version,snapshot,digest,actor_id,reason,recorded_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13)',[a.tenantId,caseId,id,snapshot.version,from.id,from.version,to.id,to.version,JSON.stringify(snapshot),snapshot.digest,a.userId,edit?input.reason:'Relationship interpretation proposed',at]);
+  for(const [ordinal,source] of sources.entries())await c.query('INSERT INTO graph_relationship_sources(tenant_id,case_id,relationship_id,version,ordinal,text_finding_id,document_finding_id,source_hash,authority_version) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[a.tenantId,caseId,id,snapshot.version,ordinal,source.kind==='text_finding'?source.findingId:null,source.kind==='document_finding'?source.findingId:null,source.sha256,source.authorityVersion]);
+  await s.audit(c,a,caseId,withdraw?'graph.relationship_withdrawn':'graph.relationship_proposed','graph_relationship',id,`Relationship revision ${snapshot.version}`);return snapshot;
+ });
+ app.post(base+'/relationships',{preHandler:s.requireCsrf,schema:{params,body:body({id:uuid,...edgeFields})}},r=>saveProposal(r,false));
+ app.post(base+'/relationships/:id/revise',{preHandler:s.requireCsrf,schema:{params:itemParams,body:body({...edgeFields,expectedVersion:version,reason:text(3000)})}},r=>saveProposal(r,true));
+ app.post(base+'/relationships/:id/withdraw',{preHandler:s.requireCsrf,schema:{params:itemParams,body:body({expectedVersion:version,reason:text(3000)})}},r=>saveProposal(r,true,true));
+ app.get(base+'/relationships/:id/history',{preHandler:read,schema:{params:itemParams}},async r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");const {caseId,id}=r.params as {caseId:string;id:string},graph=await current(c,r.actor!,caseId,id,true);if(!graph.relationships.length)notFound();const reasons=(await c.query('SELECT version,reason FROM graph_relationship_revisions WHERE tenant_id=$1 AND case_id=$2 AND relationship_id=$3 ORDER BY version DESC LIMIT 100',[r.actor!.tenantId,caseId,id])).rows;return graph.relationships.map(edge=>({proposal:edge.proposal,review:edge.review,reason:reasons.find(row=>row.version===edge.proposal.version)!.reason}));}));
+ app.get(base+'/relationships/:id/sources',{preHandler:read,schema:{params:itemParams}},async r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");const a=r.actor!,{caseId,id}=r.params as {caseId:string;id:string},edge=(await current(c,a,caseId,id)).relationships[0];if(!edge)notFound();const checked=await verifySources(c,a,caseId,edge.proposal.sources.map(sourceRef));if(hash(checked.sources)!==hash(edge.proposal.sources))throw new ApiError(409,'The retained source interpretation changed. Revise and review the proposal.');return checked.findings;}));
+ app.post(base+'/relationships/:id/review',{preHandler:s.requireCsrf,schema:{params:itemParams,body:body({id:uuid,expectedVersion:version,digest:{type:'string',pattern:'^[a-f0-9]{64}$'},accepted:{type:'boolean'},reason:text(3000)})}},async r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");
+  const a=r.actor!;if(a.role!=='reviewer')throw new ApiError(403,'An assigned reviewer is required.');const {caseId,id}=r.params as {caseId:string;id:string},input=r.body as {id:string;expectedVersion:number;digest:string;accepted:boolean;reason:string};validate(input.reason);
+  await s.findCase(c,a,caseId,true);const edge=(await current(c,a,caseId,id)).relationships[0];if(!edge)notFound();const proposal=edge.proposal;
+  if(proposal.version!==input.expectedVersion||proposal.digest!==input.digest)throw new ApiError(409,'Review the exact current proposal.');
+  if(edge.review){if(edge.review.id===input.id&&edge.review.reviewerId===a.userId&&edge.review.accepted===input.accepted&&edge.review.reason===input.reason)return edge.review;throw new ApiError(409,'This proposal already has an immutable decision. Revise it for a new assessment.');}
+  if(!edge.canReview)throw new ApiError(403,'A reviewer who has not authored this relationship must assess it.');
+  if(input.accepted){if(edge.state==='needs_review')throw new ApiError(409,'Entities or authority changed. Revise the relationship before confirmation.');const checked=await verifySources(c,a,caseId,proposal.sources.map(sourceRef));if(hash(checked.sources)!==hash(proposal.sources))throw new ApiError(409,'Source interpretation changed. Revise the relationship before confirmation.');}
+  const row=(await c.query('INSERT INTO graph_relationship_reviews(tenant_id,case_id,relationship_id,version,id,digest,accepted,reason,reviewer_id,reviewer_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING recorded_at',[a.tenantId,caseId,id,proposal.version,input.id,proposal.digest,input.accepted,input.reason,a.userId,a.displayName])).rows[0];
+  await s.audit(c,a,caseId,'graph.relationship_reviewed','graph_relationship',id,`Relationship revision ${proposal.version} ${input.accepted?'accepted':'rejected'}`);return {id:input.id,accepted:input.accepted,reason:input.reason,reviewerId:a.userId,reviewerName:a.displayName,recordedAt:row.recorded_at.toISOString(),digest:proposal.digest} satisfies GraphReview;
+ }));
+}
