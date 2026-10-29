@@ -12,6 +12,11 @@ on:
       - 'tools/audit_native_wheels.py'
       - 'tools/audit_runtime_image.py'
       - 'tools/experiment_native_pdf.py'
+      - 'tools/experiment_tesseract_supplier.py'
+      - 'tools/run_tesseract_supplier.py'
+      - 'tools/supplier_scan_fixture.py'
+      - 'research/runtime_artifacts/tesseract-baseline.Dockerfile'
+      - 'tests/test_supplier_scan_fixture.py'
       - 'tools/experiment_pdf_render.py'
       - 'tools/run_pdf_render_fixture.py'
       - 'tools/pdf_render.py'
@@ -112,6 +117,8 @@ jobs:
         run: timeout 120s python3 tools/audit_runtime_image.py --output .research-cache/image-inspection.json
       - name: Run isolated fictional native PDF experiment
         run: timeout 240s python3 tools/experiment_native_pdf.py
+      - name: Measure isolated fictional scanned supplier OCR baseline
+        run: timeout 420s python3 tools/experiment_tesseract_supplier.py
       - name: Render fictional original pages twice inside isolation
         run: |
           timeout 180s python3 tools/experiment_pdf_render.py > .research-cache/render-output.json
