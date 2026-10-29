@@ -195,3 +195,6 @@ export type CaseAccessAction='member_added'|'member_removed'|'owner_transferred'
 export type CaseAccessMember={id:string;name:string;role:'reviewer'|'investigator'|'client';joinedAt:string};
 export type CaseAccessState={version:number;ownerId:string;canManage:boolean;members:CaseAccessMember[];next:string|null};
 export type CaseAccessEvent={id:string;version:number;action:CaseAccessAction|'case_created'|'legacy_checkpoint';ownerId:string;subjectId:string|null;subjectName:string|null;actorId:string|null;actorName:string|null;reason:string;recordedAt:string};
+
+export type PreservationHoldFields={label:string;authorityReference:string;purpose:string;reason:string};
+export type PreservationHold=PreservationHoldFields&{id:string;version:number;status:'active'|'released';action:'declared'|'amended'|'released';source:{id:string;sha256:string;filename:string;authorityVersion:number}|null;createdBy:string;createdAt:string;actorId:string;actorName:string;recordedAt:string};
