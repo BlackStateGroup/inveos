@@ -2,7 +2,7 @@
 
 This increment is in progress. Definition/metric tests are not parser benchmarks; actual isolated execution and exact commit/run results must be recorded before any measured claim.
 
-The existing pinned English OCR worker profile is exercised against twelve first-party fictional conditions, each repeated twice: the known clean supplier scan, small type, lower raster resolution, +2°/−2°/+7° skew, low contrast, blur, JPEG compression, fixed-seed speckles, a simple two-column work record and a blank page. No new parser, language model, data set, font file or runtime package is added. The existing audited/hash-locked Pillow and PDFium wheels and Tesseract image content lock still gate execution.
+The existing pinned English OCR worker profile is exercised against twelve first-party fictional conditions, each repeated twice: the known clean supplier scan, small type, lower raster resolution, +2°/−2°/+7° skew, low contrast, blur, JPEG compression, fixed-seed speckles, a simple three-column work record and a blank page. No new parser, language model, third-party data set, font file or runtime package is added. The existing audited/hash-locked Pillow and PDFium wheels and Tesseract image content lock still gate execution.
 
 The harness uses the unchanged `run_ocr_document.extract` function inside the qualified read-only, networkless, unprivileged container. Input/page/pixel/PNG/output bounds and individual subprocess deadlines remain unchanged. The container has its own 165-second kill deadline, and its configuration and cleanup are checked. Host-side tests import only first-party definitions and metrics, never native runtimes. No isolation restriction is bypassed.
 

@@ -18,7 +18,7 @@ from supplier_scan_fixture import PAGES, digital_supplier_pdf, package, scanned_
 
 CASES=('clean', 'small_type', 'low_resolution', 'skew_plus_2', 'skew_minus_2',
        'skew_plus_7', 'low_contrast', 'blur', 'jpeg_compression', 'speckles',
-       'two_columns', 'blank')
+       'three_columns', 'blank')
 TABLE=['FICTIONAL WORK RECORD', 'ITEM     MINUTES     QUANTITY',
        'ALPHA       15          30', 'BIRCH       25          40',
        'TOTAL       40          70']
@@ -67,8 +67,8 @@ def text_pdf(lines,font=14):
 
 def source(case):
     if case not in CASES:raise ValueError('Unknown fictional corpus case')
-    lines=[] if case=='blank' else TABLE if case=='two_columns' else PAGES[1]
-    return text_pdf(lines,8 if case=='small_type' else 14) if case in ('blank','two_columns','small_type') else digital_supplier_pdf(1), '\n'.join(lines)
+    lines=[] if case=='blank' else TABLE if case=='three_columns' else PAGES[1]
+    return text_pdf(lines,8 if case=='small_type' else 14) if case in ('blank','three_columns','small_type') else digital_supplier_pdf(1), '\n'.join(lines)
 
 
 def scan(case):
