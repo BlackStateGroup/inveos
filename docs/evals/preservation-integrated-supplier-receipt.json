@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "3abbc7e11572edb199f8ce3dce3dfe73402aa73c",
+  "runId": 40963923457,
+  "jobId": 123763456915,
+  "source": "GitHub Actions actual supplier TAP receipt",
+  "receipt": {
+    "encryptedOriginals": true,
+    "scanSha256": "575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393",
+    "digitalSha256": "7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e",
+    "ocrRawDigest": "d66c87f1f0046c4ed2dddeb5f3adce6d7135a4c5b74711d87ff70991fbb95460",
+    "ocrDerivativeDigest": "06acec6fd8ff0b8b4b303f1953c034de19c032c9ac80b893f652367b79b290a5",
+    "ocrWords": 18,
+    "documentFindings": 2,
+    "documentWorkLinks": 6,
+    "competingHypothesesRemainProposed": true,
+    "questionClosureHistory": true,
+    "independentPackageVerified": true,
+    "independentPdfVerified": true,
+    "browserOcrReload": true,
+    "browserOriginalPageComparison": true,
+    "restrictedPdfDelivery": true,
+    "acknowledgementAndRevocation": true,
+    "cancelledAttachmentDenied": true,
+    "realProfessionalReview": false
+  }
+}

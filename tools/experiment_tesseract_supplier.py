@@ -20,7 +20,27 @@ from probe_worker_isolation import command,container_args,check_configuration,re
 ROOT=Path(__file__).resolve().parent.parent
 
 
-def experiment(case_acceptance=False):
+def adverse_corpus(image_id,cache):
+    with tempfile.TemporaryDirectory(dir=cache,prefix='ocr-adversity-') as directory:
+        bundle=Path(directory).resolve();bundle.chmod(0o755);prepare_ocr_bundle(bundle)
+        for filename in ['run_ocr_corpus.py','run_ocr_document.py','supplier_scan_fixture.py','pdf_render_limits.py','bounded_process.py']:
+            shutil.copyfile(ROOT/'tools'/filename,bundle/filename)
+        name='inveos-ocr-adversity-'+uuid.uuid4().hex
+        try:
+            script='export HOME=/scratch TMPDIR=/scratch PYTHONDONTWRITEBYTECODE=1 OMP_THREAD_LIMIT=1 OPENBLAS_NUM_THREADS=1\nexport PYTHONPATH=/original/runtime:/original\ntimeout --signal=KILL 165s python /original/run_ocr_corpus.py\n'
+            command(*container_args(name,image_id,bundle,runtime=True),script)
+            check_configuration(json.loads(command('inspect',name).stdout)[0],runtime=True)
+            result=command('start','-a',name,timeout=180,check=False,max_output=2*1024*1024)
+            if result.returncode:raise ValueError('Isolated adversity corpus failed: '+result.stderr[-2000:])
+            measured=json.loads(result.stdout)
+            require(measured.get('format')=='inveos.ocr_adversity_measurement.v1' and measured.get('attemptCount')==24,'Missing actual corpus measurement')
+            return measured
+        finally:
+            command('rm','-f','-v',name)
+            require(command('inspect',name,check=False).returncode!=0,'Adversity container cleanup failed')
+
+
+def experiment(case_acceptance=False,include_corpus=False):
     cache=ROOT/'.research-cache';cache.mkdir(exist_ok=True)
     tag='inveos-tesseract-research:'+uuid.uuid4().hex
     # Only the first-party Dockerfile enters build context; no private files,
@@ -67,6 +87,7 @@ def experiment(case_acceptance=False):
         lock_bytes=(ROOT/'research/runtime_artifacts/tesseract-baseline.lock.json').read_bytes()
         lock=json.loads(lock_bytes)
         require(lock['packages']==results[0]['packages'] and lock['artifacts']==results[0]['artifacts'],'OCR runtime artifact drift')
+        corpus=adverse_corpus(image_id,cache) if include_corpus else None
         acceptance=None
         if case_acceptance:
             require(os.environ.get('INVEOS_TEST_DATABASE_URL','').endswith('/inveos_test'),'Disposable test database required')
@@ -76,12 +97,12 @@ def experiment(case_acceptance=False):
             if checked.returncode:raise ValueError('Actual OCR case acceptance failed: '+checked.stdout.decode()[-20000:]+'\n'+checked.stderr.decode()[-4000:])
             acceptance=checked.stdout.decode()
         return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,detachedDeadlineVerified=True,caseAcceptance=acceptance,
-                    inventory=results[0],experiment=results[1],approval='research_only_not_product_or_licence_approval',
-                    remaining='Pinned-source Tesseract comparison, Tika/OCRmyPDF comparisons, noise/skew/multilingual/table corpus and durable OCR lineage/API acceptance remain open')
+                    inventory=results[0],experiment=results[1],adversityCorpus=corpus,approval='research_only_not_product_or_licence_approval',
+                    remaining='Pinned-source Tesseract and Tika/OCRmyPDF comparisons, package-archive/licence obligations, representative client scans, multilingual/handwritten and semantic table accuracy, plus professional and production approvals remain open')
     finally:
         command('image','rm',tag,check=False)
 
 
 if __name__=='__main__':
     import sys
-    print(json.dumps(experiment('--case-acceptance' in sys.argv),indent=2))
+    print(json.dumps(experiment('--case-acceptance' in sys.argv,'--adverse-corpus' in sys.argv),indent=2))
