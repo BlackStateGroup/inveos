@@ -154,3 +154,4 @@
 - [Document-derived claims and findings](73_DOCUMENT_DERIVED_FINDINGS.md)
 - [Frozen document-backed report lineage](74_DOCUMENT_REPORT_LINEAGE.md)
 - [Independent document report packages](75_DOCUMENT_REPORT_PACKAGE.md)
+- [Browser-verified document package release](76_DOCUMENT_PACKAGE_RELEASE.md)

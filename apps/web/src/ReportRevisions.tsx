@@ -1,11 +1,15 @@
 import {useEffect, useRef, useState} from 'react';
 import {verifyRevisionDownload} from './reportDownload';
+import {readDocumentPackageBytes,readVerifiedDocumentPackage,saveVerifiedDocumentPackage,verifyDocumentPackageDownload} from './documentPackageDownload';
 import {pendingReportFreeze, recoverableReportFreeze, reportRecoveryScope} from './reportRecovery';
 import {Panel, Notice} from './ui';
 import {DisclosureHistory} from './DisclosureHistory';
 
 type Receipt={id:string;caseId:string;status:string;sha256:string;createdAt:string};
 type Page={items:Receipt[];nextBefore:string|null};
+type ReleasePayload={sha256:string;recipientId:string;idempotencyKey:string;expiresAt:string;reason:string;confirmFullDisclosure:true;documentPackageSha256?:string;confirmDocumentPackageVerified?:true};
+const releaseKey=(caseId:string,revisionId:string)=>`inveos:report-release:v1:${caseId}:${revisionId}`;
+function pendingRelease(store:Pick<Storage,'getItem'>,caseId:string,row:Receipt):ReleasePayload|null{try{const raw=store.getItem(releaseKey(caseId,row.id));if(!raw)return null;const value=JSON.parse(raw) as ReleasePayload;return value.sha256===row.sha256&&typeof value.recipientId==='string'&&typeof value.idempotencyKey==='string'?value:null;}catch{return null;}}
 async function json<T>(url:string,signal?:AbortSignal,body?:object,csrf?:string):Promise<T>{
   const response=await fetch(url,{signal,credentials:'same-origin',method:body?'POST':'GET',
     headers:body?{'Content-Type':'application/json','X-CSRF-Token':csrf||''}:{},...(body?{body:JSON.stringify(body)}:{})});
@@ -17,6 +21,8 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   const [pending,setPending]=useState(false);
   const [reviewHistory,setReviewHistory]=useState<Record<string,Array<{id:string;decision:string;reason:string;reviewerId:string;createdAt:string}>>>({});
   const [verified,setVerified]=useState<Record<string,boolean>>({});
+  const [verifiedPackages,setVerifiedPackages]=useState<Record<string,string>>({});
+  const [pendingReleases,setPendingReleases]=useState<Record<string,boolean>>({});
   const inFlight=useRef(false),alive=useRef(true);
   const base=`/api/cases/${caseId}/report-revisions`;
   useEffect(()=>{
@@ -24,6 +30,8 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     void Promise.all([json<Page>(base,controller.signal),reportRecoveryScope(csrf,caseId)]).then(([page,scope])=>{
       if(controller.signal.aborted)return;
       setRows(page.items);setNext(page.nextBefore);setPending(!!pendingReportFreeze(window.sessionStorage,scope));
+      setVerifiedPackages(Object.fromEntries(page.items.flatMap(row=>{const saved=readVerifiedDocumentPackage(window.sessionStorage,caseId,row.id,row.sha256);return saved?[[row.id,saved.packageSha256]]:[];})));
+      setPendingReleases(Object.fromEntries(page.items.filter(row=>pendingRelease(window.sessionStorage,caseId,row)).map(row=>[row.id,true])));
     })
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
     return()=>{alive.current=false;controller.abort();};
@@ -65,6 +73,26 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     if(receipt.revisionId!==row.id||receipt.caseId!==caseId||receipt.sha256!==row.sha256||receipt.status!=='snapshot_sources_verified_not_released')throw new Error('Source verification receipt mismatch.');
     if(alive.current)setMessage(`${receipt.findingCount} frozen findings matched current stored source bytes and review links. This point-in-time check is not approval or release.`);
   }
+  async function documentPackage(row:Receipt){
+    const response=await fetch(`${base}/${row.id}/document-package`,{credentials:'same-origin',cache:'no-store'});
+    if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'Document package download failed.');}
+    const bytes=await readDocumentPackageBytes(response),checked=await verifyDocumentPackageDownload(bytes,row.sha256,response.headers.get('X-INVEOS-Package-SHA256'));
+    const receipt={caseId,revisionId:row.id,reportSha256:row.sha256,packageSha256:checked.packageSha256,verifiedAt:new Date().toISOString()};
+    saveVerifiedDocumentPackage(window.sessionStorage,receipt);if(!alive.current)return;
+    setVerifiedPackages(old=>({...old,[row.id]:checked.packageSha256}));const url=URL.createObjectURL(new Blob([bytes],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`document-report-${row.id}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setMessage(`Verified and downloaded a ${checked.documentFindings}-finding document package. Retain its package and report fingerprints separately.`);
+  }
+  async function release(row:Receipt,data?:FormData){
+    if(!verified[row.id]&&!verifiedPackages[row.id])throw new Error('Verify the exact report or document package before creating a release.');
+    const store=window.sessionStorage,previous=pendingRelease(store,caseId,row),packageSha256=verifiedPackages[row.id];
+    const payload:ReleasePayload=previous??{sha256:row.sha256,recipientId:String(data?.get('recipientId')),idempotencyKey:crypto.randomUUID(),expiresAt:String(data?.get('expiresAt')),reason:String(data?.get('reason')),confirmFullDisclosure:true,...(packageSha256?{documentPackageSha256:packageSha256,confirmDocumentPackageVerified:true as const}: {})};
+    if(payload.documentPackageSha256!==packageSha256)throw new Error('The pending release was prepared for a different package fingerprint. Clear the tab session and verify the package again.');
+    store.setItem(releaseKey(caseId,row.id),JSON.stringify(payload));setPendingReleases(old=>({...old,[row.id]:true}));
+    const receipt=await json<{id:string;caseId:string;revisionId:string;recipientId:string;sha256:string;reportSha256:string;deliverable:string;status:string}>(`${base}/${row.id}/disclosures`,AbortSignal.timeout(30000),payload,csrf);
+    if(receipt.caseId!==caseId||receipt.revisionId!==row.id||receipt.recipientId!==payload.recipientId||receipt.reportSha256!==row.sha256||receipt.sha256!==(packageSha256??row.sha256)||receipt.deliverable!==(packageSha256?'document_package':'report_json')||receipt.status!=='recipient_disclosure_grant')throw new Error('Release receipt did not match the verified deliverable.');
+    store.removeItem(releaseKey(caseId,row.id));setPendingReleases(old=>({...old,[row.id]:false}));
+    if(alive.current)setMessage(`Restricted ${receipt.deliverable==='document_package'?'document package':'report'} release created. The recipient can retrieve only this frozen deliverable until expiry or revocation.`);
+  }
   async function reviews(row:Receipt){
     const result=await json<{items:Array<{id:string;decision:string;reason:string;reviewerId:string;createdAt:string}>}>(`${base}/${row.id}/reviews`);
     if(alive.current)setReviewHistory(old=>({...old,[row.id]:result.items}));
@@ -87,8 +115,10 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <p><strong>Internal draft · {new Date(row.createdAt).toLocaleString('en-GB',{timeZone:'UTC'})} UTC</strong></p>
       <label className="form-label">SHA-256 for revision {row.id}<input readOnly value={row.sha256}/></label>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
+      <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
+      {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input readOnly value={verifiedPackages[row.id]}/></label>}
       {reviewHistory[row.id]?.map(item=><p key={item.id}>{item.decision} · reviewer {item.reviewerId} · {item.createdAt}: {item.reason}</p>)}
       <details><summary>Review this frozen revision</summary><p>A different assigned reviewer must decide. Conflicting decisions remain separate; none releases the report. Download, verify and inspect its exact contents first.</p>
         <form className="work-form" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void act(()=>review(row,data));}}><fieldset disabled={busy||!verified[row.id]}>
@@ -96,6 +126,15 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
           <label className="form-label">Review rationale<textarea name="reason" required minLength={10} maxLength={2000}/></label>
           <label><input type="checkbox" required/> I inspected this exact frozen draft. This decision is permanent and does not approve client release.</label>
           <button className="secondary" type="submit">Record internal review</button>
+        </fieldset></form></details>
+      <details><summary>Create a restricted release</summary><p>Only a separately accepted frozen revision may be released. Document-backed revisions require the exact package verified above; report and package fingerprints remain distinct.</p>
+        {pendingReleases[row.id]&&<><p role="status">A release request has no confirmed receipt. Recover it with the same stable request identity before creating another.</p><button className="secondary" disabled={busy} onClick={()=>void act(()=>release(row))}>Recover pending release</button></>}
+        <form className="work-form" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void act(()=>release(row,data));}}><fieldset disabled={busy||(!verified[row.id]&&!verifiedPackages[row.id])}>
+          <label className="form-label">Client recipient UUID<input name="recipientId" required pattern="[a-fA-F0-9-]{36}"/></label>
+          <label className="form-label">Expiry (UTC ISO 8601)<input name="expiresAt" required placeholder="2026-10-30T12:00:00.000Z"/></label>
+          <label className="form-label">Release reason<textarea name="reason" required minLength={10} maxLength={2000}/></label>
+          <label><input type="checkbox" required/> I reviewed this exact deliverable, its limitations and disclosure scope. Release does not certify source truth.</label>
+          <button className="secondary" type="submit">Create restricted release</button>
         </fieldset></form></details>
     </li>)}</ul>
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Load older revisions</button>}

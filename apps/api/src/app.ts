@@ -1486,34 +1486,38 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return {ids:allIds,revision};
   }
   const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
-  app.get('/api/cases/:caseId/report-revisions/:revisionId/document-package',{preHandler:authenticate,schema:{params:reviewParams}},async(request,reply)=>{
-    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
-    const bytes=await reportTransaction(async client=>{
-      await reportAccess(client,actor,caseId);
+  async function buildDocumentPackage(client:PoolClient,actor:Actor,caseId:string,revisionId:string,expectedReportDigest?:string){
       const row=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];if(!row)notFound();
-      const {revision}=await verifyFrozenSources(client,actor,caseId,revisionId,row.digest.trim());
+      const reportDigest=row.digest.trim();
+      const {revision}=await verifyFrozenSources(client,actor,caseId,revisionId,expectedReportDigest??reportDigest);
       const report=JSON.parse(revision.report_bytes.toString('utf8')) as ReportDraft;
       if(!report.documentFindings?.length)throw new ApiError(422,'A document package requires document-backed findings.');
-      const result={format:'inveos_document_report_package_v1',reportSha256:row.digest.trim(),reportBase64:'',exhibits:[] as unknown[]};
+      const result={format:'inveos_document_report_package_v1',reportSha256:reportDigest,reportBase64:'',exhibits:[] as unknown[]};
       const budget=new ReportBudget(64*1024*1024);budget.add(result,4*Math.ceil(revision.report_bytes.length/3));result.reportBase64=revision.report_bytes.toString('base64');
       for await(const exhibit of documentReportExhibits(client,actor,caseId,report.documentFindings)){budget.add(exhibit,0,result.exhibits.length>0);result.exhibits.push(exhibit);}
       const encoded=Buffer.from(JSON.stringify(result));if(encoded.length>64*1024*1024)throw new ApiError(422,'Document package byte limit exceeded.');
-      await writeAudit(client,actor,caseId,'report.document_package_exported','report_revision',revisionId,'Internal document provenance package exported',{reportDigest:row.digest.trim(),packageDigest:createHash('sha256').update(encoded).digest('hex'),documentFindings:result.exhibits.length});
-      return encoded;
+      return {bytes:encoded,reportDigest,packageDigest:createHash('sha256').update(encoded).digest('hex'),documentFindings:result.exhibits.length};
+  }
+  app.get('/api/cases/:caseId/report-revisions/:revisionId/document-package',{preHandler:authenticate,schema:{params:reviewParams}},async(request,reply)=>{
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
+    const result=await reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);const built=await buildDocumentPackage(client,actor,caseId,revisionId);
+      await writeAudit(client,actor,caseId,'report.document_package_exported','report_revision',revisionId,'Internal document provenance package exported',{reportDigest:built.reportDigest,packageDigest:built.packageDigest,documentFindings:built.documentFindings});
+      return built;
     });
-    return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-Package-SHA256',createHash('sha256').update(bytes).digest('hex')).header('Content-Disposition',`attachment; filename="document-report-${revisionId}.json"`).type('application/json').send(bytes);
+    return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-Package-SHA256',result.packageDigest).header('Content-Disposition',`attachment; filename="document-report-${revisionId}.json"`).type('application/json').send(result.bytes);
   });
   const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
-  const disclosureReceipt=(r:QueryResultRow)=>({id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:r.digest.trim(),authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'});
-  app.post('/api/cases/:caseId/report-revisions/:revisionId/disclosures',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256','recipientId','idempotencyKey','expiresAt','reason','confirmFullDisclosure'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},recipientId:uuidSchema,idempotencyKey:uuidSchema,expiresAt:{type:'string',maxLength:40},reason:{type:'string',minLength:10,maxLength:2000},confirmFullDisclosure:{const:true}}}}},async(request,reply)=>{
+  const disclosureReceipt=(r:QueryResultRow)=>{const reportSha256=r.digest.trim(),packageSha256=r.package_digest?.trim();return {id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:packageSha256??reportSha256,reportSha256,deliverable:packageSha256?'document_package':'report_json',authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'};};
+  app.post('/api/cases/:caseId/report-revisions/:revisionId/disclosures',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256','recipientId','idempotencyKey','expiresAt','reason','confirmFullDisclosure'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},recipientId:uuidSchema,idempotencyKey:uuidSchema,expiresAt:{type:'string',maxLength:40},reason:{type:'string',minLength:10,maxLength:2000},confirmFullDisclosure:{const:true},documentPackageSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},confirmDocumentPackageVerified:{const:true}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
     if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
-    const input=request.body as {sha256:string;recipientId:string;idempotencyKey:string;expiresAt:string;reason:string};const reason=input.reason.trim(),expiry=Date.parse(input.expiresAt);
+    const input=request.body as {sha256:string;recipientId:string;idempotencyKey:string;expiresAt:string;reason:string;documentPackageSha256?:string;confirmDocumentPackageVerified?:true};const reason=input.reason.trim(),expiry=Date.parse(input.expiresAt);
     if(reason.length<10||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(input.expiresAt)||!Number.isFinite(expiry))throw new ApiError(422,'Valid UTC expiry and disclosure reason required.');
     return inTransaction(options.pool,async client=>{
       const kase=await findCase(client,actor,caseId,true);
-      const old=(await client.query('SELECT * FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
-      if(old){if(old.revision_id!==revisionId||old.recipient_id!==input.recipientId||old.digest.trim()!==input.sha256||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason)throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
+      const old=(await client.query('SELECT d.*,p.package_digest FROM report_disclosures d LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.created_by=$3 AND d.idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
+      if(old){const packageDigest=old.package_digest?.trim();if(old.revision_id!==revisionId||old.recipient_id!==input.recipientId||old.digest.trim()!==input.sha256||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason||(packageDigest??undefined)!==input.documentPackageSha256||Boolean(packageDigest)!==(input.confirmDocumentPackageVerified===true))throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
       if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
       const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();
       if(expiry<=clock||expiry>clock+7*86400000)throw new ApiError(422,'Expiry must be within seven days.');
@@ -1524,10 +1528,17 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const rejected=await client.query("SELECT 1 FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND decision='request_changes' LIMIT 1",[actor.tenantId,caseId,revisionId]);
       if(rejected.rowCount||!reviews.rows.some(r=>r.decision==='accept_internal'))throw new ApiError(409,'Current independent acceptance and no change requests required.');
       const verified=await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256);
-      if(JSON.parse(verified.revision.report_bytes.toString('utf8')).documentFindings!==undefined)throw new ApiError(409,'Document-derived report disclosure requires independent derivative package verification.');
+      const documentFindings=(JSON.parse(verified.revision.report_bytes.toString('utf8')) as ReportDraft).documentFindings;
+      let documentPackage:Awaited<ReturnType<typeof buildDocumentPackage>>|undefined;
+      if(documentFindings?.length){
+        if(!input.documentPackageSha256||input.confirmDocumentPackageVerified!==true)throw new ApiError(409,'Verify and confirm the exact document package before disclosure.');
+        documentPackage=await buildDocumentPackage(client,actor,caseId,revisionId,input.sha256);
+        if(documentPackage.packageDigest!==input.documentPackageSha256)throw new ApiError(409,'Document package fingerprint changed. Download and verify it again.');
+      }else if(input.documentPackageSha256||input.confirmDocumentPackageVerified!==undefined)throw new ApiError(422,'A legacy report disclosure cannot attach a document package.');
       const row=(await client.query(`INSERT INTO report_disclosures(tenant_id,case_id,id,revision_id,recipient_id,created_by,idempotency_key,authority_version,digest,reason,expires_at)
        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[actor.tenantId,caseId,randomUUID(),revisionId,input.recipientId,actor.userId,input.idempotencyKey,kase.authority_version,input.sha256,reason,new Date(expiry)])).rows[0];
-      await writeAudit(client,actor,caseId,'report.disclosed','report_disclosure',row.id,'Full frozen snapshot disclosure approved',{revisionId,recipientId:input.recipientId,digest:input.sha256,fullDisclosureConfirmed:true});return disclosureReceipt(row);
+      if(documentPackage)await client.query('INSERT INTO report_disclosure_packages(tenant_id,disclosure_id,report_digest,package_digest,package_bytes) VALUES($1,$2,$3,$4,$5)',[actor.tenantId,row.id,input.sha256,documentPackage.packageDigest,documentPackage.bytes]);
+      await writeAudit(client,actor,caseId,'report.disclosed','report_disclosure',row.id,'Frozen deliverable disclosure approved',{revisionId,recipientId:input.recipientId,reportDigest:input.sha256,deliveryDigest:documentPackage?.packageDigest??input.sha256,deliverable:documentPackage?'document_package':'report_json',fullDisclosureConfirmed:true});return disclosureReceipt({...row,package_digest:documentPackage?.packageDigest});
     });
   });
   app.post('/api/cases/:caseId/disclosures/:disclosureId/revoke',{preHandler:requireCsrf,schema:{params:disclosureParams,body:{type:'object',additionalProperties:false,required:['reason'],properties:{reason:{type:'string',minLength:10,maxLength:2000}}}}},async(request,reply)=>{
@@ -1552,9 +1563,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return reportTransaction(async client=>{
       await findCase(client,actor,caseId);
       if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,before]);if(!anchor.rowCount)notFound();}
-      const rows=await client.query(`SELECT d.*,v.revoked_by,v.reason AS revocation_reason,v.created_at AS revoked_at,a.acknowledged_at,
+      const rows=await client.query(`SELECT d.*,p.package_digest,v.revoked_by,v.reason AS revocation_reason,v.created_at AS revoked_at,a.acknowledged_at,
         (d.expires_at>clock_timestamp() AND ${disclosureEligibility} AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')) AS access_policy_eligible
         FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
         LEFT JOIN report_disclosure_revocations v ON v.tenant_id=d.tenant_id AND v.disclosure_id=d.id
         LEFT JOIN report_disclosure_acknowledgements a ON a.tenant_id=d.tenant_id AND a.disclosure_id=d.id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3))
@@ -1570,15 +1582,27 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return reportTransaction(async client=>{
       // An owned historical anchor remains usable after expiry/revocation, but foreign anchors never do.
       if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,before]);if(!anchor.rowCount)notFound();}
-      const rows=await client.query(`SELECT d.id,d.revision_id,d.digest,d.created_at,d.expires_at
+      const rows=await client.query(`SELECT d.id,d.revision_id,d.digest,p.package_digest,d.created_at,d.expires_at
         FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
         WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.expires_at>clock_timestamp()
         AND ${disclosureEligibility}
         AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3))
         ORDER BY d.created_at DESC,d.id DESC LIMIT $4`,[actor.tenantId,actor.userId,before??null,limit+1]);
-      return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.digest.trim(),createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+      return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.package_digest?.trim()??r.digest.trim(),reportSha256:r.digest.trim(),deliverable:r.package_digest?'document_package':'report_json',createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
     });
   });
+  function disclosureDelivery(row:QueryResultRow){
+    checkRevision(row);const reportDigest=row.digest.trim();
+    if(!row.package_bytes)return {bytes:row.report_bytes as Buffer,digest:reportDigest,deliverable:'report_json' as const,header:'X-INVEOS-Report-SHA256'};
+    const bytes=row.package_bytes as Buffer,packageDigest=row.package_digest?.trim();
+    if(!packageDigest||row.report_digest?.trim()!==reportDigest||createHash('sha256').update(bytes).digest('hex')!==packageDigest)throw new ApiError(409,'Released document package integrity verification failed.');
+    let value:Record<string,unknown>;try{value=JSON.parse(bytes.toString('utf8')) as Record<string,unknown>;}catch{throw new ApiError(409,'Released document package structure is invalid.');}
+    if(value.format!=='inveos_document_report_package_v1'||value.reportSha256!==reportDigest||typeof value.reportBase64!=='string')throw new ApiError(409,'Released document package structure is invalid.');
+    const encoded=value.reportBase64;if(!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded))throw new ApiError(409,'Released document package structure is invalid.');
+    const embedded=Buffer.from(encoded,'base64');if(embedded.toString('base64')!==encoded||!embedded.equals(row.report_bytes)||createHash('sha256').update(embedded).digest('hex')!==reportDigest)throw new ApiError(409,'Released document package report binding failed.');
+    return {bytes,digest:packageDigest,deliverable:'document_package' as const,header:'X-INVEOS-Package-SHA256'};
+  }
   app.post('/api/portal/disclosures/:disclosureId/acknowledge',{preHandler:requireSessionCsrf,schema:{params:{type:'object',additionalProperties:false,required:['disclosureId'],properties:{disclosureId:uuidSchema}},body:{type:'object',additionalProperties:false,required:['sha256','confirmReceipt'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},confirmReceipt:{const:true}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
     if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
@@ -1587,11 +1611,12 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       // Match recipient before locking, then serialise with case authority and grant revocation.
       const scope=await client.query('SELECT case_id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,disclosureId]);
       if(!scope.rows[0])notFound();await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,scope.rows[0].case_id]);
-      const found=await client.query(`SELECT d.*,r.report_bytes FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+      const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
         JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
         WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.id=$3 AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}`,[actor.tenantId,actor.userId,disclosureId]);
-      const grant=found.rows[0];if(!grant)notFound();checkRevision(grant);
-      if(grant.digest.trim()!==expected)throw new ApiError(409,'Disclosure fingerprint changed.');
+      const grant=found.rows[0];if(!grant)notFound();const delivery=disclosureDelivery(grant);
+      if(delivery.digest!==expected)throw new ApiError(409,'Disclosure fingerprint changed.');
       const inserted=await client.query(`INSERT INTO report_disclosure_acknowledgements(tenant_id,disclosure_id,recipient_id,digest) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING acknowledged_at`,[actor.tenantId,disclosureId,actor.userId,expected]);
       if(inserted.rowCount)await writeAudit(client,actor,grant.case_id,'report.disclosure_acknowledged','report_disclosure',disclosureId,'Recipient explicitly acknowledged receipt',{digest:expected});
       const receipt=inserted.rows[0]??(await client.query('SELECT acknowledged_at FROM report_disclosure_acknowledgements WHERE tenant_id=$1 AND disclosure_id=$2',[actor.tenantId,disclosureId])).rows[0];
@@ -1602,14 +1627,15 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
     if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
     const row=await inTransaction(options.pool,async client=>{
-      const found=await client.query(`SELECT d.*,r.report_bytes FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
+      const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
        JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+       LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
        WHERE d.tenant_id=$1 AND d.id=$2 AND d.recipient_id=$3 AND d.expires_at>clock_timestamp()
        AND ${disclosureEligibility}`,[actor.tenantId,disclosureId,actor.userId]);
-      const value=found.rows[0];if(!value)notFound();checkRevision(value);
-      await writeAudit(client,actor,value.case_id,'report.disclosure_downloaded','report_disclosure',disclosureId,'Recipient snapshot prepared for download',{digest:value.digest.trim()});return value;
+      const value=found.rows[0];if(!value)notFound();const delivery=disclosureDelivery(value);
+      await writeAudit(client,actor,value.case_id,'report.disclosure_downloaded','report_disclosure',disclosureId,'Recipient deliverable prepared for download',{reportDigest:value.digest.trim(),deliveryDigest:delivery.digest,deliverable:delivery.deliverable});return {...value,delivery};
     });
-    return reply.header('Content-Disposition',`attachment; filename="disclosure-${disclosureId}.json"`).header('X-INVEOS-Report-SHA256',row.digest.trim()).type('application/json').send(row.report_bytes);
+    return reply.header('Content-Disposition',`attachment; filename="disclosure-${disclosureId}.json"`).header(row.delivery.header,row.delivery.digest).type('application/json').send(row.delivery.bytes);
   });
   app.post('/api/cases/:caseId/report-revisions/:revisionId/verify-sources',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
