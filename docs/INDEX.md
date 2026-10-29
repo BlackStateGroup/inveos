@@ -135,3 +135,5 @@
 - [Isolated page rendering](63_ISOLATED_PAGE_RENDERING.md) — bounded original-page raster research.
 
 - [Raster derivative boundary](64_RASTER_DERIVATIVE_BOUNDARY.md) — bounded PNG validation and original-linked manifests.
+
+- [Durable raster results](65_DURABLE_RASTER_RESULTS.md) — fenced attachment and reverified PNG page delivery.

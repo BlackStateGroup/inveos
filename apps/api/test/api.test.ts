@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
-import { finishDocumentJob, claimIntegrityJob, renewIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
+import { finishRasterJob, finishDocumentJob, claimIntegrityJob, renewIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
 import { runLeasedWorker } from '../src/leased-worker.js';
 import {jobRequestScope,queueRecoverably} from '../../web/src/jobRequest.js';
@@ -3207,4 +3207,103 @@ test('renewal waits for the case before locking the job, avoiding cancellation l
     await blocker.query('ROLLBACK');blocker.release();
     if(renewal)assert.ok(await renewal);
   }
+});
+
+
+async function rasterFixture(){
+  const f=await documentFixture();
+  const payload={...f.payload,idempotencyKey:randomUUID(),kind:'pdf_raster_lab_v1'};
+  const queued=await f.app.inject({method:'POST',url:`/api/cases/${f.scope.caseId}/integrity-jobs`,headers:{cookie:context.demo!.cookie,origin:localOrigin,'x-csrf-token':context.demo!.csrf},payload});
+  assert.equal(queued.statusCode,200,queued.body);const job=JSON.parse(queued.body),scope={...f.scope,jobId:job.id};
+  const fixture=JSON.parse(await readFile(new URL('../../../research/runtime_artifacts/render-page-fixture.json',import.meta.url),'utf8'));
+  const png=Buffer.from(fixture.pngBase64,'base64');assert.equal(createHash('sha256').update(png).digest('hex'),fixture.sha256);
+  const {rasterProfileDigest}=await import('../src/raster-derivative.js');
+  const result={context:{...f.result.context,jobId:job.id},profileDigest:rasterProfileDigest,originalSha256:f.result.context.sourceDigest,
+    pages:[1,2].map(page=>({page,width:612,height:792,pngSha256:fixture.sha256,pngBytes:png.length,pngBase64:fixture.pngBase64}))};
+  return {...f,job,scope,payload,result,png,url:`/api/cases/${scope.caseId}/integrity-jobs/${job.id}/raster-derivative`,pageUrl:`/api/cases/${scope.caseId}/integrity-jobs/${job.id}/raster-pages/2`};
+}
+test('raster jobs persist atomically, preserve quarantine and reverify PNG delivery after restart',async()=>{
+  const f=await rasterFixture();try{
+    assertError(await request('POST',`/api/cases/${f.scope.caseId}/integrity-jobs`,context.demo!,{payload:f.payload}),409);
+    assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,f.scope)).selected,0);
+    assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,f.scope),null);
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+    await assert.rejects(finishIntegrityJob(context.pool!,f.scope,lease.token,null),/requires immutable derivative/);
+    assert.equal((await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result))?.status,'succeeded');
+    assert.equal(await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result),null);
+    const manifest=await request('GET',f.url,context.demo!);assert.equal(manifest.statusCode,200,manifest.body);
+    assert.equal(manifest.json().manifest.pages[1].page,2);assert.equal(manifest.json().manifest.reviewState,'unreviewed');
+    const image=await request('GET',f.pageUrl,context.demo!);assert.equal(image.statusCode,200,image.body);assert.deepEqual(image.rawPayload,f.png);
+    assert.equal(image.headers['content-type'],'image/png');assert.equal(image.headers['cache-control'],'no-store');assert.equal(image.headers['x-content-type-options'],'nosniff');
+    const app=await createAppInstance();try{const r=await app.inject({method:'GET',url:f.pageUrl,headers:{cookie:context.demo!.cookie}});assert.deepEqual(r.rawPayload,f.png);}finally{await app.close();}
+    const e=(await context.pool!.query('SELECT status FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];assert.equal(e.status,'Quarantined');
+    for(const sql of ['UPDATE raster_derivatives SET output_digest=output_digest WHERE job_id=$1','DELETE FROM raster_derivatives WHERE job_id=$1'])await assert.rejects(context.schemaAdminPool!.query(sql,[f.job.id]),/append.only|immutable/i);
+  }finally{await f.app.close();}
+});
+test('raster attachment rejects stale workers, changed authority and invalid PNG without storing output',async()=>{
+  for(const mode of ['cancel','authority','png','context'] as const){
+    const f=await rasterFixture();try{
+      const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+      if(mode==='cancel')assert.equal((await request('POST',f.url.replace('/raster-derivative','/cancel'),context.demo!,{payload:{}})).statusCode,200);
+      if(mode==='authority')await approveAuthority(f.scope.caseId);
+      if(mode==='png')f.result.pages[0]!.pngBase64='invalid';
+      if(mode==='context')f.result.context.caseId=randomUUID();
+      const result=await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);assert.notEqual(result?.status,'succeeded');
+      assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM raster_derivatives WHERE job_id=$1',[f.job.id])).rows[0].n,0);
+    }finally{await f.app.close();}
+  }
+});
+test('raster delivery denies wrong cases and fails closed after original corruption',async()=>{
+  const f=await rasterFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+    await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+    const other=await createCase();
+    assertError(await request('GET',f.pageUrl.replace(f.scope.caseId,other.id),context.demo!),404);
+    assertError(await request('GET',f.pageUrl.replace('/2','/3'),context.demo!),400);
+    const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];
+    await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional altered original');
+    assertError(await request('GET',f.pageUrl,context.demo!),409);assertError(await request('GET',f.url,context.demo!),409);
+  }finally{await f.app.close();}
+});
+test('real browser decodes verified raster page bytes and cannot reload them after corruption',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+  const f=await rasterFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+    await withBrowserApp(async(b,origin)=>{
+      await binaryBrowserControls(b,origin,f.scope.caseId);
+      const dimensions=await b.evaluate(`new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve([image.naturalWidth,image.naturalHeight]);image.onerror=()=>reject(new Error('Raster decode failed'));image.src=${JSON.stringify(f.pageUrl)};document.body.append(image);})`);
+      assert.deepEqual(dimensions,[612,792]);
+      const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];
+      await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional changed original');
+      assert.equal(await b.evaluate(`fetch(${JSON.stringify(f.pageUrl)}).then(r=>r.status)`),409);
+    });
+  }finally{await f.app.close();}
+});
+
+test('raster storage failure rolls back success and permits retry',async()=>{
+  const f=await rasterFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+    await context.schemaAdminPool!.query("CREATE FUNCTION deny_raster_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fictional raster failure'; END $$");
+    await context.schemaAdminPool!.query('CREATE TRIGGER deny_raster_test BEFORE INSERT ON raster_derivatives FOR EACH ROW EXECUTE FUNCTION deny_raster_test()');
+    try{await assert.rejects(finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result),/fictional raster failure/);}
+    finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_raster_test ON raster_derivatives');await context.schemaAdminPool!.query('DROP FUNCTION deny_raster_test()');}
+    assert.deepEqual((await context.pool!.query('SELECT status FROM integrity_job_events WHERE job_id=$1 ORDER BY id',[f.job.id])).rows.map(r=>r.status),['queued','running']);
+    assert.equal((await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result))?.status,'succeeded');
+  }finally{await f.app.close();}
+});
+test('raster reads deny clients, foreign tenants and revoked members and detect stored tampering',async()=>{
+  const f=await rasterFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+    const outsider=await createMember(demoTenantId,'investigator','Fictional raster outsider');assertError(await request('GET',f.pageUrl,await issueTestSession(outsider)),404);
+    const client=await createMember(demoTenantId,'client','Fictional raster client');assertError(await request('GET',f.pageUrl,await issueTestSession(client)),403);
+    const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[tenant,'Fictional raster foreign tenant']);
+    const foreign=await createMember(tenant,'reviewer','Fictional foreign raster reviewer');assertError(await request('GET',f.pageUrl,await issueTestSession(foreign,tenant)),404);
+    await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE case_id=$1 AND user_id=$2',[f.scope.caseId,demoUserId]);assertError(await request('GET',f.pageUrl,context.demo!),404);
+    await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)',[demoTenantId,f.scope.caseId,demoUserId]);
+    const stored=(await context.pool!.query('SELECT * FROM raster_derivatives WHERE job_id=$1',[f.job.id])).rows[0];
+    await context.schemaAdminPool!.query('ALTER TABLE raster_derivatives DISABLE TRIGGER raster_derivatives_append_only');
+    try{
+      await context.schemaAdminPool!.query('UPDATE raster_derivatives SET raw_bytes=$2 WHERE job_id=$1',[f.job.id,Buffer.from('{}')]);assertError(await request('GET',f.pageUrl,context.demo!),409);
+      await context.schemaAdminPool!.query('UPDATE raster_derivatives SET raw_bytes=$2,output_bytes=$3 WHERE job_id=$1',[f.job.id,stored.raw_bytes,Buffer.from('{}')]);assertError(await request('GET',f.url,context.demo!),409);
+    }finally{await context.schemaAdminPool!.query('ALTER TABLE raster_derivatives ENABLE TRIGGER raster_derivatives_append_only');}
+  }finally{await f.app.close();}
 });

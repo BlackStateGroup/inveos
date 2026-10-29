@@ -1,3 +1,5 @@
+import {makeRasterDerivative,rasterProfile,rasterProfileDigest,type RasterResult} from './raster-derivative.js';
+const rasterKind='pdf_raster_lab_v1';
 import {documentKind,documentProfile,documentProfileDigest,makeDocumentDerivative,type DocumentContext,type DocumentResult} from './document-derivative.js';
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -166,7 +168,7 @@ async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure:
 }
 export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {
   const kind=await pool.query('SELECT kind FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',values(s));
-  if(kind.rows[0]?.kind===documentKind)return null; // Separate qualified worker required.
+  if([documentKind,rasterKind].includes(kind.rows[0]?.kind))return null; // Separate qualified worker required.
   const lease = await claimIntegrityJob(pool,s);
   if (!lease) return null;
   return processLeasedJob(pool,root,s,lease);
@@ -222,6 +224,36 @@ export async function finishDocumentJob(pool:Pool,root:string,s:Scope,token:stri
   });
 }
 
+export async function finishRasterJob(pool:Pool,root:string,s:Scope,token:string,result:RasterResult) {
+  return inTransaction(pool,async client=>{
+    await client.query("SET LOCAL lock_timeout = '2s'");
+    await client.query("SET LOCAL statement_timeout = '5s'");
+    await lockWorkerCase(client,s);
+    const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
+      AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE`,[...values(s),token]);
+    const row=found.rows[0];if(!row||row.kind!==rasterKind)return null;
+    if(!await permitted(client,row))return terminal(client,s,'cancelled','scope_changed',token);
+    const source=(await client.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[s.tenantId,s.caseId,row.evidence_id])).rows[0];
+    let original:Buffer;
+    try {
+      original=await readOriginalBounded(root,source.object_path,65536);
+      if(source.original_kind!=='opaque_binary'||original.length!==source.byte_length||sha256(original)!==row.source_digest.trim()||source.digest.trim()!==row.source_digest.trim())throw new Error('Original mismatch');
+    } catch {return terminal(client,s,'failed','original_unavailable',token);}
+    let output;
+    try {output=makeRasterDerivative(original,documentContext(row),result);}
+    catch {return terminal(client,s,'failed','raster_result_invalid',token);}
+    const raw=Buffer.from(JSON.stringify({context:documentContext(row),profileDigest:rasterProfileDigest,originalSha256:row.source_digest.trim(),
+      pages:output.pages.map(p=>({page:p.page,width:p.width,height:p.height,pngSha256:p.digest,pngBytes:p.byteLength,pngBase64:p.bytes.toString('base64')}))}));
+    // Final fenced transition occurs after original and output checks, within the same transaction.
+    const completed=await terminal(client,s,'succeeded',null,token);
+    if(!completed)return null;
+    await client.query(`INSERT INTO raster_derivatives (tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,
+      profile,profile_digest,raw_bytes,raw_digest,output_bytes,output_digest) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,rasterProfile,rasterProfileDigest,raw,sha256(raw),output.bytes,output.digest]);
+    return completed;
+  });
+}
+
 export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   app.get('/api/cases/:caseId/integrity-jobs', {preHandler:svc.authenticate,schema:{
     params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
@@ -262,12 +294,12 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   });
   app.post('/api/cases/:caseId/integrity-jobs', {preHandler: svc.requireCsrf, schema: {
     params: {type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
-    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1',documentKind]}}},
+    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1',documentKind,rasterKind]}}},
   }}, async request => {
     const actor = request.actor!;
     const {caseId} = request.params as {caseId:string};
     const input = request.body as {evidenceId:string;idempotencyKey:string;kind?:string};
-    if(input.kind===documentKind&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
+    if([documentKind,rasterKind].includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
     return inTransaction(svc.pool,async client => {
       await svc.findCase(client,actor,caseId,true);
       const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
@@ -279,7 +311,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active'`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
-      if(input.kind===documentKind&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>65536))throw new ApiError(409,'Document lab requires a bounded binary original.');
+      if([documentKind,rasterKind].includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>65536))throw new ApiError(409,'Document lab requires a bounded binary original.');
       const id = randomUUID();
       const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
@@ -337,6 +369,39 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         rawDigest:row.raw_digest.trim(),derivativeDigest:row.output_digest.trim(),processedAt:row.processed_at,
         sourceTime:row.source_time,receivedAt:row.received_time,derivative:output.derivative};
     });
+  });
+  async function readRaster(actor:Actor,caseId:string,jobId:string){
+    if(actor.role==='client')throw new ApiError(403,'Internal derivatives only.');
+    return inTransaction(svc.pool,async client=>{
+      await svc.findCase(client,actor,caseId,true);
+      const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time
+        FROM raster_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
+        WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
+      if(!row)notFound();let output;
+      try{
+        const original=await readOriginalBounded(svc.storageRoot,row.object_path,65536);
+        if(original.length!==row.byte_length||row.original_kind!=='opaque_binary'||row.digest.trim()!==row.source_digest.trim()||
+          row.profile!==rasterProfile||row.profile_digest.trim()!==rasterProfileDigest||sha256(row.raw_bytes)!==row.raw_digest.trim())throw new Error('Raster lineage mismatch');
+        output=makeRasterDerivative(original,documentContext(row),JSON.parse(row.raw_bytes.toString('utf8')));
+        if(output.digest!==row.output_digest.trim()||!output.bytes.equals(row.output_bytes))throw new Error('Raster manifest mismatch');
+      }catch{throw new ApiError(409,'Original or raster derivative integrity verification failed.');}
+      await svc.audit(client,actor,caseId,'raster_derivative.read','integrity_job',jobId,'Verified unreviewed raster derivative read');
+      return {output,receipt:{jobId,caseId,evidenceId:row.evidence_id,status:'unreviewed_derivative',authorityVersion:row.authority_version,
+        sourceDigest:row.source_digest.trim(),attempt:row.attempt,profile:JSON.parse(row.profile),profileDigest:row.profile_digest.trim(),
+        derivativeDigest:row.output_digest.trim(),processedAt:row.processed_at,sourceTime:row.source_time,receivedAt:row.received_time,manifest:output.manifest}};
+    });
+  }
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/raster-derivative',{preHandler:svc.authenticate,schema:{params}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const {caseId,jobId}=request.params as {caseId:string;jobId:string};
+    return (await readRaster(request.actor!,caseId,jobId)).receipt;
+  });
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/raster-pages/:page',{preHandler:svc.authenticate,schema:{params:{...params,required:[...params.required,'page'],properties:{...params.properties,page:{type:'string',enum:['1','2']}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('Content-Security-Policy',"default-src 'none'; sandbox").header('Cross-Origin-Resource-Policy','same-origin');
+    const {caseId,jobId,page}=request.params as {caseId:string;jobId:string;page:string};
+    const result=await readRaster(request.actor!,caseId,jobId),selected=result.output.pages[Number(page)-1];
+    if(!selected)notFound();
+    return reply.type('image/png').header('Content-Disposition','inline; filename="page-'+page+'.png"').send(selected.bytes);
   });
   for (const cancel of [false,true]) {
     app.route({method:cancel?'POST':'GET',url: `/api/cases/:caseId/integrity-jobs/:jobId${cancel?'/cancel':''}`,
