@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {validateContainer,runResearchContainer} from '../src/container-worker.js';
+import {validateContainer,runResearchContainer,containerCommand} from '../src/container-worker.js';
 import {validateNativeQualification} from '../src/native-document-worker.js';
 import {documentProfile} from '../src/document-derivative.js';
 const profile=JSON.parse(documentProfile),image='sha256:'+profile.imageId;
-const fixture=()=>({Image:image,Config:{User:'65534:65534',Volumes:null},HostConfig:{NetworkMode:'none',ReadonlyRootfs:true,Privileged:false,LogConfig:{Type:'none'},CapDrop:['ALL'],SecurityOpt:['no-new-privileges:true'],Memory:1073741824,MemorySwap:1073741824,NanoCpus:500000000,PidsLimit:32,Tmpfs:{'/scratch':'rw,noexec,nosuid,nodev,size=512m,mode=1777','/output':'rw,noexec,nosuid,nodev,size=16m,mode=1777'},Binds:null,CapAdd:null,Devices:[],PidMode:'',IpcMode:'private'},Mounts:[{Type:'bind',Source:'/fictional',Destination:'/original',RW:false}]});
+const fixture=()=>({Image:image,Config:{Entrypoint:['/usr/bin/timeout'],Cmd:containerCommand('true'),User:'65534:65534',Volumes:null},HostConfig:{RestartPolicy:{Name:'no'},NetworkMode:'none',ReadonlyRootfs:true,Privileged:false,LogConfig:{Type:'none'},CapDrop:['ALL'],SecurityOpt:['no-new-privileges:true'],Memory:1073741824,MemorySwap:1073741824,NanoCpus:500000000,PidsLimit:32,Tmpfs:{'/scratch':'rw,noexec,nosuid,nodev,size=512m,mode=1777','/output':'rw,noexec,nosuid,nodev,size=16m,mode=1777'},Binds:null,CapAdd:null,Devices:[],PidMode:'',IpcMode:'private'},Mounts:[{Type:'bind',Source:'/fictional',Destination:'/original',RW:false}]});
 test('container configuration rejects weakened limits, mounts, image identity and host access',()=>{
   validateContainer(fixture(),'/fictional',image);
-  for(const [key,value] of Object.entries({NetworkMode:'host',ReadonlyRootfs:false,Privileged:true,Memory:0,MemorySwap:-1,NanoCpus:0,PidsLimit:0,CapDrop:[],SecurityOpt:[],CapAdd:['SYS_ADMIN'],Devices:[{}],PidMode:'host',IpcMode:'host',Binds:['/secret:/secret'],LogConfig:{Type:'json-file'}})){
+  for(const [key,value] of Object.entries({RestartPolicy:{Name:'always'},NetworkMode:'host',ReadonlyRootfs:false,Privileged:true,Memory:0,MemorySwap:-1,NanoCpus:0,PidsLimit:0,CapDrop:[],SecurityOpt:[],CapAdd:['SYS_ADMIN'],Devices:[{}],PidMode:'host',IpcMode:'host',Binds:['/secret:/secret'],LogConfig:{Type:'json-file'}})){
     const f=fixture();Object.assign(f.HostConfig,{[key]:value});assert.throws(()=>validateContainer(f,'/fictional',image));
   }
   const writable=fixture();writable.Mounts[0]!.RW=true;assert.throws(()=>validateContainer(writable,'/fictional',image));
@@ -24,4 +24,11 @@ test('container executor rejects unsafe mount configuration before any renewal o
   let calls=0;const renew=async()=>{calls++;return true;};
   for(const bundle of ['relative','/fictional,readonly=false'])await assert.rejects(runResearchContainer({bundle,imageId:image,script:'true'},renew),/configuration/);
   assert.equal(calls,0);
+});
+
+test('independent container deadline cannot be disabled or inflated and its entrypoint is verified',()=>{
+  for(const seconds of [0,-1,121,Infinity,NaN,1.5])assert.throws(()=>containerCommand('true',seconds));
+  assert.deepEqual(containerCommand('echo fictional',3),['--signal=KILL','3s','/bin/bash','-ceu','echo fictional']);
+  const f=fixture();f.Config.Entrypoint=['/bin/bash'];assert.throws(()=>validateContainer(f,'/fictional',image));
+  const g=fixture();g.Config.Cmd=containerCommand('true',120);assert.throws(()=>validateContainer(g,'/fictional',image));
 });

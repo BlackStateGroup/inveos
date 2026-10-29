@@ -7,11 +7,17 @@ const scratch='rw,noexec,nosuid,nodev,size=512m,mode=1777';
 const output='rw,noexec,nosuid,nodev,size=16m,mode=1777';
 const docker='/usr/bin/docker';
 const endpoint='--host=unix:///var/run/docker.sock';
-type Settings={bundle:string;imageId:string;script:string;signal?:AbortSignal;timeoutMs?:number;heartbeatMs?:number;outputLimit?:number};
+type Settings={bundle:string;imageId:string;script:string;signal?:AbortSignal;timeoutMs?:number;heartbeatMs?:number;outputLimit?:number;containerSeconds?:number};
 function object(value:unknown):Record<string,unknown>{if(!value||typeof value!=='object'||Array.isArray(value))throw new WorkerStopped('container_configuration');return value as Record<string,unknown>;}
 function require(condition:unknown){if(!condition)throw new WorkerStopped('container_configuration');}
-export function validateContainer(info:unknown,bundle:string,imageId:string){
+export function containerCommand(script:string,seconds=100){
+  if(typeof script!=='string'||script.length>8192||!Number.isInteger(seconds)||seconds<1||seconds>120)throw new WorkerStopped('configuration');
+  return ['--signal=KILL',`${seconds}s`,'/bin/bash','-ceu',script];
+}
+export function validateContainer(info:unknown,bundle:string,imageId:string,command=containerCommand('true')){
   const i=object(info),host=object(i.HostConfig),config=object(i.Config),tmpfs=object(host.Tmpfs);
+  require(JSON.stringify(config.Entrypoint)==='["/usr/bin/timeout"]'&&JSON.stringify(config.Cmd)===JSON.stringify(command));
+  require(object(host.RestartPolicy).Name==='no');
   require(i.Image===imageId&&config.User==='65534:65534'&&host.NetworkMode==='none'&&host.ReadonlyRootfs===true&&host.Privileged===false);
   require(object(host.LogConfig).Type==='none'&&JSON.stringify(host.CapDrop)==='["ALL"]'&&Array.isArray(host.SecurityOpt)&&host.SecurityOpt.includes('no-new-privileges:true'));
   require(host.Memory===1073741824&&host.MemorySwap===1073741824&&host.NanoCpus===500000000&&host.PidsLimit===32);
@@ -27,7 +33,8 @@ export function validateContainer(info:unknown,bundle:string,imageId:string){
 
 /** Bundle and script are first-party trusted configuration, never request/evidence fields. */
 export async function runResearchContainer(settings:Settings,renew:()=>Promise<boolean>):Promise<Buffer>{
-  const {bundle,imageId,script,signal,timeoutMs=90000,heartbeatMs=20000,outputLimit=1048576}=settings;
+  const {bundle,imageId,script,signal,timeoutMs=90000,heartbeatMs=20000,outputLimit=1048576,containerSeconds=100}=settings;
+  const command=containerCommand(script,containerSeconds);
   if(!isAbsolute(bundle)||bundle.includes(',')||!/^sha256:[a-f0-9]{64}$/.test(imageId)||typeof script!=='string'||script.length>8192)throw new WorkerStopped('configuration');
   const name='inveos-leased-'+randomUUID();
   const run=(args:string[],active=true,limit=1048576)=>superviseWorker({command:docker,args:[endpoint,...args],cwd:bundle,
@@ -37,10 +44,10 @@ export async function runResearchContainer(settings:Settings,renew:()=>Promise<b
     // Reject image-declared volumes; the fixed runtime does not need writable image mounts.
     const image=JSON.parse((await run(['image','inspect',imageId])).toString())[0];
     require(image.Id===imageId&&(!image.Config.Volumes||Object.keys(image.Config.Volumes).length===0));
-    await run(['create','--pull=never','--name',name,'--label','inveos.research-worker=true','--network=none','--log-driver=none',
+    await run(['create','--pull=never','--name',name,'--label','inveos.research-worker=true','--network=none','--log-driver=none','--restart=no',
       '--user=65534:65534','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges:true','--memory=1024m','--memory-swap=1024m','--cpus=0.5','--pids-limit=32',
-      `--tmpfs=/scratch:${scratch}`,`--tmpfs=/output:${output}`,'--mount',`type=bind,src=${bundle},dst=/original,readonly`,'--entrypoint=/bin/bash',imageId,'-ceu',script]);
-    const info=JSON.parse((await run(['inspect',name])).toString())[0];validateContainer(info,bundle,imageId);
+      `--tmpfs=/scratch:${scratch}`,`--tmpfs=/output:${output}`,'--mount',`type=bind,src=${bundle},dst=/original,readonly`,'--entrypoint=/usr/bin/timeout',imageId,...command]);
+    const info=JSON.parse((await run(['inspect',name])).toString())[0];validateContainer(info,bundle,imageId,command);
     result=await run(['start','-a',name],true,outputLimit);
   }catch(error){failure=error;}
   finally{

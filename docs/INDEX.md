@@ -127,3 +127,5 @@
 - [Durable document results](59_DURABLE_DOCUMENT_RESULTS.md) — fenced native-result attachment and unreviewed page/region inspection.
 
 - [Leased native research worker](60_LEASED_NATIVE_RESEARCH_WORKER.md) — qualified container execution, explicit cleanup and durable PDF attachment.
+
+- [Container crash deadline](61_CONTAINER_CRASH_DEADLINE.md) — independent execution limit after orchestrator loss.

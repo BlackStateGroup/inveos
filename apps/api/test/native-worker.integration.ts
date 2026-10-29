@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {randomUUID,createHash} from 'node:crypto';
-import {mkdtemp,readFile,rm,readdir,chmod} from 'node:fs/promises';
+import {mkdtemp,readFile,rm,readdir,chmod,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {spawnSync} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
 import {createPool,runMigrations} from '../src/db.js';
 import {createApp} from '../src/app.js';
 import {runNativeDocumentJob} from '../src/native-document-worker.js';
@@ -88,4 +88,29 @@ test('actual PostgreSQL cancellation and authority change stop a running daemon 
     }),(e:unknown)=>e instanceof WorkerStopped&&e.code==='lease_lost');
     assert.equal(changed,true);assert.equal(await containers(),'');assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM document_derivatives WHERE job_id=$1',[scope.jobId])).rows[0].n,0);
   }}finally{await f.close();await rm(bundle,{recursive:true,force:true});}
+});
+
+
+test('container deadline survives SIGKILL of the orchestrator and stops the daemon workload',{timeout:30000},async t=>{
+  const bundle=await mkdtemp('/tmp/inveos-crash-deadline-');await chmod(bundle,0o755);
+  const original=Buffer.from('FICTIONAL crash-bound original');await writeFile(join(bundle,'original.bin'),original,{mode:0o444});
+  let id='';
+  const moduleUrl=new URL('../src/container-worker.ts',import.meta.url).href;
+  const code=`import {runResearchContainer} from ${JSON.stringify(moduleUrl)};await runResearchContainer(${JSON.stringify({bundle,imageId:image,script:'sleep 60',containerSeconds:3,timeoutMs:15000,heartbeatMs:100})},async()=>true);`;
+  const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,stdio:'ignore'});
+  const exited=new Promise<void>((resolve,reject)=>{child.once('exit',()=>resolve());child.once('error',reject);});
+  try{
+    for(let i=0;i<50;i++){id=(await docker(['container','ls','-q','--filter','label=inveos.research-worker=true'])).trim();if(id)break;await new Promise(r=>setTimeout(r,100));}
+    assert.match(id,/^[a-f0-9]{12,64}$/);assert.equal(JSON.parse(await docker(['inspect',id]))[0].State.Running,true);
+    child.kill('SIGKILL');await exited;assert.equal(child.signalCode,'SIGKILL');
+    let info;
+    for(let i=0;i<60;i++){info=JSON.parse(await docker(['inspect',id]))[0];if(!info.State.Running)break;await new Promise(r=>setTimeout(r,100));}
+    assert.equal(info.State.Running,false);assert.equal(info.State.ExitCode,137);
+    assert.deepEqual(await readFile(join(bundle,'original.bin')),original);
+    t.diagnostic('Orchestrator killed; independent container deadline stopped workload with exit 137. Stopped container required explicit removal.');
+  }finally{
+    if(child.exitCode===null&&child.signalCode===null){child.kill('SIGKILL');await exited;}
+    if(id)await docker(['rm','-f','-v',id]);await rm(bundle,{recursive:true,force:true});
+  }
+  assert.equal(await containers(),'');
 });
