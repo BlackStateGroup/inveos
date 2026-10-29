@@ -3175,6 +3175,11 @@ test('real browser inspects durable unreviewed page references and removes stale
       await eventually(async()=>(await ui.text()).includes('Unreviewed document passages'),'document inspection');
       const text=await ui.text();assert.ok(text.includes('Page 2 · #/texts/1 · extracted UTF-8 bytes [34, 67)'));assert.ok(text.includes('Completeness still needs human review.'));assert.ok(text.includes('origin BOTTOMLEFT'));
       assert.equal(await b.evaluate("document.querySelectorAll('section[aria-label=\"Verified unreviewed document derivative\"] li').length"),2);
+      await b.evaluate("(()=>{const s=document.querySelector('section[aria-label=\"Extracted region map\"] select');s.value='2';s.dispatchEvent(new Event('change',{bubbles:true}));})()");
+      await ui.click('Highlight page 2 passage 1');
+      await eventually(async()=>(await ui.text()).includes('Selected #/texts/1'),'second-page region selection');
+      assert.equal(await b.evaluate("document.querySelector('svg[aria-label=\"Extraction outline for page 2\"] rect').getAttribute('fill')"),'#b45309');
+      assert.ok((await ui.text()).includes('It is not an original PDF image'));
       const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous,'document inspection reload');
       await eventually(async()=>(await ui.text()).includes(label),'durable document restored');await ui.click(label);await eventually(async()=>(await ui.text()).includes('Unreviewed document passages'),'document reinspection');
       const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional corrupt original');

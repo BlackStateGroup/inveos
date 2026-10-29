@@ -1,6 +1,6 @@
 import type {InspectionJob} from './derivativeInspection';
-type Reference={itemRef:string;page:number;startByte:number;endByte:number;bbox:{l:number;r:number;b:number;t:number;origin:string}};
-export type InspectedDocument={jobId:string;evidenceId:string;sourceDigest:string;derivativeDigest:string;rawDigest:string;profileDigest:string;processedAt:string;authorityVersion:number;pageCount:number;pagesWithoutText:number[];references:(Reference&{text:string})[]};
+export type Reference={itemRef:string;page:number;startByte:number;endByte:number;bbox:{l:number;r:number;b:number;t:number;origin:string}};
+export type InspectedDocument={jobId:string;evidenceId:string;sourceDigest:string;derivativeDigest:string;rawDigest:string;profileDigest:string;processedAt:string;authorityVersion:number;pageCount:number;pages:{page:number;width:number;height:number}[];pagesWithoutText:number[];references:(Reference&{text:string})[]};
 const fail=():never=>{throw new Error('Document derivative identity or ranges could not be verified. Refresh processing history and retry.');};
 const hex=/^[a-f0-9]{64}$/;
 async function sha(value:string){const bytes=new TextEncoder().encode(value);return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');}
@@ -26,5 +26,5 @@ export async function inspectDocumentDerivative(value:unknown,job:InspectionJob)
   });
   const missing=counts.flatMap((n,i)=>n?[]:[i+1]);
   if(offset!==bytes.length||JSON.stringify(counts)!==JSON.stringify(d.coverage.pageTextCounts)||JSON.stringify(missing)!==JSON.stringify(d.coverage.pagesWithoutText)||d.coverage.disposition!==(missing.length?'needs_page_review':'unreviewed_text'))fail();
-  return {jobId:row.jobId,evidenceId:row.evidenceId,sourceDigest:row.sourceDigest,derivativeDigest:row.derivativeDigest,rawDigest:row.rawDigest,profileDigest:row.profileDigest,processedAt:row.processedAt,authorityVersion:row.authorityVersion,pageCount:d.pages.length,pagesWithoutText:missing,references};
+  return {jobId:row.jobId,evidenceId:row.evidenceId,sourceDigest:row.sourceDigest,derivativeDigest:row.derivativeDigest,rawDigest:row.rawDigest,profileDigest:row.profileDigest,processedAt:row.processedAt,authorityVersion:row.authorityVersion,pageCount:d.pages.length,pages:d.pages.map(p=>({...p})),pagesWithoutText:missing,references};
 }

@@ -1,3 +1,4 @@
+import {DocumentRegionMap} from './DocumentRegionMap';
 import {inspectDocumentDerivative,type InspectedDocument} from './documentInspection';
 import {useEffect,useRef,useState} from 'react';
 import {inspectTextDerivative,type InspectedDerivative} from './derivativeInspection';
@@ -90,6 +91,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       <p role="status">{document.pagesWithoutText.length?`Pages without extracted text: ${document.pagesWithoutText.join(', ')}. Review these pages separately.`:'Text is present on every page. Completeness still needs human review.'}</p>
       <p>Original SHA-256: {document.sourceDigest}</p><p>Derivative SHA-256: {document.derivativeDigest}</p>
       <p>Raw output SHA-256: {document.rawDigest}</p><p>Runtime profile SHA-256: {document.profileDigest}</p>
+      <DocumentRegionMap key={document.jobId} document={document}/>
       <ol start={linePage*100+1}>{document.references.slice(linePage*100,(linePage+1)*100).map(ref=><li key={ref.itemRef}>
         <p>Page {ref.page} · {ref.itemRef} · extracted UTF-8 bytes [{ref.startByte}, {ref.endByte})</p>
         <p>Region: left {ref.bbox.l}, right {ref.bbox.r}, bottom {ref.bbox.b}, top {ref.bbox.t} · origin {ref.bbox.origin}</p>

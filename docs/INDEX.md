@@ -129,3 +129,5 @@
 - [Leased native research worker](60_LEASED_NATIVE_RESEARCH_WORKER.md) — qualified container execution, explicit cleanup and durable PDF attachment.
 
 - [Container crash deadline](61_CONTAINER_CRASH_DEADLINE.md) — independent execution limit after orchestrator loss.
+
+- [Document region map](62_DOCUMENT_REGION_MAP.md) — page-scaled unreviewed extraction locations.

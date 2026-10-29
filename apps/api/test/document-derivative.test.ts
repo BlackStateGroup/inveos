@@ -82,3 +82,16 @@ test('browser contract preserves missing-page warning and treats extracted marku
   const output=run(data);const checked=await inspectDocumentDerivative({...response,derivative:output.derivative,derivativeDigest:output.digest,rawDigest:output.rawDigest},job);
   assert.deepEqual(checked.pagesWithoutText,[2]);assert.equal(checked.references[0]!.text,data.texts[0].text);
 });
+
+test('page map converts both origins without mutating native coordinates and rejects invalid geometry',async()=>{
+  const {displayRegion}=await import('../../web/src/documentRegion.js');
+  const page={width:200,height:400},bottom={l:20,r:100,b:300,t:360,origin:'BOTTOMLEFT'};
+  const before=structuredClone(bottom);
+  assert.deepEqual(displayRegion(page,bottom),{x:0.1,y:1-0.9,width:0.4,height:0.15});
+  assert.deepEqual(displayRegion(page,{...bottom,t:40,b:100,origin:'TOPLEFT'}),{x:0.1,y:0.1,width:0.4,height:0.15});
+  assert.deepEqual(bottom,before);
+  for(const change of [{l:-1},{r:201},{b:401},{t:300},{origin:'unknown'},{l:NaN}])assert.throws(()=>displayRegion(page,{...bottom,...change}));
+  assert.throws(()=>displayRegion({width:0,height:400},bottom));
+  const {job,response}=await clientFixture();const {inspectDocumentDerivative}=await import('../../web/src/documentInspection.js');
+  const checked=await inspectDocumentDerivative(response,job);assert.deepEqual(checked.pages,response.derivative.pages);
+});
