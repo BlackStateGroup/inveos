@@ -259,6 +259,28 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     });
   });
 
+
+  app.get('/api/work/queue', {preHandler: internal}, async (request) => {
+    const actor = request.actor!;
+    return inTransaction(services.pool, async (client) => {
+      // Assignment never creates access: the current case membership is required on every read.
+      const rows = await client.query(
+        `SELECT w.*, w.due_date::text AS due_date, c.ref AS case_ref, c.title AS case_title
+           FROM case_work_items w
+           JOIN case_memberships cm ON cm.tenant_id = w.tenant_id AND cm.case_id = w.case_id AND cm.user_id = $2
+           JOIN cases c ON c.tenant_id = w.tenant_id AND c.id = w.case_id
+          WHERE w.tenant_id = $1 AND w.owner_id = $2
+          ORDER BY (w.due_date IS NULL), w.due_date ASC, w.updated_at DESC, w.id ASC
+          LIMIT 101`,
+        [actor.tenantId, actor.userId],
+      );
+      const items = rows.rows.slice(0, 100).map((row) => ({
+        ...displayWork(row), caseRef: row.case_ref, caseTitle: row.case_title,
+      }));
+      return {items, more: rows.rows.length > 100, interpretation: 'assigned_work_not_a_finding'};
+    });
+  });
+
   app.post('/api/cases/:caseId/work/:itemId/links', {
     preHandler: services.requireCsrf,
     schema: {params, body: {type: 'object', additionalProperties: false, required: ['id', 'claimId', 'relation', 'reason'],
