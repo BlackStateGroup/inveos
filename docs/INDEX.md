@@ -172,3 +172,6 @@
 - [Provider identity sessions](83_PROVIDER_IDENTITY.md): limited code/PKCE integration, membership enrolment/revocation, investigator and client sign-in, explicit remaining provider/MFA acceptance.
 
 - [Case search and private saved views](85_CASE_SEARCH_VIEWS.md): permission-filtered stored records, private versioned filters and actual test boundaries.
+
+
+- [Internal work discussions and case mentions](86_WORK_DISCUSSIONS.md): attributed comments, immutable corrections, scoped mentions and explicit per-version read state.

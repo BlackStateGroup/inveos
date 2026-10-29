@@ -1,5 +1,6 @@
 import {registerCaseGraph} from './case-graph.js';
 import type {ChronologySource} from '@inveos/contracts';
+import {registerWorkDiscussions} from './work-discussions.js';
 import {registerCaseSearch} from './case-search.js';
 import {identityRoutes} from './identity-routes.js';
 import type {IdentityProvider} from './oidc.js';
@@ -629,6 +630,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   });
 
+  registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   const verifiedFinding=async(client:PoolClient,actor:Actor,caseId:string,reference:ChronologySource)=>{
       const kase=await findCase(client,actor,caseId);

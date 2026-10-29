@@ -172,3 +172,6 @@ export type GraphProposal = Omit<GraphProposalInput,'from'|'to'|'sources'> & {ca
 export type GraphReview = {id:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string;digest:string};
 export type GraphRelationship = {proposal:GraphProposal;review:GraphReview|null;state:'candidate'|'confirmed'|'rejected'|'withdrawn'|'needs_review';canReview:boolean};
 export type CaseGraph = {entities:GraphEntity[];relationships:GraphRelationship[];sourceVerification:'not_checked_on_listing'};
+export type WorkCommentInput={body:string;mentions:string[];reason:string};
+export type WorkComment={id:string;itemId:string;authorId:string;authorName:string;version:number;body:string;mentions:{userId:string;name:string}[];withdrawn:boolean;reason:string;createdAt:string;recordedAt:string;canEdit:boolean};
+export type WorkMentionPage={items:{commentId:string;itemId:string;version:number;authorName:string;excerpt:string;title:string;recordedAt:string}[];more:boolean};
