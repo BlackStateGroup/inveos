@@ -1,3 +1,4 @@
+import base64
 import subprocess
 from pathlib import Path
 import sys
@@ -5,7 +6,7 @@ import unittest
 
 ROOT=Path(__file__).resolve().parent.parent
 sys.path.insert(0,str(ROOT/'tools'))
-from run_ocr_corpus import CASES, distance, measure, source, tokens
+from run_ocr_corpus import CASES, distance, measure, observed_text, source, tokens
 
 
 class OcrCorpusDefinitionTests(unittest.TestCase):
@@ -38,3 +39,12 @@ class OcrCorpusDefinitionTests(unittest.TestCase):
     def test_definition_and_metric_checks_do_not_import_native_runtimes(self):
         code="import sys;sys.path.insert(0,"+repr(str(ROOT/'tools'))+");import run_ocr_corpus;assert 'pypdfium2' not in sys.modules;assert 'PIL.Image' not in sys.modules"
         subprocess.run([sys.executable,'-I','-c',code],capture_output=True,check=True,timeout=10)
+
+    def test_tsv_quotes_are_literal_tokens_not_csv_record_delimiters(self):
+        from run_tesseract_supplier import words
+        header='level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n'
+        raw=(header+'5\t1\t1\t1\t1\t1\t1\t1\t2\t2\t50\t"\n'+'5\t1\t1\t1\t1\t2\t4\t1\t20\t2\t95\tATLAS\n'+'5\t1\t1\t1\t1\t3\t26\t1\t10\t2\t94\t60\n').encode()
+        actual=observed_text({'pages':[{'tsvBase64':base64.b64encode(raw).decode()}]})
+        self.assertEqual(actual,'" ATLAS 60')
+        self.assertTrue(measure('ATLAS 60',actual)['normalisedExact'])
+        self.assertEqual([word['text'] for word in words(raw,64,64)],['"','ATLAS','60'])

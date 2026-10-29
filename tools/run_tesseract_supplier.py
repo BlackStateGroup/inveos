@@ -22,7 +22,7 @@ def sha(data):return hashlib.sha256(data).hexdigest()
 def words(raw,width,height):
     if len(raw)>1024*1024:raise ValueError('TSV output limit exceeded')
     result=[]
-    for row in csv.DictReader(io.StringIO(raw.decode('utf-8')),delimiter='\t'):
+    for row in csv.DictReader(io.StringIO(raw.decode('utf-8')),delimiter='\t',quoting=csv.QUOTE_NONE):
         if row.get('level')!='5':continue
         if len(result)>=1000:raise ValueError('Word limit exceeded')
         x,y,w,h=[int(row[key]) for key in ('left','top','width','height')];confidence=float(row['conf']);text=row['text']

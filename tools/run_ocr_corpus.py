@@ -113,7 +113,7 @@ def observed_text(result):
     words=[]
     for page in result['pages']:
         data=base64.b64decode(page['tsvBase64'],validate=True).decode('utf8')
-        for row in csv.DictReader(io.StringIO(data),delimiter='\t'):
+        for row in csv.DictReader(io.StringIO(data),delimiter='\t',quoting=csv.QUOTE_NONE):
             if row.get('level')=='5' and row.get('text','').strip():words.append(row['text'])
     return ' '.join(words)
 
@@ -140,6 +140,7 @@ def run():
                 text=observed_text(result)
                 attempts.append({'outcome':'actual_ocr_output','elapsedSeconds':round(time.monotonic()-started,6),
                                  'rawSha256':hashlib.sha256(json.dumps(result,separators=(',',':')).encode()).hexdigest(),
+                                 'tsvPages':[{'page':page['page'],'tsvBase64':page['tsvBase64'],'tsvSha256':hashlib.sha256(base64.b64decode(page['tsvBase64'],validate=True)).hexdigest()} for page in result['pages']],
                                  'metrics':measure(expected,text)})
         stable=all(a['outcome']==attempts[0]['outcome'] and a.get('rawSha256')==attempts[0].get('rawSha256') and a.get('reason')==attempts[0].get('reason') for a in attempts)
         cases.append({'case':name,'fictional':True,'originalSha256':hashlib.sha256(original).hexdigest(),'originalBytes':len(original),
