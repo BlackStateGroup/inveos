@@ -2,6 +2,8 @@
 
 29 October 2026. First bounded R4 slice, continuing draft PR #66. Fictional lab material only.
 
+Subsequent delivery: [independent PDF review and restricted recipient release](78_REVIEWED_PDF_RELEASE.md) extends this original internal-only slice. Its exact database/browser evidence and remaining gates are recorded separately there.
+
 ## Implemented contract
 
 Migration 028 stores append-only, versioned PDF renditions of an immutable frozen report. Each record binds the source report fingerprint, generation-profile fingerprint, exact redaction plan and fingerprint, redacted semantic model and fingerprint, exact PDF bytes and delivery fingerprint. Reviewer-only creation revalidates the current frozen finding lineage and authority before a new rendition is written. The stable idempotency key survives a lost browser response. A historical exact retry and download remain reproducible from the immutable report, plan and bytes; later source-review changes block a new rendition but do not rewrite the old one.
