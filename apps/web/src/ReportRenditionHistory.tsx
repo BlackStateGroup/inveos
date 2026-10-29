@@ -32,7 +32,7 @@ export function ReportRenditionHistory({caseId,revisionId,reportSha256,csrf}:{ca
   const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),link=document.createElement('a');link.href=url;link.download=`internal-report-${row.id}.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setMessage('Saved PDF verified and downloaded. No new rendition was created.');
  }
  return <details><summary>Saved PDF renditions</summary>
-  <p>Retrieve an existing internal PDF without generating another version. These files are not client releases.</p>
+  <p>Retrieve an existing PDF without generating another version. Client delivery requires independent PDF review and an explicit recipient disclosure.</p>
   <button className="secondary" disabled={busy} onClick={()=>void run(signal=>load(signal))}>Load saved PDFs {revisionId.slice(0,8)}</button>
   {error&&<p role="alert">{error} Retry loading saved PDFs.</p>}<p role="status">{busy?'Verifying saved renditions…':message}</p>
   <ul>{rows.map(row=><li key={row.id}><p>{row.redactedFindingCount?`${row.redactedFindingCount} findings redacted`:'Unredacted'} · {row.createdAt}</p>

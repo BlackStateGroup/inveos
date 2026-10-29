@@ -3539,7 +3539,7 @@ test('PDF review is independent, fingerprint-bound, append-only and retry-safe',
   assertError(await request('GET',f.base+'/reviews',f.recipient),403);
   assertError(await request('POST',f.base+'/reviews',f.reviewer,{payload:f.review,csrfHeader:false}),403);
   assertError(await request('POST',f.base+'/reviews',f.reviewer,{payload:{...f.review,pdfSha256:'0'.repeat(64)}}),409);
-  assertError(await request('POST',f.base+'/reviews',f.reviewer,{payload:{...f.review,confirmInspected:false}}),400);
+  assertError(await request('POST',f.base+'/reviews',f.reviewer,{payload:{...f.review,confirmInspected:false}}),422);
   const results=await Promise.all([request('POST',f.base+'/reviews',f.reviewer,{payload:f.review}),request('POST',f.base+'/reviews',f.reviewer,{payload:f.review})]);for(const r of results)assert.equal(r.statusCode,200,r.body);assert.deepEqual(results[0]!.json(),results[1]!.json());
   assertError(await request('POST',f.base+'/reviews',f.reviewer,{payload:{...f.review,decision:'request_changes'}}),409);
   await assert.rejects(context.schemaAdminPool!.query('DELETE FROM report_rendition_reviews WHERE rendition_id=$1',[f.rendition.id]),/append.only|immutable/i);
