@@ -598,6 +598,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
+    verifyDocumentFinding: async (client,actor,caseId,findingId) => {
+      for await (const finding of reportDocumentFindings(client,actor,caseId,[findingId])) return finding;
+      return notFound();
+    },
     verifyClaim: async (client, actor, caseId, claimId) => {
       const claim = await findClaim(client, actor, caseId, claimId);
       const source = await findEvidence(client, actor, caseId, claim.evidence_id);
@@ -744,7 +748,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     );
     workspace.workItems = workResult.rows.map(displayWork);
     const linksResult = await options.pool.query(
-      `SELECT l.* FROM case_work_links l JOIN case_memberships cm ON cm.tenant_id=l.tenant_id AND cm.case_id=l.case_id
+      `SELECT l.*, x.reason AS withdrawal_reason, x.created_by AS withdrawn_by, x.created_at AS withdrawn_at FROM case_work_links l LEFT JOIN case_work_link_withdrawals x ON x.tenant_id=l.tenant_id AND x.case_id=l.case_id AND x.link_id=l.id JOIN case_memberships cm ON cm.tenant_id=l.tenant_id AND cm.case_id=l.case_id
         WHERE l.tenant_id=$1 AND cm.user_id=$2 ORDER BY l.created_at, l.id`, [actor.tenantId, actor.userId],
     );
     workspace.workLinks = linksResult.rows.map(displayWorkLink);
@@ -1263,7 +1267,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   );
 
   // Cursor names are fixed application constants. Transaction end also closes them on failure.
-  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work', sql: string, values: unknown[], message: string) {
+  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work' | 'report_document_work_links', sql: string, values: unknown[], message: string) {
     await client.query(`DECLARE ${name} NO SCROLL CURSOR FOR ${sql}`, values);
     let count = 0;
     for (;;) {
@@ -1405,6 +1409,16 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           : item.kind === 'hypothesis' ? context.hypotheses : context.blockers;
         budget.add(item, 0, target.length > 0);
         target.push(item);
+      }
+      const workIds = [...report.investigation!.objectives,...report.investigation!.questions,...report.investigation!.hypotheses,...report.investigation!.blockers].map(w=>w.id);
+      for await(const row of reportRows(client,'report_document_work_links',
+        'SELECT l.* FROM case_work_links l WHERE tenant_id=$1 AND case_id=$2 AND item_id=ANY($3::uuid[]) AND document_finding_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM case_work_link_withdrawals x WHERE x.tenant_id=l.tenant_id AND x.case_id=l.case_id AND x.link_id=l.id) ORDER BY created_at,id LIMIT 1001',
+        [actor.tenantId,caseId,workIds],'Report document source link limit exceeded.')) {
+        if(!report.documentFindings?.some(f=>f.id===row.document_finding_id))throw new ApiError(409,'Working context references an unavailable document finding.');
+        const link=displayWorkLink(row);
+        if(!('kind' in link))throw new ApiError(409,'Invalid document source type.');
+        if(!report.investigation!.documentLinks){budget.add({documentLinks:[]},0,true);report.investigation!.documentLinks=[];}
+        budget.add(link,0,report.investigation!.documentLinks.length>0);report.investigation!.documentLinks.push(link);
       }
       return report;
   }

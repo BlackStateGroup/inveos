@@ -160,3 +160,5 @@
 - [Document-processing research decision and synthetic contract](../research/document_processing/DECISION.md): pinned licence/dependency review, worker boundary and explicit verification limits.
 
 - [Scanned document lineage and supplier case acceptance](79_SCANNED_DOCUMENT_LINEAGE.md)
+
+- [Document findings in investigation reasoning](80_DOCUMENT_REASONING.md)

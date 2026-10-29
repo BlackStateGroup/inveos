@@ -516,6 +516,9 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       if(kase.status!=='Active'||kase.authority_version!==state.row.authority_version)throw new ApiError(409,'Current authority must match report document extraction.');
       if(!claim?.finding||claim.finding.id!==entry.id||!claim.decision?.accepted||!claim.correspondenceCurrent||!state.latest||state.latest.digest!==claim.correspondenceReviewDigest)throw new ApiError(409,'Report document finding requires its current accepted correspondence review.');
       const r=state.row,c=state.checked.citation,d=claim.decision,review=state.latest;
+      const reviewers=[...new Set([d.reviewedBy,review.reviewedBy])];
+      const authorised=await client.query("SELECT cm.user_id FROM case_memberships cm JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id WHERE cm.tenant_id=$1 AND cm.case_id=$2 AND cm.user_id=ANY($3::uuid[]) AND m.role='reviewer'",[actor.tenantId,caseId,reviewers]);
+      if(authorised.rowCount!==reviewers.length)throw new ApiError(409,'Document finding reviewers must remain authorised for this case.');
       yield {kind:'derived_document',id:entry.id,text:claim.text,reviewer:d.reviewedBy,reviewedAt:d.reviewedAt,
         source:{id:r.evidence_id,filename:r.filename,sha256:r.source_digest.trim(),sourceTime:r.source_time,receivedTime:new Date(r.received_time).toISOString(),authorityId:r.authority_id,authorityVersion:r.source_authority_version},
         extraction:{jobId:r.job_id,authorityVersion:r.authority_version,attempt:r.attempt,processedAt:new Date(r.processed_at).toISOString(),profile:r.profile,profileDigest:r.profile_digest.trim(),rawDigest:r.raw_digest.trim(),derivativeDigest:r.output_digest.trim()},

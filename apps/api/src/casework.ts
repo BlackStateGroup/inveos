@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
-import { workStatuses, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision } from '@inveos/contracts';
+import { workStatuses, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding } from '@inveos/contracts';
 import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -11,6 +11,7 @@ type Services = {
   authenticate: (request: FastifyRequest) => Promise<void>;
   requireCsrf: (request: FastifyRequest) => Promise<void>;
   findCase: (client: PoolClient, actor: Actor, id: string, lock?: boolean) => Promise<unknown>;
+  verifyDocumentFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<DocumentReportFinding>;
   verifyClaim: (client: PoolClient, actor: Actor, caseId: string, claimId: string) => Promise<void>;
   audit: (client: PoolClient, actor: Actor, caseId: string, action: string, entityType: string, id: string, summary: string, metadata?: Record<string, unknown>) => Promise<void>;
 };
@@ -37,7 +38,7 @@ export function displayWork(row: QueryResultRow): WorkItem {
   };
 }
 export function displayWorkLink(row: QueryResultRow): WorkLink {
-  return {id: row.id, caseId: row.case_id, itemId: row.item_id, claimId: row.claim_id, relation: row.relation,
+  return {id: row.id, caseId: row.case_id, itemId: row.item_id, ...(row.document_finding_id ? {kind: 'document_finding' as const, findingId: row.document_finding_id, ...(row.withdrawn_at ? {withdrawal:{reason:row.withdrawal_reason,createdBy:row.withdrawn_by,createdAt:iso(row.withdrawn_at)}} : {})} : {claimId: row.claim_id}), relation: row.relation,
     reason: row.reason, createdBy: row.created_by, createdAt: iso(row.created_at)};
 }
 
@@ -77,11 +78,21 @@ async function findWork(client: PoolClient, actor: Actor, caseId: string, id: st
   return result.rows[0];
 }
 
+async function workSources(client:PoolClient,actor:Actor,caseId:string,itemId:string,children=false):Promise<QueryResultRow[]> {
+  const rows=(await client.query(`SELECT l.* FROM case_work_links l WHERE NOT EXISTS (SELECT 1 FROM case_work_link_withdrawals x WHERE x.tenant_id=l.tenant_id AND x.case_id=l.case_id AND x.link_id=l.id) AND l.tenant_id=$1 AND l.case_id=$2 AND
+    (l.item_id=$3 OR ($4 AND l.item_id IN (SELECT id FROM case_work_items WHERE tenant_id=$1 AND case_id=$2 AND parent_id=$3 AND kind='hypothesis')))
+    ORDER BY l.created_at,l.id LIMIT 1001`,[actor.tenantId,caseId,itemId,children])).rows;
+  if(rows.length>1000)throw new ApiError(422,'Working source limit exceeded.');
+  return rows;
+}
+
 async function recordRevision(client: PoolClient, actor: Actor, item: WorkItem, reason: string): Promise<void> {
+  // Freeze the links visible to this decision. Later links never rewrite earlier assessments.
+  const sources = await workSources(client, actor, item.caseId, item.id, item.kind === 'question');
   await client.query(
-    `INSERT INTO case_work_revisions (tenant_id, case_id, item_id, version, snapshot, actor_id, actor_name, reason)
-      VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)`,
-    [actor.tenantId, item.caseId, item.id, item.version, JSON.stringify(item), actor.userId, actor.displayName, reason],
+    `INSERT INTO case_work_revisions (tenant_id, case_id, item_id, version, snapshot, actor_id, actor_name, reason, source_links)
+      VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb)`,
+    [actor.tenantId, item.caseId, item.id, item.version, JSON.stringify(item), actor.userId, actor.displayName, reason, JSON.stringify(sources.map(displayWorkLink))],
   );
 }
 
@@ -153,13 +164,16 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
       if (current.kind === 'handover' && input.status === 'Acknowledged' && input.ownerId !== current.ownerId) {
         throw new ApiError(422, 'Reassign this handover separately before the new recipient acknowledges it.');
       }
-      if (current.kind === 'hypothesis' && ['Supported', 'Disputed'].includes(input.status)) {
-        const sources = await client.query(
-          'SELECT claim_id FROM case_work_links WHERE tenant_id=$1 AND case_id=$2 AND item_id=$3 AND relation=$4',
-          [actor.tenantId, caseId, itemId, input.status === 'Supported' ? 'supports' : 'contradicts'],
-        );
-        if (!sources.rowCount) throw new ApiError(422, 'Link supporting or contrary source material before recording this assessment.');
-        for (const source of sources.rows) await services.verifyClaim(client, actor, caseId, source.claim_id);
+      if ((current.kind === 'hypothesis' && ['Supported', 'Disputed'].includes(input.status)) || (current.kind === 'question' && input.status === 'Resolved')) {
+        const sources = await workSources(client, actor, caseId, itemId, current.kind === 'question');
+        if (current.kind === 'hypothesis' && !sources.some(s => s.relation === (input.status === 'Supported' ? 'supports' : 'contradicts'))) {
+          throw new ApiError(422, 'Link supporting or contrary source material before recording this assessment.');
+        }
+        // Check contrary/context as well as supporting material; no cherry-picked stale sources.
+        for (const source of sources) {
+          if (source.document_finding_id) await services.verifyDocumentFinding(client, actor, caseId, source.document_finding_id);
+          else await services.verifyClaim(client, actor, caseId, source.claim_id);
+        }
       }
       await checkOwner(client, actor, caseId, input.ownerId);
       const updated = await client.query(
@@ -181,7 +195,67 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
       await services.findCase(client, actor, caseId);
       await findWork(client, actor, caseId, itemId);
       const rows = await client.query('SELECT * FROM case_work_revisions WHERE tenant_id=$1 AND case_id=$2 AND item_id=$3 ORDER BY version DESC', [actor.tenantId, caseId, itemId]);
-      return rows.rows.map((row) => ({version: row.version, item: row.snapshot, actor: row.actor_name, reason: row.reason, at: iso(row.created_at)} satisfies WorkRevision));
+      return rows.rows.map((row) => ({...(row.source_links === null ? {} : {sources: row.source_links}), version: row.version, item: row.snapshot, actor: row.actor_name, reason: row.reason, at: iso(row.created_at)} satisfies WorkRevision));
+    });
+  });
+
+  app.get('/api/cases/:caseId/work/document-findings', {
+    preHandler: internal, schema: {params: caseParams, querystring: {type:'object',additionalProperties:false,properties:{after:uuid}}},
+  }, async request => {
+    const actor=request.actor!, {caseId}=request.params as {caseId:string}, {after}=request.query as {after?:string};
+    return inTransaction(services.pool,async client=>{
+      await services.findCase(client,actor,caseId);
+      const rows=(await client.query('SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51',[actor.tenantId,caseId,after??null])).rows;
+      return {items:rows.slice(0,50),nextAfter:rows.length>50?rows[49].id:null, status:'historical_candidates_reverification_required'};
+    });
+  });
+  app.get('/api/cases/:caseId/work/document-findings/:findingId', {
+    preHandler:internal,schema:{params:{type:'object',additionalProperties:false,required:['caseId','findingId'],properties:{caseId:uuid,findingId:uuid}}},
+  }, async (request,reply)=>{
+    reply.header('Cache-Control','no-store');
+    const actor=request.actor!,{caseId,findingId}=request.params as {caseId:string;findingId:string};
+    return inTransaction(services.pool,async client=>{
+      await services.findCase(client,actor,caseId,true);
+      const finding=await services.verifyDocumentFinding(client,actor,caseId,findingId);
+      await services.audit(client,actor,caseId,'work.document_source_read','document_finding',findingId,'Reverified document source for investigation reasoning');
+      return finding;
+    });
+  });
+  app.post('/api/cases/:caseId/work/:itemId/document-links/:linkId/withdraw', {
+    preHandler:[services.requireCsrf,internal],schema:{params:{...params,required:['caseId','itemId','linkId'],properties:{...params.properties,linkId:uuid}},
+      body:{type:'object',additionalProperties:false,required:['reason'],properties:{reason:{type:'string',minLength:1,maxLength:3000}}}},
+  }, async request=>{
+    const actor=request.actor!,{caseId,itemId,linkId}=request.params as {caseId:string;itemId:string;linkId:string}, {reason}=request.body as {reason:string};
+    validateText({title:'Withdrawal',body:'',dueDate:null},reason);
+    return inTransaction(services.pool,async client=>{
+      await services.findCase(client,actor,caseId,true);await findWork(client,actor,caseId,itemId);
+      const link=(await client.query('SELECT * FROM case_work_links WHERE tenant_id=$1 AND case_id=$2 AND item_id=$3 AND id=$4 AND document_finding_id IS NOT NULL',[actor.tenantId,caseId,itemId,linkId])).rows[0];if(!link)notFound();
+      const old=(await client.query('SELECT * FROM case_work_link_withdrawals WHERE tenant_id=$1 AND case_id=$2 AND link_id=$3',[actor.tenantId,caseId,linkId])).rows[0];
+      if(old){if(old.reason!==reason||old.created_by!==actor.userId)throw new ApiError(409,'A different withdrawal is already recorded.');return {reason:old.reason,createdBy:old.created_by,createdAt:iso(old.created_at)};}
+      const saved=(await client.query('INSERT INTO case_work_link_withdrawals(tenant_id,case_id,link_id,reason,created_by) VALUES($1,$2,$3,$4,$5) RETURNING *',[actor.tenantId,caseId,linkId,reason,actor.userId])).rows[0];
+      await services.audit(client,actor,caseId,'work.document_source_withdrawn','case_work',itemId,'Historical link retained; source withdrawn from current reasoning',{linkId,reason});
+      return {reason,createdBy:actor.userId,createdAt:iso(saved.created_at)};
+    });
+  });
+  app.post('/api/cases/:caseId/work/:itemId/document-links', {
+    preHandler:[services.requireCsrf,internal],
+    schema:{params,body:{type:'object',additionalProperties:false,required:['id','findingId','relation','reason'],properties:{id:uuid,findingId:uuid,relation:{enum:['supports','contradicts','context']},reason:{type:'string',minLength:1,maxLength:3000}}}},
+  }, async request=>{
+    const actor=request.actor!,{caseId,itemId}=request.params as {caseId:string;itemId:string},input=request.body as DocumentWorkLinkInput;
+    validateText({title:'Document source',body:'',dueDate:null},input.reason);
+    return inTransaction(services.pool,async client=>{
+      await services.findCase(client,actor,caseId,true);await findWork(client,actor,caseId,itemId);
+      await services.verifyDocumentFinding(client,actor,caseId,input.findingId);
+      const old=(await client.query(`SELECT l.*,w.reason AS withdrawal_reason,w.created_by AS withdrawn_by,w.created_at AS withdrawn_at
+        FROM case_work_links l LEFT JOIN case_work_link_withdrawals w ON w.tenant_id=l.tenant_id AND w.case_id=l.case_id AND w.link_id=l.id
+        WHERE l.tenant_id=$1 AND l.case_id=$2 AND (l.id=$3 OR (l.item_id=$4 AND l.document_finding_id=$5 AND l.relation=$6))`,[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation])).rows[0];
+      if(old){
+        if(old.item_id!==itemId||old.document_finding_id!==input.findingId||old.relation!==input.relation||old.reason!==input.reason||old.created_by!==actor.userId)throw new ApiError(409,'A different source link already exists.');
+        return displayWorkLink(old);
+      }
+      const row=(await client.query('INSERT INTO case_work_links(tenant_id,case_id,id,item_id,document_finding_id,relation,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation,input.reason,actor.userId])).rows[0];
+      await services.audit(client,actor,caseId,'work.document_source_linked','case_work',itemId,'Reviewed document finding linked to working investigation context',{findingId:input.findingId,relation:input.relation});
+      return displayWorkLink(row);
     });
   });
 
@@ -205,7 +279,7 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
       );
       if (previous.rows[0]) {
         const link = displayWorkLink(previous.rows[0]);
-        if (link.itemId !== itemId || link.claimId !== input.claimId || link.relation !== input.relation || link.reason !== input.reason) throw new ApiError(409, 'A different source link already exists.');
+        if (!('claimId' in link) || link.itemId !== itemId || link.claimId !== input.claimId || link.relation !== input.relation || link.reason !== input.reason) throw new ApiError(409, 'A different source link already exists.');
         return link;
       }
       const result = await client.query(

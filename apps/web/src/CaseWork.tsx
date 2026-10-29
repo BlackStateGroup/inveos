@@ -1,6 +1,7 @@
+import {DocumentWorkSources} from './DocumentWorkSources';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, History, Link2, Plus, Search, X } from 'lucide-react';
-import { workStatuses, type WorkEdit, type WorkInput, type WorkItem, type WorkKind, type WorkLinkInput, type WorkRevision } from '@inveos/contracts';
+import { workStatuses, type WorkEdit, type WorkInput, type WorkItem, type WorkKind, type WorkLinkInput, type DocumentWorkLinkInput, type WorkRevision } from '@inveos/contracts';
 import { Badge, Empty, Notice, Panel } from './ui';
 import type { ViewProps } from './CaseViews';
 
@@ -9,6 +10,8 @@ export type WorkActions = {
   create: (input: WorkInput) => Promise<void>;
   revise: (id: string, input: WorkEdit) => Promise<void>;
   link: (id: string, input: WorkLinkInput) => Promise<void>;
+  documentLink: (id: string, input: DocumentWorkLinkInput) => Promise<void>;
+  withdrawDocumentLink: (itemId:string,linkId:string,reason:string)=>Promise<void>;
   history: (id: string) => Promise<WorkRevision[]>;
   refresh: () => Promise<unknown>;
 };
@@ -63,7 +66,7 @@ function WorkForm({p, kind, item, onClose}: {p: ViewProps; kind: WorkKind; item?
       <AssignmentFields p={p} ownerId={item?.ownerId} dueDate={item?.dueDate}/>
       {item && <><label className="form-label">Status<select name="status" defaultValue={item.status}>{workStatuses[kind].map(status => <option key={status}>{status}</option>)}</select></label>
         <label className="form-label">Reason for this revision<textarea name="reason" required maxLength={3000} rows={2} placeholder="Explain the correction, decision or handover acknowledgement."/></label>
-        <p className="small muted">Saving creates version {expectedVersion.current! + 1}. Earlier versions remain in history.</p></>}
+        <p className="small muted">Saving creates version {expectedVersion.current! + 1}. Earlier versions and their source links remain in history.</p></>}
       <div className="work-form-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button>
         <button className="primary" type="submit">{busy ? 'Saving…' : item ? 'Save revision' : `Add ${labels[kind]}`}<Check size={15}/></button></div>
     </fieldset>
@@ -87,7 +90,7 @@ function SourceLinks({p, item}: {p: ViewProps; item: WorkItem}) {
   return <div className="work-sources">
     <div className="work-subheading"><strong>Supporting & contrary material</strong><button className="text-button" onClick={() => setAdding(!adding)}><Link2 size={14}/>{adding ? 'Cancel link' : 'Link a source'}</button></div>
     {links.length === 0 && <p className="small muted">No material linked. A question or hypothesis is not a reviewed finding.</p>}
-    {links.map(link => {
+    {links.filter(link=>'claimId' in link).map(link => {
       const claim = p.data.claims.find(c => c.id === link.claimId && c.caseId === item.caseId);
       const source = p.data.evidence.find(e => e.id === claim?.evidenceId && e.caseId === item.caseId);
       return <div className="work-source" key={link.id}>
@@ -96,6 +99,7 @@ function SourceLinks({p, item}: {p: ViewProps; item: WorkItem}) {
         {source && <button className="text-button" onClick={() => p.inspect(source.id)}>{source.filename}<ArrowUpRight size={14}/></button>}
       </div>;
     })}
+    <DocumentWorkSources key={item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link)} save={p.work.documentLink} withdraw={p.work.withdrawDocumentLink} inspect={p.inspect}/>
     {adding && (claims.length ? <form className="work-link-form" onSubmit={event => void submit(event)}>
       {error && <div className="form-error" role="alert">{error}</div>}
       <fieldset disabled={busy}>
@@ -134,7 +138,7 @@ function WorkRecord({p, item}: {p: ViewProps; item: WorkItem}) {
     {error && <div className="form-error" role="alert">{error}</div>}
     {editing && <WorkForm p={p} kind={item.kind} item={item} onClose={() => {setEditing(false); setRevisions(null);}}/>}
     {revisions && <div className="work-history" aria-label={`History for ${item.title}`}>
-      {revisions.map(revision => <details key={revision.version}><summary>Version {revision.version} · {revision.reason}</summary>
+      {revisions.map(revision => <details key={revision.version}><summary>Version {revision.version} · {revision.reason}</summary>{revision.sources&&<ul aria-label="Sources at this revision">{revision.sources.map(link=><li key={link.id}>{link.relation}: {'kind' in link ? `Document finding ${link.findingId}` : `Text claim ${link.claimId}`} — {link.reason}</li>)}</ul>}
         <p className="small muted">{revision.actor} · {atLabel(revision.at)}</p><strong>{revision.item.title}</strong>
         <p className="work-body">{revision.item.body || 'No details recorded.'}</p><Badge>{revision.item.status}</Badge>
       </details>)}

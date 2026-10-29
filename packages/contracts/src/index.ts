@@ -47,8 +47,9 @@ export type WorkLinkInput = {
   relation: 'supports' | 'contradicts' | 'context';
   reason: string;
 };
-export type WorkLink = WorkLinkInput & {caseId: string; itemId: string; createdBy: string; createdAt: string};
-export type WorkRevision = {version: number; item: WorkItem; actor: string; reason: string; at: string};
+export type DocumentWorkLinkInput = {id: string; findingId: string; relation: WorkLinkInput['relation']; reason: string};
+export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & {kind: 'document_finding'; withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
+export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkItem; actor: string; reason: string; at: string};
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
 export type AuthorityInput = {
@@ -143,6 +144,7 @@ export type ReportDraft = {
     questions: WorkItem[];
     hypotheses: WorkItem[];
     blockers: WorkItem[];
+    documentLinks?: Array<Extract<WorkLink, {kind: 'document_finding'}>>;
   };
   limitations: string;
 };

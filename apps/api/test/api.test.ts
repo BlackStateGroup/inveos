@@ -1181,7 +1181,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -3757,5 +3757,79 @@ test('real browser independently accepts a document-derived finding and recovers
   await ui.click('Record claim decision');await eventually(async()=>await b.evaluate<boolean>(`Boolean([...document.querySelectorAll('button')].find(b=>b.textContent==='Recover pending claim decision'&&!b.disabled))`)&&(await ui.text()).includes('Fictional lost claim decision response'),'unconfirmed finding decision');await ui.click('Recover pending claim decision');await eventually(async()=>(await ui.text()).includes('Accepted document finding'),'recovered accepted finding');
   await b.send('Page.reload');await eventually(async()=>(await ui.text()).includes(inspect),'reloaded document finding case');await ui.click(inspect);await eventually(async()=>(await ui.text()).includes(review),'reloaded document finding candidate');await ui.click(review);await eventually(async()=>(await ui.text()).includes('Accepted document finding'),'persisted accepted document finding');
   assert.ok((await ui.text()).includes(f.claimInput.text));assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_findings WHERE claim_id=$1',[claim.id])).rows[0].n,1);
+ });}finally{await f.app.close();}
+});
+
+// Uses fabricated parser boundary fixtures; actual OCR reasoning is exercised by ocr-worker.integration.ts.
+async function documentReasoningFixture(){
+ const f=await documentReportFixture(),question=parseBody<WorkItem>(await createWork(f.scope.caseId));
+ const hypothesis=parseBody<WorkItem>(await createWork(f.scope.caseId,workInput({kind:'hypothesis',parentId:question.id,title:'Fictional ownership changed between records'})));
+ const base=`/api/cases/${f.scope.caseId}/work`,link={id:randomUUID(),findingId:f.decision.id,relation:'supports',reason:'Fictional reviewed statement supports this working explanation, without proving it.'};
+ return {...f,question,hypothesis,base,link,url:`${base}/${hypothesis.id}/document-links`};
+}
+test('document reasoning links preserve typed identity, assessment source history and independent frozen package joins',async()=>{
+ const f=await documentReasoningFixture();try{
+  const responses=await Promise.all([1,2].map(()=>request('POST',f.url,context.demo!,{payload:f.link})));for(const r of responses)assert.equal(r.statusCode,200,r.body);assert.deepEqual(responses[0]!.json(),responses[1]!.json());assert.equal(responses[0]!.json().kind,'document_finding');assert.equal(responses[0]!.json().claimId,undefined);
+  assertError(await request('POST',f.url,context.demo!,{payload:{...f.link,reason:'Changed retry'}}),409);
+  const candidates=await request('GET',f.base+'/document-findings',context.demo!);assert.equal(candidates.statusCode,200);assert.equal(candidates.json().items[0].id,f.decision.id);
+  const inspected=await request('GET',f.base+'/document-findings/'+f.decision.id,context.demo!);assert.equal(inspected.statusCode,200,inspected.body);assert.equal(inspected.json().reference.citationDigest,f.candidate.citationDigest);
+  const assessed=await reviseWork(f.hypothesis,workEdit(f.hypothesis,{status:'Supported'}));assert.equal(assessed.statusCode,200,assessed.body);
+  const history=(await request('GET',`${f.base}/${f.hypothesis.id}/history`,context.demo!)).json();assert.deepEqual(history[1].sources,[]);assert.equal(history[0].sources[0].findingId,f.decision.id);
+  assert.equal((await reviseWork(f.question,workEdit(f.question,{status:'Resolved',reason:'Fictional supplied records differ; explanation remains uncertain and further collection is outside scope.'}))).statusCode,200);
+  const frozen=await request('POST',f.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(frozen.statusCode,200,frozen.body);const url=f.revisionsUrl+'/'+frozen.json().id;
+  const report=(await request('GET',url,context.demo!)).json();assert.equal(report.investigation.documentLinks[0].findingId,f.decision.id);
+  const packaged=await request('GET',url+'/document-package',context.demo!);assert.equal(packaged.statusCode,200,packaged.body);const file=join(context.storageRoot!,'fictional-reasoning-package.json');await writeFile(file,packaged.rawPayload);
+  const verified=await promisify(execFile)('python3',[fileURLToPath(new URL('../../../tools/verify_document_package.py',import.meta.url)),file]);assert.equal(JSON.parse(verified.stdout).documentWorkLinksChecked,1);
+  await context.app!.close();context.app=await createAppInstance();const workspace=parseBody<Workspace>(await request('GET','/api/workspace',context.demo!));assert.equal(workspace.workLinks.filter(l=>l.id===f.link.id).length,1);
+  const withdrawn=await request('POST',f.url+'/'+f.link.id+'/withdraw',context.demo!,{payload:{reason:'Fictional withdrawal before a delayed duplicate save.'}});assert.equal(withdrawn.statusCode,200,withdrawn.body);
+  const retried=await request('POST',f.url,context.demo!,{payload:f.link});assert.equal(retried.statusCode,200,retried.body);
+  const afterWithdrawal=parseBody<Workspace>(await request('GET','/api/workspace',context.demo!));assert.deepEqual(retried.json(),afterWithdrawal.workLinks.find(l=>l.id===f.link.id));assert.deepEqual(retried.json().withdrawal,withdrawn.json());
+  await assert.rejects(context.schemaAdminPool!.query('DELETE FROM case_work_links WHERE id=$1',[f.link.id]),/append.only/i);
+ }finally{await f.app.close();}
+});
+test('document reasoning rejects foreign scope, stale correspondence, revoked reviewers and changed authority',async()=>{
+ const f=await documentReasoningFixture();try{
+  const outsider=await issueTestSession(await createMember(demoTenantId,'reviewer','Fictional reasoning outsider')),client=await issueTestSession(await createMember(demoTenantId,'client','Fictional reasoning client'));
+  for(const path of [f.base+'/document-findings',f.base+'/document-findings/'+f.decision.id]){assertError(await request('GET',path,outsider),404);assertError(await request('GET',path,client),403);}
+  assertError(await request('POST',f.url,outsider,{payload:f.link}),404);assertError(await request('POST',f.url,client,{payload:f.link}),403);
+  const other=await createCase(),q=parseBody<WorkItem>(await createWork(other.id));assertError(await request('POST',`/api/cases/${other.id}/work/${q.id}/document-links`,context.demo!,{payload:f.link}),404);
+  const linked=await request('POST',f.url,context.demo!,{payload:f.link});assert.equal(linked.statusCode,200,linked.body);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.scope.caseId,demoUserId]);
+  assertError(await request('GET',f.base+'/document-findings/'+f.decision.id,f.authorSession),409);
+  await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.scope.caseId,demoUserId]);
+  const replacement={...f.reviewInput,id:randomUUID(),previousReviewId:f.reviewInput.id,decision:'rejected',reason:'Fictional corrected comparison.',originalCompared:false};assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:replacement})).statusCode,200);
+  assertError(await request('POST',f.url,context.demo!,{payload:f.link}),409);assertError(await reviseWork(f.hypothesis,workEdit(f.hypothesis,{status:'Supported'})),409);assertError(await reviseWork(f.question,workEdit(f.question,{status:'Resolved'})),409);
+  const withdraw=f.url+'/'+f.link.id+'/withdraw',payload={reason:'Fictional correction: withdraw superseded source and retain history.'};assert.equal((await request('POST',withdraw,context.demo!,{payload})).statusCode,200);assert.equal((await request('POST',withdraw,context.demo!,{payload})).statusCode,200);
+  assertError(await reviseWork(f.hypothesis,workEdit(f.hypothesis,{status:'Supported'})),422);
+  assert.equal((await reviseWork(f.question,workEdit(f.question,{status:'Resolved',reason:'Scope closed with no current support; no ownership or wrongdoing conclusion.'}))).statusCode,200);
+  const workspace=(await request('GET','/api/workspace',context.demo!)).json();assert.equal(workspace.workLinks.find((l:{id:string})=>l.id===f.link.id).withdrawal.reason,payload.reason);
+  await assert.rejects(context.schemaAdminPool!.query('DELETE FROM case_work_link_withdrawals WHERE link_id=$1',[f.link.id]),/append.only/i);
+ }finally{await f.app.close();}
+ const g=await documentReasoningFixture();try{await approveAuthority(g.scope.caseId);assertError(await request('POST',g.url,context.demo!,{payload:g.link}),409);}finally{await g.app.close();}
+});
+test('document source links and withdrawals roll back on audit failure; context alone cannot support a hypothesis',async()=>{
+ const f=await documentReasoningFixture();try{
+  await context.schemaAdminPool!.query("CREATE FUNCTION deny_reasoning_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action IN ('work.document_source_linked','work.document_source_withdrawn') THEN RAISE EXCEPTION 'fictional audit failure'; END IF; RETURN NEW; END $$");await context.schemaAdminPool!.query('CREATE TRIGGER deny_reasoning_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_reasoning_audit()');
+  try{assertError(await request('POST',f.url,context.demo!,{payload:f.link}),500);assert.equal((await context.pool!.query('SELECT count(*)::int n FROM case_work_links WHERE id=$1',[f.link.id])).rows[0].n,0);}finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_reasoning_audit ON audit_events');}
+  assert.equal((await request('POST',f.url,context.demo!,{payload:{...f.link,relation:'context'}})).statusCode,200);assertError(await reviseWork(f.hypothesis,workEdit(f.hypothesis,{status:'Supported'})),422);
+  await context.schemaAdminPool!.query('CREATE TRIGGER deny_reasoning_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_reasoning_audit()');
+  try{assertError(await request('POST',f.url+'/'+f.link.id+'/withdraw',context.demo!,{payload:{reason:'Fictional withdrawal'}}),500);assert.equal((await context.pool!.query('SELECT count(*)::int n FROM case_work_link_withdrawals WHERE link_id=$1',[f.link.id])).rows[0].n,0);}finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_reasoning_audit ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION deny_reasoning_audit()');}
+  const evidence=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,evidence.object_path),'Fictional altered source');assertError(await request('GET',f.base+'/document-findings/'+f.decision.id,context.demo!),409);
+ }finally{await f.app.close();}
+});
+test('real browser links and reinspects document reasoning, reloads decisions and withdraws without deleting history',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await documentReasoningFixture();try{await withBrowserApp(async(b,origin)=>{
+  const ui=await binaryBrowserControls(b,origin,f.scope.caseId);await ui.click('Brief');await eventually(async()=>(await ui.text()).includes(f.hypothesis.title),'reasoning hypothesis displayed');
+  const selector='#work-'+f.hypothesis.id;
+  const openMaterial=async()=>{await b.evaluate(`document.querySelector(${JSON.stringify(selector)}+' details.work-detail').open=true`);};await openMaterial();
+  const click=async(label:string)=>{await b.evaluate(`(()=>{const root=document.querySelector(${JSON.stringify(selector)}),button=[...root.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});if(!button||button.disabled)throw new Error('Reasoning button unavailable');button.click();})()`);};
+  await click('Choose a reviewed document finding');await eventually(async()=>await b.evaluate<boolean>(`Boolean(document.querySelector(${JSON.stringify(selector)}+' form[aria-label="Link reviewed document finding"] option[value="${f.decision.id}"]'))`),'document finding candidates');
+  await b.evaluate(`(()=>{const select=document.querySelector(${JSON.stringify(selector)}+' form[aria-label="Link reviewed document finding"] select');select.value=${JSON.stringify(f.decision.id)};select.dispatchEvent(new Event('change',{bubbles:true}));})()`);await click('Inspect selected document finding');await eventually(async()=>(await ui.text()).includes('Exact extraction location'),'verified in-context document passage');assert.ok((await ui.text()).includes(f.candidate.citation.quote));
+  await b.evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)}+' textarea[name="reason"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Fictional browser source relevance retains uncertainty.');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await click('Save document source link');await eventually(async()=>(await ui.text()).includes('Reviewed document source linked.'),'persisted document reasoning link');
+  const link=(await context.pool!.query('SELECT * FROM case_work_links WHERE case_id=$1 AND item_id=$2',[f.scope.caseId,f.hypothesis.id])).rows[0];assert.ok(link);assert.equal((await reviseWork(f.hypothesis,workEdit(f.hypothesis,{status:'Supported'}))).statusCode,200);
+  const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous&&(await ui.text()).includes(f.hypothesis.title),'fresh reasoning reload');await openMaterial();await click('Inspect document finding '+f.decision.id.slice(0,8));await eventually(async()=>(await ui.text()).includes('Exact extraction location'),'reloaded in-context finding');
+  await click('History');await eventually(async()=>(await ui.text()).includes('Version 2'),'assessment history');assert.ok(await b.evaluate<boolean>(`document.querySelector(${JSON.stringify(selector)}+' [aria-label="Sources at this revision"]').textContent.includes(${JSON.stringify(f.decision.id)})`));
+  await click('Withdraw source link '+link.id.slice(0,8));await b.evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)}+' form[aria-label="Withdraw document source link"] textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Fictional withdraw from active reasoning after reassessment.');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await click('Record source withdrawal');await eventually(async()=>(await ui.text()).includes('Withdrawn · Supporting material'),'visible withdrawal with preserved original link');
+  assertError(await reviseWork({...f.hypothesis,version:2},workEdit({...f.hypothesis,version:2},{status:'Supported'})),422);
  });}finally{await f.app.close();}
 });
