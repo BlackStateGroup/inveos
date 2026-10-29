@@ -141,3 +141,5 @@
 - [Leased raster worker](66_LEASED_RASTER_WORKER.md) — qualified isolated rendering attached to durable research jobs.
 
 - [Verified raster page inspection](67_RASTER_PAGE_INSPECTION.md) — bounded verified page display with stale-image cleanup.
+
+- [Raster passage comparison](68_RASTER_PASSAGE_COMPARISON.md) — explicit lineage-matched extraction overlays.

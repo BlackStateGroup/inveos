@@ -1,5 +1,9 @@
 # INVEOS engineering handoff
 
+## 29 October: raster passage comparison
+
+Continues PR #58 at 7a2aed1d5bd9b5d7da1c2e7f033d05bb026424de. Fresh main remains 95b5c35; all 57 open review timelines empty, heads unchanged. Added explicit matching raster/extraction comparison, fresh dual verification, strict lineage/geometry pairing and selectable page-region overlays. Local and hosted test evidence follows. See docs/68_RASTER_PASSAGE_COMPARISON.md. Next: human-reviewed derived-document citations and export lineage; wider runtime/product gates remain open. Nothing merged or deployed.
+
 ## 29 October: verified raster page inspection
 
 Continues PR #57 at 71e7c50d2bbbf3d1c6bbd780a76896212b1650cc. Fresh main remains 95b5c35; all 56 open review timelines empty and heads unchanged. Added selected-job-bound manifest/profile verification, bounded PNG hashing and unreviewed page-image UI with navigation/reload/unmount cleanup. Draft PR #58 passed [Checks #150](https://github.com/BlackStateGroup/inveos/actions/runs/40844856814), job 123349742600, at `47ed7c886e75a0a89b90ecceebec462d9b4b5539`, tree `ca84088c513bb2dd12b58cb1d4b08b336b8e713a`: 185 Node tests and 101 Python tests, zero failures/skips, plus lint/types/build/reference, actual PostgreSQL/browser/restore and host-isolation checks. The expanded browser journey displayed both verified pages, reloaded and reinspected, then refused a fresh download after original corruption and removed the image. Three new client verifier tests passed. Local lint/types/build, the three focused tests, foundation and all 101 Python tests passed. This run replays prior raster bytes; no fresh renderer execution or human citation approval is claimed. Evidence follow-up changes documentation only. Resume #58 after fresh main/review checks. See docs/67_RASTER_PAGE_INSPECTION.md. Next: extraction overlays and reviewed derivative citations/export; wider product and approval gates remain open. Nothing merged or deployed.

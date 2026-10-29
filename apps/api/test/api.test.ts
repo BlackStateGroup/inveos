@@ -3222,7 +3222,7 @@ async function rasterFixture(){
   const {rasterProfileDigest}=await import('../src/raster-derivative.js');
   const result={context:{...f.result.context,jobId:job.id},profileDigest:rasterProfileDigest,originalSha256:f.result.context.sourceDigest,
     pages:[1,2].map(page=>({page,width:612,height:792,pngSha256:fixture.sha256,pngBytes:png.length,pngBase64:fixture.pngBase64}))};
-  return {...f,job,scope,payload,result,png,url:`/api/cases/${scope.caseId}/integrity-jobs/${job.id}/raster-derivative`,pageUrl:`/api/cases/${scope.caseId}/integrity-jobs/${job.id}/raster-pages/2`};
+  return {...f,extraction:{job:f.job,scope:f.scope,result:f.result},job,scope,payload,result,png,url:`/api/cases/${scope.caseId}/integrity-jobs/${job.id}/raster-derivative`,pageUrl:`/api/cases/${scope.caseId}/integrity-jobs/${job.id}/raster-pages/2`};
 }
 test('raster jobs persist atomically, preserve quarantine and reverify PNG delivery after restart',async()=>{
   const f=await rasterFixture();try{
@@ -3314,5 +3314,27 @@ test('raster reads deny clients, foreign tenants and revoked members and detect 
       await context.schemaAdminPool!.query('UPDATE raster_derivatives SET raw_bytes=$2 WHERE job_id=$1',[f.job.id,Buffer.from('{}')]);assertError(await request('GET',f.pageUrl,context.demo!),409);
       await context.schemaAdminPool!.query('UPDATE raster_derivatives SET raw_bytes=$2,output_bytes=$3 WHERE job_id=$1',[f.job.id,stored.raw_bytes,Buffer.from('{}')]);assertError(await request('GET',f.url,context.demo!),409);
     }finally{await context.schemaAdminPool!.query('ALTER TABLE raster_derivatives ENABLE TRIGGER raster_derivatives_append_only');}
+  }finally{await f.app.close();}
+});
+
+
+test('real browser compares verified extraction regions with raster page two and clears corrupt comparison',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+  const f=await rasterFixture();try{
+    const extractionLease=await claimIntegrityJob(context.pool!,f.extraction.scope);assert.ok(extractionLease);
+    await finishDocumentJob(context.pool!,context.storageRoot!,f.extraction.scope,extractionLease.token,f.extraction.result);
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+    await withBrowserApp(async(b,origin)=>{
+      const ui=await binaryBrowserControls(b,origin,f.scope.caseId),label='Compare image '+f.job.id.slice(0,8)+' with passages '+f.extraction.job.id.slice(0,8);
+      await eventually(async()=>(await ui.text()).includes(label),'matching derivative comparison');await ui.click(label);
+      await eventually(async()=>await b.evaluate(`Boolean(document.querySelector('img[alt="Unreviewed rendered page 1"]')?.naturalWidth)`),'comparison page one');
+      await b.evaluate(`(()=>{const s=document.querySelector('section[aria-label="Verified unreviewed raster pages"] select');s.value='2';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+      await eventually(async()=>await b.evaluate(`Boolean(document.querySelector('img[alt="Unreviewed rendered page 2"]')?.naturalWidth)`),'comparison page two');await ui.click('Compare page 2 passage 1');
+      assert.equal(await b.evaluate(`document.querySelector('svg[aria-label="Passage overlay for page 2"] rect').getAttribute('fill')`),'#b45309');
+      assert.ok((await ui.text()).includes('Selected #/texts/1 · extracted UTF-8 bytes [34, 67)'));
+      const sizes=await b.evaluate<number[]>(`(()=>{const i=document.querySelector('img[alt="Unreviewed rendered page 2"]').getBoundingClientRect(),s=document.querySelector('svg[aria-label="Passage overlay for page 2"]').getBoundingClientRect();return [i.width,i.height,s.width,s.height];})()`);assert.equal(sizes[0],sizes[2]);assert.equal(sizes[1],sizes[3]);
+      const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional changed comparison source');
+      await ui.click(label);await eventually(async()=>(await ui.text()).includes('integrity verification failed'),'comparison refuses changed source');
+      assert.equal(await b.evaluate(`document.querySelector('section[aria-label="Verified unreviewed raster pages"]')===null`),true);
+    });
   }finally{await f.app.close();}
 });

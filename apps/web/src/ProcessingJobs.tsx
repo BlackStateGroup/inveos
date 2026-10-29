@@ -1,3 +1,4 @@
+import {pairRasterDocument} from './rasterOverlay';
 import {RasterInspection} from './RasterInspection';
 import {inspectRaster,type InspectedRaster} from './rasterInspection';
 import {DocumentRegionMap} from './DocumentRegionMap';
@@ -51,6 +52,11 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
     if(alive.current){setDocument(checked);setHistory(null);}
   }
   async function inspectImage(job:Job){const checked=await inspectRaster(await get<unknown>(`${base}/${job.id}/raster-derivative`),job);if(alive.current){setRaster(checked);setHistory(null);}}
+  async function compareImage(job:Job,extraction:Job){
+    const [image,passages]=await Promise.all([get<unknown>(`${base}/${job.id}/raster-derivative`).then(r=>inspectRaster(r,job)),get<unknown>(`${base}/${extraction.id}/document-derivative`).then(r=>inspectDocumentDerivative(r,extraction))]);
+    pairRasterDocument(image,passages);
+    if(alive.current){setRaster(image);setDocument(passages);setHistory(null);}
+  }
   async function cancel(job:Job){const r=await fetch(`${base}/${job.id}/cancel`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:'{}'});
     const value=await r.json();if(!r.ok)throw new Error(value.error||'Cancellation failed.');if(!alive.current)return;
     setRows(old=>old.map(x=>x.id===job.id?value:x));await events(job.id);}
@@ -76,6 +82,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       {job.kind==='utf8_line_index_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspect(job))}>Inspect unreviewed lines {job.id.slice(0,8)}</button>}
       {job.kind==='native_pdf_lab_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectDocument(job))}>Inspect unreviewed pages {job.id.slice(0,8)}</button>}
       {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectImage(job))}>Inspect page images {job.id.slice(0,8)}</button>}
+      {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&rows.filter(d=>d.kind==='native_pdf_lab_v1'&&d.status==='succeeded'&&d.caseId===job.caseId&&d.evidenceId===job.evidenceId&&d.sourceDigest===job.sourceDigest&&d.authorityVersion===job.authorityVersion).map(d=><button key={d.id} className="secondary" disabled={busy} onClick={()=>void act(()=>compareImage(job,d))}>Compare image {job.id.slice(0,8)} with passages {d.id.slice(0,8)}</button>)}
       {['queued','running'].includes(job.status)&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>cancel(job))}>Cancel job {job.id.slice(0,8)}</button>}
     </li>)}</ul>
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Older jobs</button>}
@@ -104,7 +111,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       <button className="secondary" disabled={linePage===0} onClick={()=>setLinePage(p=>p-1)}>Previous passages</button>
       <button className="secondary" disabled={(linePage+1)*100>=document.references.length} onClick={()=>setLinePage(p=>p+1)}>Next passages</button>
     </section>}
-    {raster&&<RasterInspection key={raster.job.id} raster={raster}/>}
+    {raster&&<RasterInspection key={raster.job.id} raster={raster} document={document??undefined}/>}
     {history&&<section aria-label="Selected job attempts"><h3>Attempts for {history.jobId}</h3><ol>{history.items.map(e=><li key={e.id}>{e.status} · attempt {e.attempt} · {new Date(e.recordedAt).toISOString()} {e.failureCode||''}</li>)}</ol>
       {history.nextAfter&&<button disabled={busy} className="secondary" onClick={()=>void act(()=>events(history.jobId,history.nextAfter!))}>More attempts</button>}</section>}
   </div></Panel>;
