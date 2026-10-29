@@ -1007,6 +1007,43 @@ async function reviseWork(item: WorkItem, input = workEdit(item), session = cont
   return request('POST', `/api/cases/${item.caseId}/work/${item.id}/revise`, session, {payload: input});
 }
 
+
+test('assigned work queue is bounded, role-gated and loses work when case access is removed', async () => {
+  context.demo = await issueTestSession(demoUserId);
+  const kase = await createCase();
+  const colleagueId = await createMember(demoTenantId, 'investigator', 'Fictional queue investigator');
+  await context.schemaAdminPool!.query(
+    'INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',
+    [demoTenantId, kase.id, colleagueId],
+  );
+  const colleague = await issueTestSession(colleagueId);
+  const assigned = parseBody<WorkItem>(await createWork(kase.id, workInput({
+    title: 'Check fictional supplier declaration',
+    ownerId: colleagueId,
+    dueDate: '2026-10-30',
+  })));
+  const own = parseBody<WorkItem>(await createWork(kase.id, workInput({
+    title: 'Keep this fictional reviewer work private to its owner',
+    ownerId: demoUserId,
+    dueDate: '2026-10-31',
+  })));
+  const queue = await request('GET', '/api/work/queue', colleague);
+  assert.equal(queue.statusCode, 200, queue.body);
+  const body = parseBody<{items: Array<WorkItem & {caseRef:string;caseTitle:string}>; more:boolean; interpretation:string}>(queue);
+  assert.equal(body.interpretation, 'assigned_work_not_a_finding');
+  assert.ok(body.items.some(item => item.id === assigned.id && item.caseId === kase.id && item.caseRef === 'SYN-SUPPLIER-001'));
+  assert.equal(body.items.some(item => item.id === own.id), false);
+  const clientId = await createMember(demoTenantId, 'client', 'Fictional excluded queue client');
+  const client = await issueTestSession(clientId);
+  assertError(await request('GET', '/api/work/queue', client), 403);
+  await context.schemaAdminPool!.query(
+    'DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',
+    [demoTenantId, kase.id, colleagueId],
+  );
+  const revoked = parseBody<{items: WorkItem[]}>(await request('GET', '/api/work/queue', colleague));
+  assert.equal(revoked.items.some(item => item.id === assigned.id), false);
+});
+
 test('persistent objectives, questions, hypotheses, tasks, notes and handovers share case state and survive restart', async () => {
   context.demo = await issueTestSession(demoUserId);
   const kase = await createCase();
