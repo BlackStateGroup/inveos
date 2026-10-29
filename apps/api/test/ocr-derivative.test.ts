@@ -8,6 +8,7 @@ import {makeOcrDerivative,ocrWords,ocrProfile,ocrProfileDigest,ocrArtifactLock} 
 import {documentCitation} from '../src/document-citation.js';
 import {sha256} from '../src/text-derivative.js';
 import {inspectDocumentDerivative} from '../../web/src/documentInspection.js';
+import {verifyCitation} from '../../web/src/citationRequest.js';
 import {validateNativeQualification} from '../src/native-document-worker.js';
 const root=fileURLToPath(new URL('../../../',import.meta.url));
 test('OCR boundaries preserve exact raw rows, original/render/TSV hashes and independent byte offsets',()=>{
@@ -31,6 +32,7 @@ test('browser inspection recognises the separately versioned OCR result and cita
  const f=ocrFixture(),job={id:f.context.jobId,caseId:f.context.caseId,evidenceId:f.context.evidenceId,sourceDigest:f.context.sourceDigest,authorityVersion:1,kind:'tesseract_scan_lab_v1',status:'succeeded'};
  const r={...f.context,jobId:job.id,status:'unreviewed_derivative',processedAt:'2026-10-29T00:00:00Z',profile:JSON.parse(ocrProfile),profileDigest:ocrProfileDigest,rawDigest:f.output.rawDigest,derivativeDigest:f.output.digest,derivative:f.output.derivative};
  const d=await inspectDocumentDerivative(r,job);assert.equal(d.method,'ocr');assert.equal(d.offsetBasis,'ocr_utf8_not_original_pdf');assert.equal(d.references[1]?.text,'60');await assert.rejects(inspectDocumentDerivative(r,{...job,kind:'native_pdf_lab_v1'}));
+ const citation=documentCitation(f.output,{derivativeDigest:f.output.digest,itemRef:'#/texts/1',startByte:6,endByte:8,quote:'60'}),receipt={id:f.context.jobId,createdBy:f.context.tenantId,createdAt:r.processedAt,citationDigest:citation.digest,citation:citation.citation};assert.equal((await verifyCitation(receipt,d)).citation.offsetBasis,'ocr_utf8_not_original_pdf');await assert.rejects(verifyCitation(receipt,{...d,offsetBasis:'extracted_utf8_not_original_pdf'}));
 });
 test('OCR qualification requires recent complete actual isolation evidence',()=>{
  assert.throws(()=>validateNativeQualification({},true));assert.throws(()=>validateNativeQualification({status:'host_probe_passed',profile:'runtime-1g',imageId:'sha256:'+'a'.repeat(64),repoDigests:[],checkedAt:new Date().toISOString()},true));

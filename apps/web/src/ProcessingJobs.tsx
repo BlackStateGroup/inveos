@@ -109,6 +109,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       <ol start={linePage*100+1}>{document.references.slice(linePage*100,(linePage+1)*100).map(ref=><li key={ref.itemRef}>
         <p>Page {ref.page} · {ref.itemRef} · extracted UTF-8 bytes [{ref.startByte}, {ref.endByte})</p>
         <p>Region: left {ref.bbox.l}, right {ref.bbox.r}, bottom {ref.bbox.b}, top {ref.bbox.t} · origin {ref.bbox.origin}</p>
+        {ref.ocr&&<p>OCR engine confidence {ref.ocr.confidence.toFixed(2)} · exact TSV row {ref.ocr.tsvRow}. Confidence does not verify accuracy.</p>}
         <pre className="source-excerpt">{ref.text}</pre></li>)}</ol>
       <button className="secondary" disabled={linePage===0} onClick={()=>setLinePage(p=>p-1)}>Previous passages</button>
       <button className="secondary" disabled={(linePage+1)*100>=document.references.length} onClick={()=>setLinePage(p=>p+1)}>Next passages</button>

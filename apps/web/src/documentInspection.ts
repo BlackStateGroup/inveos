@@ -1,5 +1,5 @@
 import type {InspectionJob} from './derivativeInspection';
-export type Reference={itemRef:string;page:number;startByte:number;endByte:number;bbox:{l:number;r:number;b:number;t:number;origin:string}};
+export type Reference={itemRef:string;page:number;startByte:number;endByte:number;bbox:{l:number;r:number;b:number;t:number;origin:string};ocr?:{confidence:number;tsvRow:number;pixelBox:number[];inputPngDigest:string;rawTsvDigest:string}};
 export type InspectedDocument={caseId:string;jobId:string;evidenceId:string;sourceDigest:string;derivativeDigest:string;rawDigest:string;profileDigest:string;processedAt:string;authorityVersion:number;offsetBasis?:string;method?:'native'|'ocr';pageCount:number;pages:{page:number;width:number;height:number}[];pagesWithoutText:number[];references:(Reference&{text:string})[]};
 const fail=():never=>{throw new Error('Document derivative identity or ranges could not be verified. Refresh processing history and retry.');};
 const hex=/^[a-f0-9]{64}$/;
@@ -22,6 +22,7 @@ export async function inspectDocumentDerivative(value:unknown,job:InspectionJob)
   const references=d.references.map((ref,i)=>{
     if(ref.itemRef!==`#/texts/${i}`||!Number.isInteger(ref.page)||!d.pages[ref.page-1]||!Number.isInteger(ref.startByte)||!Number.isInteger(ref.endByte)||ref.startByte!==(i?offset+1:0)||ref.endByte<=ref.startByte||ref.endByte>bytes.length||i&&bytes[offset]!==10)fail();
     const p=d.pages[ref.page-1]!,b=ref.bbox;if(!b||![b.l,b.r,b.b,b.t].every(n=>typeof n==='number'&&Number.isFinite(n))||b.l<0||b.r<=b.l||b.r>p.width||Math.min(b.b,b.t)<0||Math.max(b.b,b.t)>p.height||!['TOPLEFT','BOTTOMLEFT'].includes(b.origin)||(b.origin==='TOPLEFT'?b.t>=b.b:b.b>=b.t))fail();
+    if(ocr){const word=ref.ocr;if(!word||typeof word.confidence!=='number'||!Number.isFinite(word.confidence)||word.confidence<0||word.confidence>100||!Number.isInteger(word.tsvRow)||word.tsvRow<2||word.tsvRow>5001||!hex.test(word.inputPngDigest)||!hex.test(word.rawTsvDigest)||b.origin!=='TOPLEFT'||JSON.stringify(word.pixelBox)!==JSON.stringify([b.l*2,b.t*2,b.r*2,b.b*2]))fail();}
     counts[ref.page-1]=(counts[ref.page-1]??0)+1;offset=ref.endByte;
     return {...ref,text:decoder.decode(bytes.subarray(ref.startByte,ref.endByte))};
   });

@@ -33,7 +33,7 @@ async function fixture(){
  return {pool,owner,storage,caseId,demo,request,ok,member,queue,get app(){return app;},restart:async()=>{await app.close();app=await make();await app.ready();},close:async()=>{await app.close();await pool.end();await owner.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(storage,{recursive:true,force:true});}};
 }
 
-async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:string){
+async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:string,rasterJobId:string){
  const dist=join(root,'apps/web/dist');const api=await f.app.listen({host:'127.0.0.1',port:0});
  const server=createServer((req,res)=>{void(async()=>{const path=new URL(req.url!,'http://localhost').pathname;
   if(path.startsWith('/api/')){const upstream=proxyRequest(api+req.url,{method:req.method,headers:req.headers},r=>{res.writeHead(r.statusCode!,r.headers);r.pipe(res);});upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;}
@@ -47,6 +47,11 @@ async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:stri
   const click=()=>browser.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});if(!button||button.disabled)throw new Error('OCR inspection unavailable');button.click();})()`);
   await click();await eventually(async()=>(await text()).includes('Unreviewed OCR words'),'actual OCR browser inspection');assert.ok((await text()).includes('OCR may misread words'));assert.ok((await text()).includes('origin TOPLEFT'));
   await b.send('Page.reload');await eventually(async()=>(await text()).includes(label),'OCR job restored after browser reload');await click();await eventually(async()=>(await text()).includes('Unreviewed OCR words'),'OCR reinspection after reload');
+  const compare='Compare image '+rasterJobId.slice(0,8)+' with passages '+jobId.slice(0,8);await eventually(async()=>(await text()).includes(compare),'same-evidence OCR/image pairing');
+  await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(compare)});if(!button||button.disabled)throw new Error('OCR comparison unavailable');button.click();})()`);
+  await eventually(async()=>await browser.evaluate<boolean>(`(()=>{const img=document.querySelector('img[alt="Unreviewed rendered page 1"]');return !!img&&img.complete&&img.naturalWidth===612&&img.naturalHeight===792;})()`),'actual original-page raster decoded beside OCR');
+  assert.ok(await b.evaluate<number>(`document.querySelectorAll('svg[aria-label="Passage overlay for page 1"] rect').length`)>0);
+  await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Compare page 1 passage 1');if(!button)throw new Error('OCR region unavailable');button.click();})()`);await eventually(async()=>(await text()).includes('Selected #/texts/0'),'OCR region comparison selection');
  }finally{await b?.close();server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
 }
 
@@ -65,7 +70,7 @@ test('actual isolated supplier originals progress through OCR, independent revie
    assert.equal((await f.pool.query('SELECT status FROM evidence WHERE id=$1',[job.evidence.id])).rows[0].status,'Quarantined');jobs.push({...job,d});
   }
   const ocr=jobs[0]!,digitalJob=await f.queue(digital,'native_pdf_lab_v1');assert.equal((await runNativeDocumentJob(f.pool,f.storage,digitalJob.scope,{researchOnly:true,repositoryRoot:root,qualification:nativeQualification}))?.status,'succeeded');const native=await f.ok('GET',`/api/cases/${f.caseId}/integrity-jobs/${digitalJob.job.id}/document-derivative`);
-  const raster=await f.queue(scan,'pdf_raster_lab_v1');assert.equal((await runRasterDocumentJob(f.pool,f.storage,raster.scope,{researchOnly:true,repositoryRoot:root,qualification:nativeQualification}))?.status,'succeeded');
+  const rasterJob=await f.ok('POST',`/api/cases/${f.caseId}/integrity-jobs`,{evidenceId:ocr.evidence.id,idempotencyKey:randomUUID(),kind:'pdf_raster_lab_v1'});assert.equal((await runRasterDocumentJob(f.pool,f.storage,{tenantId:tenant,caseId:f.caseId,jobId:rasterJob.id},{researchOnly:true,repositoryRoot:root,qualification:nativeQualification}))?.status,'succeeded');
   assert.equal((await f.request('GET',`/api/cases/${f.caseId}/integrity-jobs/${ocr.job.id}/document-derivative`,undefined,outsider)).statusCode,404);
   for(const [entry,number,narrative] of [[ocr,'60','The fictional scanned register dated 1 September records Atlas at 60 percent and Birch at 40 percent. This differs from the later declaration. A later ownership change, stale record or transcription error remains an alternative explanation; the documents alone do not establish wrongdoing.'],[{...digitalJob,d:native},'100','The fictional declaration dated 25 October records Atlas at 100 percent. It is later than the supplied register; its completeness and the reason for the difference require further authorised corroboration.']] as const){
    const d=entry.d.derivative,bytes=Buffer.from(d.text),ref=d.references.find((r:{startByte:number;endByte:number})=>bytes.subarray(r.startByte,r.endByte).toString().includes(number));assert.ok(ref);
@@ -76,7 +81,7 @@ test('actual isolated supplier originals progress through OCR, independent revie
    const claim=(await f.ok('POST',base+'/claims',{id:randomUUID(),citationDigest:candidate.citationDigest,correspondenceReviewId:review.id,correspondenceReviewDigest:review.digest,text:narrative},author)).claims[0];
    const decision={id:randomUUID(),claimDigest:claim.digest,accepted:true,reason:'Fictional independent interpretation preserves both the discrepancy and alternative explanations without inferring wrongdoing.'};await f.ok('POST',base+'/claims/'+claim.id+'/decision',decision);
   }
-  await inspectInBrowser(f,ocr.job.id);await f.restart();
+  await inspectInBrowser(f,ocr.job.id,rasterJob.id);await f.restart();
   const base=`/api/cases/${f.caseId}/report-revisions`,freeze={idempotencyKey:randomUUID()},revision=await f.ok('POST',base,freeze);assert.deepEqual(await f.ok('POST',base,freeze),revision);
   const exported=await f.request('GET',`${base}/${revision.id}/document-package`);assert.equal(exported.statusCode,200,exported.body);const packagePath=join(f.storage,'fictional-supplier-package.json');await writeFile(packagePath,exported.rawPayload);
   const verify=spawnSync('python3',[join(root,'tools/verify_document_package.py'),packagePath,'--expected-report-sha256',revision.sha256,'--expected-package-sha256',sha256(exported.rawPayload)],{encoding:'utf8',timeout:10000});assert.equal(verify.status,0,verify.stderr);assert.equal(JSON.parse(verify.stdout).documentFindingsChecked,2);
@@ -95,6 +100,6 @@ test('actual isolated supplier originals progress through OCR, independent revie
   await f.ok('POST',`/api/cases/${f.caseId}/disclosures/${grant.id}/revoke`,{reason:'Fictional explicit withdrawal after scripted recipient acknowledgement.'});assert.equal((await f.request('GET',portal,undefined,client)).statusCode,404);
   assert.deepEqual((await readdir(join(root,'.research-cache'))).filter(n=>n.startsWith('leased-document-')),[]);
   const stored=(await f.pool.query('SELECT object_path FROM evidence WHERE id=$1',[ocr.evidence.id])).rows[0];assert.deepEqual(await readFile(join(f.storage,stored.object_path)),scan);
-  t.diagnostic('Actual isolated supplier acceptance: '+JSON.stringify({scanSha256:sha256(scan),digitalSha256:sha256(digital),ocrRawDigest:ocr.d.rawDigest,ocrDerivativeDigest:ocr.d.derivativeDigest,ocrWords:ocr.d.derivative.references.length,documentFindings:2,independentPackageVerified:true,independentPdfVerified:true,browserOcrReload:true,restrictedPdfDelivery:true,acknowledgementAndRevocation:true,cancelledAttachmentDenied:true,realProfessionalReview:false}));
+  t.diagnostic('Actual isolated supplier acceptance: '+JSON.stringify({scanSha256:sha256(scan),digitalSha256:sha256(digital),ocrRawDigest:ocr.d.rawDigest,ocrDerivativeDigest:ocr.d.derivativeDigest,ocrWords:ocr.d.derivative.references.length,documentFindings:2,independentPackageVerified:true,independentPdfVerified:true,browserOcrReload:true,browserOriginalPageComparison:true,restrictedPdfDelivery:true,acknowledgementAndRevocation:true,cancelledAttachmentDenied:true,realProfessionalReview:false}));
  }finally{await f.close();}
 });
