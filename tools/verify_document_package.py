@@ -15,10 +15,10 @@ import re
 import sys
 
 if __package__:
-    from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report
+    from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology
     from .verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE
 else:
-    from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report
+    from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology
     from verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE
 
 MAX_PACKAGE = 64 * 1024 * 1024
@@ -272,6 +272,8 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
                 and 1 <= len(findings) == len(exhibits) and len(legacy) + len(findings) <= 1000, 'Finding count limit')
         if legacy:
             original_report = {key: value for key, value in report.items() if key != 'documentFindings'}
+            # The complete mixed-source chronology is validated below, after both source families.
+            original_report['investigation'] = {key: value for key, value in report.get('investigation', {}).items() if key != 'chronology'}
             verify_report(json.dumps(original_report, ensure_ascii=False).encode('utf-8'))
         ids = [f['id'] for f in legacy + findings]
         require(len(set(ids)) == len(ids), 'Duplicate finding identity')
@@ -284,12 +286,16 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
                 require(same(source, sources[source['id']]), 'Conflicting document original metadata')
             sources[source['id']] = source
         working_links = verify_document_work_links(report)
+        try:
+            chronology_count = verify_chronology(report)
+        except (ValueError, TypeError, KeyError, UnicodeError) as exc:
+            raise InvalidReport('Invalid frozen chronology') from exc
         tenants = {verify_exhibit(f, e, case_id) for f, e in zip(findings, exhibits)}
         require(len(tenants) == 1, 'Mixed tenant lineage')
     except (KeyError, TypeError, IndexError, AttributeError, UnicodeError, OverflowError, RecursionError, StopIteration) as exc:
         raise InvalidReport('Malformed document package') from exc
     return {'status': 'integrity_checks_passed', 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
-            'caseId': case_id, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
+            'caseId': case_id, 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
             'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
             'releaseStatus': 'draft_not_released', 'limitations': 'Consistency only; no parser execution, source truth, reviewer authentication, current server policy, signature or release certification. Trust report and package fingerprints through a separate channel.'}
 

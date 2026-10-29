@@ -164,3 +164,5 @@
 - [Document findings in investigation reasoning](80_DOCUMENT_REASONING.md)
 
 - [Encrypted immutable original custody](81_ENCRYPTED_ORIGINAL_CUSTODY.md)
+
+- [82 — Evidential chronology](82_EVIDENTIAL_CHRONOLOGY.md): uncertain alleged dates, typed sources, immutable corrections and frozen verified report context.

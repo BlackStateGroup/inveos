@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import sys
 
+
 MAX_REPORT_BYTES = 32 * 1024 * 1024
 MAX_FINDINGS = 1000
 MAX_ORIGINAL_BYTES = 2 * 1024 * 1024
@@ -52,6 +53,75 @@ def unique_object(pairs):
 
 def reject_constant(_):
     raise InvalidReport('Non-finite JSON number')
+
+
+def verify_chronology(report):
+    def require(ok, message):
+        if not ok:
+            raise ValueError('Chronology: ' + message)
+
+    def fields(value, names):
+        require(isinstance(value, dict) and set(value) == set(names.split()), 'unexpected fields')
+
+    def identifier(value):
+        require(isinstance(value, str) and re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', value), 'invalid identity')
+
+    def text(value, low, high):
+        require(isinstance(value, str) and low <= len(value) <= high and (not low or value.strip())
+                and not re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', value), 'invalid text')
+        value.encode('utf-8', errors='strict')
+
+    def instant(value):
+        require(isinstance(value, str) and re.fullmatch(r'[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]{1,3})?(?:Z|[+-](?:0[0-9]|1[0-4]):[0-5][0-9])', value), 'invalid instant')
+        require(not value.endswith('-00:00') and not re.search(r'[+-]14:(?!00)', value), 'unknown or invalid offset')
+        return datetime.fromisoformat(value.replace('Z', '+00:00'))
+
+    context = report.get('investigation')
+    if not isinstance(context, dict) or 'chronology' not in context:
+        return 0
+    require(context.get('status') == 'working_context_not_findings', 'accounts must remain separate')
+    rows = context['chronology']
+    require(isinstance(rows, list) and len(rows) <= 1000, 'event limit')
+    sources = {'text_finding': {f['id'] for f in report.get('findings', [])},
+               'document_finding': {f['id'] for f in report.get('documentFindings', [])}}
+    seen = set()
+    for event in rows:
+        fields(event, 'id caseId title account status time source version createdBy createdAt recordedAt interpretation')
+        for key in ('id', 'caseId', 'createdBy'):
+            identifier(event[key])
+        require(event['id'] not in seen and event['caseId'] == report['case']['id'], 'duplicate or cross-case account')
+        seen.add(event['id'])
+        require(event['interpretation'] == 'recorded_account_not_finding', 'account is not a finding')
+        require(type(event['version']) is int and event['version'] > 0, 'invalid version')
+        require(instant(event['recordedAt']) >= instant(event['createdAt']), 'revision predates creation')
+        require(event['status'] in ('alleged', 'disputed', 'withdrawn'), 'invalid account status')
+        text(event['title'], 3, 200)
+        text(event['account'], 1, 4000)
+        source = event['source']
+        fields(source, 'kind findingId')
+        identifier(source['findingId'])
+        require(source['kind'] in sources and source['findingId'] in sources[source['kind']], 'missing or mistyped source finding')
+        time = event['time']
+        fields(time, 'precision start end timezone note')
+        text(time['timezone'], 0, 100)
+        text(time['note'], 1, 1000)
+        precision, start, end = time['precision'], time['start'], time['end']
+        if precision == 'unknown':
+            require(start is None and end is None, 'unknown dates contain precision')
+        elif precision == 'range':
+            require(instant(start) <= instant(end), 'reversed range')
+        else:
+            require(end is None, 'unexpected range end')
+            if precision == 'instant':
+                instant(start)
+            elif precision == 'day':
+                require(isinstance(start, str) and re.fullmatch(r'[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}', start), 'invalid day')
+                datetime.strptime(start, '%Y-%m-%d')
+            elif precision == 'month':
+                require(isinstance(start, str) and re.fullmatch(r'[1-9][0-9]{3}-(?:0[1-9]|1[0-2])', start), 'invalid month')
+            else:
+                require(False, 'unsupported precision')
+    return len(rows)
 
 
 def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
@@ -119,7 +189,11 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         if evidence_id in evidence:
             require(identity == evidence[evidence_id], 'Conflicting evidence identity')
         evidence[evidence_id] = identity
-    return {'status': 'integrity_checks_passed', 'reportSha256': actual,
+    try:
+        chronology_count = verify_chronology(report)
+    except (ValueError, TypeError, KeyError, UnicodeError) as exc:
+        raise InvalidReport('Invalid frozen chronology') from exc
+    return {'status': 'integrity_checks_passed', 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
             'trustedReportDigestMatched': expected_sha256 is not None,
             'caseId': case_id, 'findingsChecked': len(findings),
             'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',
