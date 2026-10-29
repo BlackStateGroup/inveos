@@ -1,0 +1,72 @@
+{
+  "format": "inveos_encrypted_original_acceptance_v1",
+  "date": "2026-10-29",
+  "implementation": {
+    "commit": "187ab9e01c25af715438dc2e73c709060f3a8e52",
+    "tree": "dced6b8a7edfd63de59a3fe45c422b71747e25b5",
+    "pr": 74
+  },
+  "checks": {
+    "run": 40919585772,
+    "number": 218,
+    "job": 123608867790,
+    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40919585772",
+    "nodeTests": 249,
+    "pythonTests": 111,
+    "failures": 0,
+    "skipped": 0
+  },
+  "research": {
+    "run": 40919585891,
+    "number": 45,
+    "job": 123608872814,
+    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40919585891",
+    "actualSupplierTests": 1,
+    "actualRasterTests": 1,
+    "actualLeasedWorkerTests": 5,
+    "failures": 0,
+    "skipped": 0
+  },
+  "supplier": {
+    "encryptedOriginals": true,
+    "scanSha256": "575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393",
+    "digitalSha256": "7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e",
+    "ocrRawDigest": "ff49c091ff23eb064eb2c9779b3d737d3a19feb87de7167dd049be8f07862b7f",
+    "ocrDerivativeDigest": "8c46574d6b7bd457a595322ce7acb8b5510e88603e6f13732888da171f0cd7ee",
+    "ocrWords": 18,
+    "documentFindings": 2,
+    "documentWorkLinks": 6,
+    "competingHypothesesRemainProposed": true,
+    "questionClosureHistory": true,
+    "independentPackageVerified": true,
+    "independentPdfVerified": true,
+    "browserOcrReload": true,
+    "browserOriginalPageComparison": true,
+    "restrictedPdfDelivery": true,
+    "acknowledgementAndRevocation": true,
+    "cancelledAttachmentDenied": true,
+    "realProfessionalReview": false
+  },
+  "custody": {
+    "actualAes256Gcm": true,
+    "exclusiveOriginalWrite": true,
+    "pathBoundAuthentication": true,
+    "protectedSeparateKeys": true,
+    "newWriteKeyRotation": true,
+    "instanceRestart": true,
+    "copiedObjectRootRestore": true,
+    "missingKeyReportDenied": true,
+    "missingKeyWorkerDeniedWithoutDerivative": true,
+    "newKeyWorkerSucceeded": true,
+    "actualRestrictedRoleDispatcherCli": true,
+    "invalidCliKeysLeaveJobQueued": true,
+    "originalByteDigestsPreserved": true
+  },
+  "limits": [
+    "Original objects only; database/derivatives/reports/upload staging/downloads/backups not comprehensively encrypted",
+    "Copied-root test reuses the test database; not full database/key/session disaster recovery",
+    "Local lab and scripted fictional reviewer/recipient roles only; real identity/MFA and professional/device acceptance remain open",
+    "No KMS/WORM/provider/security/privacy/licence/legal/production approval",
+    "No deployment, live collection, spending or merge performed by this run"
+  ]
+}
