@@ -14,6 +14,19 @@ on:
       - 'tools/experiment_native_pdf.py'
       - 'tools/experiment_tesseract_supplier.py'
       - 'tools/run_tesseract_supplier.py'
+      - 'tools/run_ocr_document.py'
+      - 'tools/prepare_ocr_worker.py'
+      - 'research/runtime_artifacts/ocr-wheels.json'
+      - 'tools/verify_ocr_derivative.py'
+      - 'tools/verify_document_package.py'
+      - 'apps/api/src/ocr-derivative.ts'
+      - 'apps/api/src/document-derivative.ts'
+      - 'apps/api/src/integrity-jobs.ts'
+      - 'apps/api/migrations/030_ocr_document_derivatives.sql'
+      - 'apps/api/test/ocr-worker.integration.ts'
+      - 'apps/api/test/ocr-derivative.test.ts'
+      - 'apps/api/test/support/ocr-fixture.ts'
+      - 'research/runtime_artifacts/tesseract-baseline.lock.json'
       - 'tools/supplier_scan_fixture.py'
       - 'research/runtime_artifacts/tesseract-baseline.Dockerfile'
       - 'tests/test_supplier_scan_fixture.py'
@@ -117,12 +130,6 @@ jobs:
         run: timeout 120s python3 tools/audit_runtime_image.py --output .research-cache/image-inspection.json
       - name: Run isolated fictional native PDF experiment
         run: timeout 240s python3 tools/experiment_native_pdf.py
-      - name: Measure isolated fictional scanned supplier OCR baseline
-        run: timeout 420s python3 tools/experiment_tesseract_supplier.py
-      - name: Render fictional original pages twice inside isolation
-        run: |
-          timeout 180s python3 tools/experiment_pdf_render.py > .research-cache/render-output.json
-          node --import tsx --test apps/api/test/raster-native.integration.ts
       - name: Qualify the selected runtime for this worker acceptance run
         run: |
           timeout 90s python3 - <<'PYTHON'
@@ -133,6 +140,14 @@ jobs:
           from tools.build_docling_research import IMAGE
           Path('.research-cache/worker-qualification.json').write_text(json.dumps({**run_probe(IMAGE,runtime=True),'checkedAt':datetime.now(timezone.utc).isoformat()}))
           PYTHON
+      - name: Measure isolated fictional scanned supplier OCR baseline
+        run: |
+          npm run build
+          timeout 600s python3 tools/experiment_tesseract_supplier.py --case-acceptance
+      - name: Render fictional original pages twice inside isolation
+        run: |
+          timeout 180s python3 tools/experiment_pdf_render.py > .research-cache/render-output.json
+          node --import tsx --test apps/api/test/raster-native.integration.ts
       - name: Exercise leased native jobs against PostgreSQL and actual daemon failures
         run: timeout 360s node --import tsx --test --test-concurrency=1 apps/api/test/native-worker.integration.ts
       - name: Keep all acquired and generated third-party files untracked

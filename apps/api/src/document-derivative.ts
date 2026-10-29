@@ -20,7 +20,7 @@ function object(value:unknown):Record<string,unknown> {if(!value||typeof value!=
 function number(value:unknown):number {if(typeof value!=='number'||!Number.isFinite(value))fail();return value;}
 
 /** Reject duplicate keys (including escaped aliases), excessive nesting and malformed UTF-8. */
-function parseRaw(raw:Buffer):unknown {
+export function parseDocumentRaw(raw:Buffer):unknown {
   if(!raw.length||raw.length>1048576)fail();
   const text=new TextDecoder('utf-8',{fatal:true}).decode(raw);
   // JSON.parse checks grammar; the token pass records object keys without interpreting values.
@@ -42,7 +42,7 @@ export function makeDocumentDerivative(original:Buffer, context:DocumentContext,
   if(!original.length||original.length>65536||!original.subarray(0,5).equals(Buffer.from('%PDF-'))||sha256(original)!==context.sourceDigest)fail();
   if(result.successful!==true||result.profileDigest!==documentProfileDigest)fail();
   for(const key of ['tenantId','caseId','jobId','evidenceId','sourceDigest','authorityVersion'] as const)if(result.context[key]!==context[key])fail();
-  const data=object(parseRaw(result.raw));
+  const data=object(parseDocumentRaw(result.raw));
   if(data.schema_name!=='DoclingDocument')fail();
   const pages=object(data.pages),keys=Object.keys(pages);
   if(keys.length<1||keys.length>2)fail();

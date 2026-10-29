@@ -11,7 +11,8 @@ export const rasterProfileDigest=sha256(rasterProfile);
 function fail():never{throw new Error('Invalid raster derivative');}
 export function pngCrc(bytes:Buffer){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
 /** Accept only non-interlaced 8-bit greyscale, with no metadata/animation/extra streams. */
-export function validateRasterPng(png:Buffer,width:number,height:number){
+export function validateRasterPng(png:Buffer,width:number,height:number,colourType:0|2=0){
+  if(colourType!==0&&colourType!==2)fail();
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>2048||height>2048||width*height>2000000||
     png.length<57||png.length>262144||!png.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')))fail();
   let offset=8,header=false,ended=false;const parts:Buffer[]=[];
@@ -22,17 +23,18 @@ export function validateRasterPng(png:Buffer,width:number,height:number){
     if(pngCrc(png.subarray(offset+4,end-4))!==png.readUInt32BE(end-4))fail();
     if(type==='IHDR'){
       if(header||offset!==8||size!==13||data.readUInt32BE(0)!==width||data.readUInt32BE(4)!==height||
-        !data.subarray(8).equals(Buffer.from([8,0,0,0,0])))fail();header=true;
+        !data.subarray(8).equals(Buffer.from([8,colourType,0,0,0])))fail();header=true;
     }else if(type==='IDAT'){if(!header||size===0)fail();parts.push(data);}
     else if(type==='IEND'){if(!header||!parts.length||size!==0||end!==png.length)fail();ended=true;}
     else fail();
     offset=end;
   }
   if(!ended)fail();
-  const compressed=Buffer.concat(parts),expected=(width+1)*height;
+  const stride=width*(colourType===2?3:1)+1;
+  const compressed=Buffer.concat(parts),expected=stride*height;
   const result=inflateSync(compressed,{maxOutputLength:expected,info:true}) as unknown as {buffer:Buffer;engine:{bytesWritten:number}};
   if(result.buffer.length!==expected||result.engine.bytesWritten!==compressed.length)fail();
-  for(let y=0;y<height;y++)if(result.buffer[y*(width+1)]!>4)fail();
+  for(let y=0;y<height;y++)if(result.buffer[y*stride]!>4)fail();
   return {width,height,byteLength:png.length,digest:sha256(png)};
 }
 type Page={page:number;width:number;height:number;pngSha256:string;pngBytes:number;pngBase64:string};

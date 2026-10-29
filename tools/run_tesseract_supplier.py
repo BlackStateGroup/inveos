@@ -1,5 +1,6 @@
 """Runs only inside the qualified OCR research container; no application writes."""
 import collections
+import base64
 import csv
 import hashlib
 import io
@@ -95,7 +96,7 @@ def experiment():
     malformed=root/'malformed.png';malformed.write_bytes(b'FICTIONAL malformed image')
     bad=run_bounded(['tesseract',str(malformed),'stdout','-l','eng','tsv'],timeout=15,max_output=65536)
     if bad.returncode==0:raise ValueError('Malformed input unexpectedly succeeded')
-    return dict(status='fictional_scanned_supplier_measured',digitalGeneratorSha256=sha(digital),originalScanSha256=sha(scan),originalUnchanged=True,
+    return dict(status='fictional_scanned_supplier_measured',digitalGeneratorSha256=sha(digital),originalScanSha256=sha(scan),originalScanBase64=base64.b64encode(scan).decode(),originalUnchanged=True,
                 runs=results,malformedInputRejected=True,allExpectedTokensRecovered=all(p['matchedTokens']==p['expectedTokens'] for p in results[0]),
                 sourceRevision='Debian tesseract-ocr 5.3.0-2; not the catalogue source-head pin',
                 limitations='English clean synthetic raster only; no skew/noise/multilingual/table/real scan accuracy, API attachment, human acceptance or product approval')

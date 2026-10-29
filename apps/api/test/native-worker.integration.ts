@@ -79,7 +79,7 @@ test('actual daemon containers stop and disappear on lease loss, abort, output o
 
 test('actual PostgreSQL cancellation and authority change stop a running daemon worker before attachment',{timeout:90000},async()=>{
   const f=await fixture();const bundle=await mkdtemp('/tmp/inveos-scoped-container-');await chmod(bundle,0o755);
-  try{for(const kind of ['native_pdf_lab_v1','pdf_raster_lab_v1'])for(const mode of ['cancel','authority'] as const){
+  try{for(const kind of ['native_pdf_lab_v1','pdf_raster_lab_v1','tesseract_scan_lab_v1'])for(const mode of ['cancel','authority'] as const){
     const scope=await f.queue(pdf(),kind);const lease=await claimIntegrityJob(f.pool,scope);assert.ok(lease);let changed=false;
     await assert.rejects(runResearchContainer({bundle,imageId:image,script:'sleep 30',heartbeatMs:100,timeoutMs:15000},async()=>{
       const running=(await docker(['container','ls','-q','--filter','label=inveos.research-worker=true'])).trim();

@@ -76,14 +76,14 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
     <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh processing jobs</button>
     {error&&<p role="alert" className="form-error">{error} Refresh to retry.</p>}
     <p role="status">{busy?'Loading processing jobs…':message||(!rows.length?'No processing jobs for this case.':'')}</p>
-    <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
+    <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='tesseract_scan_lab_v1'?'Scanned PDF OCR lab':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
       <p>Evidence {job.evidenceId} · attempt {job.attempt} · authority version {job.authorityVersion}</p>
       <p>Original SHA-256: {job.sourceDigest}</p>{job.failureCode&&<p>Failure: {job.failureCode}</p>}
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>events(job.id))}>View attempts {job.id.slice(0,8)}</button>
       {job.kind==='utf8_line_index_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspect(job))}>Inspect unreviewed lines {job.id.slice(0,8)}</button>}
-      {job.kind==='native_pdf_lab_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectDocument(job))}>Inspect unreviewed pages {job.id.slice(0,8)}</button>}
+      {['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind)&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectDocument(job))}>Inspect unreviewed pages {job.id.slice(0,8)}</button>}
       {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectImage(job))}>Inspect page images {job.id.slice(0,8)}</button>}
-      {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&rows.filter(d=>d.kind==='native_pdf_lab_v1'&&d.status==='succeeded'&&d.caseId===job.caseId&&d.evidenceId===job.evidenceId&&d.sourceDigest===job.sourceDigest&&d.authorityVersion===job.authorityVersion).map(d=><button key={d.id} className="secondary" disabled={busy} onClick={()=>void act(()=>compareImage(job,d))}>Compare image {job.id.slice(0,8)} with passages {d.id.slice(0,8)}</button>)}
+      {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&rows.filter(d=>['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(d.kind)&&d.status==='succeeded'&&d.caseId===job.caseId&&d.evidenceId===job.evidenceId&&d.sourceDigest===job.sourceDigest&&d.authorityVersion===job.authorityVersion).map(d=><button key={d.id} className="secondary" disabled={busy} onClick={()=>void act(()=>compareImage(job,d))}>Compare image {job.id.slice(0,8)} with passages {d.id.slice(0,8)}</button>)}
       {['queued','running'].includes(job.status)&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>cancel(job))}>Cancel job {job.id.slice(0,8)}</button>}
     </li>)}</ul>
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Older jobs</button>}
@@ -98,7 +98,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       <button className="secondary" disabled={(linePage+1)*100>=inspection.lines.length} onClick={()=>setLinePage(p=>p+1)}>Next lines</button>
     </section>}
     {document&&<section aria-label="Verified unreviewed document derivative">
-      <h3>Unreviewed document passages</h3><Notice>Extracted text and coordinates need comparison with the original PDF. This inspection does not approve a citation, clear quarantine or establish complete extraction.</Notice>
+      <h3>{document.method==='ocr'?'Unreviewed OCR words':'Unreviewed document passages'}</h3>{document.method==='ocr'&&<Notice>OCR may misread words, numbers and reading order. Compare each selected occurrence with the original page before independent review.</Notice>}<Notice>Extracted text and coordinates need comparison with the original PDF. This inspection does not approve a citation, clear quarantine or establish complete extraction.</Notice>
       <p>Job {document.jobId} · evidence {document.evidenceId} · authority version {document.authorityVersion}</p>
       <p>{document.pageCount} original pages · processed {document.processedAt}</p>
       <p role="status">{document.pagesWithoutText.length?`Pages without extracted text: ${document.pagesWithoutText.join(', ')}. Review these pages separately.`:'Text is present on every page. Completeness still needs human review.'}</p>
