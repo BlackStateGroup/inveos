@@ -4144,13 +4144,15 @@ test('downgraded client cannot acknowledge an internal mention retained from the
 });
 
 async function manualSourceFixture(){
+ // Isolate the real rate-limit store from earlier API/browser fixture traffic.
+ await context.app!.close();context.app=await createAppInstance();
  const kase=await createCase();await approveAuthority(kase.id);const evidence=parseBody<Evidence>(await uploadEvidence(kase.id));
  const author=await createMember(demoTenantId,'investigator','Fictional supplied-source author');await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,kase.id,author]);const session=await issueTestSession(author),base=`/api/cases/${kase.id}/manual-sources`;
  const fields={url:'https://records.example.test/supplied-page?record=fictional',publisher:'Fictional Northstar register',retrievedAt:'2026-01-13T09:32:11+01:00',method:'Fictional supplied snapshot; server did not fetch this URL.',trustGrade:'unassessed',termsReference:'Fictional terms supplied by the commissioner, not independently qualified.',purpose:'Review the supplied fictional supplier record.',lawfulBasis:'Fictional fixture authority only.',scope:'This supplied page only; no live collection.',retentionDays:90,minimisation:'Retain only the fictional page relevant to the instructed review.',annotation:'Publisher identity and retrieval time are supplied assertions.'},input={...fields,id:randomUUID(),evidenceId:evidence.id};
  const response=await request('POST',base,session,{payload:input});assert.equal(response.statusCode,200,response.body);return {kase,evidence,author,session,base,fields,input,record:response.json()};
 }
 test('manual source register preserves original and reported times, independent metadata review, corrections and withdrawal',async()=>{
- const f=await manualSourceFixture(),url=f.base+'/'+f.record.id,list=()=>request('GET',f.base,context.demo!);
+ const f=await manualSourceFixture(),url=f.base+'/'+f.record.id,list=async()=>{const r=await request('GET',f.base,context.demo!);assert.equal(r.statusCode,200,r.body);return r;};
  assert.equal(f.record.original.sourceTime,f.evidence.sourceTime);assert.equal(f.record.original.receivedTime,f.evidence.receivedTime);assert.equal(f.record.retrievedAt,f.input.retrievedAt);assert.notEqual(f.record.recordedAt,f.record.retrievedAt);assert.equal((await list()).json().items[0].state,'pending');
  const decision={id:randomUUID(),expectedVersion:1,digest:f.record.digest,accepted:true,reason:'Fictional metadata and source limitations inspected; not legal or truth certification.'};
  await context.schemaAdminPool!.query("UPDATE memberships SET role='reviewer' WHERE tenant_id=$1 AND user_id=$2",[demoTenantId,f.author]);assertError(await request('POST',url+'/review',f.session,{payload:decision}),403);

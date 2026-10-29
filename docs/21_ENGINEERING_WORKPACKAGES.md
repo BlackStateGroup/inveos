@@ -108,7 +108,7 @@ Test corporate due diligence and internal investigations as the first market hyp
 
 ## How to select the next slice
 
-Use the [delivery plan](24_DELIVERY_PLAN.md): select the next dependency-ready slice, state its exit test, implement it, run relevant positive/negative checks and produce a draft PR. Record implementation, testing, deployment and pilot acceptance separately with exact revisions. A blocker requires a concrete next action; a research slice needs a measured experiment and explicit integration decision as its exit. Preserve the no-production/no-automatic-merge boundaries.
+Use the [delivery plan](24_DELIVERY_PLAN.md): select the next dependency-ready slice, state its exit test, implement it, run relevant positive/negative checks and produce a draft PR. Record implementation, testing, deployment and pilot acceptance separately with exact revisions. A blocker requires a concrete next action; a research slice needs a measured experiment and explicit integration decision as its exit. Preserve the no-production boundary and follow the current explicit delivery authority for review and validated merges.
 
 ## Acceptance template for every PR
 
