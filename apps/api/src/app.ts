@@ -41,6 +41,7 @@ import { inTransaction } from './db.js';
 import { readOriginalBounded, writeOriginal, type StoredOriginal } from './storage.js';
 import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
 import { registerInterviews } from './interviews.js';
+import { registerTimeLedger } from './time-ledger.js';
 import {buildReportPdf,reportPdfProfileDigest} from './report-pdf.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
@@ -666,6 +667,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerCaseGraph(app,investigationServices);
 
   registerInterviews(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);if(row.original_kind!=='original_utf8')throw new ApiError(422,'A preserved supplied transcript text original is required.');const bytes=await verifiedBytes(options.storageRoot,row);return {bytes,digest:row.digest.trim(),authorityVersion:row.authority_version,sourceTime:row.source_time,receivedTime:iso(row.received_time),filename:row.filename};}});
+
+  registerTimeLedger(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
 
   app.post(
     '/api/session/start',

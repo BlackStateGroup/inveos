@@ -68,7 +68,9 @@ jobs:
       - name: Run API integration tests against real PostgreSQL
         # This existing workspace command reads CI environment variables directly;
         # the root test:api command requires a developer's private .env file.
-        run: timeout 180s npm test --workspace @inveos/api
+        # The two added browser journeys bring the measured suite close to 180s.
+        # Individual worker/browser deadlines remain unchanged.
+        run: timeout 240s npm test --workspace @inveos/api
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
@@ -149,6 +151,14 @@ jobs:
         with:
           name: preservation-browser
           path: output/evals/preservation-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Retain fictional case time browser render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: case-time-browser
+          path: output/evals/case-time-desktop.png
           if-no-files-found: ignore
           retention-days: 14
       - name: Check tracked sources remain unchanged
