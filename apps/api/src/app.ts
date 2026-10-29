@@ -1,3 +1,4 @@
+import {registerPreservationHolds} from './preservation-holds.js';
 import {registerCaseAccess} from './case-access.js';
 import {appendCaseStage,collectionOpen,registerCaseLifecycle,type LifecycleCase} from './case-lifecycle.js';
 import {registerManualSources} from './manual-sources.js';
@@ -661,6 +662,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   };
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
   registerCaseAccess(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerPreservationHolds(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);return {id:row.id,digest:row.digest.trim(),filename:row.filename,authorityVersion:row.authority_version};}});
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
 
