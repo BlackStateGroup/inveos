@@ -1,0 +1,21 @@
+# Report revision history and downloads
+
+27 October 2026. Incremental report-studio slice over the immutable revisions in [31](31_FROZEN_REPORT_REVISIONS.md). No client release or production readiness.
+
+The persistent lab's Reports screen now offers a separate **Saved internal report revisions** panel. Freeze the current reviewed draft, refresh its saved history, load older revisions and download a selected revision. The original working-draft preview/export remains available. Saved revisions display their UTC creation time and a selectable SHA-256 fingerprint. Downloading preserves exact server bytes, and the browser checks both its computed SHA-256 and the response header against the selected receipt before creating the file. Fingerprints should still be retained through an independent trusted channel; a server-provided hash alone is not authentication against privileged replacement.
+
+Creation retries reuse a UUID while the panel remains mounted and the response is unknown. Successful creation clears it. Navigation/reload resets this in-memory retry state: inspect history before creating another revision after a lost response across navigation. The server's actor/case idempotency remains durable. Errors and loading/empty states are explicit; simultaneous actions are blocked. Case-keyed component state and aborting the initial request prevent a previous case's history being displayed in a newly selected case. No report content is stored in browser local storage.
+
+## Listing API
+
+`GET /api/cases/:caseId/report-revisions?limit=25&before=REVISION_UUID` returns `items` and nullable `nextBefore`. Omit `before` for the newest page. Limit is 1–50, default 25. Each item contains only id, caseId, internal-draft status, createdAt and sha256; no original bytes, finding narratives, storage paths or creator details. Results are ordered by descending database creation time and UUID, using a composite index added by migration 008. The cursor is resolved inside the authorised tenant/case, retaining PostgreSQL timestamp precision. Unknown/foreign cursors return 404. Newer inserts do not move an existing older-page boundary. Responses are `no-store`; current internal membership/role checks use the existing report transaction.
+
+The listing is not an integrity re-verification of every saved object. The existing download endpoint rehashes stored bytes, and the browser independently compares the chosen receipt. There is no external sharing route.
+
+## Verification and remaining gates
+
+Run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:foundation` and `npm test --workspace @inveos/api` with the documented disposable PostgreSQL URLs. Two added PostgreSQL scenarios cover bounded keyset pagination, newer inserts between pages, refresh, actual TCP listing, receipt field minimisation, foreign cursors/tenants, invalid inputs, client/unassigned/revoked access and empty history. Existing frozen-report tests continue to verify exact downloads, offline verification, concurrent edits and audit rollback. Exact receipts are in BUILD_HANDOFF.md; hosted [Checks run #26](https://github.com/BlackStateGroup/inveos/actions/runs/40537397672) passed at `5c7c4881f867728b483da07127929ef3ed0733d3`: 41 PostgreSQL API tests, four text-processor tests, one client download-guard test and 42 Python tests. The guard test executes the actual helper under Node Web Crypto and rejects changed bytes, missing/mismatched headers and replaced receipts.
+
+UI type checks/build are not browser acceptance. Actual browser freeze/retry/download, visual/accessibility and case-switch network-race checks remain unrun; the sandbox-enabled launch probe in this run found no installed Chromium executable. Parser isolation and runtime licences, native/offline/restore, bounded report assembly, PDF/signatures/redaction and release controls remain open. No new package or third-party source, real records, external collection, deployment or automatic merge.
+
+Rollback: remove the listing and UI if necessary, leaving immutable revision rows and the harmless index intact. Do not rewrite migrations 007/008 or delete saved reports. The existing revision creation/download API remains usable.

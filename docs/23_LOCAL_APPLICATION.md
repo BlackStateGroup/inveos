@@ -22,7 +22,48 @@ The initial export is an internal JSON draft, not PDF, not a client release and 
 - The Client Portal displays fixed fictional released-content examples only, never internal workspace records.
 - Production integrations and release buttons are disabled with reasons, not simulated as successful operations.
 
+## Persistent casework — 27 October 2026
+
+The local lab now saves objectives, investigation questions, competing hypotheses,
+tasks, case notes and handovers. Records have owners drawn from case membership,
+optional calendar deadlines, typed status and immutable revision snapshots. Every
+edit requires the version being edited and a reason; a stale edit returns `409`
+and leaves the user's draft available for comparison. Case progress is calculated
+from saved findings, open questions, blockers and the next task. Casework also
+appears in workspace search. An existing, valid lab session restores the selected
+case/view on reload; this does not introduce production identity.
+
+Questions, objectives and hypotheses can link exact-source claims as supporting,
+contrary or contextual material. The server rechecks the original bytes and quote
+range before attaching a link. A hypothesis cannot be assessed as supported or
+disputed without matching, reverified source links. This never creates a reviewed
+finding. Only the assigned handover recipient can acknowledge a handover.
+Revoking case membership denies further casework/history access, while historical
+ownership remains recorded. API responses carry `Cache-Control: no-store`.
+
+The report studio includes a complete branded print view, reviewed passages,
+unresolved questions, limitations and cited exhibit digests/times. Printing through
+the action rechecks the server report first. JSON exports keep working questions
+and hypotheses in a separate context section; internal notes and handovers are
+excluded. The exported JSON fingerprint can be copied explicitly. The standalone
+`tools/verify_report.py` checks embedded original bytes, exact UTF-8 citation ranges
+and recorded policy snapshots without accessing the API. A separately trusted
+fingerprint is needed to authenticate the complete file; an accompanying hash
+alone does not establish authenticity. The verifier does not certify PDF content,
+reviewer identity, truth, lawful collection or client release.
+
+Ordered, checksummed SQL migrations now upgrade existing foundation databases and
+refuse changed applied migration files. The migration runner takes a transaction
+lock to prevent concurrent application of the same migration.
+
+See the [verification receipt and reproduction commands](evals/2026-10-27-casework.md).
+These are local synthetic application capabilities. Real identity/MFA, encrypted
+production object storage, PDF/OCR ingestion, native offline capture, signed export
+packages and operational client releases remain outside this change.
+
 See [the local runbook](../LOCAL_RUN.md) for setup and verification commands.
+
+The [complete workspace delivery plan](24_DELIVERY_PLAN.md) records the expanded scope, reconciled implementation states and fictional supplier milestone. The lab below is its starting point; the 26 October verification receipt remains historical evidence for this slice.
 
 ## Local verification — 26 October 2026
 

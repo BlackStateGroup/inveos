@@ -1,0 +1,37 @@
+{
+  "status": "research_raster_jobs_passed",
+  "commit": "c475b138cd3aa83ea1c86f23f7a98872b31bc0ac",
+  "tree": "b0ef13613b2448ca367394efdabe36091b4ad0d3",
+  "researchRun": 40834655992,
+  "researchJob": 123316498313,
+  "checksRun": 40834656042,
+  "checksJob": 123316498612,
+  "workerTests": 5,
+  "apiAndHelperTests": 182,
+  "pythonTests": 101,
+  "raster": {
+    "sourceDigest": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+    "profileDigest": "80bf6d3f398ca89c0c192371fbed4af8899eefb4bdda8e764dc89ecebed5d569",
+    "pages": [
+      {
+        "page": 1,
+        "width": 612,
+        "height": 792,
+        "byteLength": 3567,
+        "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+      },
+      {
+        "page": 2,
+        "width": 612,
+        "height": 792,
+        "byteLength": 3567,
+        "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+      }
+    ]
+  },
+  "limits": [
+    "Fictional two-page digital PDF; broader fidelity unapproved",
+    "Research-only trusted function; no automatic dispatch",
+    "No human-reviewed citation or production approval"
+  ]
+}

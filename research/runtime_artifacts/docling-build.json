@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "executed": false,
+  "approval": "research_only_not_incorporation",
+  "artifacts": [
+    {
+      "name": "hatchling",
+      "version": "1.33.0",
+      "filename": "hatchling-1.33.0-py3-none-any.whl",
+      "sha256": "415290b84f464d2884303fca8974d38e7b85579069fab02a15db0828fbb1446d",
+      "bytes": 78750,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "packaging>=24.2",
+        "pathspec>=0.10.1",
+        "pluggy>=1.0.0",
+        "tomli>=1.2.2; python_version < '3.11'",
+        "tomlkit>=0.11.1",
+        "trove-classifiers"
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "hatchling/licenses/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "hatchling/licenses/supported.py",
+          "sha256": "641fb474d6916e23ea297f2b8d8ae20addad1c8f65e2852e7ca4445e73ed92e6",
+          "bytes": 68
+        },
+        {
+          "path": "hatchling-1.33.0.dist-info/licenses/LICENSE.txt",
+          "sha256": "7f143a8127ad4873862d70854b5bd2abd0085aa73e64fd2b08704a3b9f5c07fc",
+          "bytes": 1088
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact",
+      "observedRootTerms": "MIT"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "filename": "packaging-26.3-py3-none-any.whl",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "bytes": 129956,
+      "requiresPython": ">=3.9",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "Apache-2.0 OR BSD-2-Clause",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "packaging/licenses/__init__.py",
+          "sha256": "590d12eee73ddbec53b4e9ee5bfc64d9cb3aacb4940e8ebcba260757ce56740b",
+          "bytes": 7859
+        },
+        {
+          "path": "packaging/licenses/_spdx.py",
+          "sha256": "596ec35e2ca0ebcba9fd8343ff0a51625af548786257815f24b41f7e08613314",
+          "bytes": 51122
+        },
+        {
+          "path": "packaging-26.3.dist-info/licenses/LICENSE",
+          "sha256": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48",
+          "bytes": 197
+        },
+        {
+          "path": "packaging-26.3.dist-info/licenses/LICENSE.APACHE",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+          "bytes": 10174
+        },
+        {
+          "path": "packaging-26.3.dist-info/licenses/LICENSE.BSD",
+          "sha256": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5",
+          "bytes": 1344
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact",
+      "observedRootTerms": "Apache-2.0 OR BSD-2-Clause (plus MIT adaptation in packaging/licenses/__init__.py)"
+    },
+    {
+      "name": "pathspec",
+      "version": "1.1.1",
+      "filename": "pathspec-1.1.1-py3-none-any.whl",
+      "sha256": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+      "bytes": 57328,
+      "requiresPython": ">=3.9",
+      "requiresDist": [
+        "hyperscan >=0.7 ; extra == \"hyperscan\"",
+        "typing-extensions >=4 ; extra == \"optional\"",
+        "google-re2 >=1.1 ; extra == \"re2\""
+      ],
+      "providesExtra": [
+        "hyperscan",
+        "optional",
+        "re2"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
+      "notices": [
+        {
+          "path": "pathspec-1.1.1.dist-info/licenses/LICENSE",
+          "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+          "bytes": 16726
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact",
+      "observedRootTerms": "MPL-2.0"
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0",
+      "filename": "pluggy-1.7.0-py3-none-any.whl",
+      "sha256": "7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec",
+      "bytes": 27082,
+      "requiresPython": ">=3.10",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "pluggy-1.7.0.dist-info/licenses/LICENSE",
+          "sha256": "d6b65e6c213a5d0b577911d34d6e5949b9f59d76c238c5071a2f3fc16cfb2606",
+          "bytes": 1110
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact",
+      "observedRootTerms": "MIT"
+    },
+    {
+      "name": "tomlkit",
+      "version": "0.15.2",
+      "filename": "tomlkit-0.15.2-py3-none-any.whl",
+      "sha256": "05562412163a3037b94497385fb7f9204c637bc605af7a48199e41cf2272f437",
+      "bytes": 52225,
+      "requiresPython": ">=3.9",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "tomlkit-0.15.2.dist-info/licenses/LICENSE",
+          "sha256": "f2f9b460ba719da6626add264d3782f275a4ff7aab677beda08b330911e23adb",
+          "bytes": 1062
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact",
+      "observedRootTerms": "MIT"
+    },
+    {
+      "name": "trove-classifiers",
+      "version": "2026.9.21.13",
+      "filename": "trove_classifiers-2026.9.21.13-py3-none-any.whl",
+      "sha256": "8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17",
+      "bytes": 14232,
+      "requiresPython": null,
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "notices": [
+        {
+          "path": "trove_classifiers-2026.9.21.13.dist-info/licenses/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact",
+      "observedRootTerms": "Apache-2.0"
+    }
+  ],
+  "purpose": "isolated_exact_source_wheel_build_only"
+}

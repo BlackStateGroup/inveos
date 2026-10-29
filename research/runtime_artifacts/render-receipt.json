@@ -1,0 +1,298 @@
+{
+  "status": "isolated_render_passed",
+  "image": "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487",
+  "qualification": {
+    "status": "host_probe_passed",
+    "imageId": "sha256:37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+    "repoDigests": [
+      "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487"
+    ],
+    "checks": [
+      "boundaries",
+      "timeout",
+      "stdout_limit",
+      "stderr_limit",
+      "memory",
+      "pids",
+      "cpu"
+    ],
+    "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+    "parserExecuted": false,
+    "imageVolumeOverrides": [],
+    "profile": "runtime-1g",
+    "resourceEvidence": {
+      "oomKilled": true,
+      "pids": 2,
+      "cpu": 1134104
+    },
+    "combinedCaptureLimitBytes": 16384,
+    "daemonLogging": false,
+    "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+  },
+  "runs": [
+    {
+      "status": "synthetic_render_passed",
+      "cases": {
+        "digital": {
+          "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            },
+            {
+              "page": 2,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            }
+          ]
+        },
+        "mixed": {
+          "originalSha256": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            },
+            {
+              "page": 2,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                72,
+                92,
+                172,
+                192
+              ],
+              "pngSha256": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012",
+              "pngBytes": 2089
+            }
+          ]
+        },
+        "blank": {
+          "originalSha256": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": null,
+              "pngSha256": "c0747f740c00c30b399b138e3a49f84ee62b4b74544a9880a3b953cbaf104211",
+              "pngBytes": 2066
+            },
+            {
+              "page": 2,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            }
+          ]
+        },
+        "raster": {
+          "originalSha256": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                72,
+                92,
+                172,
+                192
+              ],
+              "pngSha256": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012",
+              "pngBytes": 2089
+            }
+          ]
+        }
+      },
+      "rejected": [
+        "malformed",
+        "oversize",
+        "overpages"
+      ],
+      "profile": {
+        "scale": 1,
+        "rotation": 0,
+        "crop": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "grayscale": true,
+        "forms": false,
+        "annotations": false
+      },
+      "approval": "research_only_unreviewed_raster_derivative"
+    },
+    {
+      "status": "synthetic_render_passed",
+      "cases": {
+        "digital": {
+          "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            },
+            {
+              "page": 2,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            }
+          ]
+        },
+        "mixed": {
+          "originalSha256": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            },
+            {
+              "page": 2,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                72,
+                92,
+                172,
+                192
+              ],
+              "pngSha256": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012",
+              "pngBytes": 2089
+            }
+          ]
+        },
+        "blank": {
+          "originalSha256": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": null,
+              "pngSha256": "c0747f740c00c30b399b138e3a49f84ee62b4b74544a9880a3b953cbaf104211",
+              "pngBytes": 2066
+            },
+            {
+              "page": 2,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                73,
+                83,
+                283,
+                95
+              ],
+              "pngSha256": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce",
+              "pngBytes": 3567
+            }
+          ]
+        },
+        "raster": {
+          "originalSha256": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+          "pages": [
+            {
+              "page": 1,
+              "width": 612,
+              "height": 792,
+              "nonWhiteBounds": [
+                72,
+                92,
+                172,
+                192
+              ],
+              "pngSha256": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012",
+              "pngBytes": 2089
+            }
+          ]
+        }
+      },
+      "rejected": [
+        "malformed",
+        "oversize",
+        "overpages"
+      ],
+      "profile": {
+        "scale": 1,
+        "rotation": 0,
+        "crop": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "grayscale": true,
+        "forms": false,
+        "annotations": false
+      },
+      "approval": "research_only_unreviewed_raster_derivative"
+    }
+  ],
+  "commit": "840cb55d119d55b09a644b1ef5e83e3e1974342b",
+  "tree": "30052dab77b4c2fe3ca5c38278c9075770395298",
+  "workflow": "https://github.com/BlackStateGroup/inveos/actions/runs/40818453460",
+  "visualInspection": "Digital text and raster checkerboard inspected; no general visual fidelity approval."
+}

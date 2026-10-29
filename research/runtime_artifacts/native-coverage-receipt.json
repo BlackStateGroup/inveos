@@ -1,0 +1,260 @@
+{
+  "status": "synthetic_native_pdf_passed",
+  "sourcePin": "90234a71b16785d08fd2f46ec62668dd2396db76",
+  "image": "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487",
+  "qualification": {
+    "status": "host_probe_passed",
+    "imageId": "sha256:37ccb536022bb36c4570856b55ebfa85bf07827e3c2fa3eba37f0dac62eebc05",
+    "repoDigests": [
+      "python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487"
+    ],
+    "checks": [
+      "boundaries",
+      "timeout",
+      "stdout_limit",
+      "stderr_limit",
+      "memory",
+      "pids",
+      "cpu"
+    ],
+    "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+    "parserExecuted": false,
+    "imageVolumeOverrides": [],
+    "profile": "runtime-1g",
+    "resourceEvidence": {
+      "oomKilled": true,
+      "pids": 2,
+      "cpu": 1167180
+    },
+    "combinedCaptureLimitBytes": 16384,
+    "daemonLogging": false,
+    "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+  },
+  "runs": [
+    {
+      "coverageCases": {
+        "blank": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              0,
+              1
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+          "rows": [
+            {
+              "page": 2,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "mixed": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              1,
+              0
+            ],
+            "pagesWithoutText": [
+              2
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+          "rows": [
+            {
+              "page": 1,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "overpages": {
+          "originalSha256": "875c4fa83143ed349a567b791eac8beba99906f44b88cd7a7460011c50cd4655",
+          "rejected": true
+        },
+        "oversize": {
+          "originalSha256": "99ff663aee374abeedd3de908bfde6e18fdc695e9a13a238fd1d36138553ce79",
+          "rejected": true
+        },
+        "raster": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 1,
+            "pageTextCounts": [
+              0
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+          "rows": []
+        }
+      },
+      "elapsedSeconds": 0.020860561999995753,
+      "malformedOutcome": "ValueError",
+      "maxRssKiB": 160956,
+      "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "parserExecuted": true,
+      "rows": [
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 1,
+          "text": "FICTIONAL INVEOS repeated passage"
+        },
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 2,
+          "text": "FICTIONAL INVEOS repeated passage"
+        }
+      ]
+    },
+    {
+      "coverageCases": {
+        "blank": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              0,
+              1
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+          "rows": [
+            {
+              "page": 2,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "mixed": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 2,
+            "pageTextCounts": [
+              1,
+              0
+            ],
+            "pagesWithoutText": [
+              2
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+          "rows": [
+            {
+              "page": 1,
+              "text": "FICTIONAL INVEOS repeated passage"
+            }
+          ]
+        },
+        "overpages": {
+          "originalSha256": "875c4fa83143ed349a567b791eac8beba99906f44b88cd7a7460011c50cd4655",
+          "rejected": true
+        },
+        "oversize": {
+          "originalSha256": "99ff663aee374abeedd3de908bfde6e18fdc695e9a13a238fd1d36138553ce79",
+          "rejected": true
+        },
+        "raster": {
+          "coverage": {
+            "completeExtractionVerified": false,
+            "disposition": "needs_page_review",
+            "pageCount": 1,
+            "pageTextCounts": [
+              0
+            ],
+            "pagesWithoutText": [
+              1
+            ],
+            "parserSucceeded": true
+          },
+          "originalSha256": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+          "rows": []
+        }
+      },
+      "elapsedSeconds": 0.021241966999994588,
+      "malformedOutcome": "ValueError",
+      "maxRssKiB": 160576,
+      "originalSha256": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "parserExecuted": true,
+      "rows": [
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 1,
+          "text": "FICTIONAL INVEOS repeated passage"
+        },
+        {
+          "box": {
+            "b": 697.516,
+            "coord_origin": "BOTTOMLEFT",
+            "l": 72,
+            "r": 282.7560000000001,
+            "t": 708.616
+          },
+          "charspan": [
+            0,
+            33
+          ],
+          "page": 2,
+          "text": "FICTIONAL INVEOS repeated passage"
+        }
+      ]
+    }
+  ],
+  "approval": "research_only_not_product_or_licence_approval",
+  "verification": {
+    "commit": "89f7dd9a6474a6d286356cbfc4cca544d7f541b8",
+    "tree": "990ef68b3e0627f50f088460da702f4be25145d8",
+    "run": 40760701434,
+    "job": 123071517166
+  }
+}

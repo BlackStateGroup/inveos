@@ -1,0 +1,2049 @@
+{
+  "schemaVersion": 1,
+  "executed": false,
+  "approval": "research_only_not_incorporation",
+  "artifacts": [
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "filename": "annotated_doc-0.0.5-py3-none-any.whl",
+      "sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101",
+      "bytes": 5302,
+      "requiresPython": ">=3.9",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "annotated_doc-0.0.5.dist-info/licenses/LICENSE",
+          "sha256": "fff170779a6acbf65abdb405c087f1cee1786691e4a96a4034517e4a504a0cdf",
+          "bytes": 1086
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "filename": "annotated_types-0.8.0-py3-none-any.whl",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "bytes": 13427,
+      "requiresPython": ">=3.10",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "annotated_types-0.8.0.dist-info/licenses/LICENSE",
+          "sha256": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d",
+          "bytes": 1083
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "filename": "attrs-26.1.0-py3-none-any.whl",
+      "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+      "bytes": 67548,
+      "requiresPython": ">=3.9",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "attrs-26.1.0.dist-info/licenses/LICENSE",
+          "sha256": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f",
+          "bytes": 1109
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23",
+      "filename": "certifi-2026.10.23-py3-none-any.whl",
+      "sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1",
+      "bytes": 135082,
+      "requiresPython": ">=3.7",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MPL-2.0",
+      "licenceDeclarationSha256": "09962c1dc23fac80a0e5a88b2eb7051b74a6443a568ca2a045a4ec2fb82aeee5",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
+      "notices": [
+        {
+          "path": "certifi-2026.10.23.dist-info/licenses/LICENSE",
+          "sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7",
+          "bytes": 989
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "filename": "charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "3d31298449090ab8d47b7b1b2a555ff73cac7ed438a08b7ac160980c7ebed649",
+      "bytes": 257601,
+      "requiresPython": ">=3.7",
+      "requiresDist": [],
+      "providesExtra": [
+        "unicode-backport"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "charset_normalizer-3.5.2.dist-info/licenses/LICENSE",
+          "sha256": "6d0d41bfe170ac6c7dc248c9a63e254d0fb45a60d50a8257d0af92c6e249b887",
+          "bytes": 1071
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "filename": "defusedxml-0.7.1-py2.py3-none-any.whl",
+      "sha256": "a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61",
+      "bytes": 25604,
+      "requiresPython": ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "PSFL",
+      "licenceDeclarationSha256": "0c2f49e924f843224c80690cefd02e03d44fcf8e4e21cb3a8af5ba0b4e0990e0",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: Python Software Foundation License"
+      ],
+      "notices": [
+        {
+          "path": "defusedxml-0.7.1.dist-info/LICENSE",
+          "sha256": "b80ce9da8c42a1f91079627fbbe2bf27210ae108a0ffe5f077d5b08e076c24c8",
+          "bytes": 2409
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "doclang",
+      "version": "0.8.0",
+      "filename": "doclang-0.8.0-py3-none-any.whl",
+      "sha256": "7c768f641414629ec23576ed1a4a76b3e934ff734803f09f8d9bd084ac2cae90",
+      "bytes": 69943,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "lxml>=4.8.0",
+        "typer>=0.15.1",
+        "saxonche>=12.9.0; extra == \"schematron-saxon\""
+      ],
+      "providesExtra": [
+        "schematron-saxon"
+      ],
+      "licenceExpression": "Apache-2.0",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "doclang-0.8.0.dist-info/licenses/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "docling-core",
+      "version": "2.105.0",
+      "filename": "docling_core-2.105.0-py3-none-any.whl",
+      "sha256": "f5b270e23a9ae4b2cc028e43ad6ece31c3d6a9bebca382e41418ecf7e5f6e7ef",
+      "bytes": 330500,
+      "requiresPython": "<4.0,>=3.10",
+      "requiresDist": [
+        "jsonschema<5.0.0,>=4.16.0",
+        "pydantic!=2.10.0,!=2.10.1,!=2.10.2,<3.0.0,>=2.6.0",
+        "jsonref<2.0.0,>=1.1.0",
+        "tabulate<0.11.0,>=0.9.0",
+        "pandas<4.0.0,>=2.1.4",
+        "pillow<14.0.0,>=10.0.0",
+        "pyyaml<7.0.0,>=5.1",
+        "typing-extensions<5.0.0,>=4.12.2",
+        "typer<0.28.0,>=0.12.5",
+        "latex2mathml<4.0.0,>=3.77.0",
+        "defusedxml<0.8.0,>=0.7.1",
+        "pydantic-settings>=2.14.0",
+        "doclang<0.9,>=0.8",
+        "requests<3.0.0,>=2.34.2",
+        "doclang<0.9,>=0.8; extra == \"dclq\"",
+        "typer<0.28.0,>=0.26.0; extra == \"dclq\"",
+        "lxml>=6.0.2; extra == \"dclq\"",
+        "semchunk<4.0.0,>=2.2.0; extra == \"chunking\"",
+        "tree-sitter<0.27.0,>=0.25.0; extra == \"chunking\"",
+        "tree-sitter-python>=0.23.6; extra == \"chunking\"",
+        "tree-sitter-c>=0.23.4; extra == \"chunking\"",
+        "tree-sitter-javascript>=0.23.1; extra == \"chunking\"",
+        "tree-sitter-typescript>=0.23.2; extra == \"chunking\"",
+        "transformers<6.0.0,>=4.42.0; extra == \"chunking\"",
+        "semchunk<4.0.0,>=2.2.0; extra == \"chunking-openai\"",
+        "tree-sitter<0.27.0,>=0.25.0; extra == \"chunking-openai\"",
+        "tree-sitter-python>=0.23.6; extra == \"chunking-openai\"",
+        "tree-sitter-c>=0.23.4; extra == \"chunking-openai\"",
+        "tree-sitter-javascript>=0.23.1; extra == \"chunking-openai\"",
+        "tree-sitter-typescript>=0.23.2; extra == \"chunking-openai\"",
+        "tiktoken<0.15.0,>=0.9.0; extra == \"chunking-openai\"",
+        "datasets>=4.0.0; extra == \"examples\"",
+        "matplotlib>=3.7.0; extra == \"examples\"",
+        "openpyxl>=3.1.5; extra == \"examples\""
+      ],
+      "providesExtra": [
+        "dclq",
+        "chunking",
+        "chunking-openai",
+        "examples"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "docling_core-2.105.0.dist-info/licenses/LICENSE",
+          "sha256": "d8cf7ee84a10d6cc45ced4ce917180b7050326f9d66801dd07d058595c06908c",
+          "bytes": 1087
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "docling-parse",
+      "version": "7.24.0",
+      "filename": "docling_parse-7.24.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "635517412307310867a60b8d908a52f95b4f042faf200d1730b60041193ad401",
+      "bytes": 10877840,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "pillow<14.0.0,>=10.0.0",
+        "pydantic>=2.0.0",
+        "docling-core<3.0.0,>=2.99.0",
+        "pywin32>=305; sys_platform == \"win32\""
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "docling_parse/pdf_resources/cmap-resources/LICENSE.md",
+          "sha256": "feb8b068a417681821823ef2e8995072aa111121fa11f8664038f78717f4497c",
+          "bytes": 1453
+        },
+        {
+          "path": "docling_parse-7.24.0.dist-info/licenses/LICENSE",
+          "sha256": "002c2696d92b5c8cf956c11072baa58eaf9f6ade995c031ea635c6a1ee342ad1",
+          "bytes": 1069
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "docling-slim",
+      "version": "2.142.1",
+      "filename": "docling_slim-2.142.1-py3-none-any.whl",
+      "sha256": "8013da3da0692b51406e6192c3b2aba4c241da92ff055af106dbe6b723b7f528",
+      "bytes": 1116839,
+      "requiresPython": "<4.0,>=3.10",
+      "requiresDist": [
+        "certifi>=2024.7.4",
+        "docling-core<3.0.0,>=2.103.1",
+        "filetype<2.0.0,>=1.2.0",
+        "langcodes<4.0.0,>=3.5.0",
+        "pluggy<2.0.0,>=1.0.0",
+        "pydantic-settings<3.0.0,>=2.3.0",
+        "pydantic<3.0.0,>=2.0.0",
+        "requests<3.0.0,>=2.32.2",
+        "tqdm<5.0.0,>=4.65.0",
+        "accelerate<2,>=1.0.0; extra == 'all'",
+        "accelerate<2.0.0,>=1.2.1; extra == 'all'",
+        "arelle-release<3.0.0,>=2.38.17; extra == 'all'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'all'",
+        "defusedxml<0.8.0,>=0.7.1; extra == 'all'",
+        "docling-core[chunking]<3.0.0,>=2.103.1; extra == 'all'",
+        "docling-ibm-models<5,>=4.0.2; extra == 'all'",
+        "docling-parse<8.0.0,>=7.22.2; extra == 'all'",
+        "easyocr<2.0,>=1.7; extra == 'all'",
+        "einops<1.0.0,>=0.8.1; extra == 'all'",
+        "httpx<1.0.0,>=0.28; extra == 'all'",
+        "huggingface-hub<2,>=0.23; extra == 'all'",
+        "lxml<7.0.0,>=4.0.0; extra == 'all'",
+        "mail-parser<5.0.0,>=4.1.4; extra == 'all'",
+        "marko<3.0.0,>=2.1.2; extra == 'all'",
+        "mlx-vlm<1.0.0,>=0.7.0; (python_version >= '3.10' and sys_platform == 'darwin' and platform_machine == 'arm64') and extra == 'all'",
+        "mlx-whisper>=0.4.3; (python_version >= '3.10' and sys_platform == 'darwin' and platform_machine == 'arm64') and extra == 'all'",
+        "numba>=0.63.0; extra == 'all'",
+        "numpy<3.0.0,>=1.24.0; extra == 'all'",
+        "ocrmac<2.0.0,>=1.0.0; (sys_platform == 'darwin') and extra == 'all'",
+        "onnxruntime-gpu<1.24; (python_version < '3.11' and (sys_platform == 'linux' or sys_platform == 'win32')) and extra == 'all'",
+        "onnxruntime-gpu<2.0.0,>=1.24.1; (python_version >= '3.14' and (sys_platform == 'linux' or sys_platform == 'win32')) and extra == 'all'",
+        "onnxruntime-gpu<2.0.0; (python_version >= '3.11' and python_version < '3.14' and (sys_platform == 'linux' or sys_platform == 'win32')) and extra == 'all'",
+        "onnxruntime<1.24; (python_version < '3.11' and sys_platform == 'darwin') and extra == 'all'",
+        "onnxruntime<2.0.0,>=1.24.1; (python_version >= '3.14' and sys_platform == 'darwin') and extra == 'all'",
+        "onnxruntime<2.0.0; (python_version >= '3.11' and python_version < '3.14' and sys_platform == 'darwin') and extra == 'all'",
+        "open-clip-torch<4.0.0,>=3.2.0; extra == 'all'",
+        "openai-whisper>=20250625; extra == 'all'",
+        "openpyxl<4.0.0,>=3.1.5; extra == 'all'",
+        "pandas<4.0.0,>=2.1.4; extra == 'all'",
+        "peft>=0.18.1; extra == 'all'",
+        "pillow<14.0.0,>=10.0.0; extra == 'all'",
+        "playwright>=1.58.0; extra == 'all'",
+        "polyfactory>=2.22.2; extra == 'all'",
+        "pylatexenc<3.0,>=2.10; extra == 'all'",
+        "pypdfium2!=4.30.1,<6.0.0,>=4.30.0; extra == 'all'",
+        "python-docx<2.0.0,>=1.2.0; extra == 'all'",
+        "python-dotenv~=1.0; extra == 'all'",
+        "python-oxmsg<0.1.0,>=0.0.2; extra == 'all'",
+        "python-pptx<2.0.0,>=1.0.2; extra == 'all'",
+        "qwen-vl-utils>=0.0.11; extra == 'all'",
+        "rapidocr<4.0.0,>=3.9.1; extra == 'all'",
+        "rich>=13.0.0; extra == 'all'",
+        "rtree<2.0.0,>=1.3.0; extra == 'all'",
+        "scikit-image>=0.19; extra == 'all'",
+        "scipy<2.0.0,>=1.9.0; extra == 'all'",
+        "tesserocr<3.0.0,>=2.7.1; extra == 'all'",
+        "timm<2.0.0,>=1.0.22; extra == 'all'",
+        "torch<3.0.0,>=2.2.2; extra == 'all'",
+        "torchvision<1,>=0; extra == 'all'",
+        "transformers!=5.0.*,!=5.1.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.*,!=5.2.*,!=5.3.*,!=5.9.*,<6.0.0,>=4.42.0; (sys_platform == 'darwin') and extra == 'all'",
+        "transformers!=5.0.*,!=5.1.*,!=5.13.0,!=5.2.*,!=5.3.*,<6.0.0,>=4.42.0; (sys_platform != 'darwin') and extra == 'all'",
+        "tritonclient[grpc]<3.0.0,>=2.65.0; extra == 'all'",
+        "typer<0.27.0,>=0.19.0; extra == 'all'",
+        "websockets<17.0,>=14.0; extra == 'all'",
+        "whisper-s2t-reborn<2.0.0,>=1.7.1; (sys_platform != 'darwin' or platform_machine != 'arm64') and extra == 'all'",
+        "python-dotenv~=1.0; extra == 'cli'",
+        "rich>=13.0.0; extra == 'cli'",
+        "typer<0.27.0,>=0.19.0; extra == 'cli'",
+        "numpy<3.0.0,>=1.24.0; extra == 'convert-core'",
+        "pillow<14.0.0,>=10.0.0; extra == 'convert-core'",
+        "rtree<2.0.0,>=1.3.0; extra == 'convert-core'",
+        "scipy<2.0.0,>=1.9.0; extra == 'convert-core'",
+        "numpy<3.0.0,>=1.24.0; extra == 'extract-core'",
+        "pillow<14.0.0,>=10.0.0; extra == 'extract-core'",
+        "polyfactory>=2.22.2; extra == 'extract-core'",
+        "rtree<2.0.0,>=1.3.0; extra == 'extract-core'",
+        "scipy<2.0.0,>=1.9.0; extra == 'extract-core'",
+        "docling-core[chunking]<3.0.0,>=2.103.1; extra == 'feat-chunking'",
+        "easyocr<2.0,>=1.7; extra == 'feat-ocr-easyocr'",
+        "scikit-image>=0.19; extra == 'feat-ocr-easyocr'",
+        "ocrmac<2.0.0,>=1.0.0; (sys_platform == 'darwin') and extra == 'feat-ocr-mac'",
+        "nemotron-ocr>=2.0.0; (python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64') and extra == 'feat-ocr-nemotron'",
+        "rapidocr<4.0.0,>=3.9.1; extra == 'feat-ocr-rapidocr'",
+        "onnxruntime<1.24,>=1.7.0; (python_version < '3.11') and extra == 'feat-ocr-rapidocr-onnx'",
+        "onnxruntime<2.0.0,>=1.24.1; (python_version >= '3.14') and extra == 'feat-ocr-rapidocr-onnx'",
+        "onnxruntime<2.0.0,>=1.7.0; (python_version >= '3.11' and python_version < '3.14') and extra == 'feat-ocr-rapidocr-onnx'",
+        "rapidocr<4.0.0,>=3.9.1; extra == 'feat-ocr-rapidocr-onnx'",
+        "pandas<4.0.0,>=2.1.4; extra == 'feat-ocr-tesserocr'",
+        "tesserocr<3.0.0,>=2.7.1; extra == 'feat-ocr-tesserocr'",
+        "mlx-whisper>=0.4.3; (python_version >= '3.10' and sys_platform == 'darwin' and platform_machine == 'arm64') and extra == 'format-audio'",
+        "numba>=0.63.0; extra == 'format-audio'",
+        "openai-whisper>=20250625; extra == 'format-audio'",
+        "whisper-s2t-reborn<2.0.0,>=1.7.1; (sys_platform != 'darwin' or platform_machine != 'arm64') and extra == 'format-audio'",
+        "python-docx<2.0.0,>=1.2.0; extra == 'format-docx'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'format-email'",
+        "mail-parser<5.0.0,>=4.1.4; extra == 'format-email'",
+        "python-oxmsg<0.1.0,>=0.0.2; extra == 'format-email'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'format-html'",
+        "playwright>=1.58.0; extra == 'format-html-render'",
+        "defusedxml<0.8.0,>=0.7.1; extra == 'format-iwork'",
+        "pylatexenc<3.0,>=2.10; extra == 'format-latex'",
+        "marko<3.0.0,>=2.1.2; extra == 'format-markdown'",
+        "openpyxl<4.0.0,>=3.1.5; extra == 'format-office'",
+        "pylatexenc<3.0,>=2.10; extra == 'format-office'",
+        "python-docx<2.0.0,>=1.2.0; extra == 'format-office'",
+        "python-pptx<2.0.0,>=1.0.2; extra == 'format-office'",
+        "odfdo<4.0.0,>=3.22.0; extra == 'format-opendocument'",
+        "docling-parse<8.0.0,>=7.22.2; extra == 'format-pdf'",
+        "pypdfium2!=4.30.1,<6.0.0,>=4.30.0; extra == 'format-pdf'",
+        "docling-parse<8.0.0,>=7.22.2; extra == 'format-pdf-docling'",
+        "pypdfium2!=4.30.1,<6.0.0,>=4.30.0; extra == 'format-pdf-pypdfium2'",
+        "pylatexenc<3.0,>=2.10; extra == 'format-pptx'",
+        "python-pptx<2.0.0,>=1.0.2; extra == 'format-pptx'",
+        "librosa<1.0.0,>=0.10.0; extra == 'format-video'",
+        "mlx-whisper>=0.4.3; (python_version >= '3.10' and sys_platform == 'darwin' and platform_machine == 'arm64') and extra == 'format-video'",
+        "numba>=0.63.0; extra == 'format-video'",
+        "openai-whisper>=20250625; extra == 'format-video'",
+        "resemblyzer<0.2.0,>=0.1.4; extra == 'format-video'",
+        "scikit-learn<2.0.0,>=1.3.0; extra == 'format-video'",
+        "soundfile<1.0.0,>=0.12.1; extra == 'format-video'",
+        "whisper-s2t-reborn<2.0.0,>=1.7.1; (sys_platform != 'darwin' or platform_machine != 'arm64') and extra == 'format-video'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'format-web'",
+        "marko<3.0.0,>=2.1.2; extra == 'format-web'",
+        "openpyxl<4.0.0,>=3.1.5; extra == 'format-xlsx'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'format-xml-jats'",
+        "lxml<7.0.0,>=4.0.0; extra == 'format-xml-jats'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'format-xml-uspto'",
+        "defusedxml<0.8.0,>=0.7.1; extra == 'format-xml-uspto'",
+        "arelle-release<3.0.0,>=2.38.17; extra == 'format-xml-xbrl'",
+        "accelerate<2,>=1.0.0; extra == 'models-local'",
+        "defusedxml<0.8.0,>=0.7.1; extra == 'models-local'",
+        "docling-ibm-models<5,>=4.0.2; extra == 'models-local'",
+        "huggingface-hub<2,>=0.23; extra == 'models-local'",
+        "torch<3.0.0,>=2.2.2; extra == 'models-local'",
+        "torchvision<1,>=0; extra == 'models-local'",
+        "onnxruntime-gpu<1.24; (python_version < '3.11' and (sys_platform == 'linux' or sys_platform == 'win32')) and extra == 'models-onnxruntime'",
+        "onnxruntime-gpu<2.0.0,>=1.24.1; (python_version >= '3.14' and (sys_platform == 'linux' or sys_platform == 'win32')) and extra == 'models-onnxruntime'",
+        "onnxruntime-gpu<2.0.0; (python_version >= '3.11' and python_version < '3.14' and (sys_platform == 'linux' or sys_platform == 'win32')) and extra == 'models-onnxruntime'",
+        "onnxruntime<1.24; (python_version < '3.11' and sys_platform == 'darwin') and extra == 'models-onnxruntime'",
+        "onnxruntime<2.0.0,>=1.24.1; (python_version >= '3.14' and sys_platform == 'darwin') and extra == 'models-onnxruntime'",
+        "onnxruntime<2.0.0; (python_version >= '3.11' and python_version < '3.14' and sys_platform == 'darwin') and extra == 'models-onnxruntime'",
+        "tritonclient[grpc]<3.0.0,>=2.65.0; extra == 'models-remote'",
+        "accelerate<2.0.0,>=1.2.1; extra == 'models-vlm-inline'",
+        "einops<1.0.0,>=0.8.1; extra == 'models-vlm-inline'",
+        "mlx-vlm<1.0.0,>=0.7.0; (python_version >= '3.10' and sys_platform == 'darwin' and platform_machine == 'arm64') and extra == 'models-vlm-inline'",
+        "open-clip-torch<4.0.0,>=3.2.0; extra == 'models-vlm-inline'",
+        "peft>=0.18.1; extra == 'models-vlm-inline'",
+        "qwen-vl-utils>=0.0.11; extra == 'models-vlm-inline'",
+        "timm<2.0.0,>=1.0.22; extra == 'models-vlm-inline'",
+        "transformers!=5.0.*,!=5.1.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.*,!=5.2.*,!=5.3.*,!=5.9.*,<6.0.0,>=4.42.0; (sys_platform == 'darwin') and extra == 'models-vlm-inline'",
+        "transformers!=5.0.*,!=5.1.*,!=5.13.0,!=5.2.*,!=5.3.*,<6.0.0,>=4.42.0; (sys_platform != 'darwin') and extra == 'models-vlm-inline'",
+        "httpx<1.0.0,>=0.28; extra == 'service-client'",
+        "python-dotenv~=1.0; extra == 'service-client'",
+        "rich>=13.0.0; extra == 'service-client'",
+        "typer<0.27.0,>=0.19.0; extra == 'service-client'",
+        "websockets<17.0,>=14.0; extra == 'service-client'",
+        "accelerate<2,>=1.0.0; extra == 'standard'",
+        "beautifulsoup4<5.0.0,>=4.12.3; extra == 'standard'",
+        "defusedxml<0.8.0,>=0.7.1; extra == 'standard'",
+        "docling-core[chunking]<3.0.0,>=2.103.1; extra == 'standard'",
+        "docling-ibm-models<5,>=4.0.2; extra == 'standard'",
+        "docling-parse<8.0.0,>=7.22.2; extra == 'standard'",
+        "httpx<1.0.0,>=0.28; extra == 'standard'",
+        "huggingface-hub<2,>=0.23; extra == 'standard'",
+        "mail-parser<5.0.0,>=4.1.4; extra == 'standard'",
+        "marko<3.0.0,>=2.1.2; extra == 'standard'",
+        "numpy<3.0.0,>=1.24.0; extra == 'standard'",
+        "openpyxl<4.0.0,>=3.1.5; extra == 'standard'",
+        "pillow<14.0.0,>=10.0.0; extra == 'standard'",
+        "polyfactory>=2.22.2; extra == 'standard'",
+        "pylatexenc<3.0,>=2.10; extra == 'standard'",
+        "pypdfium2!=4.30.1,<6.0.0,>=4.30.0; extra == 'standard'",
+        "python-docx<2.0.0,>=1.2.0; extra == 'standard'",
+        "python-dotenv~=1.0; extra == 'standard'",
+        "python-oxmsg<0.1.0,>=0.0.2; extra == 'standard'",
+        "python-pptx<2.0.0,>=1.0.2; extra == 'standard'",
+        "rapidocr<4.0.0,>=3.9.1; extra == 'standard'",
+        "rich>=13.0.0; extra == 'standard'",
+        "rtree<2.0.0,>=1.3.0; extra == 'standard'",
+        "scipy<2.0.0,>=1.9.0; extra == 'standard'",
+        "torch<3.0.0,>=2.2.2; extra == 'standard'",
+        "torchvision<1,>=0; extra == 'standard'",
+        "typer<0.27.0,>=0.19.0; extra == 'standard'",
+        "websockets<17.0,>=14.0; extra == 'standard'"
+      ],
+      "providesExtra": [
+        "all",
+        "cli",
+        "convert-core",
+        "extract-core",
+        "feat-chunking",
+        "feat-ocr-easyocr",
+        "feat-ocr-mac",
+        "feat-ocr-nemotron",
+        "feat-ocr-rapidocr",
+        "feat-ocr-rapidocr-onnx",
+        "feat-ocr-tesserocr",
+        "format-audio",
+        "format-docx",
+        "format-email",
+        "format-html",
+        "format-html-render",
+        "format-iwork",
+        "format-latex",
+        "format-markdown",
+        "format-office",
+        "format-opendocument",
+        "format-pdf",
+        "format-pdf-docling",
+        "format-pdf-pypdfium2",
+        "format-pptx",
+        "format-video",
+        "format-web",
+        "format-xlsx",
+        "format-xml-jats",
+        "format-xml-uspto",
+        "format-xml-xbrl",
+        "models-local",
+        "models-onnxruntime",
+        "models-remote",
+        "models-vlm-inline",
+        "service-client",
+        "standard"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "docling_slim-2.142.1.dist-info/licenses/LICENSE",
+          "sha256": "edb765d1e3e60d0c7a7d5fba5f2bb2c3c29f7465cecb5c22cf1185c884954e4c",
+          "bytes": 1072
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "filetype",
+      "version": "1.2.0",
+      "filename": "filetype-1.2.0-py2.py3-none-any.whl",
+      "sha256": "7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25",
+      "bytes": 19970,
+      "requiresPython": null,
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "filetype-1.2.0.dist-info/LICENSE",
+          "sha256": "8e44e2aa35b371bdcc856bcf0d2442a410dd55fde66b0dfc2fcdf076d97946ac",
+          "bytes": 1082
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "filename": "idna-3.20-py3-none-any.whl",
+      "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+      "bytes": 69583,
+      "requiresPython": ">=3.9",
+      "requiresDist": [
+        "ruff >= 0.16.0 ; extra == \"all\"",
+        "mypy >= 1.11.2 ; extra == \"all\"",
+        "ty >= 0.0.37 ; extra == \"all\"",
+        "pytest >= 8.3.2 ; extra == \"all\"",
+        "hypothesis >= 6.141.1 ; extra == \"all\"",
+        "coverage >= 7.10.0 ; extra == \"all\""
+      ],
+      "providesExtra": [
+        "all"
+      ],
+      "licenceExpression": "BSD-3-Clause",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "idna-3.20.dist-info/licenses/LICENSE.md",
+          "sha256": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04",
+          "bytes": 1541
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "jsonref",
+      "version": "1.1.0",
+      "filename": "jsonref-1.1.0-py3-none-any.whl",
+      "sha256": "590dc7773df6c21cbf948b5dac07a72a251db28b0238ceecce0a2abfa8ec30a9",
+      "bytes": 9425,
+      "requiresPython": ">=3.7",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "jsonref-1.1.0.dist-info/licenses/LICENSE",
+          "sha256": "c93d594f97a1bc45d04908cd47c707cd7ff078f038a011443e0049ed28da3f31",
+          "bytes": 1074
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "filename": "jsonschema-4.26.0-py3-none-any.whl",
+      "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
+      "bytes": 90630,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "attrs>=22.2.0",
+        "jsonschema-specifications>=2023.03.6",
+        "referencing>=0.28.4",
+        "rpds-py>=0.25.0",
+        "fqdn; extra == 'format'",
+        "idna; extra == 'format'",
+        "isoduration; extra == 'format'",
+        "jsonpointer>1.13; extra == 'format'",
+        "rfc3339-validator; extra == 'format'",
+        "rfc3987; extra == 'format'",
+        "uri-template; extra == 'format'",
+        "webcolors>=1.11; extra == 'format'",
+        "fqdn; extra == 'format-nongpl'",
+        "idna; extra == 'format-nongpl'",
+        "isoduration; extra == 'format-nongpl'",
+        "jsonpointer>1.13; extra == 'format-nongpl'",
+        "rfc3339-validator; extra == 'format-nongpl'",
+        "rfc3986-validator>0.1.0; extra == 'format-nongpl'",
+        "rfc3987-syntax>=1.1.0; extra == 'format-nongpl'",
+        "uri-template; extra == 'format-nongpl'",
+        "webcolors>=24.6.0; extra == 'format-nongpl'"
+      ],
+      "providesExtra": [
+        "format",
+        "format-nongpl"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "jsonschema-4.26.0.dist-info/licenses/COPYING",
+          "sha256": "4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439",
+          "bytes": 1057
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "filename": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
+      "bytes": 18437,
+      "requiresPython": ">=3.9",
+      "requiresDist": [
+        "referencing>=0.31.0"
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "jsonschema_specifications-2025.9.1.dist-info/licenses/COPYING",
+          "sha256": "42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c",
+          "bytes": 1057
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "langcodes",
+      "version": "3.5.1",
+      "filename": "langcodes-3.5.1-py3-none-any.whl",
+      "sha256": "b6a9c25c603804e2d169165091d0cdb23934610524a21d226e4f463e8e958a72",
+      "bytes": 183050,
+      "requiresPython": ">=3.9",
+      "requiresDist": [
+        "pytest; extra == \"test\"",
+        "pytest-cov; extra == \"test\"",
+        "build; extra == \"build\"",
+        "twine; extra == \"build\"",
+        "language-data>=1.2; extra == \"data\""
+      ],
+      "providesExtra": [
+        "test",
+        "build",
+        "data"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "langcodes-3.5.1.dist-info/licenses/LICENSE.txt",
+          "sha256": "a0cceca169e5eed22f00f4c001c3851026e56cb60632904548889eb79a3c226d",
+          "bytes": 1090
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "latex2mathml",
+      "version": "3.81.1",
+      "filename": "latex2mathml-3.81.1-py3-none-any.whl",
+      "sha256": "c337668441b71c819b6733905a8058ba9a9d767bae11a0c5fdacb3aff31361bd",
+      "bytes": 79159,
+      "requiresPython": ">=3.10",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [],
+      "notices": [],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "lxml",
+      "version": "6.1.3",
+      "filename": "lxml-6.1.3-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "909f4e927bb051f7740d6367285fc60cdcfdaf0258c2dba4ff5ba7eadadc250c",
+      "bytes": 5244675,
+      "requiresPython": ">=3.8",
+      "requiresDist": [
+        "cssselect>=0.7; extra == \"cssselect\"",
+        "html5lib; extra == \"html5\"",
+        "BeautifulSoup4; extra == \"htmlsoup\"",
+        "lxml_html_clean; extra == \"html-clean\""
+      ],
+      "providesExtra": [
+        "source",
+        "cssselect",
+        "html5",
+        "htmlsoup",
+        "html-clean"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": "BSD-3-Clause",
+      "licenceDeclarationSha256": "118dbcd2d5c9f9b296a9ede9fcc469c5840f7b98ad2c88461055bf2ceda38037",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "lxml-6.1.3.dist-info/licenses/LICENSE.txt",
+          "sha256": "8fc2b568133516e46845d2147917adeee1648e70ae9ab5ed6c5417afef4ce855",
+          "bytes": 1507
+        },
+        {
+          "path": "lxml-6.1.3.dist-info/licenses/LICENSES.txt",
+          "sha256": "388fa99f3bde4447cd5a4cbb114037be026854db6cfe89e112691c1d8abdcf3c",
+          "bytes": 6221
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "filename": "markdown_it_py-4.2.0-py3-none-any.whl",
+      "sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+      "bytes": 91687,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "mdurl~=0.1",
+        "psutil ; extra == \"benchmarking\"",
+        "pytest ; extra == \"benchmarking\"",
+        "pytest-benchmark ; extra == \"benchmarking\"",
+        "commonmark~=0.9 ; extra == \"compare\"",
+        "markdown~=3.4 ; extra == \"compare\"",
+        "mistletoe~=1.0 ; extra == \"compare\"",
+        "mistune~=3.0 ; extra == \"compare\"",
+        "panflute~=2.3 ; extra == \"compare\"",
+        "markdown-it-pyrs ; extra == \"compare\"",
+        "linkify-it-py>=1,<3 ; extra == \"linkify\"",
+        "mdit-py-plugins>=0.5.0 ; extra == \"plugins\"",
+        "gprof2dot ; extra == \"profiling\"",
+        "mdit-py-plugins>=0.5.0 ; extra == \"rtd\"",
+        "myst-parser ; extra == \"rtd\"",
+        "pyyaml ; extra == \"rtd\"",
+        "sphinx ; extra == \"rtd\"",
+        "sphinx-copybutton ; extra == \"rtd\"",
+        "sphinx-design ; extra == \"rtd\"",
+        "sphinx-book-theme~=1.0 ; extra == \"rtd\"",
+        "jupyter_sphinx ; extra == \"rtd\"",
+        "ipykernel ; extra == \"rtd\"",
+        "coverage ; extra == \"testing\"",
+        "pytest ; extra == \"testing\"",
+        "pytest-cov ; extra == \"testing\"",
+        "pytest-regressions ; extra == \"testing\"",
+        "pytest-timeout ; extra == \"testing\"",
+        "requests ; extra == \"testing\""
+      ],
+      "providesExtra": [
+        "benchmarking",
+        "compare",
+        "linkify",
+        "plugins",
+        "profiling",
+        "rtd",
+        "testing"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "markdown_it_py-4.2.0.dist-info/licenses/LICENSE",
+          "sha256": "4a2260d6e2cd0f5a151a1e86dbfe7d3ed552b1e2beabf9941c1ba5c49cbce484",
+          "bytes": 1078
+        },
+        {
+          "path": "markdown_it_py-4.2.0.dist-info/licenses/LICENSE.markdown-it",
+          "sha256": "792c48c5a849a15fdf9e37e8bcf9e6d1dd13b32b46c642a748a0a46a9919d473",
+          "bytes": 1073
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "filename": "mdurl-0.1.2-py3-none-any.whl",
+      "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+      "bytes": 9979,
+      "requiresPython": ">=3.7",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "mdurl-0.1.2.dist-info/LICENSE",
+          "sha256": "7c605df6e28667a9603118e98274f64a49ce3eed0d26fccce9534a345e0ef955",
+          "bytes": 2338
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.4",
+      "filename": "numpy-2.5.4-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a",
+      "bytes": 16727283,
+      "requiresPython": ">=3.12",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "numpy/_core/include/numpy/random/LICENSE.txt",
+          "sha256": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+          "bytes": 1018
+        },
+        {
+          "path": "numpy/ma/LICENSE",
+          "sha256": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+          "bytes": 1593
+        },
+        {
+          "path": "numpy/random/LICENSE.md",
+          "sha256": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+          "bytes": 3511
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/LICENSE.txt",
+          "sha256": "4860083caa0de2ac3292ca98bd074bd8f45d8b32624e37b1e70a240bff61e488",
+          "bytes": 46794
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
+          "sha256": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+          "bytes": 1018
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
+          "sha256": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+          "bytes": 690
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/highway/LICENSE",
+          "sha256": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+          "bytes": 20785
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt",
+          "sha256": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+          "bytes": 1414
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
+          "sha256": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+          "bytes": 1514
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE",
+          "sha256": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+          "bytes": 1543
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md",
+          "sha256": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+          "bytes": 1498
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
+          "sha256": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+          "bytes": 2266
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/ma/LICENSE",
+          "sha256": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+          "bytes": 1593
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/LICENSE.md",
+          "sha256": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+          "bytes": 3511
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/distributions/LICENSE.md",
+          "sha256": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+          "bytes": 2745
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md",
+          "sha256": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+          "bytes": 2926
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md",
+          "sha256": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+          "bytes": 1154
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/philox/LICENSE.md",
+          "sha256": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+          "bytes": 1509
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md",
+          "sha256": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+          "bytes": 1226
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md",
+          "sha256": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+          "bytes": 332
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pandas",
+      "version": "3.1.0",
+      "filename": "pandas-3.1.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "9433b5dc2f26ef9d9b56daaf4d41d078bf4372c5d88c42ed5b397a6eea80de16",
+      "bytes": 12019688,
+      "requiresPython": ">=3.11",
+      "requiresDist": [
+        "numpy>=2.0.2; python_version < \"3.14\"",
+        "numpy>=2.3.3; python_version >= \"3.14\"",
+        "python-dateutil>=2.9.0",
+        "tzdata; sys_platform == \"win32\"",
+        "tzdata; sys_platform == \"emscripten\"",
+        "pytest>=8.3.4; extra == \"test\"",
+        "pytest-xdist>=3.6.1; extra == \"test\"",
+        "pyarrow>=16.0.0; extra == \"pyarrow\"",
+        "bottleneck>=1.5.0; extra == \"performance\"",
+        "numba>=0.61.2; extra == \"performance\"",
+        "numexpr!=2.14.1,>=2.11.0; extra == \"performance\"",
+        "scipy>=1.16.1; extra == \"computation\"",
+        "xarray>=2025.7.1; extra == \"computation\"",
+        "fsspec>=2025.7.0; extra == \"fss\"",
+        "s3fs>=2025.7.0; extra == \"aws\"",
+        "gcsfs>=2025.7.0; extra == \"gcp\"",
+        "odfpy>=1.4.1; extra == \"excel\"",
+        "openpyxl>=3.1.5; extra == \"excel\"",
+        "python-calamine>=0.4.0; extra == \"excel\"",
+        "pyxlsb>=1.0.10; extra == \"excel\"",
+        "xlrd>=2.0.2; extra == \"excel\"",
+        "xlsxwriter>=3.2.5; extra == \"excel\"",
+        "pyarrow>=13.0.0; extra == \"parquet\"",
+        "pyarrow>=13.0.0; extra == \"feather\"",
+        "pyiceberg>=0.9.1; extra == \"iceberg\"",
+        "tables>=3.10.2; extra == \"hdf5\"",
+        "pyreadstat>=1.3.0; extra == \"spss\"",
+        "SQLAlchemy>=2.0.42; extra == \"postgresql\"",
+        "psycopg2>=2.9.10; extra == \"postgresql\"",
+        "adbc-driver-postgresql>=1.7.0; extra == \"postgresql\"",
+        "SQLAlchemy>=2.0.42; extra == \"mysql\"",
+        "pymysql>=1.1.1; extra == \"mysql\"",
+        "SQLAlchemy>=2.0.42; extra == \"sql-other\"",
+        "adbc-driver-postgresql>=1.7.0; extra == \"sql-other\"",
+        "adbc-driver-sqlite>=1.7.0; extra == \"sql-other\"",
+        "beautifulsoup4>=4.13.4; extra == \"html\"",
+        "html5lib>=1.1; extra == \"html\"",
+        "lxml>=6.0.0; extra == \"html\"",
+        "lxml>=6.0.0; extra == \"xml\"",
+        "matplotlib>=3.10.5; extra == \"plot\"",
+        "jinja2>=3.1.6; extra == \"output-formatting\"",
+        "tabulate>=0.9.0; extra == \"output-formatting\"",
+        "PyQt5>=5.15.11; extra == \"clipboard\"",
+        "qtpy>=2.4.3; extra == \"clipboard\"",
+        "zstandard>=0.23.0; extra == \"compression\"",
+        "pytz>=2020.1; extra == \"timezone\"",
+        "adbc-driver-postgresql>=1.7.0; extra == \"all\"",
+        "adbc-driver-sqlite>=1.7.0; extra == \"all\"",
+        "beautifulsoup4>=4.13.4; extra == \"all\"",
+        "bottleneck>=1.5.0; extra == \"all\"",
+        "fastparquet>=2024.11.0; extra == \"all\"",
+        "fsspec>=2025.7.0; extra == \"all\"",
+        "gcsfs>=2025.7.0; extra == \"all\"",
+        "html5lib>=1.1; extra == \"all\"",
+        "jinja2>=3.1.6; extra == \"all\"",
+        "lxml>=6.0.0; extra == \"all\"",
+        "matplotlib>=3.10.5; extra == \"all\"",
+        "numba>=0.61.2; extra == \"all\"",
+        "numexpr!=2.14.1,>=2.11.0; extra == \"all\"",
+        "odfpy>=1.4.1; extra == \"all\"",
+        "openpyxl>=3.1.5; extra == \"all\"",
+        "psycopg2>=2.9.10; extra == \"all\"",
+        "pyarrow>=16.0.0; extra == \"all\"",
+        "pyiceberg>=0.9.1; extra == \"all\"",
+        "pymysql>=1.1.1; extra == \"all\"",
+        "PyQt5>=5.15.11; extra == \"all\"",
+        "pyreadstat>=1.3.0; extra == \"all\"",
+        "pytest>=8.3.4; extra == \"all\"",
+        "pytest-xdist>=3.6.1; extra == \"all\"",
+        "python-calamine>=0.4.0; extra == \"all\"",
+        "pytz>=2020.1; extra == \"all\"",
+        "pyxlsb>=1.0.10; extra == \"all\"",
+        "qtpy>=2.4.3; extra == \"all\"",
+        "scipy>=1.16.1; extra == \"all\"",
+        "s3fs>=2025.7.0; extra == \"all\"",
+        "SQLAlchemy>=2.0.42; extra == \"all\"",
+        "tables>=3.10.2; extra == \"all\"",
+        "tabulate>=0.9.0; extra == \"all\"",
+        "xarray>=2025.7.1; extra == \"all\"",
+        "xlrd>=2.0.2; extra == \"all\"",
+        "xlsxwriter>=3.2.5; extra == \"all\"",
+        "zstandard>=0.23.0; extra == \"all\""
+      ],
+      "providesExtra": [
+        "test",
+        "pyarrow",
+        "performance",
+        "computation",
+        "fss",
+        "aws",
+        "gcp",
+        "excel",
+        "parquet",
+        "feather",
+        "iceberg",
+        "hdf5",
+        "spss",
+        "postgresql",
+        "mysql",
+        "sql-other",
+        "html",
+        "xml",
+        "plot",
+        "output-formatting",
+        "clipboard",
+        "compression",
+        "timezone",
+        "all"
+      ],
+      "licenceExpression": "BSD-3-Clause",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSE",
+          "sha256": "9850f6b5bdef7346503065807b878deb8058b976c5c329f4c4d23bf4796ce9ae",
+          "bytes": 1634
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/BOTTLENECK_LICENCE",
+          "sha256": "053a90e30580f5d9d79817add1567f88b4a3eeb11bcded9ecf74619d17768066",
+          "bytes": 1360
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/DATEUTIL_LICENSE",
+          "sha256": "ba00f51a0d92823b5a1cde27d8b5b9d2321e67ed8da9bc163eff96d5e17e577e",
+          "bytes": 2889
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/HAVEN_LICENSE",
+          "sha256": "48216b40b3d1b19452923dd6fd74655bf5c0df9d76b51eb0efade7e0b88bfbcc",
+          "bytes": 1099
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/HAVEN_MIT",
+          "sha256": "87217d0a79195441ab615a3abb3ab6777502e57804ea83f973df975a67ebd720",
+          "bytes": 1264
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/KLIB_LICENSE",
+          "sha256": "7463172c3a23321c1838896eba437f70a6de80ac5a840b2960966c8c5444abf1",
+          "bytes": 1104
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/MUSL_LICENSE",
+          "sha256": "50a343c1ce9e27cd6c58023f13b91d2cd679861fe7fb6bbbbfbec3dcafc3583f",
+          "bytes": 6203
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/NUMPY_LICENSE",
+          "sha256": "81d42da02a56b611c35abc83d2241564b46bec3a5b1960b395d55cebca68fb6f",
+          "bytes": 1542
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/PACKAGING_LICENSE",
+          "sha256": "1871330068a18f1f07c3f147a41c008e59f367f217041ca6eb20b0298639a128",
+          "bytes": 11519
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/PSF_LICENSE",
+          "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+          "bytes": 13936
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/PYPERCLIP_LICENSE",
+          "sha256": "eafcd440e3570c6bc7b77dcec15dec398d13bc9b5e897336b221ff81ff19f345",
+          "bytes": 1486
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/PYUPGRADE_LICENSE",
+          "sha256": "70aedcd6928272bd176e4fdc3384af22ee759d006fb15105d994756e4f2d1b7a",
+          "bytes": 1058
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/SAS7BDAT_LICENSE",
+          "sha256": "458d5fd4175825440ad32d6bf6af45d1a19d4adb316b557d869c6560b6692e00",
+          "bytes": 1059
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/STATSBASE_JL_LICENSE",
+          "sha256": "f371ccf0fb892a4cd9f2e550c4b8cf4362793d17028dc642ad55c1e01a41dfe1",
+          "bytes": 1249
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/ULTRAJSON_LICENSE",
+          "sha256": "2bfbb5bb8ec66d136ec62d836ddc0c0019d44ef4d9389f1f6cab1c1109d774a2",
+          "bytes": 5974
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/LICENSES/XSIMD_LICENSE",
+          "sha256": "501352acba62cc54e8e3d293754d606f919c9b425b962193c211f9fa29cd9940",
+          "bytes": 1606
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/subprojects/fast_float-8.2.10/LICENSE-APACHE",
+          "sha256": "097a889aa954d04e088b790b10a4014d6189561d0a6013935a73ce3d4ddaaf06",
+          "bytes": 10767
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/subprojects/fast_float-8.2.10/LICENSE-BOOST",
+          "sha256": "8d8291caf1cee26d23acf3eb67c9f9a2d58f1c681b16a4fbe8cbfb9e3c0b5a9b",
+          "bytes": 1337
+        },
+        {
+          "path": "pandas-3.1.0.dist-info/licenses/subprojects/fast_float-8.2.10/LICENSE-MIT",
+          "sha256": "e562f3f974ced7e69dd1db77b820b36bcf8f30377f1aa105723fba449c53c4e6",
+          "bytes": 1079
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pillow",
+      "version": "13.0.0",
+      "filename": "pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+      "bytes": 7144542,
+      "requiresPython": ">=3.11",
+      "requiresDist": [
+        "furo; extra == \"docs\"",
+        "olefile; extra == \"docs\"",
+        "sphinx>=8.2; extra == \"docs\"",
+        "sphinx-autobuild; extra == \"docs\"",
+        "sphinx-copybutton; extra == \"docs\"",
+        "sphinx-inline-tabs; extra == \"docs\"",
+        "sphinxext-opengraph; extra == \"docs\"",
+        "olefile; extra == \"fpx\"",
+        "olefile; extra == \"mic\"",
+        "arro3-compute; extra == \"test-arrow\"",
+        "arro3-core; extra == \"test-arrow\"",
+        "nanoarrow; extra == \"test-arrow\"",
+        "pyarrow; extra == \"test-arrow\"",
+        "coverage>=7.4.2; extra == \"tests\"",
+        "defusedxml; extra == \"tests\"",
+        "markdown2; extra == \"tests\"",
+        "olefile; extra == \"tests\"",
+        "packaging; extra == \"tests\"",
+        "psutil; (sys_platform == \"linux\" or sys_platform == \"darwin\") and extra == \"tests\"",
+        "pytest; extra == \"tests\"",
+        "pytest-cov; extra == \"tests\"",
+        "pytest-timeout; extra == \"tests\"",
+        "pytest-xdist; extra == \"tests\"",
+        "setuptools; extra == \"tests\"",
+        "trove-classifiers>=2024.10.12; extra == \"tests\"",
+        "defusedxml; extra == \"xmp\""
+      ],
+      "providesExtra": [
+        "docs",
+        "fpx",
+        "mic",
+        "test-arrow",
+        "tests",
+        "xmp"
+      ],
+      "licenceExpression": "MIT-CMU",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "pillow-13.0.0.dist-info/licenses/LICENSE",
+          "sha256": "dda12a98c1979cf3d94df1cff45d27a4cb3f04a60c76f76902ac54cac03ec0ce",
+          "bytes": 70307
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0",
+      "filename": "pluggy-1.7.0-py3-none-any.whl",
+      "sha256": "7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec",
+      "bytes": 27082,
+      "requiresPython": ">=3.10",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "pluggy-1.7.0.dist-info/licenses/LICENSE",
+          "sha256": "d6b65e6c213a5d0b577911d34d6e5949b9f59d76c238c5071a2f3fc16cfb2606",
+          "bytes": 1110
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "filename": "pydantic-2.14.1-py3-none-any.whl",
+      "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+      "bytes": 488106,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "annotated-types>=0.6.0",
+        "pydantic-core==2.50.1",
+        "typing-extensions>=4.16.0",
+        "typing-inspection>=0.4.4",
+        "email-validator>=2.0.0; extra == 'email'",
+        "tzdata; (platform_system == 'Windows') and extra == 'timezone'"
+      ],
+      "providesExtra": [
+        "email",
+        "timezone"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "pydantic-2.14.1.dist-info/licenses/LICENSE",
+          "sha256": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3",
+          "bytes": 1129
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.16.1",
+      "filename": "pydantic_settings-2.16.1-py3-none-any.whl",
+      "sha256": "30f5313340da4e8f1b440d1910b92a5bc3ccbb6b4ba70ec2b8395bc921f418f5",
+      "bytes": 80771,
+      "requiresPython": ">=3.11",
+      "requiresDist": [
+        "pydantic>=2.7.0",
+        "python-dotenv>=1.2.2",
+        "typing-extensions>=4.0.0",
+        "typing-inspection>=0.4.0",
+        "boto3>=1.35.0; extra == 'aws-secrets-manager'",
+        "boto3>=1.35.0; extra == 'aws-systems-manager'",
+        "azure-identity>=1.16.0; extra == 'azure-key-vault'",
+        "azure-keyvault-secrets>=4.8.0; extra == 'azure-key-vault'",
+        "google-cloud-secret-manager>=2.23.1; extra == 'gcp-secret-manager'",
+        "pyyaml>=6.0.1; extra == 'yaml'"
+      ],
+      "providesExtra": [
+        "aws-secrets-manager",
+        "aws-systems-manager",
+        "azure-key-vault",
+        "gcp-secret-manager",
+        "toml",
+        "yaml"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "pydantic_settings-2.16.1.dist-info/licenses/LICENSE",
+          "sha256": "eb355a753e020346d33d83bf9769135b89fc610568ac531a01c295bcee7fd998",
+          "bytes": 1103
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.1",
+      "filename": "pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "93ba4e9d8210d941c200431a56b2c0400b131865947903937ed3ec5404307d2e",
+      "bytes": 2160157,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "typing-extensions>=4.16.0"
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "pydantic_core-2.50.1.dist-info/licenses/LICENSE",
+          "sha256": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a",
+          "bytes": 1080
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0",
+      "filename": "pygments-2.21.0-py3-none-any.whl",
+      "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "bytes": 1250147,
+      "requiresPython": ">=3.9",
+      "requiresDist": [
+        "colorama>=0.4.6; extra == 'windows-terminal'"
+      ],
+      "providesExtra": [
+        "plugins",
+        "windows-terminal"
+      ],
+      "licenceExpression": "BSD-2-Clause",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "pygments-2.21.0.dist-info/licenses/AUTHORS",
+          "sha256": "71a83872ad82f57be692cf827e048e2cd51d45169cfa1ea3f28706d97a872c0f",
+          "bytes": 11048
+        },
+        {
+          "path": "pygments-2.21.0.dist-info/licenses/LICENSE",
+          "sha256": "a9d66f1d526df02e29dce73436d34e56e8632f46c275bbdffc70569e882f9f17",
+          "bytes": 1331
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "pypdfium2",
+      "version": "5.14.0",
+      "filename": "pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "11f281613fa22313d9c7ab89947665e84eccf8ebe40e1198a84a88352305648d",
+      "bytes": 3799581,
+      "requiresPython": ">= 3.6",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "BSD-3-Clause, Apache-2.0, dependency licenses",
+      "licenceDeclarationSha256": "9b44dc040b9eb1454f6baf598061a6b6bfaba7d30d899f2b3a74f5f3812196ca",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/LICENSES/Apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/LICENSES/BSD-3-Clause.txt",
+          "sha256": "a6d11f0694c0137e9b02924b9d33a159f6c72f220fa4655bb2e1ea3654377d39",
+          "bytes": 1459
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/LICENSES/CC-BY-4.0.txt",
+          "sha256": "419896aea50c15d6e40c5b4baf4bd346f78223b9a354c7357ad00262afdc08ec",
+          "bytes": 14527
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/abseil.txt",
+          "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747",
+          "bytes": 11361
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/agg23.txt",
+          "sha256": "c110d3ea2ad77467ce0dcff7d3337e6c8be8049a5103f4b9bd5fd911a77972e5",
+          "bytes": 725
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/fast_float.txt",
+          "sha256": "e562f3f974ced7e69dd1db77b820b36bcf8f30377f1aa105723fba449c53c4e6",
+          "bytes": 1079
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/freetype.txt",
+          "sha256": "f4b133e25df1f86ad3ffea453aa0e613f0474f34778dbbb3e437e7b2724937d8",
+          "bytes": 6741
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/icu.txt",
+          "sha256": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af",
+          "bytes": 27718
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/lcms.txt",
+          "sha256": "7312b68c5b25e9bf2b828706fb4e29588f22705112f411fd42e1f7d84c3d139a",
+          "bytes": 1353
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libjpeg_turbo.ijg",
+          "sha256": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
+          "bytes": 12799
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libjpeg_turbo.md",
+          "sha256": "96f5b328adbb78eeaaec6980d73fd558cb1e4d62560ed615646bc3cf5e532430",
+          "bytes": 5620
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libopenjpeg.txt",
+          "sha256": "c5ab0890a737c2dfa7ba675036554f6d17741d98629b0c2a145354d00617e6b2",
+          "bytes": 1794
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libpng.txt",
+          "sha256": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
+          "bytes": 5345
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/llvm-libc.txt",
+          "sha256": "ebcd9bbf783a73d05c53ba4d586b8d5813dcdf3bbec50265860ccc885e606f47",
+          "bytes": 15140
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/pdfium-binaries.txt",
+          "sha256": "ba26c1263131696b86c10496b5066b918a20b7161822a80c274d0080105f6c93",
+          "bytes": 1177
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/pdfium.txt",
+          "sha256": "961eacd9633fff6d051db7208b755e9210e30efac7adec3e6a6d52798f0ccf0e",
+          "bytes": 12818
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/simdutf.txt",
+          "sha256": "fc8dbc04e03ad4efc08a647ffe7f995b811a95bc04c0e85a56d5277c6593fa5f",
+          "bytes": 1059
+        },
+        {
+          "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/zlib.txt",
+          "sha256": "33fd641c9f3b0e0be64bc78fea9e94807674cdd70c48477599226cb8956565fe",
+          "bytes": 1332
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "3.0.0",
+      "filename": "python_dateutil-3.0.0-py2.py3-none-any.whl",
+      "sha256": "3c79630202e4152c6add678446984236efe4f57e84d8e892aab0637bab82e9fd",
+      "bytes": 94659,
+      "requiresPython": "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7",
+      "requiresDist": [
+        "six>=1.6",
+        "tzdata"
+      ],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "Dual License",
+      "licenceDeclarationSha256": "199628ddb098f90709bb2dc43f816a5a40fe31690de0e25d0f4d6455fe6bc609",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "notices": [
+        {
+          "path": "python_dateutil-3.0.0.dist-info/licenses/LICENSE",
+          "sha256": "ba00f51a0d92823b5a1cde27d8b5b9d2321e67ed8da9bc163eff96d5e17e577e",
+          "bytes": 2889
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.4",
+      "filename": "python_dotenv-1.2.4-py3-none-any.whl",
+      "sha256": "42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc",
+      "bytes": 23266,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "click>=5.0; extra == \"cli\""
+      ],
+      "providesExtra": [
+        "cli"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": "BSD-3-Clause",
+      "licenceDeclarationSha256": "118dbcd2d5c9f9b296a9ede9fcc469c5840f7b98ad2c88461055bf2ceda38037",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "python_dotenv-1.2.4.dist-info/licenses/LICENSE",
+          "sha256": "80619b7049f08c81683ad0e01f08f257a840652dd71ee83146d36658c7d2c2b9",
+          "bytes": 1556
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "filename": "pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc",
+      "bytes": 807870,
+      "requiresPython": ">=3.8",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "pyyaml-6.0.3.dist-info/licenses/LICENSE",
+          "sha256": "8d3928f9dc4490fd635707cb88eb26bd764102a7282954307d3e5167a577e8a4",
+          "bytes": 1101
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "filename": "referencing-0.37.0-py3-none-any.whl",
+      "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
+      "bytes": 26766,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "attrs>=22.2.0",
+        "rpds-py>=0.7.0",
+        "typing-extensions>=4.4.0; python_version < '3.13'"
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "referencing-0.37.0.dist-info/licenses/COPYING",
+          "sha256": "42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c",
+          "bytes": 1057
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "filename": "requests-2.34.2-py3-none-any.whl",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "bytes": 73075,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "charset_normalizer<4,>=2",
+        "idna<4,>=2.5",
+        "urllib3<3,>=1.26",
+        "certifi>=2023.5.7",
+        "PySocks!=1.5.7,>=1.5.6; extra == \"socks\"",
+        "chardet<8,>=3.0.2; extra == \"use-chardet-on-py3\""
+      ],
+      "providesExtra": [
+        "security",
+        "socks",
+        "use-chardet-on-py3"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": "Apache-2.0",
+      "licenceDeclarationSha256": "2af71558e438db0b73a20beab92dc278a94e1bbe974c00c1a33e3ab62d53a608",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "notices": [
+        {
+          "path": "requests-2.34.2.dist-info/licenses/LICENSE",
+          "sha256": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+          "bytes": 10142
+        },
+        {
+          "path": "requests-2.34.2.dist-info/licenses/NOTICE",
+          "sha256": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc",
+          "bytes": 38
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "filename": "rich-15.0.0-py3-none-any.whl",
+      "sha256": "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb",
+      "bytes": 310654,
+      "requiresPython": ">=3.9.0",
+      "requiresDist": [
+        "ipywidgets (>=7.5.1,<9) ; extra == \"jupyter\"",
+        "markdown-it-py (>=2.2.0)",
+        "pygments (>=2.13.0,<3.0.0)"
+      ],
+      "providesExtra": [
+        "jupyter"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "rich-15.0.0.dist-info/licenses/LICENSE",
+          "sha256": "deed7c17a4318158190a3ea239cc879a5a50271cebb98ae7025f48fbe58dca15",
+          "bytes": 1056
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "filename": "rpds_py-2026.9.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "addeda51556dac7c1a2f14cda62db8b621cd12afba3091d03a96c72932387eab",
+      "bytes": 371261,
+      "requiresPython": ">=3.11",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "rpds_py-2026.9.1.dist-info/licenses/LICENSE",
+          "sha256": "314e4e91be3baa93c0fb4bccc9e4e97cd643eb839b065af921782c2175fe9909",
+          "bytes": 1057
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "rtree",
+      "version": "1.4.1",
+      "filename": "rtree-1.4.1-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "12de4578f1b3381a93a655846900be4e3d5f4cd5e306b8b00aa77c1121dc7e8c",
+      "bytes": 507644,
+      "requiresPython": ">=3.9",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "rtree-1.4.1.dist-info/licenses/LICENSE.txt",
+          "sha256": "2e3e6e756da9258484bdd0e81dcd57c9094a58ca23c37c79b14cc23eeb6b7b21",
+          "bytes": 1115
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "scipy",
+      "version": "1.18.1",
+      "filename": "scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "f55fa87b6c612ecd6b058f167c53231b1d14e412efe361d3d6e38b3631c73218",
+      "bytes": 35344199,
+      "requiresPython": ">=3.12",
+      "requiresDist": [
+        "numpy<2.8,>=2.0.0",
+        "pytest>=8.0.0; extra == \"test\"",
+        "pytest-cov; extra == \"test\"",
+        "pytest-timeout; extra == \"test\"",
+        "pytest-xdist; extra == \"test\"",
+        "asv; extra == \"test\"",
+        "mpmath; extra == \"test\"",
+        "gmpy2; extra == \"test\"",
+        "threadpoolctl; extra == \"test\"",
+        "scikit-umfpack; extra == \"test\"",
+        "pooch; extra == \"test\"",
+        "hypothesis>=6.30; extra == \"test\"",
+        "array-api-strict>=2.3.1; extra == \"test\"",
+        "Cython; extra == \"test\"",
+        "meson; extra == \"test\"",
+        "ninja; sys_platform != \"emscripten\" and extra == \"test\"",
+        "scipy-doctest>=2.0.0; extra == \"test\"",
+        "sphinx<8.2.0,>=5.0.0; extra == \"doc\"",
+        "intersphinx_registry; extra == \"doc\"",
+        "pydata-sphinx-theme>=0.15.2; extra == \"doc\"",
+        "sphinx-copybutton; extra == \"doc\"",
+        "sphinx-design>=0.4.0; extra == \"doc\"",
+        "matplotlib>=3.5; extra == \"doc\"",
+        "numpydoc; extra == \"doc\"",
+        "jupytext; extra == \"doc\"",
+        "myst-nb>=1.2.0; extra == \"doc\"",
+        "pooch; extra == \"doc\"",
+        "jupyterlite-sphinx>=0.19.1; extra == \"doc\"",
+        "jupyterlite-pyodide-kernel; extra == \"doc\"",
+        "linkify-it-py; extra == \"doc\"",
+        "tabulate; extra == \"doc\"",
+        "click<8.3.0; extra == \"dev\"",
+        "spin; extra == \"dev\"",
+        "mypy==1.19.1; extra == \"dev\"",
+        "pyrefly==0.63.0; extra == \"dev\"",
+        "typing_extensions; extra == \"dev\"",
+        "types-psutil; extra == \"dev\"",
+        "pycodestyle; extra == \"dev\"",
+        "ruff>=0.12.0; extra == \"dev\"",
+        "cython-lint>=0.12.2; extra == \"dev\""
+      ],
+      "providesExtra": [
+        "test",
+        "doc",
+        "dev"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "7759d806e8fe64eba56de299eeca35f43f3e426867e8d0c7f09c9221796fd0dc",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "notices": [
+        {
+          "path": "scipy/_lib/_uarray/LICENSE",
+          "sha256": "c80c39b5fce06ba4897e14e0b0a88b54458334d951eb1361402ffad2cfb863b4",
+          "bytes": 1514
+        },
+        {
+          "path": "scipy/fft/_duccfft/LICENSE.md",
+          "sha256": "c254b2b5fd30ae3c89d36ba061730563b9760fca04f1b746a1b2c3157da2c789",
+          "bytes": 1498
+        },
+        {
+          "path": "scipy/integrate/LICENSE_DOP",
+          "sha256": "ed9bf58c6d74d3fad9d92d1d67d9bff8141d8ab60de784516b0711364fd43357",
+          "bytes": 3572
+        },
+        {
+          "path": "scipy/spatial/qhull_src/COPYING_QHULL.txt",
+          "sha256": "106d55c931fd6a84822e5345d900273d059f1c27310d02567ccb313c5d18c55d",
+          "bytes": 1720
+        },
+        {
+          "path": "scipy-1.18.1.dist-info/LICENSE.txt",
+          "sha256": "17e7db9ffa4913121fa2df484633a362456a482da736c99db4711a98473770ea",
+          "bytes": 46845
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "filename": "shellingham-1.5.4-py2.py3-none-any.whl",
+      "sha256": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686",
+      "bytes": 9755,
+      "requiresPython": ">=3.7",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "ISC License",
+      "licenceDeclarationSha256": "216cb0412b464c1dbcef25d177237a9fb56d6eac94ddb6ca068c9f091a08eeff",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: ISC License (ISCL)"
+      ],
+      "notices": [
+        {
+          "path": "shellingham-1.5.4.dist-info/LICENSE",
+          "sha256": "f388fd38cad13112c1dc0f669bbe80e7f84541edbafb72f3030d2ca7642c3c9d",
+          "bytes": 751
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "filename": "six-1.17.0-py2.py3-none-any.whl",
+      "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+      "bytes": 11050,
+      "requiresPython": ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "MIT",
+      "licenceDeclarationSha256": "e5dcffe836b6ec8a58e492419b550e65fb8cbdc308503979e5dacb33ac7ea3b7",
+      "licenceClassifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "notices": [
+        {
+          "path": "six-1.17.0.dist-info/LICENSE",
+          "sha256": "4375ba20e2b9c6c4e7cad2940a628fd90e95cc3d50ee92aae755715d8ba1fbd0",
+          "bytes": 1066
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "tabulate",
+      "version": "0.10.0",
+      "filename": "tabulate-0.10.0-py3-none-any.whl",
+      "sha256": "f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3",
+      "bytes": 39814,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "wcwidth; extra == \"widechars\""
+      ],
+      "providesExtra": [
+        "widechars"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "tabulate-0.10.0.dist-info/licenses/LICENSE",
+          "sha256": "cdfab50d37d8ead06468fb76a3abafcd05c16749ec8a18eebfa50fd48c7cb2d2",
+          "bytes": 1080
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "filename": "tqdm-4.70.1-py3-none-any.whl",
+      "sha256": "c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73",
+      "bytes": 80199,
+      "requiresPython": ">=3.8",
+      "requiresDist": [
+        "colorama; platform_system == \"Windows\"",
+        "requests; extra == \"discord\"",
+        "envwrap; extra == \"discord\"",
+        "slack-sdk; extra == \"slack\"",
+        "envwrap; extra == \"slack\"",
+        "requests; extra == \"telegram\"",
+        "envwrap; extra == \"telegram\"",
+        "ipywidgets>=6; extra == \"notebook\""
+      ],
+      "providesExtra": [
+        "discord",
+        "slack",
+        "telegram",
+        "notebook"
+      ],
+      "licenceExpression": null,
+      "licenceDeclaration": "MPL-2.0 AND MIT",
+      "licenceDeclarationSha256": "497716e0cebf8fb1944bbac349083f8ba656e10320c3f9811a955fc8786d0cc1",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "tqdm-4.70.1.dist-info/licenses/LICENCE",
+          "sha256": "fcff87c3a47ce8028a8512aa182d4fcf0ad1c90544ee75cf9b343684cac194de",
+          "bytes": 1985
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "typer",
+      "version": "0.27.3",
+      "filename": "typer-0.27.3-py3-none-any.whl",
+      "sha256": "e50022f28b82a86313e54501317a1db64bf8f8d036ff8cfe5ca7e47675454aff",
+      "bytes": 123312,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "shellingham>=1.3.0",
+        "rich>=13.8.0",
+        "annotated-doc>=0.0.2",
+        "colorama; platform_system == \"Windows\""
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "typer-0.27.3.dist-info/licenses/LICENSE",
+          "sha256": "58992cebcf8dfb6e40c4e2112ed12126c243666dca3912a3d78b7ecac4859d49",
+          "bytes": 1086
+        },
+        {
+          "path": "typer/_click/LICENSE.txt",
+          "sha256": "9a8ad106a394e853bfe21f42f4e72d592819a22805d991b5f3275029292b658d",
+          "bytes": 1475
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "bytes": 14750,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "typing-extensions>=4.15.0"
+      ],
+      "providesExtra": [],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "typing_inspection-0.4.4.dist-info/licenses/LICENSE",
+          "sha256": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3",
+          "bytes": 1090
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "bytes": 45571,
+      "requiresPython": ">=3.9",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": "PSF-2.0",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "typing_extensions-4.16.0.dist-info/licenses/LICENSE",
+          "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+          "bytes": 13936
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.6",
+      "filename": "tzdata-2026.6-py2.py3-none-any.whl",
+      "sha256": "0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec",
+      "bytes": 348210,
+      "requiresPython": ">=2",
+      "requiresDist": [],
+      "providesExtra": [],
+      "licenceExpression": null,
+      "licenceDeclaration": "Apache-2.0",
+      "licenceDeclarationSha256": "2af71558e438db0b73a20beab92dc278a94e1bbe974c00c1a33e3ab62d53a608",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "tzdata-2026.6.dist-info/licenses/LICENSE",
+          "sha256": "df58f69ea88683035d720b5375bcef0cf5aeaa98a1d098d572e0992c378deb46",
+          "bytes": 625
+        },
+        {
+          "path": "tzdata-2026.6.dist-info/licenses/licenses/LICENSE_APACHE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "filename": "urllib3-2.8.0-py3-none-any.whl",
+      "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+      "bytes": 135717,
+      "requiresPython": ">=3.10",
+      "requiresDist": [
+        "brotli>=1.2.0; (platform_python_implementation == 'CPython') and extra == 'brotli'",
+        "brotlicffi>=1.2.0.0; (platform_python_implementation != 'CPython') and extra == 'brotli'",
+        "h2<5,>=4; extra == 'h2'",
+        "pysocks!=1.5.7,<2.0,>=1.5.6; extra == 'socks'",
+        "backports-zstd>=1.0.0; (python_version < '3.14') and extra == 'zstd'"
+      ],
+      "providesExtra": [
+        "brotli",
+        "h2",
+        "socks",
+        "zstd"
+      ],
+      "licenceExpression": "MIT",
+      "licenceDeclaration": null,
+      "licenceDeclarationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "licenceClassifiers": [],
+      "notices": [
+        {
+          "path": "urllib3-2.8.0.dist-info/licenses/LICENSE.txt",
+          "sha256": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686",
+          "bytes": 1093
+        }
+      ],
+      "approval": "unreviewed_runtime_artifact"
+    }
+  ]
+}

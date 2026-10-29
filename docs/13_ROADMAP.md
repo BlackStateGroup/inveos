@@ -1,20 +1,20 @@
 # 13 — Delivery roadmap, work sequencing and estimates
 
-**Estimates are planning ranges only**, assuming one senior full-stack engineer supported by AI tooling, specialist security/UX review and rapid product decisions. Parallel staff can shorten calendar time but cannot bypass field/device/security gates. Existing NOIR/Recon code is not assumed reusable before audit.
+Updated 27 October 2026. This sequence orders delivery of the [complete workspace scope and fictional supplier milestone](24_DELIVERY_PLAN.md). Use its capability ledger and the [reconciled work packages](21_ENGINEERING_WORKPACKAGES.md) to distinguish planned, implemented, tested, deployed and pilot-accepted slices. PR #1 proves a local text-only synthetic loop; no stage below is complete merely because that loop works.
 
 ## Delivery slices
 
-| Stage | Indicative elapsed time | Scope | Exit gate |
-|---|---|---|---|
-| 0. Discovery, research, contracts | Week 0–1 | Customer interviews, legal/privacy check, architecture ADRs, source audit, synthetic demo case | Documented assumptions, security model, 5 user interviews, no unstated reuse licences |
-| 1. Real case and evidence backbone | Weeks 1–3 | Auth/roles, case intake, task/notes, direct upload, immutable original/hash, custody and audit | Two tenants cannot cross-read, object can be independently hash-verified |
-| 2. Desktop and field journal | Weeks 3–5 | Case command UX, mobile capture, offline encrypted queue, retries/receipts, media previews | iOS and Android reconnect/outage trials with no lost/duplicated originals |
-| 3. Analysis and reporting MVP | Weeks 5–8 | OCR/ASR, source spans, review queue, basic timeline, report builder, PDF and exhibit export | End-to-end case from intake to reviewed report, offline verifier passes |
-| 4. Controlled client pilot | Weeks 8–10 | Portal release, redactions, approvals, retention, billing basics, consent/policy flows | Internal penetration test, restore drill, DPIA/legal review, pilot launch criteria |
-| 5. Intelligence beta | Months 3–4 | Source connectors, relation graph, entity resolution, agency workflows | Proven source permissions and human verification; useful analyst metrics |
-| 6. Hardened commercial | Months 4–6+ | Scale, SSO, monitoring, disaster recovery, security remediation, templates, enterprise trials | External security/legal readiness checks, customer acceptance and reliable operations |
+| Stage | Deliverable | Completion test |
+|---|---|---|
+| 1. Accounts, case workspace and secure evidence | Real agency identity/MFA, memberships, persistent brief/objectives/tasks/notes, encrypted originals, recoverable uploads and audit | An authorised team creates a case and uploads, retrieves and independently verifies originals; other tenants and unassigned contractors are denied |
+| 2. Document processing, source review and reports | Isolated PDF/OCR jobs, page/region lineage, reviewable claims, basic chronology/questions, editable branded PDF and package verifier | Digital/scanned documents become reviewed findings; incomplete/unsupported citations block approval and the exported package verifies without the service |
+| 3. Field, team workflows and client delivery | Native encrypted offline capture, handovers/review queues, release-only portal with approval/expiry/revocation | iPhone/Android restart/outage/retry tests lose no originals; clients receive approved deliverables and cannot access internal material |
+| 4. Research and investigation reasoning | Approved source connectors, richer chronology, hypotheses/contrary evidence, entity resolution and relationship graph | Analysts resolve documented questions across connected material; every edge/candidate conclusion has provenance and reversible human decisions |
+| 5. Supported pilot operations | Repeatable environments, monitored queues, restore/recovery, retention/holds, billing/quotas, quality evaluation and onboarding/support | Approved pilot users complete cases reliably; recovery and security/privacy gates pass, costs and quality are measured and acceptance is recorded |
 
-A visual **prototype** may be delivered in 1–3 weeks. A genuinely functional **MVP** is estimated at 6–10 weeks; a **pilot-ready beta** at 3–4 months; a fully **commercially hardened** release at 4–6+ months. This is not a promise that one conversation performs weeks of work or that current code already satisfies the roadmap.
+Start customer discovery and operational/security work alongside stage 1; stage 5 is their acceptance gate, not their start date. The minimal supplier question record and approved release portal are pulled forward as needed for the first complete case. Full native field capability is tested separately and is not implied by a successful desktop supplier case.
+
+The original foundation estimated a prototype at 1–3 weeks, MVP at 6–10 weeks, pilot beta at 3–4 months and commercial hardening at 4–6+ months. These remain unvalidated historical planning ranges, not dates for the expanded scope. Re-estimate after identity/storage decisions, the parser experiment and pilot discovery. Existing private NOIR/Recon code is not assumed reusable.
 
 ## Key dependencies and critical path
 
@@ -25,9 +25,9 @@ A visual **prototype** may be delivered in 1–3 weeks. A genuinely functional *
 5. Native offline storage + receipt semantics precede a pilot involving field-only capture.
 6. DPIA, retention, support/security procedures and restore verification precede live personal data.
 
-## Two-week vertical demonstration target
+## First complete fictional investigation
 
-Use a fully synthetic corporate supplier case. Create case → upload two sample PDFs → compute/verify digests → propose two extracted facts from exact pages → human review → generate sourced draft report → export with manifest. Do not add OSINT automation until this loop works and is measured.
+Implement [SYN-SUPPLIER-001](24_DELIVERY_PLAN.md#first-milestone--syn-supplier-001): case/authority → digital and scanned ownership records → verified originals → page-linked extraction → discrepancy, contrary evidence and alternative explanations → human-reviewed finding → branded report/package → independent verification → investigator-approved client release. Preserve explicit unknowns. Do not add automated external collection as a shortcut to this supplied-record milestone.
 
 ## Staffing and budget dependencies
 

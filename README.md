@@ -13,6 +13,8 @@ INVEOS is a case-centred operating environment for lawful private, corporate, le
 |---|---|
 | [Foundation delivery status](DELIVERY_STATUS.md) | Publication receipt, original foundation commit and verification results |
 | [Local application](docs/23_LOCAL_APPLICATION.md) | Implemented visual surfaces, synthetic-lab architecture and explicit limitations |
+| [Persistent casework verification](docs/evals/2026-10-27-casework.md) | Saved questions/hypotheses, tasks, notes, handovers, source links, report printing and offline JSON checks |
+| [Complete workspace delivery plan](docs/24_DELIVERY_PLAN.md) | All 18 capability areas, current evidence, next build slices and the fictional supplier milestone |
 | [Documentation index](docs/INDEX.md) | All plans, specifications, architecture and decisions |
 | [Product requirements](docs/02_PRODUCT_REQUIREMENTS.md) | Scope and acceptance requirements for all modules |
 | [System architecture](docs/06_ARCHITECTURE.md) | Data flows, deployment, tenancy and services |
@@ -51,7 +53,7 @@ The validator now checks repository sources and excludes local dependencies, bui
 
 ## Work order
 
-Build the foundational case/evidence schema first, then desktop case workspace and secure media intake, then offline field workflow, reporting and client release. Research/graph and richer agency features follow. All live integrations require lawful-source, licence and security review. **Do not merge any private NOIR or Recon code just because it is architecturally relevant.**
+Follow the [five-stage roadmap](docs/13_ROADMAP.md): real accounts/persistent case workspace/secure evidence → PDF/OCR/source review/reports → offline field/team workflows/approved client delivery → research/chronology/hypotheses/graph → supported pilot operations. The first complete milestone is a fictional supplier investigation ending in an independently verifiable report package and approved client release. The [capability ledger](docs/24_DELIVERY_PLAN.md) distinguishes implemented lab slices from the remaining work; no production deployment or pilot acceptance is claimed. All live integrations require lawful-source, licence and security review. **Do not merge any private NOIR or Recon code just because it is architecturally relevant.**
 
 ## Repository and redistribution policy
 

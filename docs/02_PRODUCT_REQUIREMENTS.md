@@ -54,6 +54,23 @@ Priority definitions: **P0** required for pilot MVP; **P1** next commercial beta
 - **P1** Agency dashboard, case allocation, time tracking, subscriptions, usage controls and support tooling with audited elevated access.
 - **P2** API/enterprise integrations, granular organisations, custom retention policies, regional storage and self-host options.
 
+## H. Investigation reasoning and chronology
+
+- **P0** Case questions, objectives and unresolved checks have owners, deadlines and history. The overview shows what is supported, what is uncertain, next actions and blockers from persisted case records.
+- **P0** A minimal question record links supporting and contrary material to the supplier milestone. A reviewed finding remains distinct from a hypothesis, source assertion or allegation.
+- **P1** Competing hypotheses, evidence for/against each, alternative explanations and auditable investigator closure decisions. AI may suggest checks but cannot resolve a question by itself.
+- **P0** Basic chronology links source material and preserves alleged event time, source-recorded time and ingest/receipt time separately from processing/render time.
+- **P1** Searchable combined observations, correspondence and interviews with approximate ranges, timezone/precision, conflicting accounts and corrections; never invent a precise date or silently collapse disagreement.
+
+## I. Team coordination and interface depth
+
+- **P0** Persist assignments, tasks, notes, deadlines, review ownership and handovers. Contractors see only their assigned cases. Every relevant view reflects the same saved case state after reload.
+- **P1** Comments, mentions, workload, review queues and notifications for meaningful failures/deadlines/approvals with user preferences and access revocation.
+- **P0** Fast case overview, evidence viewer and side-by-side source review with keyboard operation and useful loading/empty/error/retry states.
+- **P1** Case-scoped search/filtering, saved views and bulk actions; validate permissions, long documents and representative large cases.
+
+The [delivery plan](24_DELIVERY_PLAN.md) maps all 18 capability areas to implementation packages and records the complete fictional supplier acceptance target. Corporate due diligence/internal investigations are the first market hypothesis to test, not validated demand. No capability is deployed or pilot-accepted without separate evidence.
+
 ## Universal functional gates
 
 1. Every viewed/created object carries tenant + case authorisation checks on API and background workers.

@@ -24,6 +24,21 @@
 
 **Required until repo privacy is changed:** plan documents and source references are public. Never commit customer content, private source from NOIR, secrets, live case metadata or unvetted external code. Choose an explicit INVEOS licence before publishing application source.
 
+## ADR-008 — Versioned casework and bounded draft verification
+
+Implemented in the local synthetic slice: keep objectives, questions, hypotheses,
+tasks, notes and handovers within the existing tenant/case boundary. API-enforced kind
+and parent references, optimistic revision checks, transactional audit and separate
+append-only snapshots preserve corrections. Hypotheses remain separate records
+from claims, reviews and findings; supporting/contrary links reverify exact bytes.
+Historical ownership survives case-membership revocation, while access checks deny
+revoked users. Ordered/checksummed migrations support the existing foundation.
+The standalone JSON verifier checks supplied bytes/ranges and can compare an
+independently trusted file fingerprint; browser printing is a separate internal
+draft capability. These controls do not constitute production identity, signed
+custody, PDF certification or authorised client release. See the
+[verification receipt](evals/2026-10-27-casework.md).
+
 ## Risk register
 
 | Risk | Severity | Mitigation / owner decision |

@@ -1,0 +1,162 @@
+{
+  "status": "actual_isolated_raster_boundary_passed",
+  "commit": "a0166c066ba438c5c78a2c9fd76e787dd585315f",
+  "tree": "237e1c070b7c7c6a298337dca5a4161065d94eda",
+  "run": "https://github.com/BlackStateGroup/inveos/actions/runs/40823812851",
+  "rows": [
+    {
+      "name": "digital",
+      "original": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "manifest": "3f6b218dd942aef386e997349f3aa59b4fb3fdbfa95b36ff8686e8ff9b9fcacb",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        },
+        {
+          "page": 2,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        }
+      ]
+    },
+    {
+      "name": "mixed",
+      "original": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+      "manifest": "817182c9f4feca3861db60da9747815212e326fb5a002cffe2a89c7b5f5ad052",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        },
+        {
+          "page": 2,
+          "width": 612,
+          "height": 792,
+          "byteLength": 2089,
+          "digest": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012"
+        }
+      ]
+    },
+    {
+      "name": "blank",
+      "original": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+      "manifest": "684a9ba7bdfda41841c9b1df805ba96dd00464c496713bdd4c86363cabc0e01e",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 2066,
+          "digest": "c0747f740c00c30b399b138e3a49f84ee62b4b74544a9880a3b953cbaf104211"
+        },
+        {
+          "page": 2,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        }
+      ]
+    },
+    {
+      "name": "raster",
+      "original": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+      "manifest": "05320a0c3bd39ae0ae338f8d9e8d558bf16caa613bbe5f1d5f8b86937bb98082",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 2089,
+          "digest": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012"
+        }
+      ]
+    },
+    {
+      "name": "digital",
+      "original": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+      "manifest": "3f6b218dd942aef386e997349f3aa59b4fb3fdbfa95b36ff8686e8ff9b9fcacb",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        },
+        {
+          "page": 2,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        }
+      ]
+    },
+    {
+      "name": "mixed",
+      "original": "6794a01654ed562c15d7a70a64a3bd74c2eee8a9858223d263c3def9399a962d",
+      "manifest": "817182c9f4feca3861db60da9747815212e326fb5a002cffe2a89c7b5f5ad052",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        },
+        {
+          "page": 2,
+          "width": 612,
+          "height": 792,
+          "byteLength": 2089,
+          "digest": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012"
+        }
+      ]
+    },
+    {
+      "name": "blank",
+      "original": "8ce2e644a2c1502e6e961b7c17a666ce969a35b3dabb5aba80ea823b51b335ee",
+      "manifest": "684a9ba7bdfda41841c9b1df805ba96dd00464c496713bdd4c86363cabc0e01e",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 2066,
+          "digest": "c0747f740c00c30b399b138e3a49f84ee62b4b74544a9880a3b953cbaf104211"
+        },
+        {
+          "page": 2,
+          "width": 612,
+          "height": 792,
+          "byteLength": 3567,
+          "digest": "50e3726dbc53662c02291c03b3800b2d22d4f75d35f8bacfb7b0d48181de94ce"
+        }
+      ]
+    },
+    {
+      "name": "raster",
+      "original": "3863b5467e4960c8a98a7e68087a37a78c0e88a6603cad265602d5fedcf2ec3c",
+      "manifest": "05320a0c3bd39ae0ae338f8d9e8d558bf16caa613bbe5f1d5f8b86937bb98082",
+      "pages": [
+        {
+          "page": 1,
+          "width": 612,
+          "height": 792,
+          "byteLength": 2089,
+          "digest": "a4c0d4f212b89944822799eac8e4bf8a5cf0f2877cb9bc28124b5f298fd43012"
+        }
+      ]
+    }
+  ]
+}

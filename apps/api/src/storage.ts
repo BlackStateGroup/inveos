@@ -1,4 +1,5 @@
-import { chmod, mkdir, open, readFile, unlink } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { chmod, mkdir, open, unlink } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 export type StoredOriginal = {
@@ -33,11 +34,12 @@ export async function writeOriginal(
   caseId: string,
   evidenceId: string,
   bytes: Buffer,
+  extension: 'txt' | 'bin' = 'txt',
 ): Promise<StoredOriginal> {
   if (!isAbsolute(root)) {
     throw new Error('Storage root must be an absolute path.');
   }
-  const objectPath = join(tenantId, caseId, `${evidenceId}.txt`);
+  const objectPath = join(tenantId, caseId, `${evidenceId}.${extension}`);
   const rootPath = resolve(root);
   const fullPath = resolveObjectPath(rootPath, objectPath);
   const directory = dirname(fullPath);
@@ -78,10 +80,23 @@ export async function writeOriginal(
   };
 }
 
-export async function readOriginal(root: string, objectPath: string): Promise<Buffer> {
-  return readFile(resolveObjectPath(root, objectPath));
-}
-
 export async function removeOriginal(root: string, objectPath: string): Promise<void> {
   await unlink(resolveObjectPath(root, objectPath));
+}
+
+/** Bounded original read: never allocate based on an untrusted replacement file. */
+export async function readOriginalBounded(root: string, objectPath: string, maximum: number): Promise<Buffer> {
+  const handle = await open(resolveObjectPath(root, objectPath), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try {
+    if (!(await handle.stat()).isFile()) throw new Error('Original must be a regular file');
+    const buffer = Buffer.alloc(maximum + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const {bytesRead} = await handle.read(buffer,length,buffer.length-length,null);
+      if (!bytesRead) break;
+      length += bytesRead;
+    }
+    if (length > maximum) throw new Error('Original size limit');
+    return buffer.subarray(0,length);
+  } finally { await handle.close(); }
 }

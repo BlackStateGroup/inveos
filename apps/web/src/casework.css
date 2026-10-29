@@ -1,0 +1,72 @@
+.workspace-loading { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: var(--canvas); color: var(--muted); }
+.workspace-loading strong { color: var(--amber); font-size: 23px; letter-spacing: 3px; }
+.work-grid { align-items: start; margin-block: 24px; }
+.work-grid > .panel { min-width: 0; }
+.work-section-description { color: var(--muted); padding: 18px 22px 0; margin-bottom: 16px; max-width: 72ch; }
+.work-record { padding: 20px 22px; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+.work-record-top { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+.work-record-top h3 { margin-bottom: 8px; }
+.work-record-top .badge { flex-shrink: 0; }
+.work-body { white-space: pre-wrap; max-width: 72ch; margin-bottom: 14px; }
+.work-parent { margin-bottom: 9px; }
+.work-record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 11px; }
+.work-record-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.work-record-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.work-detail { margin-top: 18px; }
+.work-detail > summary, .work-history summary { cursor: pointer; padding-block: 8px; }
+.work-subheading { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-block: 12px; }
+.work-subheading > strong { font-size: 12px; }
+.work-source { padding-block: 16px; border-top: 1px solid var(--border); }
+.work-source > div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.work-source blockquote { margin: 14px 0 8px; white-space: pre-wrap; color: var(--teal); line-height: 1.7; }
+.work-source p { font-size: 12px; }
+.work-form, .work-link-form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-block: 14px; min-width: 0; }
+.work-editor-wrap { padding-inline: 20px; }
+.work-form fieldset, .work-link-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.work-form-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.work-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.work-form .form-label, .work-link-form .form-label { min-width: 0; }
+.work-form input, .work-form textarea, .work-form select, .work-link-form select, .work-link-form textarea { width: 100%; min-width: 0; }
+.work-form-actions { display: flex; justify-content: end; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.work-history { margin-top: 16px; padding-top: 6px; border-top: 1px solid var(--border); }
+.work-history details { padding-block: 8px; }
+.work-history .small { margin-block: 10px; }
+.case-work-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(180px, 1.6fr); border-block: 1px solid var(--border); margin-block: 24px; }
+.case-work-summary > div { display: flex; flex-direction: column; gap: 6px; padding: 22px 14px; min-width: 0; }
+.case-work-summary strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+.case-work-summary span { color: var(--muted); font-size: 11px; }
+.case-work-summary .next-action strong { font-size: 13px; overflow-wrap: anywhere; }
+.next-action .text-button { align-self: start; }
+.work-kanban { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+.work-kanban > section { min-width: 0; }
+.work-kanban .work-record { padding: 16px 8px; }
+.work-kanban .work-record-top { flex-direction: column; gap: 4px; }
+.work-kanban .work-form { padding: 12px; }
+.work-kanban .work-form-grid { grid-template-columns: 1fr; gap: 0; }
+.work-column-empty { color: var(--muted); padding: 16px 8px; font-size: 12px; }
+.report-export-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.report-fingerprint { padding: 18px; border: 1px solid var(--border); margin-bottom: 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.report-fingerprint label { flex: 1; min-width: 240px; margin: 0; }
+.report-fingerprint input { width: 100%; font-size: 11px; }
+.report-fingerprint p { width: 100%; margin: 0; }
+.report-document-section { margin-block: 24px; break-inside: auto; }
+.report-document-section blockquote { margin: 12px 0; padding: 0; font-size: 12px; line-height: 1.7; }
+.report-exhibit { padding-block: 12px; }
+.report-digest { overflow-wrap: anywhere; }
+@media print {
+  :root, html, body { background: white; color: #17191b; }
+  .report-stage, .report-paper { background: white; }
+  .report-fingerprint, .form-error, .case-work-summary { display: none; }
+  .report-document-section { color: #17191b; }
+  .report-document-section h2, .report-document-section h3 { break-after: avoid; }
+  .report-finding, .report-exhibit { break-inside: avoid; }
+}
+@media (max-width: 1250px) { .work-kanban { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .case-work-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .work-kanban { grid-template-columns: 1fr; }
+  .work-form-grid { grid-template-columns: 1fr; gap: 0; }
+  .work-record, .work-form, .work-link-form { padding: 16px; }
+  .work-record-top { flex-wrap: wrap; }
+  .work-section-description { padding-inline: 16px; }
+}

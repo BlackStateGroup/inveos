@@ -1,0 +1,61 @@
+{
+  "status": "actual_native_jobs_and_daemon_cleanup_passed",
+  "testedCommit": "262d87b4c6c6417432e83c39bd2a6c735c55b6d6",
+  "testedTree": "291afc7cebef233d2d7b237c5052270dacafdae9",
+  "researchRun": 40799861215,
+  "researchJob": 123205098936,
+  "checksRun": 40799861493,
+  "checksJob": 123205100083,
+  "verificationDate": "2026-10-29",
+  "actualNativeJobs": 2,
+  "matchingOutputs": {
+    "sourceDigest": "4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9",
+    "rawDigest": "f9857d52bd433bc1632d6df6cbc75c2946da53a720a890383820a64e96a824b8",
+    "profileDigest": "3598b04aaddec299619919cb1f54922d6f3b0431929cc9124e23bb2b013d27a3",
+    "references": [
+      {
+        "itemRef": "#/texts/0",
+        "page": 1,
+        "bbox": {
+          "l": 72,
+          "r": 282.7560000000001,
+          "b": 697.516,
+          "t": 708.616,
+          "origin": "BOTTOMLEFT"
+        },
+        "startByte": 0,
+        "endByte": 33
+      },
+      {
+        "itemRef": "#/texts/1",
+        "page": 2,
+        "bbox": {
+          "l": 72,
+          "r": 282.7560000000001,
+          "b": 697.516,
+          "t": 708.616,
+          "origin": "BOTTOMLEFT"
+        },
+        "startByte": 34,
+        "endByte": 67
+      }
+    ]
+  },
+  "malformedOriginal": "failed_without_derivative",
+  "daemonChecks": [
+    "lease_loss",
+    "abort",
+    "output_limit",
+    "timeout",
+    "nonzero_exit",
+    "database_cancellation",
+    "authority_change"
+  ],
+  "containerAbsenceConfirmed": true,
+  "regularNodeTests": 167,
+  "pythonTests": 98,
+  "separateIntegrationTests": 3,
+  "failed": 0,
+  "skipped": 0,
+  "limitations": "Research-only runtime. No legal/security shipping approval, original-page human review, exploit-resistance, orchestrator-crash/late-create orphan recovery, device or production-readiness claim."
+}
