@@ -6,6 +6,7 @@ const config = loadRuntimeConfig();
 const pool = createPool(config.databaseUrl, 'inveos');
 const app = await createApp({
   pool,
+  identity: config.identity,
   documentLab: config.documentLab,
   storageRoot: config.storageRoot,
   allowedOrigins: config.allowedOrigins,

@@ -166,3 +166,5 @@
 - [Encrypted immutable original custody](81_ENCRYPTED_ORIGINAL_CUSTODY.md)
 
 - [82 — Evidential chronology](82_EVIDENTIAL_CHRONOLOGY.md): uncertain alleged dates, typed sources, immutable corrections and frozen verified report context.
+
+- [Provider identity sessions](83_PROVIDER_IDENTITY.md): limited code/PKCE integration, membership enrolment/revocation, investigator and client sign-in, explicit remaining provider/MFA acceptance.
