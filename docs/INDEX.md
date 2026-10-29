@@ -139,3 +139,5 @@
 - [Durable raster results](65_DURABLE_RASTER_RESULTS.md) — fenced attachment and reverified PNG page delivery.
 
 - [Leased raster worker](66_LEASED_RASTER_WORKER.md) — qualified isolated rendering attached to durable research jobs.
+
+- [Verified raster page inspection](67_RASTER_PAGE_INSPECTION.md) — bounded verified page display with stale-image cleanup.

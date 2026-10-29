@@ -3271,12 +3271,19 @@ test('real browser decodes verified raster page bytes and cannot reload them aft
   const f=await rasterFixture();try{
     const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);await finishRasterJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
     await withBrowserApp(async(b,origin)=>{
-      await binaryBrowserControls(b,origin,f.scope.caseId);
-      const dimensions=await b.evaluate(`new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve([image.naturalWidth,image.naturalHeight]);image.onerror=()=>reject(new Error('Raster decode failed'));image.src=${JSON.stringify(f.pageUrl)};document.body.append(image);})`);
-      assert.deepEqual(dimensions,[612,792]);
+      const ui=await binaryBrowserControls(b,origin,f.scope.caseId),label='Inspect page images '+f.job.id.slice(0,8);
+      await eventually(async()=>(await ui.text()).includes(label),'raster job listing');await ui.click(label);
+      await eventually(async()=>await b.evaluate(`Boolean(document.querySelector('img[alt="Unreviewed rendered page 1"]')?.naturalWidth)`),'verified page one');
+      await b.evaluate(`(()=>{const s=document.querySelector('section[aria-label="Verified unreviewed raster pages"] select');s.value="2";s.dispatchEvent(new Event("change",{bubbles:true}));})()`);
+      await eventually(async()=>await b.evaluate(`Boolean(document.querySelector('img[alt="Unreviewed rendered page 2"]')?.naturalWidth)`),'verified page two');
+      assert.ok((await ui.text()).includes('Forms and annotations are omitted'));
+      const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous,'raster reload');
+      await eventually(async()=>(await ui.text()).includes(label),'raster history restored');await ui.click(label);
+      await eventually(async()=>await b.evaluate(`Boolean(document.querySelector('img[alt="Unreviewed rendered page 1"]')?.naturalWidth)`),'raster reinspection');
       const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];
       await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional changed original');
-      assert.equal(await b.evaluate(`fetch(${JSON.stringify(f.pageUrl)}).then(r=>r.status)`),409);
+      await ui.click('Reload verified page');await eventually(async()=>(await ui.text()).includes('Page unavailable or integrity verification failed'),'corrupt raster denied');
+      assert.equal(await b.evaluate(`document.querySelectorAll('section[aria-label="Verified unreviewed raster pages"] img').length`),0);
     });
   }finally{await f.app.close();}
 });
