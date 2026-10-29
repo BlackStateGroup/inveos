@@ -4014,7 +4014,7 @@ test('discussion writes and mention acknowledgement roll back when audit fails',
 test('discussion input bounds reject malformed text and duplicate or oversized mention sets',async()=>{
  context.demo=await issueTestSession(demoUserId);const kase=await createCase(),work=(await createWork(kase.id)).json(),url=`/api/cases/${kase.id}/work/${work.id}/comments`,input={id:randomUUID(),body:'Fictional bounded discussion.',mentions:[],reason:'Fictional validation.'};
  for(const change of [{body:' '.repeat(8)},{body:'bad\u0000text'},{reason:' '}])assertError(await request('POST',url,context.demo!,{payload:{...input,...change}}),422);
- for(const change of [{body:'x'.repeat(4001)},{reason:'x'.repeat(1001)},{mentions:[demoUserId,demoUserId]},{mentions:Array.from({length:9},()=>randomUUID())}])assertError(await request('POST',url,context.demo!,{payload:{...input,...change}}),400);
+ for(const change of [{body:'x'.repeat(4001)},{reason:'x'.repeat(1001)},{mentions:[demoUserId,demoUserId]},{mentions:Array.from({length:9},()=>randomUUID())}])assertError(await request('POST',url,context.demo!,{payload:{...input,...change}}),422);
  assert.equal((await context.pool!.query('SELECT count(*)::int n FROM work_comments WHERE id=$1',[input.id])).rows[0].n,0);
 });
 
