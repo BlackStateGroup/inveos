@@ -42,7 +42,8 @@ async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:stri
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+(server.address() as {port:number}).port;let b:Awaited<ReturnType<typeof launchBrowser>>|undefined;
  try{b=await launchBrowser();const browser=b;await b.send('Network.enable');await b.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   for(const pair of f.demo.cookie.split('; ')){const at=pair.indexOf('=');await b.send('Network.setCookie',{name:pair.slice(0,at),value:pair.slice(at+1),url,path:'/',sameSite:'Strict',httpOnly:pair.startsWith('inveos_session=')});}
-  const text=()=>browser.evaluate<string>("document.body.innerText"),label='Inspect unreviewed pages '+jobId.slice(0,8);
+  // Navigation and reload can expose the new document before its body exists.
+  const text=()=>browser.evaluate<string>("document.body?.innerText ?? ''"),label='Inspect unreviewed pages '+jobId.slice(0,8);
   await b.send('Page.navigate',{url:url+'/#case='+f.caseId+'&view=Evidence'});await eventually(async()=>(await text()).includes(label),'actual OCR durable browser job');
   const click=()=>browser.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});if(!button||button.disabled)throw new Error('OCR inspection unavailable');button.click();})()`);
   await click();await eventually(async()=>(await text()).includes('Unreviewed OCR words'),'actual OCR browser inspection');assert.ok((await text()).includes('OCR may misread words'));assert.ok((await text()).includes('origin TOPLEFT'));
