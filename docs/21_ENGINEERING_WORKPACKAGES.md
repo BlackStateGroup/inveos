@@ -22,7 +22,7 @@ PR #1 (`95b5c35`) is merged. PR #2 (`36081f1`) is a separate draft research slic
 | WP-09–WP-12 | Illustrative source/graph/interview/admin surfaces | Operational source, graph, interview and agency acceptance gates |
 | WP-13 | Plans and local test evidence only | Production operations, restore/security/privacy evidence and pilot sign-off |
 | WP-14 | Local versioned questions/hypotheses with supporting/contrary links, reverified source assessments and auditable decisions | Production identity/storage and wider reasoning validation |
-| WP-15–WP-16 | Source chronology preserves original offsets and sorts actual instants; casework search and responsive forms | Alleged-event/approximate chronology, saved views, bulk actions and large-case measurements |
+| WP-15–WP-16 | Source chronology preserves original offsets; saved alleged accounts/uncertainty, typed sources, immutable corrections and frozen export verification in the verified [chronology increment](82_EVIDENTIAL_CHRONOLOGY.md); casework search and responsive forms | Chronology/browser acceptance passed at `d2638b3`; saved views, bulk actions, interview/observation inputs and large-case measurements |
 | WP-17 | Persistent tasks/ownership/deadlines and recipient-acknowledged handovers | Comments/mentions, workload, notifications and production identity |
 | WP-18 | Planned customer-validation work | Actual interviews, approved pilots and measured acceptance |
 

@@ -71,5 +71,13 @@ jobs:
         run: timeout 180s npm test --workspace @inveos/api
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
+      - name: Retain fictional chronology browser render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: chronology-browser
+          path: output/evals/chronology-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Check tracked sources remain unchanged
         run: git diff --exit-code
