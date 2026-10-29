@@ -3816,7 +3816,7 @@ test('document source links and withdrawals roll back on audit failure; context 
 });
 test('real browser links and reinspects document reasoning, reloads decisions and withdraws without deleting history',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
  const f=await documentReasoningFixture();try{await withBrowserApp(async(b,origin)=>{
-  const ui=await binaryBrowserControls(b,origin,f.scope.caseId),url=origin+'/#case='+f.scope.caseId+'&view=Brief';await b.send('Page.navigate',{url});await eventually(async()=>(await ui.text()).includes(f.hypothesis.title),'reasoning hypothesis displayed');
+  const ui=await binaryBrowserControls(b,origin,f.scope.caseId);await ui.click('Brief');await eventually(async()=>(await ui.text()).includes(f.hypothesis.title),'reasoning hypothesis displayed');
   const selector='#work-'+f.hypothesis.id;
   const openMaterial=async()=>{await b.evaluate(`document.querySelector(${JSON.stringify(selector)}+' details.work-detail').open=true`);};await openMaterial();
   const click=async(label:string)=>{await b.evaluate(`(()=>{const root=document.querySelector(${JSON.stringify(selector)}),button=[...root.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});if(!button||button.disabled)throw new Error('Reasoning button unavailable');button.click();})()`);};
