@@ -13,3 +13,7 @@ Run `npm run lint`, `npm run typecheck`, `node --import tsx --test apps/api/test
 ## Remaining
 
 Human-reviewed derived-document citations, immutable approval records and independent export verification remain next. Wider document transforms, fidelity, accessibility/device acceptance, identity/storage, orphan reconciliation and runtime/legal/security approval remain open. Nothing merged or deployed.
+
+## Executed evidence
+
+Draft PR #59 passed [Checks #152](https://github.com/BlackStateGroup/inveos/actions/runs/40846026166), job 123353609262, at `417d6f3c6e206b4c6c801c03506f7a0e70c6e347`, tree `fe42cae5f8e5924b41d9ba4eb901ca39388f399b`: 188 Node tests and 101 Python tests, zero failures/skips, plus lint/types/build/reference, real PostgreSQL/browser/restore and host isolation. The new browser scenario paired stored extraction/raster results, selected page-two passage one, checked matching overlay/image display dimensions, and cleared comparison after original corruption. Two new pairing/geometry helper tests passed. Local lint/types, two focused tests and foundation/101 Python tests passed. Fixtures replay prior actual output; no fresh renderer/parser execution, human approval or visual-fidelity certification is claimed. Evidence follow-up changes documentation only; resume #59 after fresh main/review checks.
