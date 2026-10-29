@@ -1,6 +1,6 @@
 # Preservation holds and retention review
 
-Implemented increment awaiting hosted browser acceptance and review. Exact executed checks and merge status are recorded in [BUILD_HANDOFF.md](../BUILD_HANDOFF.md).
+Implemented and verified development increment; [hosted evaluation and rendered review](evals/2026-10-29-preservation.md) record the actual evidence. Exact executed checks and merge status are recorded in [BUILD_HANDOFF.md](../BUILD_HANDOFF.md).
 
 An assigned reviewer may record a case-wide preservation hold or a hold against one existing original. A hold records a declared authority reference, purpose, reason and actor; it does not determine legal validity or grant collection/disclosure authority. Case closure and authority supersession do not silently release holds. The original identity and target scope remain fixed. Reasoned amendments preserve prior versions; an explicit reviewer release is terminal, and a new instruction requires a new hold identity. Exact request retries must return current state without resurrecting a released hold.
 
