@@ -37,8 +37,7 @@ separate Node orchestrator, verifies the container subsequently exits with 137
 under a three-second internal deadline, and confirms the fictional original is
 unchanged. It then explicitly removes the stopped container. This is an actual
 process-crash test, not a simulated lease rejection. Existing actual parser,
-malformed-input, cancellation and resource tests run alongside it. Hosted
-evidence is pending; local policy tests do not count as Docker execution.
+malformed-input, cancellation and resource tests run alongside it. Hosted [research #18](https://github.com/BlackStateGroup/inveos/actions/runs/40806476762), job 123226538492, passed at `a36184fc5b2aec7ded921198021362685878c057`, tree `99013b6cb3ee3e3f16199b8282ac58ebb86e8703`: four actual Docker/PostgreSQL integration tests passed, including SIGKILL of a separate orchestrator followed by independent container exit 137 and unchanged fictional original. The stopped container was explicitly removed by the test; automatic orphan deletion is not claimed. Two actual pinned-parser jobs, malformed-input rejection, normal failure/cancellation cleanup, exact source builds, native/provider inventories and qualification probes also passed. [Checks #135](https://github.com/BlackStateGroup/inveos/actions/runs/40806476854), job 123226538385, passed all 168 Node tests and 98 Python tests, zero failures/skips, plus lint/types/build/reference and actual browser/restore/isolation checks. Local lint/types, four policy tests and foundation validation passed; local Docker remains unavailable. The follow-up records documentation only; local policy tests are not Docker evidence.
 
 ## Limits and rollback
 
