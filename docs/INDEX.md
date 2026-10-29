@@ -179,3 +179,5 @@
 - [Reviewed case graph](87_CASE_GRAPH.md) — separate ambiguous entities, pinned source-linked relationship proposals, independent decisions and immutable history.
 
 - [Manual supplied-source register](88_MANUAL_SOURCE_REGISTER.md) — original-linked capture metadata, source policy notes, independent metadata review and correction history.
+
+- [Personal assigned-work queue](89_ASSIGNED_WORK_QUEUE.md) — current membership/ownership pages, bounded excerpts, filters and case-context navigation.
