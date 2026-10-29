@@ -8,17 +8,18 @@ CREATE TABLE case_lifecycle_events (
  tenant_id uuid NOT NULL,case_id uuid NOT NULL,id uuid NOT NULL DEFAULT gen_random_uuid(),
  version integer NOT NULL CHECK(version BETWEEN 1 AND 1000),from_state text,
  to_state text NOT NULL CHECK(to_state IN ('Intake','Scope review','Active','Review','Released','Closed','Archived')),
- actor_id uuid NOT NULL REFERENCES users(id),reason text NOT NULL CHECK(length(reason) BETWEEN 10 AND 2000),
+ actor_id uuid REFERENCES users(id),reason text NOT NULL CHECK(length(reason) BETWEEN 10 AND 2000),
  source text NOT NULL CHECK(source IN ('legacy_checkpoint','case_created','authority_approved','investigator_transition')),
  authority_version integer,disclosure_id uuid,request_hash char(64),
  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ CHECK((source='legacy_checkpoint' AND actor_id IS NULL) OR (source<>'legacy_checkpoint' AND actor_id IS NOT NULL)),
  PRIMARY KEY(tenant_id,case_id,version),UNIQUE(tenant_id,case_id,id),UNIQUE(tenant_id,case_id,version,to_state),
  FOREIGN KEY(tenant_id,case_id) REFERENCES cases(tenant_id,id),
  FOREIGN KEY(tenant_id,case_id,authority_version) REFERENCES authority_records(tenant_id,case_id,version),
  FOREIGN KEY(tenant_id,case_id,disclosure_id) REFERENCES report_disclosures(tenant_id,case_id,id)
 );
 INSERT INTO case_lifecycle_events(tenant_id,case_id,version,to_state,actor_id,reason,source,authority_version)
- SELECT tenant_id,id,1,lifecycle_state,owner_user_id,'Migration checkpoint of existing status; earlier stage history is not reconstructed.','legacy_checkpoint',authority_version FROM cases;
+ SELECT tenant_id,id,1,lifecycle_state,NULL,'Migration checkpoint of existing status; earlier stage history is not reconstructed.','legacy_checkpoint',authority_version FROM cases;
 CREATE FUNCTION initialise_case_lifecycle() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  INSERT INTO case_lifecycle_events(tenant_id,case_id,version,to_state,actor_id,reason,source)
