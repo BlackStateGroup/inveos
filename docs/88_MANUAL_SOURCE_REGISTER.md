@@ -1,0 +1,27 @@
+# Supplied capture context and review
+
+The persistent Research view records source context for an already preserved original. This is the manual supplied-capture part of requirements E/WP-09, with source-level purpose, lawful-basis note, scope, retention, minimisation, terms reference, attribution and history. No URL is fetched, publisher authenticated, connector enabled, legal approval inferred or content released. Official connectors, enforceable collector policy/terms registry and independent source-use approval remain separate gates.
+
+## Original and metadata are different records
+
+Migration 037 adds a case-scoped source head, immutable metadata revisions and independent metadata review decisions. The original evidence identity is fixed at creation. Its digest, source-recorded timestamp, receipt timestamp and acquisition authority are retained alongside the supplied URL, publisher, reported retrieval timestamp/offset, capture method, unassessed/primary/secondary/disputed classification and annotation. A reviewer accepts or rejects the **metadata record**, not source truth, legal sufficiency, parser accuracy or permission to collect.
+
+All metadata fields are supplied assertions. Reported retrieval time must be a valid full instant with a known offset; the server registration timestamp remains separate. URLs are retained exactly, restricted to HTTP/HTTPS without credentials, whitespace or backslashes, and rendered as text. A URL never invokes an outbound request. Terms references and policy notes remain plain text. Retention cannot exceed the pinned case authority's limit; this register does not run deletion or replace preservation/hold decisions.
+
+Corrections require an expected version and reason. They retain the original identity and create a new pending metadata revision. Review requires a current assigned reviewer who authored no version, and binds the exact record digest/version. Earlier decisions remain attached to earlier records. Withdrawal retains history even if the original is now unavailable or authority changed. Replaying an identical original creation returns the current revision, including withdrawal. The UI retains the creation identity after a lost response, allowing a retry without a duplicate record. It does not persist unsent form content across a tab restart.
+
+## Verification and boundaries
+
+Creating/correcting a record, accepting its metadata and explicitly verifying its original re-read the stored bytes through the existing original adapter and require the recorded digest/length. Current case authority guards active writes/review; historical metadata remains available to current authorised members. Listing/search explicitly describe stored metadata rather than fresh byte/authority verification. Subsequent original status changes require a corrected record before fresh metadata acceptance. Metadata review does not modify original custody, claims, findings, report packages, client disclosure or existing case authority.
+
+Every route checks the current internal session and tenant/case membership; writes also require existing origin/CSRF protection. Clients cannot inspect the register. Same-case foreign keys prevent foreign-original attachment. Restricted SQL grants permit only head-version updates; revision/review rows reject update/delete. Case locks, expected versions and atomic audit protect concurrent writes. Audit summaries omit URLs, policy text and annotations. React text rendering and access-denial clearing keep fetched metadata out of unrelated sessions.
+
+Limits are 200 source identities per case, 100 revisions per identity, two-second SQL statement deadlines and 50 originals per selector page. The Research UI provides forms, explicit independent review, original verification/navigation, correction/withdrawal/history and narrow-screen layout. Case search includes current supplied-source context with explicit metadata statuses. These are bounded development controls, not representative large-case performance or production readiness.
+
+## Reproduce and assess
+
+Use the existing disposable lab setup, migrate with `npm run db:migrate`, then run `npm run lint`, `npm run typecheck`, `npm run build` and `npm run test:foundation`. With the documented disposable restricted/admin PostgreSQL URLs, run `node --import tsx --test --test-concurrency=1 apps/api/test/*.test.ts`. Focus API acceptance with `--test-name-pattern='^manual source ' apps/api/test/api.test.ts`. The HTTP matrix starts a real loopback listener and uses fictional `example.test` URLs as metadata only. Set `INVEOS_TEST_BROWSER=1` only on a host with working sandboxed Chrome; the workflow retains `manual-source-browser`.
+
+Acceptance covers original/retrieval/receipt/registration time separation, immutable corrections/withdrawal, independent decisions, stable creation replay, restart, stale authority, original corruption, conflicting edits, audit rollback, real HTTP validation/access denial and browser save/lost-response recovery/review/reload/history/revocation. Exact executed revisions/results are recorded in BUILD_HANDOFF.md. Unrun browser or professional/legal checks are not acceptance. Existing isolated parser benchmarks remain separate; this feature adds none.
+
+Migration is additive and does not rewrite originals or existing tables. A code rollback can leave these append-only records intact; do not drop their history as routine rollback. Provider deployment and production migration are not authorised by this development slice.
