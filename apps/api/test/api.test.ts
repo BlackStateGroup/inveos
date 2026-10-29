@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
-import { claimIntegrityJob, renewIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
+import { finishDocumentJob, claimIntegrityJob, renewIntegrityJob, dispatchIntegrityJobs, finishIntegrityJob, runIntegrityJob } from '../src/integrity-jobs.js';
 import { createApp } from '../src/app.js';
 import { runLeasedWorker } from '../src/leased-worker.js';
 import {jobRequestScope,queueRecoverably} from '../../web/src/jobRequest.js';
@@ -1181,7 +1181,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -3030,4 +3030,156 @@ test('actual leased subprocess stops on database cancellation and changed author
     assert.equal(row.status,'cancelled');
     assert.equal(await finishIntegrityJob(context.pool!,scope,lease.token,null),null);
   }
+});
+
+// Durable document tests replay a stored actual native result. No parser runs in the API process.
+async function documentFixture() {
+  const {documentKind,documentProfileDigest}=await import('../src/document-derivative.js');
+  context.demo=await issueTestSession(demoUserId);
+  const kase=await createCase();await approveAuthority(kase.id);
+  const fixture=spawnSync('python3',['-c','import sys;from tools.synthetic_pdf import digital_pdf;sys.stdout.buffer.write(digital_pdf())'],{cwd:fileURLToPath(new URL('../../../',import.meta.url))});
+  assert.equal(fixture.status,0,fixture.stderr.toString());const bytes=fixture.stdout;
+  const uploaded=await request('POST',`/api/cases/${kase.id}/evidence/binary`,context.demo!,{payload:{filename:'fictional-native.pdf',contentBase64:bytes.toString('base64'),expectedSha256:createHash('sha256').update(bytes).digest('hex'),sourceTime:'2026-01-01T00:00:00Z',method:'Fictional native PDF attachment fixture',idempotencyKey:randomUUID()}});
+  assert.equal(uploaded.statusCode,200,uploaded.body);const evidence=JSON.parse(uploaded.body);
+  const app=await createApp({pool:context.pool!,storageRoot:context.storageRoot!,allowedOrigins,demoTenantId,demoUserId,sessionTtlSeconds:3600,documentLab:true});await app.ready();
+  const url=`/api/cases/${kase.id}/integrity-jobs`;
+  const payload={evidenceId:evidence.id,idempotencyKey:randomUUID(),kind:documentKind};
+  const enqueue=()=>app.inject({method:'POST',url,headers:{cookie:context.demo!.cookie,origin:localOrigin,'x-csrf-token':context.demo!.csrf},payload});
+  const queued=await enqueue();assert.equal(queued.statusCode,200,queued.body);const job=JSON.parse(queued.body);
+  const scope={tenantId:demoTenantId,caseId:kase.id,jobId:job.id};
+  const receipt=JSON.parse(await readFile(new URL('../../../research/runtime_artifacts/native-boundary-receipt.json',import.meta.url),'utf8'));
+  const result={context:{...scope,evidenceId:evidence.id,sourceDigest:evidence.digest,authorityVersion:job.authorityVersion},profileDigest:documentProfileDigest,successful:true,raw:Buffer.from(JSON.stringify(receipt.runs[0].nativeDocument))};
+  return {app,enqueue,scope,job,result,url:`${url}/${job.id}/document-derivative`,payload,bytes};
+}
+
+test('document jobs are opt-in, idempotent, excluded from text dispatch and atomically attach verified durable lineage',async()=>{
+  const f=await documentFixture();try{
+    assertError(await request('POST',`/api/cases/${f.scope.caseId}/integrity-jobs`,context.demo!,{payload:f.payload}),409);
+    assert.equal(JSON.parse((await f.enqueue()).body).id,f.job.id);
+    assert.equal((await dispatchIntegrityJobs(context.pool!,context.storageRoot!,f.scope)).selected,0);
+    assert.equal(await runIntegrityJob(context.pool!,context.storageRoot!,f.scope),null);
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+    await assert.rejects(finishIntegrityJob(context.pool!,f.scope,lease.token,null),/requires immutable derivative/);
+    assert.equal((await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result))?.status,'succeeded');
+    assert.equal(await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result),null);
+    const response=await request('GET',f.url,context.demo!);assert.equal(response.statusCode,200,response.body);
+    const body=JSON.parse(response.body);assert.equal(body.derivative.references[1].page,2);assert.equal(body.derivative.references[1].startByte,34);
+    assert.equal(body.status,'unreviewed_derivative');assert.equal(body.sourceTime,'2026-01-01T00:00:00Z');assert.equal(body.derivative.coverage.completeExtractionVerified,false);
+    assert.equal(response.headers['cache-control'],'no-store');assert.equal(body.attempt,1);
+    const restarted=await createAppInstance();try{const r=await restarted.inject({method:'GET',url:f.url,headers:{cookie:context.demo!.cookie}});assert.deepEqual(JSON.parse(r.body),body);}finally{await restarted.close();}
+    const e=(await context.pool!.query('SELECT status,object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];assert.equal(e.status,'Quarantined');assert.deepEqual(await readFile(resolve(context.storageRoot!,e.object_path)),f.bytes);
+    assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM claims WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);
+    assert.equal((await context.pool!.query("SELECT count(*)::int AS n FROM audit_events WHERE case_id=$1 AND action='document_derivative.read'",[f.scope.caseId])).rows[0].n,2);
+    for(const sql of ['UPDATE document_derivatives SET output_digest=output_digest WHERE job_id=$1','DELETE FROM document_derivatives WHERE job_id=$1'])await assert.rejects(context.schemaAdminPool!.query(sql,[f.job.id]),/append.only|immutable/i);
+  }finally{await f.app.close();}
+});
+
+test('document attachment rejects changed context, runtime profile, partial parser results and changed originals',async()=>{
+  for(const mutation of ['context','profile','partial','original'] as const){
+    const f=await documentFixture();try{
+      const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+      if(mutation==='context')f.result.context.evidenceId=randomUUID();
+      if(mutation==='profile')f.result.profileDigest='f'.repeat(64);
+      if(mutation==='partial')f.result.successful=false;
+      if(mutation==='original'){const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional corrupted original');}
+      const result=await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+      assert.equal(result?.status,'failed');assert.equal(result?.failureCode,mutation==='original'?'original_unavailable':'document_result_invalid');
+      assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_derivatives WHERE job_id=$1',[f.job.id])).rows[0].n,0);
+    }finally{await f.app.close();}
+  }
+});
+
+test('document completion fences expired/superseded tokens and serialises competing attachments',async()=>{
+  const f=await documentFixture();try{
+    const first=await claimIntegrityJob(context.pool!,f.scope);assert.ok(first);
+    await context.schemaAdminPool!.query("UPDATE integrity_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[f.job.id]);
+    assert.equal(await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,first.token,f.result),null);
+    const second=await claimIntegrityJob(context.pool!,f.scope);assert.ok(second);
+    assert.equal(await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,first.token,f.result),null);
+    for(const field of ['tenantId','caseId','jobId'] as const)assert.equal(await finishDocumentJob(context.pool!,context.storageRoot!,{...f.scope,[field]:randomUUID()},second.token,f.result),null);
+    const results=await Promise.all([1,2].map(()=>finishDocumentJob(context.pool!,context.storageRoot!,f.scope,second.token,f.result)));
+    assert.equal(results.filter(r=>r?.status==='succeeded').length,1);assert.equal(results.filter(r=>r===null).length,1);
+    assert.equal((await context.pool!.query('SELECT attempt FROM document_derivatives WHERE job_id=$1',[f.job.id])).rows[0].attempt,2);
+  }finally{await f.app.close();}
+});
+
+test('cancelled jobs, revised authority and revoked requester cannot attach document results',async()=>{
+  for(const mode of ['cancel','authority','membership'] as const){
+    const f=await documentFixture();try{
+      const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+      if(mode==='cancel')assert.equal((await request('POST',`/api/cases/${f.scope.caseId}/integrity-jobs/${f.job.id}/cancel`,context.demo!,{payload:{}})).statusCode,200);
+      if(mode==='authority')await approveAuthority(f.scope.caseId);
+      if(mode==='membership')await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE case_id=$1 AND user_id=$2',[f.scope.caseId,demoUserId]);
+      const result=await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);assert.ok(result===null||result.status==='cancelled');
+      assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_derivatives WHERE job_id=$1',[f.job.id])).rows[0].n,0);
+    }finally{await f.app.close();}
+  }
+});
+
+test('document storage failure rolls back success and its event before retry',async()=>{
+  const f=await documentFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);
+    await context.schemaAdminPool!.query("CREATE FUNCTION deny_document_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fictional document storage failure'; END $$");
+    await context.schemaAdminPool!.query('CREATE TRIGGER deny_document_test BEFORE INSERT ON document_derivatives FOR EACH ROW EXECUTE FUNCTION deny_document_test()');
+    try{await assert.rejects(finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result),/fictional document storage failure/);}
+    finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_document_test ON document_derivatives');await context.schemaAdminPool!.query('DROP FUNCTION deny_document_test()');}
+    assert.deepEqual((await context.pool!.query('SELECT status FROM integrity_job_events WHERE job_id=$1 ORDER BY id',[f.job.id])).rows.map(r=>r.status),['queued','running']);
+    assert.equal((await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result))?.status,'succeeded');
+  }finally{await f.app.close();}
+});
+
+test('document retrieval denies foreign and withdrawn scope and detects original, raw and normalised output corruption',async()=>{
+  const f=await documentFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+    const outsider=await createMember(demoTenantId,'investigator','Fictional document outsider');assertError(await request('GET',f.url,await issueTestSession(outsider)),404);
+    const client=await createMember(demoTenantId,'client','Fictional document client');assertError(await request('GET',f.url,await issueTestSession(client)),403);
+    const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants (id,name) VALUES ($1,$2)',[tenant,'Fictional document foreign tenant']);
+    const foreign=await createMember(tenant,'reviewer','Fictional foreign document reviewer');assertError(await request('GET',f.url,await issueTestSession(foreign,tenant)),404);
+    const other=await createCase();assertError(await request('GET',f.url.replace(f.scope.caseId,other.id),context.demo!),404);
+    await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE case_id=$1 AND user_id=$2',[f.scope.caseId,demoUserId]);assertError(await request('GET',f.url,context.demo!),404);
+    await context.schemaAdminPool!.query('INSERT INTO case_memberships (tenant_id,case_id,user_id) VALUES ($1,$2,$3)',[demoTenantId,f.scope.caseId,demoUserId]);
+    const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];const path=resolve(context.storageRoot!,e.object_path);
+    await writeFile(path,'Fictional changed original');assertError(await request('GET',f.url,context.demo!),409);await writeFile(path,f.bytes);
+    const stored=(await context.pool!.query('SELECT * FROM document_derivatives WHERE job_id=$1',[f.job.id])).rows[0];
+    await context.schemaAdminPool!.query('ALTER TABLE document_derivatives DISABLE TRIGGER document_derivatives_append_only');
+    try{
+      await context.schemaAdminPool!.query('UPDATE document_derivatives SET raw_bytes=$2 WHERE job_id=$1',[f.job.id,Buffer.from('{}')]);assertError(await request('GET',f.url,context.demo!),409);
+      const forged=JSON.parse(stored.output_bytes.toString());forged.references[1].page=1;const raw=JSON.stringify(forged);
+      await context.schemaAdminPool!.query('UPDATE document_derivatives SET raw_bytes=$2,output_bytes=$3,output_digest=$4 WHERE job_id=$1',[f.job.id,stored.raw_bytes,Buffer.from(raw),digest(raw)]);assertError(await request('GET',f.url,context.demo!),409);
+    }finally{await context.schemaAdminPool!.query('ALTER TABLE document_derivatives ENABLE TRIGGER document_derivatives_append_only');}
+  }finally{await f.app.close();}
+});
+
+test('document queue enforces CSRF, internal membership, supported originals and immutable retry input',async()=>{
+  const f=await documentFixture();try{
+    const url=`/api/cases/${f.scope.caseId}/integrity-jobs`;
+    const post=(payload:object,session=context.demo!,csrf=true)=>f.app.inject({method:'POST',url,headers:{cookie:session.cookie,origin:localOrigin,...(csrf?{'x-csrf-token':session.csrf}:{})},payload});
+    assertError(await post(f.payload,context.demo!,false),403);
+    assertError(await post({...f.payload,profileDigest:'f'.repeat(64)}),422);
+    const client=await createMember(demoTenantId,'client','Fictional document queue client');assertError(await post(f.payload,await issueTestSession(client)),403);
+    const outsider=await createMember(demoTenantId,'investigator','Fictional document queue outsider');assertError(await post(f.payload,await issueTestSession(outsider)),404);
+    const text=JSON.parse((await uploadEvidence(f.scope.caseId)).body);
+    assertError(await post({...f.payload,evidenceId:text.id}),409);
+    assertError(await post({...f.payload,evidenceId:text.id,idempotencyKey:randomUUID()}),409);
+    const large=Buffer.alloc(65537);const uploaded=await request('POST',`/api/cases/${f.scope.caseId}/evidence/binary`,context.demo!,{payload:{filename:'fictional-large.pdf',contentBase64:large.toString('base64'),expectedSha256:createHash('sha256').update(large).digest('hex'),sourceTime:'2026-01-01T00:00:00Z',method:'Fictional oversized document queue fixture',idempotencyKey:randomUUID()}});
+    assert.equal(uploaded.statusCode,200,uploaded.body);assertError(await post({...f.payload,evidenceId:JSON.parse(uploaded.body).id,idempotencyKey:randomUUID()}),409);
+  }finally{await f.app.close();}
+});
+
+test('real browser inspects durable unreviewed page references and removes stale display after original corruption',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+  const f=await documentFixture();try{
+    const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);assert.equal((await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result))?.status,'succeeded');
+    await withBrowserApp(async(b,origin)=>{
+      const ui=await binaryBrowserControls(b,origin,f.scope.caseId),label='Inspect unreviewed pages '+f.job.id.slice(0,8);
+      await eventually(async()=>(await ui.text()).includes(label),'document job listing');await ui.click(label);
+      await eventually(async()=>(await ui.text()).includes('Unreviewed document passages'),'document inspection');
+      const text=await ui.text();assert.ok(text.includes('Page 2 · #/texts/1 · extracted UTF-8 bytes [34, 67)'));assert.ok(text.includes('Completeness still needs human review.'));assert.ok(text.includes('origin BOTTOMLEFT'));
+      assert.equal(await b.evaluate("document.querySelectorAll('section[aria-label=\"Verified unreviewed document derivative\"] li').length"),2);
+      const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous,'document inspection reload');
+      await eventually(async()=>(await ui.text()).includes(label),'durable document restored');await ui.click(label);await eventually(async()=>(await ui.text()).includes('Unreviewed document passages'),'document reinspection');
+      const e=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,e.object_path),'Fictional corrupt original');
+      await ui.click(label);await eventually(async()=>(await ui.text()).includes('document derivative integrity verification failed'),'corrupt document denied');
+      assert.equal(await b.evaluate("document.querySelector('section[aria-label=\"Verified unreviewed document derivative\"]')===null"),true);
+    });
+  }finally{await f.app.close();}
 });

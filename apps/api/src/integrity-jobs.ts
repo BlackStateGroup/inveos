@@ -1,3 +1,4 @@
+import {documentKind,documentProfile,documentProfileDigest,makeDocumentDerivative,type DocumentContext,type DocumentResult} from './document-derivative.js';
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
@@ -9,7 +10,7 @@ import { makeTextDerivative, sha256, textConfiguration, textProcessor, verifyTex
 
 type Scope = {tenantId: string; caseId: string; jobId: string};
 type Services = {
-  pool: Pool; storageRoot: string; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
+  pool: Pool; storageRoot: string; documentLab?: boolean; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
   audit: (c: PoolClient, a: Actor, caseId: string, action: string, entityType: string, id: string, summary: string) => Promise<void>;
   findCase: (c: PoolClient, a: Actor, id: string, lock?: boolean) => Promise<unknown>;
 };
@@ -117,6 +118,7 @@ export async function dispatchIntegrityJobs(pool: Pool, root: string, scope: Dis
       await client.query("SET LOCAL lock_timeout = '2s'");
       await client.query("SET LOCAL statement_timeout = '5s'");
       const r=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2
+        AND kind IN ('original_sha256_v1','utf8_line_index_v1')
         AND (status='queued' OR (status='running' AND lease_until<=clock_timestamp()))
         ORDER BY created_at,id LIMIT 1 FOR UPDATE SKIP LOCKED`,[scope.tenantId,scope.caseId]);
       const row=r.rows[0];if(!row)return null;
@@ -155,6 +157,8 @@ async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure:
   });
 }
 export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {
+  const kind=await pool.query('SELECT kind FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',values(s));
+  if(kind.rows[0]?.kind===documentKind)return null; // Separate qualified worker required.
   const lease = await claimIntegrityJob(pool,s);
   if (!lease) return null;
   return processLeasedJob(pool,root,s,lease);
@@ -175,6 +179,38 @@ async function processLeasedJob(pool: Pool, root: string, s: Scope, lease: Lease
     }
   } catch { failure = 'original_unavailable'; }
   return finishProcessingJob(pool,s,lease.token,failure,output);
+}
+
+function documentContext(row:QueryResultRow):DocumentContext {
+  return {tenantId:row.tenant_id,caseId:row.case_id,jobId:row.job_id??row.id,evidenceId:row.evidence_id,
+    sourceDigest:row.source_digest.trim(),authorityVersion:row.authority_version};
+}
+/** Trusted attachment only. Worker context/profile are attestations, never browser inputs. */
+export async function finishDocumentJob(pool:Pool,root:string,s:Scope,token:string,result:DocumentResult) {
+  return inTransaction(pool,async client=>{
+    await client.query("SET LOCAL lock_timeout = '2s'");
+    await client.query("SET LOCAL statement_timeout = '5s'");
+    const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
+      AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE`,[...values(s),token]);
+    const row=found.rows[0];if(!row||row.kind!==documentKind)return null;
+    if(!await permitted(client,row))return terminal(client,s,'cancelled','scope_changed',token);
+    const source=(await client.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[s.tenantId,s.caseId,row.evidence_id])).rows[0];
+    let original:Buffer;
+    try {
+      original=await readOriginalBounded(root,source.object_path,65536);
+      if(source.original_kind!=='opaque_binary'||original.length!==source.byte_length||sha256(original)!==row.source_digest.trim()||source.digest.trim()!==row.source_digest.trim())throw new Error('Original mismatch');
+    } catch {return terminal(client,s,'failed','original_unavailable',token);}
+    let output;
+    try {output=makeDocumentDerivative(original,documentContext(row),result);}
+    catch {return terminal(client,s,'failed','document_result_invalid',token);}
+    // Final fenced transition occurs after original and output checks, within the same transaction.
+    const completed=await terminal(client,s,'succeeded',null,token);
+    if(!completed)return null;
+    await client.query(`INSERT INTO document_derivatives (tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,
+      profile,profile_digest,raw_bytes,raw_digest,output_bytes,output_digest) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,documentProfile,documentProfileDigest,result.raw,output.rawDigest,output.bytes,output.digest]);
+    return completed;
+  });
 }
 
 export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
@@ -217,11 +253,12 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   });
   app.post('/api/cases/:caseId/integrity-jobs', {preHandler: svc.requireCsrf, schema: {
     params: {type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
-    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1']}}},
+    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1',documentKind]}}},
   }}, async request => {
     const actor = request.actor!;
     const {caseId} = request.params as {caseId:string};
     const input = request.body as {evidenceId:string;idempotencyKey:string;kind?:string};
+    if(input.kind===documentKind&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
     return inTransaction(svc.pool,async client => {
       await svc.findCase(client,actor,caseId,true);
       const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
@@ -229,10 +266,11 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         if (old.rows[0].evidence_id !== input.evidenceId || old.rows[0].kind !== (input.kind ?? 'original_sha256_v1')) throw new ApiError(409,'Idempotency key already used.');
         return dto(old.rows[0]);
       }
-      const source = await client.query(`SELECT e.digest,e.original_kind,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
+      const source = await client.query(`SELECT e.digest,e.original_kind,e.byte_length,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
         WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active'`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
+      if(input.kind===documentKind&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>65536))throw new ApiError(409,'Document lab requires a bounded binary original.');
       const id = randomUUID();
       const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
@@ -264,6 +302,31 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         authorityVersion:row.authority_version,attempt:row.attempt,processor:row.processor,processorDigest:row.processor_digest.trim(),
         configuration:JSON.parse(row.configuration),configurationDigest:row.configuration_digest.trim(),runtime:row.runtime,
         derivativeDigest:row.output_digest.trim(),processedAt:row.processed_at,sourceTime:row.source_time,receivedAt:row.received_time,derivative};
+    });
+  });
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/document-derivative',{preHandler:svc.authenticate,schema:{params}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal derivatives only.');
+    const {caseId,jobId}=request.params as {caseId:string;jobId:string};
+    return inTransaction(svc.pool,async client=>{
+      await svc.findCase(client,actor,caseId,true);
+      const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time
+        FROM document_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
+        WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
+      if(!row)notFound();let output;
+      try {
+        const original=await readOriginalBounded(svc.storageRoot,row.object_path,65536);
+        if(original.length!==row.byte_length||row.original_kind!=='opaque_binary'||row.digest.trim()!==row.source_digest.trim()
+          ||row.profile!==documentProfile||row.profile_digest.trim()!==documentProfileDigest||sha256(row.raw_bytes)!==row.raw_digest.trim())throw new Error('Lineage mismatch');
+        const context=documentContext(row);
+        output=makeDocumentDerivative(original,context,{context,profileDigest:row.profile_digest.trim(),successful:true,raw:row.raw_bytes});
+        if(output.digest!==row.output_digest.trim()||!output.bytes.equals(row.output_bytes))throw new Error('Derivative mismatch');
+      } catch {throw new ApiError(409,'Original or document derivative integrity verification failed.');}
+      await svc.audit(client,actor,caseId,'document_derivative.read','integrity_job',jobId,'Verified unreviewed document derivative read');
+      return {jobId,caseId,evidenceId:row.evidence_id,status:'unreviewed_derivative',authorityVersion:row.authority_version,
+        sourceDigest:row.source_digest.trim(),attempt:row.attempt,profile:JSON.parse(row.profile),profileDigest:row.profile_digest.trim(),
+        rawDigest:row.raw_digest.trim(),derivativeDigest:row.output_digest.trim(),processedAt:row.processed_at,
+        sourceTime:row.source_time,receivedAt:row.received_time,derivative:output.derivative};
     });
   });
   for (const cancel of [false,true]) {

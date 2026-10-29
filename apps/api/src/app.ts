@@ -102,6 +102,7 @@ type AppOptions = {
   demoUserId: string;
   sessionTtlSeconds: number;
   sessionEpoch?: string;
+  documentLab?: boolean;
 };
 
 type AppRequest = FastifyRequest & { actor: Actor | null };
@@ -592,7 +593,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
 
-  registerIntegrityJobs(app, {pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
+  registerIntegrityJobs(app, {documentLab: options.documentLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,

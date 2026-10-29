@@ -123,3 +123,5 @@
 - [Bounded worker renewal](57_BOUNDED_JOB_RENEWAL.md) — live-token renewal with authority checks and a fixed attempt ceiling.
 
 - [Lease-aware process supervision](58_LEASED_PROCESS_SUPERVISION.md) — bounded first-party worker shutdown on renewal failure.
+
+- [Durable document results](59_DURABLE_DOCUMENT_RESULTS.md) — fenced native-result attachment and unreviewed page/region inspection.
