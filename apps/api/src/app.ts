@@ -1,6 +1,7 @@
 import {identityRoutes} from './identity-routes.js';
 import type {IdentityProvider} from './oidc.js';
 import type {OriginalStore} from './original-encryption.js';
+import {chronologyRows,registerChronology} from './chronology.js';
 import {sessionEpoch} from './session-epoch.js';
 import {registerUploads} from './uploads.js';
 import { randomBytes, randomUUID, createHash, timingSafeEqual } from 'node:crypto';
@@ -622,6 +623,19 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           || span.length !== quoteBytes.length || !span.equals(quoteBytes)) {
         throw new ApiError(409, 'The claim no longer matches its cited original.');
       }
+    },
+  });
+
+  registerChronology(app, {
+    pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,
+    source:async(client,actor,caseId,reference)=>{
+      const kase=await findCase(client,actor,caseId);
+      const selected=await buildReport(client,actor,caseId,reference.kind==='text_finding'?[reference.findingId]:[],reference.kind==='document_finding'?[reference.findingId]:[]);
+      const finding=reference.kind==='text_finding'?selected.findings.find(f=>f.id===reference.findingId):selected.documentFindings?.find(f=>f.id===reference.findingId);
+      if(!finding)notFound();
+      const authorityVersion='policy' in finding.source?finding.source.policy.authorityVersion:finding.source.authorityVersion;
+      if(kase.status!=='Active'||kase.authority_version!==authorityVersion)throw new ApiError(409,'The chronology source requires current case authority. Historical entries remain available.');
+      return finding;
     },
   });
 
@@ -1430,6 +1444,15 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         if(!('kind' in link))throw new ApiError(409,'Invalid document source type.');
         if(!report.investigation!.documentLinks){budget.add({documentLinks:[]},0,true);report.investigation!.documentLinks=[];}
         budget.add(link,0,report.investigation!.documentLinks.length>0);report.investigation!.documentLinks.push(link);
+      }
+      const chronology=await chronologyRows(client,actor,caseId);
+      if(chronology.length){
+        budget.add({chronology:[]},0,true);report.investigation.chronology=[];
+        for(const event of chronology){
+          const available=event.source.kind==='text_finding'?report.findings:report.documentFindings??[];
+          if(!available.some(f=>f.id===event.source.findingId))throw new ApiError(409,'Chronology references an unavailable finding. Resolve the source before freezing.');
+          budget.add(event,0,report.investigation.chronology.length>0);report.investigation.chronology.push(event);
+        }
       }
       return report;
   }

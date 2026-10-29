@@ -1181,7 +1181,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '033_provider_identity.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -3832,4 +3832,92 @@ test('real browser links and reinspects document reasoning, reloads decisions an
   await click('Withdraw source link '+link.id.slice(0,8));await b.evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)}+' form[aria-label="Withdraw document source link"] textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Fictional withdraw from active reasoning after reassessment.');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await click('Record source withdrawal');await eventually(async()=>(await ui.text()).includes('Withdrawn · Supporting material'),'visible withdrawal with preserved original link');
   assertError(await reviseWork({...f.hypothesis,version:2},workEdit({...f.hypothesis,version:2},{status:'Supported'})),422);
  });}finally{await f.app.close();}
+});
+
+async function chronologyFixture(){
+ const f=await reportFixture(),report=JSON.parse((await request('GET',`/api/cases/${f.kase.id}/report`,context.demo!)).body) as ReportDraft;
+ const input={id:randomUUID(),title:'Fictional disputed packing date',account:'The fictional source alleges a packing event; corroboration remains open.',status:'disputed',source:{kind:'text_finding',findingId:report.findings[0]!.id},time:{precision:'month',start:'2026-01',end:null,timezone:'',note:'The alleged account only establishes a calendar month, not an instant.'}};
+ return {...f,input,base:`/api/cases/${f.kase.id}/chronology`};
+}
+
+test('chronology preserves uncertain competing accounts, immutable corrections and independently verified frozen exports',async()=>{
+ const f=await chronologyFixture(),post=await request('POST',f.base,context.demo!,{payload:f.input});assert.equal(post.statusCode,200,post.body);const event=JSON.parse(post.body);
+ assert.equal(event.interpretation,'recorded_account_not_finding');assert.deepEqual(event.time,f.input.time);
+ const unknown={...f.input,id:randomUUID(),title:'Fictional competing undated account',time:{...f.input.time,precision:'unknown',start:null}};
+ assert.equal((await request('POST',f.base,context.demo!,{payload:unknown})).statusCode,200);
+ const list=JSON.parse((await request('GET',f.base,context.demo!)).body);assert.equal(list.order,'recorded_order_not_event_sequence');assert.deepEqual(list.items.map((e:{time:{precision:string}})=>e.time.precision),['month','unknown']);
+ const source=JSON.parse((await request('GET',f.base+'/'+event.id+'/source',context.demo!)).body);assert.equal(source.source.sourceTime,f.evidence.sourceTime);assert.equal(source.source.receivedTime,f.evidence.receivedTime);assert.equal(source.source.quote.includes('2026-01-12'),true);
+ const receipt=JSON.parse((await request('POST',f.url,context.demo!,{payload:{idempotencyKey:randomUUID()}})).body),frozen=await request('GET',f.url+'/'+receipt.id,context.demo!);assert.equal(frozen.statusCode,200,frozen.body);
+ const {id:omit,...fields}=f.input;assert.ok(omit);
+ const edit={...fields,expectedVersion:1,status:'withdrawn',reason:'Fictional correction retains the original account.'};
+ const revised=await request('POST',f.base+'/'+event.id+'/revise',context.demo!,{payload:edit});assert.equal(revised.statusCode,200,revised.body);assert.equal(JSON.parse(revised.body).version,2);
+ assertError(await request('POST',f.base+'/'+event.id+'/revise',context.demo!,{payload:edit}),409);
+ assert.equal(JSON.parse((await request('POST',f.base,context.demo!,{payload:f.input})).body).status,'withdrawn');
+ const history=JSON.parse((await request('GET',f.base+'/'+event.id+'/history',context.demo!)).body);assert.deepEqual(history.map((r:{event:{version:number}})=>r.event.version),[2,1]);assert.equal(history[1].event.status,'disputed');
+ await assert.rejects(context.schemaAdminPool!.query('UPDATE chronology_revisions SET reason=$1 WHERE event_id=$2',['Changed',event.id]),/append.only|immutable/i);
+ await context.app!.close();context.app=await createAppInstance();assert.equal((await request('GET',f.url+'/'+receipt.id,context.demo!)).body,frozen.body);
+ const file=join(context.storageRoot!,'fictional-chronology.json');await writeFile(file,frozen.body);
+ const verifier=fileURLToPath(new URL('../../../tools/verify_report.py',import.meta.url));
+ const result=await promisify(execFile)('python3',[verifier,file,'--expected-sha256',receipt.sha256]);assert.equal(JSON.parse(result.stdout).chronologyEventsChecked,2);
+ const changed=JSON.parse(frozen.body);changed.investigation.chronology[0].source.findingId=randomUUID();await writeFile(file,JSON.stringify(changed));await assert.rejects(promisify(execFile)('python3',[verifier,file]));
+ const audit=await context.pool!.query("SELECT count(*)::int n FROM audit_events WHERE case_id=$1 AND action LIKE 'chronology.%'",[f.kase.id]);assert.equal(audit.rows[0].n,3);
+});
+
+test('chronology denies missing CSRF, other cases, client roles, revoked access, stale authority and corrupted sources',async()=>{
+ const f=await chronologyFixture();assertError(await request('POST',f.base,context.demo!,{payload:f.input,csrfHeader:false}),403);
+ const outsider=await createMember(demoTenantId,'investigator','Fictional chronology outsider'),session=await issueTestSession(outsider);
+ assertError(await request('GET',f.base,session),404);assertError(await request('POST',f.base,session,{payload:f.input}),404);
+ const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional chronology foreign agency']);const foreignId=await createMember(tenant,'reviewer','Fictional chronology foreign reviewer'),foreign=await issueTestSession(foreignId,tenant);
+ for(const suffix of ['', '/sources','/'+f.input.id+'/history','/'+f.input.id+'/source'])assertError(await request('GET',f.base+suffix,foreign),404);
+ assertError(await request('POST',f.base,foreign,{payload:f.input}),404);
+ const other=await createCase();await approveAuthority(other.id);const bad=await request('POST',`/api/cases/${other.id}/chronology`,context.demo!,{payload:f.input});assert.ok([404,422].includes(bad.statusCode),bad.body);
+ const client=await createMember(demoTenantId,'client','Fictional chronology client');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,client]);const cs=await issueTestSession(client);assertError(await request('GET',f.base,cs),403);assertError(await request('POST',f.base,cs,{payload:f.input}),403);
+ const saved=await request('POST',f.base,context.demo!,{payload:f.input});assert.equal(saved.statusCode,200,saved.body);
+ const original=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.evidence.id])).rows[0];await writeFile(resolve(context.storageRoot!,original.object_path),'Fictional damaged source');
+ assertError(await request('GET',f.base+'/'+f.input.id+'/source',context.demo!),409);assertError(await request('POST',f.base,context.demo!,{payload:{...f.input,id:randomUUID()}}),409);
+ const {id,...fields}=f.input;assert.equal((await request('POST',f.base+'/'+id+'/revise',context.demo!,{payload:{...fields,status:'withdrawn',expectedVersion:1,reason:'Source unavailable; retain the historical record.'}})).statusCode,200);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);
+ for(const suffix of ['', '/'+id+'/history','/'+id+'/source','/sources'])assertError(await request('GET',f.base+suffix,context.demo!),404);
+ const fresh=await chronologyFixture();await approveAuthority(fresh.kase.id);assertError(await request('POST',fresh.base,context.demo!,{payload:fresh.input}),409);
+});
+
+test('chronology document sources freeze into independently checked derivative packages and reject withdrawn correspondence',async()=>{
+ const f=await documentReportFixture();try{
+  const base=`/api/cases/${f.scope.caseId}/chronology`,input={id:randomUUID(),title:'Fictional document account',account:'A fictional derived passage alleges an event; not an established fact.',status:'alleged',source:{kind:'document_finding',findingId:f.decision.id},time:{precision:'range',start:'2026-10-25T01:30:00+01:00',end:'2026-10-25T01:00:00Z',timezone:'Original offsets retained',note:'Overlapping clocks across the stated offset transition.'}};
+  const save=await request('POST',base,context.demo!,{payload:input});assert.equal(save.statusCode,200,save.body);
+  const frozen=await request('POST',f.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(frozen.statusCode,200,frozen.body);const receipt=frozen.json();
+  const exported=await request('GET',`${f.revisionsUrl}/${receipt.id}/document-package`,context.demo!);assert.equal(exported.statusCode,200,exported.body);
+  const path=join(context.storageRoot!,'fictional-chronology-document-package.json'),verifier=fileURLToPath(new URL('../../../tools/verify_document_package.py',import.meta.url));await writeFile(path,exported.body);
+  const checked=await promisify(execFile)('python3',[verifier,path,'--expected-report-sha256',receipt.sha256]);assert.equal(JSON.parse(checked.stdout).chronologyEventsChecked,1);
+  const replacement={...f.reviewInput,id:randomUUID(),previousReviewId:f.reviewInput.id,decision:'rejected',reason:'Fictional chronology source comparison withdrawn.',originalCompared:false};assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:replacement})).statusCode,200);
+  assertError(await request('GET',base+'/'+input.id+'/source',context.demo!),409);
+  assertError(await request('POST',base,context.demo!,{payload:{...input,id:randomUUID()}}),409);
+  assert.equal(JSON.parse((await promisify(execFile)('python3',[verifier,path])).stdout).chronologyEventsChecked,1);
+ }finally{await f.app.close();}
+});
+
+test('chronology validates precision through the actual API and rolls back mutations if audit storage fails',async()=>{
+ const f=await chronologyFixture();
+ const valid=[['unknown',null,null],['day','2024-02-29',null],['day','2026-10-25',null],['month','2026-01',null],['instant','2026-10-25T01:30:00+01:00',null],['instant','2026-10-25T01:30:00+00:00',null],['range','2026-10-25T01:30:00+01:00','2026-10-25T01:00:00Z']];
+ const invalid=[['unknown','2026-01',null],['day','2026-02-29',null],['day','2026-04-31',null],['day','2026-01-01T00:00:00Z',null],['month','2026-1',null],['month','2026-13',null],['instant','2026-01-01T12:00:00',null],['instant','2026-01-01T24:00:00Z',null],['instant','2026-01-01T12:00:00-00:00',null],['instant','2026-01-01T12:00:00+14:01',null],['range','2026-10-25T01:30:00Z','2026-10-25T01:45:00+01:00'],['range','2026-01-01',null]];
+ for(const [allowed,cases] of [[true,valid],[false,invalid]] as const)for(const [precision,start,end] of cases){const response=await request('POST',f.base,context.demo!,{payload:{...f.input,id:randomUUID(),time:{...f.input.time,precision,start,end}}});assert.equal(response.statusCode,allowed?200:422,response.body);}
+ await context.schemaAdminPool!.query("CREATE FUNCTION deny_chronology_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action LIKE 'chronology.%' THEN RAISE EXCEPTION 'fictional audit failure'; END IF; RETURN NEW; END $$");await context.schemaAdminPool!.query('CREATE TRIGGER deny_chronology_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_chronology_audit()');
+ try{assertError(await request('POST',f.base,context.demo!,{payload:f.input}),500);assert.equal((await context.pool!.query('SELECT count(*)::int n FROM chronology_events WHERE id=$1',[f.input.id])).rows[0].n,0);}finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_chronology_audit ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION deny_chronology_audit()');}
+});
+
+test('real browser records uncertain chronology, corrects it, reloads history and inspects the source',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await chronologyFixture();await withBrowserApp(async(b,origin)=>{
+  const ui=await binaryBrowserControls(b,origin,f.kase.id);await ui.click('Timeline');await eventually(async()=>(await ui.text()).includes('Record an alleged event'),'chronology screen');await ui.click('Record an alleged event');
+  await eventually(async()=>await b.evaluate<boolean>('Boolean(document.querySelector(\'form[aria-label="Chronology account"]\'))'),'chronology form');
+  const fill=async(values:Record<string,string>)=>{await b.evaluate(`(()=>{const form=document.querySelector('form[aria-label="Chronology account"]');for(const [name,value] of Object.entries(${JSON.stringify(values)})){const input=form.elements.namedItem(name);input.value=value;input.dispatchEvent(new Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));}})()`);};
+  const title='Fictional uncertain browser event';await fill({title,account:'Fictional account pending corroboration.',status:'disputed',precision:'month',start:'2026-01',end:'',timezone:'',note:'Only the calendar month was stated.',source:'text_finding:'+f.input.source.findingId});await ui.click('Save alleged event');
+  await eventually(async()=>(await ui.text()).includes('Correct '+title),'saved chronology');assert.ok((await ui.text()).includes('month · 2026-01'));
+  await ui.click('Correct '+title);await eventually(async()=>await b.evaluate<boolean>('Boolean(document.querySelector(\'textarea[name="reason"]\'))'),'correction form');await fill({precision:'unknown',start:'',note:'Fictional correction: even the month is disputed.',reason:'Fictional contrary account requires an unknown date.'});await ui.click('Save account correction');await eventually(async()=>(await ui.text()).includes('disputed · v2'),'saved correction');
+  const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous&&(await ui.text()).includes('Correct '+title),'persisted chronology reload');
+  await ui.click('History: '+title);await eventually(async()=>(await ui.text()).includes('Version 1: Account recorded'),'history retained');await ui.click('Inspect source: '+title);await eventually(async()=>(await ui.text()).includes('Source-recorded time:'),'verified source times');
+  assert.ok((await ui.text()).includes(f.evidence.sourceTime));assert.ok((await ui.text()).includes('unknown · Unknown'));
+  await b.evaluate('document.querySelector(\'[aria-label="Chronology correction history"] details:last-child\').open=true');
+  const artifact=fileURLToPath(new URL('../../../output/evals/chronology-desktop.png',import.meta.url));await mkdir(resolve(artifact,'..'),{recursive:true});const screenshot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(artifact,Buffer.from(screenshot.data,'base64'));
+  await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth <= window.innerWidth+1'));
+ });
 });

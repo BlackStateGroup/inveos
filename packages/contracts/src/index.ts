@@ -52,6 +52,13 @@ export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & {kind: 'documen
 export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkItem; actor: string; reason: string; at: string};
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
+export type AllegedTime = {precision: 'instant' | 'day' | 'month' | 'range' | 'unknown'; start: string | null; end: string | null; timezone: string; note: string};
+export type ChronologySource = {kind: 'text_finding' | 'document_finding'; findingId: string};
+export type ChronologyInput = {id: string; title: string; account: string; time: AllegedTime; source: ChronologySource; status: 'alleged' | 'disputed' | 'withdrawn'};
+export type ChronologyEvent = ChronologyInput & {caseId: string; version: number; createdBy: string; createdAt: string; recordedAt: string; interpretation: 'recorded_account_not_finding'};
+export type ChronologyEdit = Omit<ChronologyInput, 'id'> & {expectedVersion: number; reason: string};
+export type ChronologyRevision = {event: ChronologyEvent; actor: string; reason: string; at: string};
+
 export type AuthorityInput = {
   purpose: string;
   lawfulBasis: string;
@@ -140,6 +147,7 @@ export type ReportDraft = {
   }>;
   investigation: {
     status: 'working_context_not_findings';
+    chronology?: ChronologyEvent[];
     objectives: WorkItem[];
     questions: WorkItem[];
     hypotheses: WorkItem[];
