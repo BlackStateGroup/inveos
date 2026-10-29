@@ -652,7 +652,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
 
-  registerInterviews(app, {pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit});
+  registerInterviews(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);if(row.original_kind!=='original_utf8')throw new ApiError(422,'A preserved supplied transcript text original is required.');const bytes=await verifiedBytes(options.storageRoot,row);return {bytes,digest:row.digest.trim(),authorityVersion:row.authority_version,sourceTime:row.source_time,receivedTime:iso(row.received_time),filename:row.filename};}});
 
   app.post(
     '/api/session/start',

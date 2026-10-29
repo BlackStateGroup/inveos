@@ -1,3 +1,5 @@
+import {parseSuppliedTranscript,suppliedSegments} from './supplied-transcript.js';
+import {collectionOpen,type LifecycleCase} from './case-lifecycle.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient } from 'pg';
@@ -5,7 +7,7 @@ import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
 
-type Services={pool:Pool;authenticate:(request:FastifyRequest)=>Promise<void>;requireCsrf:(request:FastifyRequest)=>Promise<void>;findCase:(client:PoolClient,actor:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(client:PoolClient,actor:Actor,caseId:string,action:string,entityType:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
+type Services={pool:Pool;authenticate:(request:FastifyRequest)=>Promise<void>;requireCsrf:(request:FastifyRequest)=>Promise<void>;findCase:(client:PoolClient,actor:Actor,id:string,lock?:boolean)=>Promise<LifecycleCase>;original:(client:PoolClient,actor:Actor,caseId:string,id:string)=>Promise<{bytes:Buffer;digest:string;authorityVersion:number;sourceTime:string;receivedTime:string;filename:string}>;audit:(client:PoolClient,actor:Actor,caseId:string,action:string,entityType:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
 const uuid={type:'string',pattern:'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'} as const;
 const caseParams={type:'object',additionalProperties:false,required:['caseId'],properties:{caseId:uuid}} as const;
 const segment={type:'object',additionalProperties:false,required:['id','startMs','endMs','speakerLabel','speakerUncertain','text'],properties:{id:uuid,startMs:{type:'integer',minimum:0,maximum:86400000},endMs:{type:'integer',minimum:1,maximum:86400000},speakerLabel:{type:'string',minLength:1,maxLength:120},speakerUncertain:{type:'boolean'},text:{type:'string',minLength:1,maxLength:10000}}} as const;
@@ -18,11 +20,12 @@ export function registerInterviews(app:FastifyInstance,services:Services):void {
     if(!textOk(input.title,240)||input.segments.some(s=>!textOk(s.speakerLabel,120)||!textOk(s.text,10000)||s.endMs<=s.startMs))throw new ApiError(422,'Enter bounded transcript segments with a valid time range.');
     const hash=createHash('sha256').update(JSON.stringify(input)).digest('hex');
     return inTransaction(services.pool,async client=>{
-      await services.findCase(client,actor,caseId,true);
-      const source=(await client.query('SELECT id,digest,authority_version FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND status=\'Verified\'',[actor.tenantId,caseId,input.evidenceId])).rows[0];if(!source)notFound();
+      const kase=await services.findCase(client,actor,caseId,true),source=await services.original(client,actor,caseId,input.evidenceId);
+      if(!collectionOpen(kase)||kase.authority_version!==source.authorityVersion)throw new ApiError(409,'Current authority and an open collection stage are required for a new transcript.');
+      const raw=parseSuppliedTranscript(source.bytes);if(JSON.stringify(raw)!==JSON.stringify(suppliedSegments(input.segments)))throw new ApiError(422,'Raw segments must exactly match the preserved supplied transcript.');
       const existing=(await client.query('SELECT * FROM interview_transcripts WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,input.id])).rows[0];
       if(existing){if(existing.created_by!==actor.userId||existing.request_hash!==hash)throw new ApiError(409,'This transcript identifier is already in use.');return {id:existing.id,caseId,title:existing.title,evidenceId:existing.evidence_id,interpretation:'raw_transcript_not_a_finding'};}
-      await client.query('INSERT INTO interview_transcripts(tenant_id,case_id,id,evidence_id,evidence_digest,authority_version,title,request_hash,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[actor.tenantId,caseId,input.id,input.evidenceId,source.digest,source.authority_version,input.title,hash,actor.userId]);
+      await client.query('INSERT INTO interview_transcripts(tenant_id,case_id,id,evidence_id,evidence_digest,authority_version,title,request_hash,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[actor.tenantId,caseId,input.id,input.evidenceId,source.digest,source.authorityVersion,input.title,hash,actor.userId]);
       for(const [ordinal,s] of input.segments.entries())await client.query('INSERT INTO interview_transcript_segments(tenant_id,case_id,transcript_id,id,ordinal,start_ms,end_ms,speaker_label,speaker_uncertain,raw_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[actor.tenantId,caseId,input.id,s.id,ordinal,s.startMs,s.endMs,s.speakerLabel,s.speakerUncertain,s.text]);
       await services.audit(client,actor,caseId,'interview.created','interview_transcript',input.id,'Raw transcript recorded with speaker uncertainty',{evidenceId:input.evidenceId,segments:input.segments.length});
       return {id:input.id,caseId,title:input.title,evidenceId:input.evidenceId,interpretation:'raw_transcript_not_a_finding'};

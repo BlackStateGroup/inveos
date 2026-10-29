@@ -1083,11 +1083,12 @@ test('real browser filters personal assignments, opens the correct case and clea
 
 
 test('source-linked transcript preserves raw segments and appends bounded speaker corrections', async () => {
+  await context.app!.close();context.app=await createAppInstance();
   context.demo = await issueTestSession(demoUserId);
   const kase = await createCase();
   assert.equal((await approveAuthority(kase.id)).statusCode, 200);
-  const evidence = parseBody<Evidence>(await uploadEvidence(kase.id));
-  const transcriptId = randomUUID(), segmentId = randomUUID();
+  const transcriptId=randomUUID(),segmentId=randomUUID(),segments=[{id:segmentId,startMs:0,endMs:4200,speakerLabel:'Speaker A',speakerUncertain:true,text:'The fictional dispatch record may have been copied later.'}],text=JSON.stringify({format:'inveos.supplied_transcript.v1',segments});
+  const evidence=parseBody<Evidence>(await uploadEvidence(kase.id,context.demo!,evidenceInput({filename:'fictional-supplied-interview.txt',text,expectedSha256:digest(text)})));
   const create = await request('POST', `/api/cases/${kase.id}/interviews`, context.demo!, {payload:{
     id:transcriptId,evidenceId:evidence.id,title:'Fictional supplier interview',
     segments:[{id:segmentId,startMs:0,endMs:4200,speakerLabel:'Speaker A',speakerUncertain:true,text:'The fictional dispatch record may have been copied later.'}],
@@ -1096,7 +1097,7 @@ test('source-linked transcript preserves raw segments and appends bounded speake
   const saved = await request('GET', `/api/cases/${kase.id}/interviews/${transcriptId}`, context.demo!);
   assert.equal(saved.statusCode,200,saved.body);
   assert.equal(saved.json().segments[0].raw.speakerUncertain,true);
-  const corrected=await request('POST',`/api/cases/${kase.id}/interviews/${transcriptId}/segments/${segmentId}/corrections`,context.demo!,{payload:{expectedVersion:0,speakerLabel:'Interviewee',speakerUncertain:false,text:'The fictional dispatch record may have been copied later.',reason:'Clarified the speaker after replaying the fictional audio.'}});
+  const corrected=await request('POST',`/api/cases/${kase.id}/interviews/${transcriptId}/segments/${segmentId}/corrections`,context.demo!,{payload:{expectedVersion:0,speakerLabel:'Interviewee',speakerUncertain:false,text:'The fictional dispatch record may have been copied later.',reason:'Clarified the supplied speaker label; no audio alignment is claimed.'}});
   assert.equal(corrected.statusCode,200,corrected.body);
   assertError(await request('POST',`/api/cases/${kase.id}/interviews/${transcriptId}/segments/${segmentId}/corrections`,context.demo!,{payload:{expectedVersion:0,speakerLabel:'Interviewee',speakerUncertain:false,text:'Different fictional transcript.',reason:'Stale correction must not overwrite history.'}}),409);
   const current=await request('GET',`/api/cases/${kase.id}/interviews/${transcriptId}`,context.demo!);
