@@ -12,6 +12,10 @@ on:
       - 'tools/audit_native_wheels.py'
       - 'tools/audit_runtime_image.py'
       - 'tools/experiment_native_pdf.py'
+      - 'tools/experiment_pdf_render.py'
+      - 'tools/run_pdf_render_fixture.py'
+      - 'tools/pdf_render_limits.py'
+      - 'tests/test_pdf_render_limits.py'
       - 'tools/run_native_pdf_fixture.py'
       - 'tools/prepare_document_worker.py'
       - 'tools/run_native_document.py'
@@ -103,6 +107,8 @@ jobs:
         run: timeout 120s python3 tools/audit_runtime_image.py --output .research-cache/image-inspection.json
       - name: Run isolated fictional native PDF experiment
         run: timeout 240s python3 tools/experiment_native_pdf.py
+      - name: Render fictional original pages twice inside isolation
+        run: timeout 180s python3 tools/experiment_pdf_render.py
       - name: Qualify the selected runtime for this worker acceptance run
         run: |
           timeout 90s python3 - <<'PYTHON'

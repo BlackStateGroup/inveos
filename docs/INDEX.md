@@ -131,3 +131,5 @@
 - [Container crash deadline](61_CONTAINER_CRASH_DEADLINE.md) — independent execution limit after orchestrator loss.
 
 - [Document region map](62_DOCUMENT_REGION_MAP.md) — page-scaled unreviewed extraction locations.
+
+- [Isolated page rendering](63_ISOLATED_PAGE_RENDERING.md) — bounded original-page raster research.
