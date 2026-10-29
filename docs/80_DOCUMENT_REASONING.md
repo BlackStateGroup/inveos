@@ -10,9 +10,13 @@ Questions and competing hypotheses can attach supporting, contrary or context-on
 
 Each work revision snapshots the active source links behind that decision. Withdrawals are separate immutable records with actor/reason/time and audit; they never erase original links or previous decisions. Withdrawn links do not satisfy a future assessment. A withdrawn finding/relation cannot be silently reactivated by retrying its original identity. Use a new reviewed finding when fresh source review warrants it. Existing saved assessment statuses are historical, not live certification; the interface says so and inspection checks current validity.
 
+The retry receipt includes the existing withdrawal marker. A real PostgreSQL regression reproduced a delayed duplicate save omitting that marker, then passed after the retry lookup joined the immutable withdrawal record. Current source verification and the original link identity remain required.
+
 The browser lists/inspects current verified document passages, page regions, original fingerprints, separate source/receipt/processing times and independent review reasons. It opens the same original in the existing evidence/page-comparison workspace. Saving, reloading, inspecting and withdrawing share case state. Historical versions expose the exact source links used then.
 
 Frozen reports include active typed document links only for exported working context. All referenced findings must be in the reverified document finding set. The independent package verifier checks source type, tenant-bound exhibit lineage, case/item/finding joins, relation, reason, identity, time and duplicates. Old packages remain supported. Integrity does not authenticate an investigator or prove their inference. PDF working context remains distinct from findings; source-link joins are carried by the JSON/exhibit package, not silently added to the fixed PDF profile.
+
+PDF redaction creates a separate rendition; it does not change the frozen full report or its original exhibits. The PDF regression verifies that a redacted document finding and its link ID/reason do not appear in the visible streams or embedded model. A full document package still requires its own exact-package verification and explicit full-disclosure approval; a PDF grant does not grant that package. This addresses the review concern without silently removing material from an immutable full report.
 
 ## Reproduction and evidence
 

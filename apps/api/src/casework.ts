@@ -246,7 +246,9 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId,true);await findWork(client,actor,caseId,itemId);
       await services.verifyDocumentFinding(client,actor,caseId,input.findingId);
-      const old=(await client.query('SELECT * FROM case_work_links WHERE tenant_id=$1 AND case_id=$2 AND (id=$3 OR (item_id=$4 AND document_finding_id=$5 AND relation=$6))',[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation])).rows[0];
+      const old=(await client.query(`SELECT l.*,w.reason AS withdrawal_reason,w.created_by AS withdrawn_by,w.created_at AS withdrawn_at
+        FROM case_work_links l LEFT JOIN case_work_link_withdrawals w ON w.tenant_id=l.tenant_id AND w.case_id=l.case_id AND w.link_id=l.id
+        WHERE l.tenant_id=$1 AND l.case_id=$2 AND (l.id=$3 OR (l.item_id=$4 AND l.document_finding_id=$5 AND l.relation=$6))`,[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation])).rows[0];
       if(old){
         if(old.item_id!==itemId||old.document_finding_id!==input.findingId||old.relation!==input.relation||old.reason!==input.reason||old.created_by!==actor.userId)throw new ApiError(409,'A different source link already exists.');
         return displayWorkLink(old);

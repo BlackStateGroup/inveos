@@ -3781,6 +3781,9 @@ test('document reasoning links preserve typed identity, assessment source histor
   const packaged=await request('GET',url+'/document-package',context.demo!);assert.equal(packaged.statusCode,200,packaged.body);const file=join(context.storageRoot!,'fictional-reasoning-package.json');await writeFile(file,packaged.rawPayload);
   const verified=await promisify(execFile)('python3',[fileURLToPath(new URL('../../../tools/verify_document_package.py',import.meta.url)),file]);assert.equal(JSON.parse(verified.stdout).documentWorkLinksChecked,1);
   await context.app!.close();context.app=await createAppInstance();const workspace=parseBody<Workspace>(await request('GET','/api/workspace',context.demo!));assert.equal(workspace.workLinks.filter(l=>l.id===f.link.id).length,1);
+  const withdrawn=await request('POST',f.url+'/'+f.link.id+'/withdraw',context.demo!,{payload:{reason:'Fictional withdrawal before a delayed duplicate save.'}});assert.equal(withdrawn.statusCode,200,withdrawn.body);
+  const retried=await request('POST',f.url,context.demo!,{payload:f.link});assert.equal(retried.statusCode,200,retried.body);
+  const afterWithdrawal=parseBody<Workspace>(await request('GET','/api/workspace',context.demo!));assert.deepEqual(retried.json(),afterWithdrawal.workLinks.find(l=>l.id===f.link.id));assert.deepEqual(retried.json().withdrawal,withdrawn.json());
   await assert.rejects(context.schemaAdminPool!.query('DELETE FROM case_work_links WHERE id=$1',[f.link.id]),/append.only/i);
  }finally{await f.app.close();}
 });
