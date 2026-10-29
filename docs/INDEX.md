@@ -185,3 +185,5 @@
 - [90 — Case lifecycle and collection fencing](90_CASE_LIFECYCLE.md)
 
 - [91 — Supplied transcript lineage](91_SUPPLIED_TRANSCRIPTS.md)
+
+- [92 — Case collaborators and ownership](92_CASE_ACCESS.md)
