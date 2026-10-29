@@ -1,3 +1,4 @@
+import {registerCaseSearch} from './case-search.js';
 import {identityRoutes} from './identity-routes.js';
 import type {IdentityProvider} from './oidc.js';
 import type {OriginalStore} from './original-encryption.js';
@@ -626,6 +627,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   });
 
+  registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerChronology(app, {
     pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,
     source:async(client,actor,caseId,reference)=>{
