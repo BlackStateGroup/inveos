@@ -13,36 +13,41 @@ from research.document_processing.contract import Context,canonical,digest
 from research.document_processing.native_boundary import build_envelope,cite_envelope
 
 
-def experiment():
+def prepare_bundle(bundle):
     wheels=ROOT/'.research-cache/docling-locked-cp312'
     expected=json.loads((ROOT/'research/runtime_artifacts/docling-native-cp312.json').read_text())['artifacts']
     actual=audit_directory(wheels)
     require({r['filename']:r['sha256'] for r in actual}=={r['filename']:r['sha256'] for r in expected},'Runtime inventory mismatch')
+    manifest=snapshot_source(ROOT/'.research-cache/sources/docling-project/docling',bundle/'source')
+    # Expand already hash-verified wheels as data, never install/import on
+    # the host. The private tree is mounted read-only into the container.
+    exact=ROOT/'.research-cache/docling-exact/docling_slim-2.142.1-py3-none-any.whl'
+    receipt=json.loads((ROOT/'research/runtime_artifacts/docling-build-receipt.json').read_text())
+    require(hashlib.sha256(exact.read_bytes()).hexdigest()==receipt['builds'][0]['wheelSha256'],'Exact-source wheel digest mismatch')
+    verify_built_wheel(exact.read_bytes(),manifest)
+    runtime=bundle/'runtime';runtime.mkdir()
+    total=0
+    for r in actual:
+        selected=exact if r['name']=='docling-slim' else wheels/r['filename']
+        with zipfile.ZipFile(selected) as archive:
+            for member in archive.infolist():
+                if member.is_dir():continue
+                require('.data/' not in member.filename and not member.filename.endswith('.pth'),'Unsupported wheel install mapping')
+                require(not stat.S_ISLNK(member.external_attr>>16),'Wheel symlink rejected')
+                total+=member.file_size
+                require(member.file_size<=128*1024*1024 and total<=512*1024*1024,'Runtime expansion bound exceeded')
+                target=runtime/member.filename
+                target.parent.mkdir(parents=True,exist_ok=True)
+                with target.open('xb') as stream:stream.write(archive.read(member))
+                target.chmod(0o444)
+    return manifest
+
+
+def experiment():
     qualification=run_probe(IMAGE,runtime=True)
     with tempfile.TemporaryDirectory(dir=ROOT/'.research-cache',prefix='native-pdf-') as directory:
         bundle=Path(directory).resolve();bundle.chmod(0o755)
-        manifest=snapshot_source(ROOT/'.research-cache/sources/docling-project/docling',bundle/'source')
-        # Expand already hash-verified wheels as data, never install/import on
-        # the host. The private tree is mounted read-only into the container.
-        exact=ROOT/'.research-cache/docling-exact/docling_slim-2.142.1-py3-none-any.whl'
-        receipt=json.loads((ROOT/'research/runtime_artifacts/docling-build-receipt.json').read_text())
-        require(hashlib.sha256(exact.read_bytes()).hexdigest()==receipt['builds'][0]['wheelSha256'],'Exact-source wheel digest mismatch')
-        verify_built_wheel(exact.read_bytes(),manifest)
-        runtime=bundle/'runtime';runtime.mkdir()
-        total=0
-        for r in actual:
-            selected=exact if r['name']=='docling-slim' else wheels/r['filename']
-            with zipfile.ZipFile(selected) as archive:
-                for member in archive.infolist():
-                    if member.is_dir():continue
-                    require('.data/' not in member.filename and not member.filename.endswith('.pth'),'Unsupported wheel install mapping')
-                    require(not stat.S_ISLNK(member.external_attr>>16),'Wheel symlink rejected')
-                    total+=member.file_size
-                    require(member.file_size<=128*1024*1024 and total<=512*1024*1024,'Runtime expansion bound exceeded')
-                    target=runtime/member.filename
-                    target.parent.mkdir(parents=True,exist_ok=True)
-                    with target.open('xb') as stream:stream.write(archive.read(member))
-                    target.chmod(0o444)
+        manifest=prepare_bundle(bundle)
         (bundle/'digital.pdf').write_bytes(digital_pdf());(bundle/'malformed.pdf').write_bytes(b'%PDF-1.4\nFICTIONAL malformed\n')
         for name,kinds in {'mixed':['text','raster'],'blank':['blank','text'],'raster':['raster'],'overpages':['text']*3}.items():
             (bundle/(name+'.pdf')).write_bytes(coverage_pdf(kinds))

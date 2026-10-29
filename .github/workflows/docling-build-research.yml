@@ -13,6 +13,11 @@ on:
       - 'tools/audit_runtime_image.py'
       - 'tools/experiment_native_pdf.py'
       - 'tools/run_native_pdf_fixture.py'
+      - 'tools/prepare_document_worker.py'
+      - 'tools/run_native_document.py'
+      - 'apps/api/src/container-worker.ts'
+      - 'apps/api/src/native-document-worker.ts'
+      - 'apps/api/test/native-worker.integration.ts'
       - 'research/document_processing/*.py'
       - 'tests/test_native_boundary.py'
       - 'tests/test_document_processing.py'
@@ -32,7 +37,24 @@ permissions:
 jobs:
   isolated-source-wheel:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -40,6 +62,17 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked first-party application dependencies and create test role
+        run: |
+          npm ci --no-audit --no-fund
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
       - name: Acquire exact source without executing it
         run: timeout 120s python3 tools/mine_sources.py --fetch docling-project/docling
       - name: Acquire only hash-locked build wheels without installation
@@ -70,5 +103,17 @@ jobs:
         run: timeout 120s python3 tools/audit_runtime_image.py --output .research-cache/image-inspection.json
       - name: Run isolated fictional native PDF experiment
         run: timeout 240s python3 tools/experiment_native_pdf.py
+      - name: Qualify the selected runtime for this worker acceptance run
+        run: |
+          timeout 90s python3 - <<'PYTHON'
+          import json
+          from pathlib import Path
+          from datetime import datetime,timezone
+          from tools.probe_worker_isolation import run_probe
+          from tools.build_docling_research import IMAGE
+          Path('.research-cache/worker-qualification.json').write_text(json.dumps({**run_probe(IMAGE,runtime=True),'checkedAt':datetime.now(timezone.utc).isoformat()}))
+          PYTHON
+      - name: Exercise leased native jobs against PostgreSQL and actual daemon failures
+        run: timeout 360s node --import tsx --test --test-concurrency=1 apps/api/test/native-worker.integration.ts
       - name: Keep all acquired and generated third-party files untracked
         run: git diff --exit-code

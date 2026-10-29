@@ -134,10 +134,10 @@ export async function dispatchIntegrityJobs(pool: Pool, root: string, scope: Dis
   }
   return {selected:results.length,stopReason,results};
 }
-export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'digest_mismatch' | null) {
+export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'digest_mismatch' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | null) {
   return finishProcessingJob(pool,s,token,failure);
 }
-type Failure = 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits';
+type Failure = 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed';
 async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure: Failure | null, output?: DerivativeOutput) {
   return inTransaction(pool, async client => {
     const r = await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
