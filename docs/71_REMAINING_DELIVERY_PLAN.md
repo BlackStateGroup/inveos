@@ -2,7 +2,7 @@
 
 Canonical execution plan, updated 29 October 2026. Requirements in [02_PRODUCT_REQUIREMENTS.md](02_PRODUCT_REQUIREMENTS.md) and [21_ENGINEERING_WORKPACKAGES.md](21_ENGINEERING_WORKPACKAGES.md) define scope across Cases, Field, Research, Intelligence, Evidence, Results, Client Portal and Agency Administration. The concise [current handoff](../BUILD_HANDOFF.md) records the exact resumable state. [Historical receipts](history/2026-10-29_DELIVERY_RECEIPTS.md) retain prior evidence without duplicating this plan.
 
-Main was freshly verified through merged PR #73 at `f64542a42fb0f52f87c575758e354d8a82ddcb4d`, including #68–#72 and research #2. Preserve concurrent reviewed changes. Draft #74 implements independent original custody. C1–C3 and R1–R3 from the earlier plan are incorporated through #67; historic draft labels do not mean those features are missing. New work remains reviewable and must not merge automatically.
+Main was freshly observed through externally merged PR #74 at `21e3e8042b422b0f8451e11500657206af3aad7b`, including #68–#73 and research #2. Preserve concurrent reviewed changes. The current branch retains post-merge exact receipts for incorporation with the next substantive increment. C1–C3 and R1–R3 from the earlier plan are incorporated through #67; historic draft labels do not mean those features are missing. New work remains reviewable and must not merge automatically.
 
 | Priority | Integrated journey and acceptance | Current evidence / remaining work |
 |---|---|---|
