@@ -16,8 +16,9 @@ CREATE TABLE interview_transcript_corrections (
  actor_id uuid NOT NULL REFERENCES users(id), actor_name text NOT NULL, recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY(tenant_id,case_id,transcript_id,segment_id,version), FOREIGN KEY(tenant_id,case_id,transcript_id,segment_id) REFERENCES interview_transcript_segments(tenant_id,case_id,transcript_id,id)
 );
-CREATE TRIGGER interview_transcript_no_delete BEFORE DELETE ON interview_transcripts FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
-CREATE TRIGGER interview_segment_raw_immutable BEFORE UPDATE OR DELETE ON interview_transcript_segments FOR EACH ROW WHEN (OLD.raw_text IS DISTINCT FROM NEW.raw_text OR OLD.speaker_label IS DISTINCT FROM NEW.speaker_label OR OLD.speaker_uncertain IS DISTINCT FROM NEW.speaker_uncertain OR OLD.start_ms IS DISTINCT FROM NEW.start_ms OR OLD.end_ms IS DISTINCT FROM NEW.end_ms OR OLD.ordinal IS DISTINCT FROM NEW.ordinal) EXECUTE FUNCTION reject_append_only_mutation();
+CREATE TRIGGER interview_transcript_immutable BEFORE UPDATE OR DELETE ON interview_transcripts FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
+CREATE TRIGGER interview_segment_no_delete BEFORE DELETE ON interview_transcript_segments FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
+CREATE TRIGGER interview_segment_raw_immutable BEFORE UPDATE ON interview_transcript_segments FOR EACH ROW WHEN (OLD.raw_text IS DISTINCT FROM NEW.raw_text OR OLD.speaker_label IS DISTINCT FROM NEW.speaker_label OR OLD.speaker_uncertain IS DISTINCT FROM NEW.speaker_uncertain OR OLD.start_ms IS DISTINCT FROM NEW.start_ms OR OLD.end_ms IS DISTINCT FROM NEW.end_ms OR OLD.ordinal IS DISTINCT FROM NEW.ordinal) EXECUTE FUNCTION reject_append_only_mutation();
 CREATE TRIGGER interview_correction_immutable BEFORE UPDATE OR DELETE ON interview_transcript_corrections FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
 GRANT SELECT,INSERT ON interview_transcripts,interview_transcript_segments,interview_transcript_corrections TO inveos_app;
 GRANT UPDATE(current_version) ON interview_transcript_segments TO inveos_app;
