@@ -106,6 +106,8 @@ export default function App(){
     create:async input=>{await api(`/cases/${active.id}/work`,input);await refresh();setToast('Case record saved.');},
     revise:async(id,input)=>{await api(`/cases/${active.id}/work/${id}/revise`,input);await refresh();setToast('Revision saved. Previous versions remain in history.');},
     link:async(id,input)=>{await api(`/cases/${active.id}/work/${id}/links`,input);await refresh();setToast('Source link verified and saved.');},
+    documentLink:async(id,input)=>{await api(`/cases/${active.id}/work/${id}/document-links`,input);await refresh();setToast('Reviewed document source linked. Working assessments remain separate from findings.');},
+    withdrawDocumentLink:async(itemId,linkId,reason)=>{await api(`/cases/${active.id}/work/${itemId}/document-links/${linkId}/withdraw`,{reason});await refresh();setToast('Source withdrawn from current reasoning; original link and decisions remain in history.');},
     history:id=>api(`/cases/${active.id}/work/${id}/history`),
     refresh,
   }};

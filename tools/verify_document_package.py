@@ -129,6 +129,42 @@ def native_derivative(raw, context):
                          'disposition': 'needs_page_review' if missing else 'unreviewed_text', 'completeExtractionVerified': False}}
 
 
+def verify_document_work_links(report):
+    """Validate frozen reasoning joins, without certifying an investigator's inference."""
+    context = report.get('investigation')
+    if not isinstance(context, dict) or 'documentLinks' not in context:
+        return 0  # Backwards-compatible packages predate typed reasoning links.
+    require(context.get('status') == 'working_context_not_findings', 'Working context must remain separate')
+    links = context['documentLinks']
+    require(isinstance(links, list) and len(links) <= 1000, 'Working source link limit')
+    items = {}
+    for name in ('objectives', 'questions', 'hypotheses', 'blockers'):
+        rows = context.get(name)
+        require(isinstance(rows, list) and len(rows) <= 1000, 'Invalid working context')
+        for item in rows:
+            identifier(item['id'])
+            require(item['caseId'] == report['case']['id'] and item['id'] not in items, 'Working context scope or duplicate')
+            items[item['id']] = item
+    findings = {f['id'] for f in report['documentFindings']}
+    seen, relations = set(), set()
+    for link in links:
+        fields(link, 'id caseId itemId kind findingId relation reason createdBy createdAt')
+        for field in ('id', 'caseId', 'itemId', 'findingId', 'createdBy'):
+            identifier(link[field])
+        require(link['caseId'] == report['case']['id'] and link['itemId'] in items, 'Working link case or item mismatch')
+        require(link['kind'] == 'document_finding' and link['findingId'] in findings, 'Working link finding mismatch')
+        require(link['relation'] in ('supports', 'contradicts', 'context'), 'Invalid working relation')
+        reason = link['reason']
+        require(isinstance(reason, str) and reason.strip() and len(reason) <= 3000
+                and not re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', reason), 'Invalid working source reason')
+        timestamp(link['createdAt'])
+        key = (link['itemId'], link['findingId'], link['relation'])
+        require(link['id'] not in seen and key not in relations, 'Duplicate working source')
+        seen.add(link['id'])
+        relations.add(key)
+    return len(links)
+
+
 def verify_exhibit(f, exhibit, case_id):
     fields(exhibit, 'findingId candidateCreatedBy originalBase64 rawBase64 derivativeBase64 citationBase64 reviewBase64 claimBase64 decisionBase64')
     require(f['kind'] == 'derived_document' and exhibit['findingId'] == f['id'], 'Finding identity')
@@ -247,12 +283,13 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
             if source['id'] in sources:
                 require(same(source, sources[source['id']]), 'Conflicting document original metadata')
             sources[source['id']] = source
+        working_links = verify_document_work_links(report)
         tenants = {verify_exhibit(f, e, case_id) for f, e in zip(findings, exhibits)}
         require(len(tenants) == 1, 'Mixed tenant lineage')
     except (KeyError, TypeError, IndexError, AttributeError, UnicodeError, OverflowError, RecursionError, StopIteration) as exc:
         raise InvalidReport('Malformed document package') from exc
     return {'status': 'integrity_checks_passed', 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
-            'caseId': case_id, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
+            'caseId': case_id, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
             'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
             'releaseStatus': 'draft_not_released', 'limitations': 'Consistency only; no parser execution, source truth, reviewer authentication, current server policy, signature or release certification. Trust report and package fingerprints through a separate channel.'}
 
