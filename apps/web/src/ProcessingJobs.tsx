@@ -12,7 +12,7 @@ import {Panel,Notice} from './ui';
 type Job={id:string;caseId:string;evidenceId:string;kind:string;status:string;attempt:number;authorityVersion:number;sourceDigest:string;failureCode:string|null};
 type Event={id:string;status:string;attempt:number;failureCode:string|null;recordedAt:string};
 type Page={items:Job[];nextBefore:string|null};
-export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string;evidence:Evidence[]}){
+export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onDenied}:{caseId:string;csrf:string;evidence:Evidence[];requestedJobId?:string;onSource?:(id:string)=>void;onDenied?:()=>Promise<unknown>}){
   const [source,setSource]=useState(evidence[0]?.id||''),[kind,setKind]=useState<JobKind>('original_sha256_v1'),[pending,setPending]=useState<PendingJob|null>(null);
   const [rows,setRows]=useState<Job[]>([]),[next,setNext]=useState<string|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(true);
   const [inspection,setInspection]=useState<InspectedDerivative|null>(null),[linePage,setLinePage]=useState(0);
@@ -20,13 +20,20 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
   const [document,setDocument]=useState<InspectedDocument|null>(null);
   const [history,setHistory]=useState<{jobId:string;items:Event[];nextAfter:string|null}|null>(null);
   const alive=useRef(true),locked=useRef(false),base=`/api/cases/${caseId}/integrity-jobs`;
-  async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const r=await fetch(url,{credentials:'same-origin',signal});const value=await r.json();if(!r.ok)throw new Error(value.error||'Processing history unavailable.');return value;}
-  useEffect(()=>{alive.current=true;const controller=new AbortController();
-    void get<Page>(base,controller.signal).then(p=>{if(!controller.signal.aborted){setRows(p.items);setNext(p.nextBefore);}})
+  async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const value=await r.json();if(!r.ok){if([401,403,404].includes(r.status)&&alive.current){setRows([]);setNext(null);setInspection(null);setDocument(null);setRaster(null);setHistory(null);setPending(null);await onDenied?.();}throw new Error(value.error||'Processing history unavailable.');}return value;}
+  useEffect(()=>{alive.current=true;setDocument(null);setInspection(null);setRaster(null);setHistory(null);setBusy(true);const controller=new AbortController();
+    void get<Page>(base,controller.signal).then(async p=>{if(controller.signal.aborted)return;setRows(p.items);setNext(p.nextBefore);
+      if(requestedJobId){
+        const job=await get<Job>(base+'/'+requestedJobId,controller.signal);
+        if(job.id!==requestedJobId||job.caseId!==caseId||job.status!=='succeeded'||!['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind))throw new Error('Selected extraction is unavailable.');
+        const checked=await inspectDocumentDerivative(await get<unknown>(base+'/'+job.id+'/document-derivative',controller.signal),job);
+        if(!controller.signal.aborted){setSource(job.evidenceId);onSource?.(job.evidenceId);setDocument(checked);setHistory(null);setRows(old=>old.some(v=>v.id===job.id)?old:[job,...old]);}
+      }
+    })
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
     void jobRequestScope(csrf,caseId).then(scope=>{if(!controller.signal.aborted)setPending(pendingJob(window.sessionStorage,scope));}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});
     return()=>{alive.current=false;controller.abort();};
-  },[base,csrf,caseId]);
+  },[base,csrf,caseId,requestedJobId]);
   async function act(operation:()=>Promise<void>){if(locked.current)return;locked.current=true;setBusy(true);setError('');setMessage('');setInspection(null);setDocument(null);setRaster(null);setLinePage(0);
     try{await operation();}catch(e){if(alive.current)setError((e as Error).message);}finally{locked.current=false;if(alive.current)setBusy(false);}}
   async function load(older=false){const p=await get<Page>(`${base}${older&&next?`?before=${next}`:''}`);if(!alive.current)return;
