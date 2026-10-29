@@ -1,0 +1,13 @@
+# Case search and private views acceptance — 29 October 2026
+
+Implementation `09bf99c9ba1bf8397935ad848aaaac355f79e4e8`, PR #78, based on merged #77 (`29cc31d3e88fd8d8c646a248c5d01725745314ba`). [Checks 40928543100](https://github.com/BlackStateGroup/inveos/actions/runs/40928543100), job 123640495843, passed **268 Node and 116 Python tests, zero failures/skips**, lint, all type checks, web build, foundation validation and existing worker-host isolation probes. No parser performance claim is made by this increment.
+
+The four added actual PostgreSQL tests cover distinct stored record kinds including document claims/findings, literal/Unicode search, bounded pagination, private ownership, tenant/case/client denial, revoked membership, CSRF, immutable filter history, conflicting edits, withdrawal retry and atomic audit rollback. The synthetic 5,000-short-note SQL fixture's first page took 11 ms on that hosted run (10 ms in the earlier local focused run); this single observation is not representative large-document or capacity acceptance.
+
+The new sandboxed Chrome journey uses the actual built app and HTTP API to search, create/revise a private view, reload it, withdraw it, inspect retained versions and clear results after membership removal. It passes at 1440px and checks horizontal overflow at 390px. The [retained desktop render](assets/case-search-desktop.png) was inspected: phrase/type/status controls, typed account, withdrawn view and three history entries are visible without overlap. The existing 18 browser journeys also passed.
+
+Source/privacy review checked all new routes and SQL branches, membership/role checks, owner scoping, request bounds, literal parameterisation, pagination, server-only audit writes, DB column grants and append-only history. Search uses POST bodies and no-store responses; private filter text is not copied into shared audit summaries. No new dependency, research source or external service was introduced. This agent review is not independent professional/security/privacy approval.
+
+Local combined evidence: 249 Node passed with 19 browser checks skipped, 116 Python passed, lint/types/build/foundation passed. Local Chrome isolation is denied; no weakening flag was used. Hosted evidence closes the browser execution gap. The initial local SQL row/column ambiguity was corrected before publishing the tested implementation.
+
+Remaining scope and reproduction are explicit in [docs/85](../85_CASE_SEARCH_VIEWS.md). Search matches stored records; it does not reverify bytes or elevate allegations into findings. Product completion, representative large cases, actual provider/MFA, native devices and production approval remain unmet.
