@@ -37,9 +37,11 @@ python3 tools/verify_report_pdf.py internal-report.pdf \
   --expected-report-sha256 <trusted-report-sha256>
 ```
 
-Local lint, type checks, production build, five focused Node tests, foundation validation and all 102 Python tests pass. The local host has no configured PostgreSQL or browser, so migration/API/browser claims await the hosted Checks run and are not marked complete here.
+Local lint, type checks, production build, five focused Node tests, foundation validation and all 102 Python tests pass. The local host has no configured PostgreSQL or browser, so those results are claimed only from the hosted evidence below.
 
-The database scenario covers concurrent stable creation, independent verification, redaction leakage, listing/restart, role boundaries, append-only enforcement, stored-byte corruption, changed retries, later correspondence withdrawal and historical rendition access. Hosted evidence will be recorded only after the exact implementation revision passes.
+The database scenario covers concurrent stable creation, independent verification, redaction leakage, listing/restart, role boundaries, append-only enforcement, stored-byte corruption, changed retries, later correspondence withdrawal and historical rendition access. The browser scenario deliberately loses a committed response, reloads and recovers the same rendition, verifies and downloads its exact bytes, independently verifies them and embeds the PDF in sandboxed Chrome before capturing the rendered surface.
+
+Draft [PR #67](https://github.com/BlackStateGroup/inveos/pull/67) passed [Checks #184](https://github.com/BlackStateGroup/inveos/actions/runs/40886264854), job 123490692003, at implementation commit `ac8477f93cb0272c3be72c3fcd966c3c879c47f8`, tree `03c9b449923158b94d3458af0079c9fb07de728e`: 228 Node tests and 102 Python tests, zero failures/skips, plus lint, types, production build, reference flow, actual PostgreSQL migration/API and sandboxed-browser PDF recovery/rendering, independent verifier execution and host-isolation probes. The first hosted attempt exposed a workspace-relative verifier path and a readiness assertion hidden inside a closed disclosure element; both tests were corrected without weakening application controls or assertions.
 
 ## Rollback and remaining R4 work
 
