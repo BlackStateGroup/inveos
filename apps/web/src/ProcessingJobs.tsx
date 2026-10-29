@@ -12,21 +12,32 @@ import {Panel,Notice} from './ui';
 type Job={id:string;caseId:string;evidenceId:string;kind:string;status:string;attempt:number;authorityVersion:number;sourceDigest:string;failureCode:string|null};
 type Event={id:string;status:string;attempt:number;failureCode:string|null;recordedAt:string};
 type Page={items:Job[];nextBefore:string|null};
-export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string;evidence:Evidence[]}){
+export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onDenied}:{caseId:string;csrf:string;evidence:Evidence[];requestedJobId?:string;onSource?:(id:string)=>void;onDenied?:()=>Promise<unknown>}){
   const [source,setSource]=useState(evidence[0]?.id||''),[kind,setKind]=useState<JobKind>('original_sha256_v1'),[pending,setPending]=useState<PendingJob|null>(null);
   const [rows,setRows]=useState<Job[]>([]),[next,setNext]=useState<string|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(true);
   const [inspection,setInspection]=useState<InspectedDerivative|null>(null),[linePage,setLinePage]=useState(0);
   const [raster,setRaster]=useState<InspectedRaster|null>(null);
   const [document,setDocument]=useState<InspectedDocument|null>(null);
+  const documentRegion=useRef<HTMLElement|null>(null),focusRequested=useRef(false);
+  useEffect(()=>{if(document&&focusRequested.current){focusRequested.current=false;documentRegion.current?.scrollIntoView({block:'start'});documentRegion.current?.focus({preventScroll:true});}},[document]);
   const [history,setHistory]=useState<{jobId:string;items:Event[];nextAfter:string|null}|null>(null);
   const alive=useRef(true),locked=useRef(false),base=`/api/cases/${caseId}/integrity-jobs`;
-  async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const r=await fetch(url,{credentials:'same-origin',signal});const value=await r.json();if(!r.ok)throw new Error(value.error||'Processing history unavailable.');return value;}
-  useEffect(()=>{alive.current=true;const controller=new AbortController();
-    void get<Page>(base,controller.signal).then(p=>{if(!controller.signal.aborted){setRows(p.items);setNext(p.nextBefore);}})
+  async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const value=await r.json();if(!r.ok){if([401,403,404].includes(r.status)&&alive.current){setRows([]);setNext(null);setInspection(null);setDocument(null);setRaster(null);setHistory(null);setPending(null);await onDenied?.();}throw new Error(value.error||'Processing history unavailable.');}return value;}
+  useEffect(()=>{alive.current=true;setDocument(null);setInspection(null);setRaster(null);setHistory(null);setBusy(true);const controller=new AbortController();
+    void get<Page>(base,controller.signal).then(async p=>{if(controller.signal.aborted)return;setRows(p.items);setNext(p.nextBefore);
+      if(requestedJobId)await inspectRequested(controller.signal);
+    })
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
     void jobRequestScope(csrf,caseId).then(scope=>{if(!controller.signal.aborted)setPending(pendingJob(window.sessionStorage,scope));}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});
     return()=>{alive.current=false;controller.abort();};
-  },[base,csrf,caseId]);
+  },[base,csrf,caseId,requestedJobId]);
+  async function inspectRequested(signal?:AbortSignal){
+    if(!requestedJobId)return;
+    const job=await get<Job>(base+'/'+requestedJobId,signal);
+    if(job.id!==requestedJobId||job.caseId!==caseId||job.status!=='succeeded'||!['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind))throw new Error('Selected extraction is unavailable.');
+    const checked=await inspectDocumentDerivative(await get<unknown>(base+'/'+job.id+'/document-derivative',signal),job);
+    if(alive.current&&!signal?.aborted){focusRequested.current=true;setSource(job.evidenceId);onSource?.(job.evidenceId);setDocument(checked);setHistory(null);setRows(old=>old.some(v=>v.id===job.id)?old:[job,...old]);}
+  }
   async function act(operation:()=>Promise<void>){if(locked.current)return;locked.current=true;setBusy(true);setError('');setMessage('');setInspection(null);setDocument(null);setRaster(null);setLinePage(0);
     try{await operation();}catch(e){if(alive.current)setError((e as Error).message);}finally{locked.current=false;if(alive.current)setBusy(false);}}
   async function load(older=false){const p=await get<Page>(`${base}${older&&next?`?before=${next}`:''}`);if(!alive.current)return;
@@ -73,7 +84,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       {pending&&<p role="status">Recover the previous request before queuing another operation. Original: {pending.evidenceId}; operation: {pending.kind}.</p>}
       <p className="small muted">Queueing does not run the worker. Recovery lasts for this tab and sign-in; inspect job history after losing either.</p>
     </form>
-    <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh processing jobs</button>
+    <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh processing jobs</button>{requestedJobId&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectRequested())}>Retry searched extraction</button>}
     {error&&<p role="alert" className="form-error">{error} Refresh to retry.</p>}
     <p role="status">{busy?'Loading processing jobs…':message||(!rows.length?'No processing jobs for this case.':'')}</p>
     <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='tesseract_scan_lab_v1'?'Scanned PDF OCR lab':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
@@ -97,7 +108,7 @@ export function ProcessingJobs({caseId,csrf,evidence}:{caseId:string;csrf:string
       <button className="secondary" disabled={linePage===0} onClick={()=>setLinePage(p=>p-1)}>Previous lines</button>
       <button className="secondary" disabled={(linePage+1)*100>=inspection.lines.length} onClick={()=>setLinePage(p=>p+1)}>Next lines</button>
     </section>}
-    {document&&<section aria-label="Verified unreviewed document derivative">
+    {document&&<section ref={documentRegion} tabIndex={-1} aria-label="Verified unreviewed document derivative">
       <h3>{document.method==='ocr'?'Unreviewed OCR words':'Unreviewed document passages'}</h3>{document.method==='ocr'&&<Notice>OCR may misread words, numbers and reading order. Compare each selected occurrence with the original page before independent review.</Notice>}<Notice>Extracted text and coordinates need comparison with the original PDF. This inspection does not approve a citation, clear quarantine or establish complete extraction.</Notice>
       <p>Job {document.jobId} · evidence {document.evidenceId} · authority version {document.authorityVersion}</p>
       <p>{document.pageCount} original pages · processed {document.processedAt}</p>

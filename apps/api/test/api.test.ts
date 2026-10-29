@@ -1,4 +1,5 @@
-import {createServer,request as proxyRequest} from 'node:http';
+import {forwardBrowserApi} from './support/browser-proxy.js';
+import {createServer} from 'node:http';
 import {launchBrowser,eventually} from './support/browser.js';
 import {uploadBinaryChunks} from '../../web/src/chunkUpload.js';
 import {prepareBinary,binaryIntakeScope,sendBinaryRecoverably} from '../../web/src/binaryIntake.js';
@@ -2794,19 +2795,15 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
  });
 });
 
-type BrowserProxyProbe={epoch?:string;request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
+type BrowserProxyProbe={diagnostic?:(message:string)=>void;epoch?:string;request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
 async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,origin:string)=>Promise<void>,probe:BrowserProxyProbe={}){
- const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';
+ const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';const upstreams=new Set<ReturnType<typeof forwardBrowserApi>>();
  const server=createServer((req,res)=>{void(async()=>{
   const pathname=new URL(req.url!,'http://localhost').pathname;
   if(pathname.startsWith('/api/')){
    probe.request?.(pathname,req.method!);
-   const upstream=proxyRequest(apiAddress+req.url,{method:req.method,headers:req.headers},response=>{
-    const fault=probe.response?.(pathname,response.statusCode!);
-    // Consume an actual committed API response without delivering it to Chrome.
-    if(fault){response.resume();if(fault==='drop')res.destroy();return;}
-    res.writeHead(response.statusCode!,response.headers);response.pipe(res);
-   });upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;
+   const upstream=forwardBrowserApi(req,res,apiAddress+req.url,status=>probe.response?.(pathname,status));
+   upstreams.add(upstream);upstream.once('close',()=>upstreams.delete(upstream));return;
   }
   if(pathname==='/portal'||pathname==='/'){res.setHeader('content-type','text/html');res.end(await readFile(join(dist,'index.html')));return;}
   if(/^\/assets\/[A-Za-z0-9_.-]+\.(js|css)$/.test(pathname)){res.setHeader('content-type',pathname.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(join(dist,pathname.slice(1))));return;}
@@ -2819,7 +2816,7 @@ async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,o
   apiAddress=await app.listen({host:'127.0.0.1',port:0});browser=await launchBrowser();const b=browser;
   await b.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await run(b,origin);
- }finally{try{await browser?.close();}finally{try{await app.close();}finally{server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
+ }finally{try{probe.diagnostic?.('Closing browser');await browser?.close();probe.diagnostic?.('Browser closed');}finally{server.closeAllConnections();for(const upstream of upstreams)upstream.destroy();try{probe.diagnostic?.('Closing test API');await app.close();probe.diagnostic?.('Test API closed');}finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));probe.diagnostic?.('Proxy closed');}}}
 }
 
 test('real browser creates a case, enforces authority and restores versioned scope', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async t=>{
@@ -4300,7 +4297,11 @@ test('real browser records supplied capture context, reviews metadata, reloads c
  const f=await manualSourceFixture();await withBrowserApp(async(b,origin)=>{
   const ui=await binaryBrowserControls(b,origin,f.kase.id);await ui.click('Research');await eventually(async()=>(await ui.text()).includes('Manual source register'),'saved source register');
   const fill=async(form:string,values:Record<string,string|number>)=>b.evaluate(`(()=>{const f=document.querySelector('form[aria-label='+${JSON.stringify(JSON.stringify(form))}+']');for(const [name,value] of Object.entries(${JSON.stringify(values)})){const field=f.elements.namedItem(name);field.value=String(value);field.dispatchEvent(new Event(field.tagName==='SELECT'?'change':'input',{bubbles:true}));}})()`);
-  const select=(publisher:string)=>b.evaluate(`Array.from(document.querySelectorAll('.source-record-choice')).find(e=>e.textContent.includes(${JSON.stringify(publisher)})).click()`);
+  const select=async(publisher:string)=>{
+   await eventually(async()=>await b.evaluate<boolean>(`Array.from(document.querySelectorAll('.source-record-choice')).some(e=>e.textContent.includes(${JSON.stringify(publisher)})&&!e.matches(':disabled')&&e.getClientRects().length)`),'supplied source row ready: '+publisher);
+   await b.evaluate(`Array.from(document.querySelectorAll('.source-record-choice')).find(e=>e.textContent.includes(${JSON.stringify(publisher)})).click()`);
+   await eventually(async()=>await b.evaluate<boolean>(`document.querySelector('[aria-label="Selected source record"]')?.textContent.includes(${JSON.stringify(publisher)})===true&&!![...document.querySelectorAll('button')].find(e=>e.textContent==='Verify linked original'&&!e.matches(':disabled'))`),'selected source context loaded: '+publisher);
+  };
   await select(f.fields.publisher);await ui.click('Verify linked original');await eventually(async()=>(await ui.text()).includes('Original bytes match the recorded digest.'),'source bytes verified');await fill('Source metadata review',{reason:'Fictional metadata reviewed with supplied attribution and uncertain retrieval retained.'});await ui.click('Accept source record');await eventually(async()=>(await ui.text()).includes('Metadata record accepted'),'independent metadata decision');
   await ui.click('Record supplied capture');await eventually(async()=>await b.evaluate<boolean>('!!document.querySelector(\'form[aria-label="Manual source editor"]\')'),'capture form');await fill('Manual source editor',{...f.fields,evidenceId:f.evidence.id,publisher:'Fictional second supplied context'});
   await b.evaluate(`(()=>{const original=window.fetch;window.fetch=async(...args)=>{const r=await original(...args);if(String(args[0]).endsWith('/manual-sources')&&args[1]?.method==='POST'&&r.ok){window.fetch=original;throw new Error('Fictional lost source receipt');}return r;};})()`);await ui.click('Save source context');await eventually(async()=>(await ui.text()).includes('Fictional lost source receipt')&&!await b.evaluate<boolean>('document.querySelector(\'form[aria-label="Manual source editor"] fieldset\').disabled'),'lost receipt retains source editor');await ui.click('Save source context');await eventually(async()=>(await ui.text()).includes('2 records')&&!await b.evaluate<boolean>('!!document.querySelector(\'form[aria-label="Manual source editor"]\')'),'creation replay recovers one record');assert.equal((await context.pool!.query('SELECT count(*)::int n FROM manual_sources WHERE case_id=$1',[f.kase.id])).rows[0].n,2);
@@ -4396,7 +4397,7 @@ test('real browser records case closure and reopening with persistent history an
   await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=window.innerWidth+1'));
   await decide('Scope review','Fictional case reopened for fresh authority approval before any further collection.');await eventually(async()=>(await ui.text()).includes('Stage version 4.'),'scope review saved');assertError(await uploadEvidence(f.kase.id),409);assert.equal((await approveAuthority(f.kase.id)).statusCode,200);await click('Refresh case stage');await eventually(async()=>(await ui.text()).includes('Stage version 5.'),'new approved stage visible');t.diagnostic('Lifecycle browser: fresh authority visible');
   await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);await click('Refresh case stage');await eventually(async()=>!(await ui.text()).includes(f.kase.title)&&!(await ui.text()).includes('outstanding questions retained')&&await b.evaluate<boolean>(`![...document.querySelectorAll('[aria-label=\"Active case\"] option')].some(option=>option.value===${JSON.stringify(f.kase.id)})`),'revoked case and its stage history cleared');t.diagnostic('Lifecycle browser: revoked context cleared');
- }).catch(error=>{t.diagnostic('Lifecycle browser failure: '+String(error));throw error;});
+ },{diagnostic:message=>t.diagnostic('Lifecycle cleanup: '+message)}).catch(error=>{t.diagnostic('Lifecycle browser failure: '+String(error));throw error;});
  t.diagnostic('Lifecycle browser: cleanup complete');
 });
 
@@ -4670,4 +4671,76 @@ test('real browser records time, recovers a committed correction, reloads histor
   await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=window.innerWidth+1'));await click('Withdraw time entry');await fill({reason:'Fictional duplicate work note withdrawn while retaining every prior record.'});await click('Record time withdrawal');await eventually(async()=>(await ui.text()).includes('Withdrawn entry')&&(await ui.text()).includes('Time version 3')&&(await ui.text()).includes('Active time on this page: 0 minutes.'),'withdrawal and page total agree');assert.equal(await b.evaluate(`!![...document.querySelectorAll('[aria-label="Selected time entry"] button')].find(x=>x.textContent==='Correct time entry')`),false);
   await click('Record case time');await fill({description:'Fictional unsaved private time text.'});await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);await click('Refresh time records');await eventually(async()=>await b.evaluate<boolean>(`![...document.querySelectorAll('[aria-label="Active case"] option')].some(o=>o.value===${JSON.stringify(f.kase.id)})&&!document.querySelector('[aria-label="Selected time entry"]')&&!document.querySelector('form[aria-label="Case time decision"]')`)&&!(await ui.text()).includes('Fictional corrected browser work duration.'),'revoked time history and unsent editor cleared');
  });
+});
+
+async function searchableDocumentFixture(){
+ const f=await documentFixture(),searchUrl=`/api/cases/${f.scope.caseId}/search`;
+ const search=async(query='',after?:{kind:string;id:string})=>{const response=await request('POST',searchUrl,context.demo!,{payload:{query,kind:'document_text',status:'',...(after?{after}:{})}});assert.equal(response.statusCode,200,response.body);return response.json();};
+ const publish=async()=>{const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);assert.equal((await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result))?.status,'succeeded');};
+ return {...f,search,searchUrl,publish};
+}
+
+test('document text search distinguishes published extraction from findings and rechecks source integrity on inspection',async()=>{
+ const f=await searchableDocumentFixture();try{
+  assert.deepEqual((await f.search()).items,[]);await f.publish();
+  const found=await f.search('repeated passage');assert.equal(found.items.length,1);const hit=found.items[0];assert.equal(hit.id,f.job.id);assert.equal(hit.evidenceId,f.job.evidenceId);assert.equal(hit.status,'Unreviewed extracted text');assert.equal(hit.kind,'document_text');assert.ok(hit.excerpt.includes('FICTIONAL INVEOS repeated passage'));assert.ok(hit.excerpt.length<=260);
+  assert.equal((await f.search('REPEATED')).items.length,1);assert.equal((await f.search('%_')).items.length,0);assert.equal((await f.search("' OR 1=1 --")).items.length,0);
+  assert.equal((await request('POST',f.searchUrl,context.demo!,{payload:{query:'',kind:'document_finding',status:''}})).json().items.length,0);
+  const jobUrl=f.url.replace('/document-derivative','');assert.equal((await request('GET',jobUrl,context.demo!)).json().id,f.job.id);
+  const original=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];const path=join(context.storageRoot!,original.object_path);
+  await writeFile(path,Buffer.from('Fictional disputed stored bytes'));
+  assert.equal((await f.search('repeated')).items.length,1); // Search is retained metadata, never a byte-integrity attestation.
+  assertError(await request('GET',f.url,context.demo!),409);
+  await writeFile(path,f.bytes);assert.equal((await request('GET',f.url,context.demo!)).statusCode,200);
+  await context.app!.close();context.app=await createAppInstance();assert.equal((await f.search('repeated')).items[0].id,f.job.id);
+ }finally{await f.app.close();}
+});
+
+test('document search and exact job lookup enforce actual HTTP tenant, case, client and revoked-member boundaries',async()=>{
+ const f=await searchableDocumentFixture();try{
+  await f.publish();const base=await f.app.listen({host:'127.0.0.1',port:0}),jobUrl=f.url.replace('/document-derivative','');
+  const http=async(url:string,session=context.demo!,search=false,csrf=true)=>{const response=await fetch(base+url,{method:search?'POST':'GET',headers:{cookie:session.cookie,origin:localOrigin,...(search?{'content-type':'application/json',...(csrf?{'x-csrf-token':session.csrf}:{})}:{} )},...(search?{body:JSON.stringify({query:'repeated',kind:'document_text',status:''})}:{})});return {status:response.status,body:await response.json() as {items:Array<{id:string}>},cache:response.headers.get('cache-control')};};
+  assert.equal((await http(jobUrl)).status,200);assert.equal((await http(jobUrl)).cache,'no-store');assert.equal((await http(f.searchUrl,context.demo!,true)).body.items[0]!.id,f.job.id);
+  const client=await issueTestSession(await createMember(demoTenantId,'client','Fictional excluded extraction recipient')),outsider=await issueTestSession(await createMember(demoTenantId,'reviewer','Fictional unassigned extraction reviewer'));
+  const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional foreign extraction tenant']);const foreign=await issueTestSession(await createMember(tenant,'reviewer','Fictional foreign extraction reviewer'),tenant);
+  for(const [session,status] of [[client,403],[outsider,404],[foreign,404]] as const){assert.equal((await http(jobUrl,session)).status,status);assert.equal((await http(f.searchUrl,session,true)).status,status);}
+  const other=await createCase();assert.equal((await http(jobUrl.replace(f.scope.caseId,other.id))).status,404);assert.equal((await http(f.searchUrl.replace(f.scope.caseId,other.id),context.demo!,true)).body.items.length,0);
+  assert.equal((await http(f.searchUrl,context.demo!,true,false)).status,403);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.scope.caseId,demoUserId]);
+  assert.equal((await http(jobUrl)).status,404);assert.equal((await http(f.searchUrl,context.demo!,true)).status,404);
+ }finally{await f.app.close();}
+});
+
+test('document search traverses bounded pages without conflating repeated extraction identities',async()=>{
+ const f=await searchableDocumentFixture();try{
+  await f.publish();const ids=[f.job.id];
+  for(let i=0;i<50;i++){
+   const queued=await f.app.inject({method:'POST',url:`/api/cases/${f.scope.caseId}/integrity-jobs`,headers:{cookie:context.demo!.cookie,origin:localOrigin,'x-csrf-token':context.demo!.csrf},payload:{...f.payload,idempotencyKey:randomUUID()}});assert.equal(queued.statusCode,200,queued.body);const job=queued.json(),scope={...f.scope,jobId:job.id},lease=await claimIntegrityJob(context.pool!,scope);assert.ok(lease);assert.equal((await finishDocumentJob(context.pool!,context.storageRoot!,scope,lease.token,{...f.result,context:{...f.result.context,jobId:job.id}}))?.status,'succeeded');ids.push(job.id);
+  }
+  const first=await f.search('repeated'),second=await f.search('repeated',first.next);assert.equal(first.items.length,50);assert.equal(second.items.length,1);assert.equal(second.next,null);assert.deepEqual([...first.items,...second.items].map((v:{id:string})=>v.id).sort(),ids.sort());assert.equal(first.facets.find((v:{kind:string})=>v.kind==='document_text').count,51);
+  assert.equal((await request('GET',f.url.replace('/document-derivative',''),context.demo!)).json().id,f.job.id);
+ }finally{await f.app.close();}
+});
+
+test('real browser searches extracted text, opens the exact older job, reloads and clears revoked passages',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await searchableDocumentFixture();try{
+  await f.publish();for(let i=0;i<26;i++)assert.equal((await request('POST',`/api/cases/${f.scope.caseId}/integrity-jobs`,context.demo!,{payload:{...f.payload,kind:'original_sha256_v1',idempotencyKey:randomUUID()}})).statusCode,200);
+  assert.ok(!(await request('GET',`/api/cases/${f.scope.caseId}/integrity-jobs`,context.demo!)).json().items.some((job:{id:string})=>job.id===f.job.id));
+  await withBrowserApp(async(b,origin)=>{
+   const ui=await binaryBrowserControls(b,origin,f.scope.caseId),click=async(label:string)=>{await eventually(async()=>await b.evaluate<boolean>(`!![...document.querySelectorAll('button')].find(x=>x.textContent===${JSON.stringify(label)}&&!x.matches(':disabled')&&x.getClientRects().length)`),'document search action '+label);await ui.click(label);};
+   await click('Brief');await eventually(async()=>await b.evaluate<boolean>(`!!document.querySelector('input[name="caseQuery"]')`),'case search mounted');
+   await b.evaluate(`(()=>{const input=document.querySelector('input[name="caseQuery"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'repeated passage');input.dispatchEvent(new Event('input',{bubbles:true}));const select=document.querySelector('select[name="caseKind"]');select.value='document_text';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);await click('Search case records');await eventually(async()=>(await ui.text()).includes('Unreviewed extracted text'),'stored extraction results');
+   assert.ok(!(await ui.text()).includes('Recorded review'));
+   await b.evaluate(`document.querySelector('[aria-label="Case search results"]').scrollIntoView({block:'center'})`);
+   const artifact=fileURLToPath(new URL('../../../output/evals/document-search-desktop.png',import.meta.url));await mkdir(resolve(artifact,'..'),{recursive:true});const shot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(artifact,Buffer.from(shot.data,'base64'));
+   await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Verify and inspect extraction');button.focus();})()`);assert.equal(await b.evaluate<string>('document.activeElement?.textContent'),'Verify and inspect extraction');await b.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r',unmodifiedText:'\r'});await b.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});await eventually(async()=>await b.evaluate<boolean>(`location.hash.includes(${JSON.stringify('job='+f.job.id)})`),'keyboard selected extraction');await eventually(async()=>await b.evaluate<boolean>(`document.querySelector('[aria-label="Verified unreviewed document derivative"]')?.textContent.includes(${JSON.stringify(f.job.id)})===true`),'exact older extraction verified');
+   assert.ok(await b.evaluate<boolean>(`location.hash.includes(${JSON.stringify('job='+f.job.id)})`));
+   assert.equal(await b.evaluate<string>(`document.activeElement?.getAttribute('aria-label')`),'Verified unreviewed document derivative');
+   const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous&&await b.evaluate<boolean>(`document.querySelector('[aria-label="Verified unreviewed document derivative"]')?.textContent.includes(${JSON.stringify(f.job.id)})===true`),'exact extraction restored after reload');
+   const original=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0],path=join(context.storageRoot!,original.object_path);await writeFile(path,Buffer.from('Fictional corrupted original for browser inspection denial'));await click('Retry searched extraction');await eventually(async()=>(await ui.text()).includes('Original or document derivative integrity verification failed.')&&await b.evaluate<boolean>(`!document.querySelector('[aria-label="Verified unreviewed document derivative"]')`),'corrupt source prevents browser inspection');await writeFile(path,f.bytes);await click('Retry searched extraction');await eventually(async()=>await b.evaluate<boolean>(`document.querySelector('[aria-label="Verified unreviewed document derivative"]')?.textContent.includes(${JSON.stringify(f.job.id)})===true`),'verified retry restores searched extraction');
+   const inspected=fileURLToPath(new URL('../../../output/evals/document-search-inspection.png',import.meta.url));const inspectedShot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(inspected,Buffer.from(inspectedShot.data,'base64'));
+   await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=window.innerWidth+1'));
+   await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.scope.caseId,demoUserId]);await click('Refresh processing jobs');await eventually(async()=>!(await ui.text()).includes('FICTIONAL INVEOS repeated passage')&&await b.evaluate<boolean>(`![...document.querySelectorAll('[aria-label="Active case"] option')].some(x=>x.value===${JSON.stringify(f.scope.caseId)})`),'revoked extraction cleared');
+  });
+ }finally{await f.app.close();}
 });

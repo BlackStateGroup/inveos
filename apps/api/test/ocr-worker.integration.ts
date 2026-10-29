@@ -1,3 +1,4 @@
+import {forwardBrowserApi} from './support/browser-proxy.js';
 /** Actual isolated OCR, PostgreSQL, browser and verifier acceptance; research workflow only. */
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
@@ -6,7 +7,7 @@ import {mkdtemp,readFile,writeFile,rm,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {createServer,request as proxyRequest} from 'node:http';
+import {createServer} from 'node:http';
 import {createPool,runMigrations} from '../src/db.js';
 import {createApp} from '../src/app.js';
 import {encryptedOriginalStore} from '../src/original-encryption.js';
@@ -24,7 +25,8 @@ async function fixture(){
  const schema='ocr_test_'+randomUUID().replaceAll('-',''),admin=createPool(adminUrl,'public',2);await runMigrations(admin,schema);
  const pool=createPool(database,schema,6),owner=createPool(adminUrl,schema,2),storage=await mkdtemp('/tmp/inveos-ocr-originals-');
  const key=randomBytes(32),store=encryptedOriginalStore(join(storage,'objects'),'supplier-fictional',{['supplier-fictional']:key});
- const make=()=>createApp({pool,storageRoot:encryptedOriginalStore(join(storage,'objects'),'supplier-fictional',{['supplier-fictional']:key}),allowedOrigins:[origin],demoTenantId:tenant,demoUserId:user,sessionTtlSeconds:3600,documentLab:true});let app=await make();await app.ready();
+ let browserOrigin:string|undefined;
+ const make=()=>createApp({pool,storageRoot:encryptedOriginalStore(join(storage,'objects'),'supplier-fictional',{['supplier-fictional']:key}),allowedOrigins:[origin,...(browserOrigin?[browserOrigin]:[])],demoTenantId:tenant,demoUserId:user,sessionTtlSeconds:3600,documentLab:true});let app=await make();await app.ready();
  const started=await app.inject({method:'POST',url:'/api/session/start',headers:{origin},payload:{}});assert.equal(started.statusCode,200,started.body);const cookies=started.headers['set-cookie'];
  const demo={cookie:(Array.isArray(cookies)?cookies:[cookies]).filter(Boolean).map(c=>c!.split(';')[0]).join('; '),csrf:started.json().csrf};
  const request=(method:'GET'|'POST',url:string,payload?:object,session=demo)=>app.inject({method,url,headers:{cookie:session.cookie,origin,'x-csrf-token':session.csrf},...(payload?{payload}:{})});
@@ -33,16 +35,17 @@ async function fixture(){
  await ok('POST',`/api/cases/${caseId}/authority`,{purpose:'Fictional supplier investigation acceptance',lawfulBasis:'Synthetic no-personal-data exercise',scope:'Supplied fictional supplier records only',retentionDays:30,minimisation:'Fictional records and test sessions only'});
  async function member(role:'reviewer'|'investigator'|'client',assigned=true,memberTenant=tenant){const id=randomUUID();await owner.query('INSERT INTO users(id,display_name) VALUES($1,$2)',[id,'Fictional OCR '+role]);await owner.query('INSERT INTO memberships VALUES($1,$2,$3)',[memberTenant,id,role]);if(assigned)await owner.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[memberTenant,caseId,id]);const token=randomBytes(32).toString('base64url'),csrf=randomBytes(32).toString('base64url');await owner.query("INSERT INTO sessions(token_hash,id,csrf_hash,tenant_id,user_id,expires_at) VALUES($1,$2,$3,$4,$5,now()+interval '1 hour')",[sha256(token),randomUUID(),sha256(csrf),memberTenant,id]);return {id,cookie:`inveos_session=${token}; inveos_csrf=${csrf}`,csrf};}
  async function queue(bytes:Buffer,kind:string){const native=kind==='native_pdf_lab_v1';const evidence=await ok('POST',`/api/cases/${caseId}/evidence/binary`,{filename:native?'fictional-declaration.pdf':'fictional-scanned-register.pdf',contentBase64:bytes.toString('base64'),expectedSha256:sha256(bytes),sourceTime:native?'2026-10-25T00:00:00Z':'2026-09-01T00:00:00Z',method:'Supplied first-party fictional record; sourceTime is fixture record date, not ingest or scan time',idempotencyKey:randomUUID()});const job=await ok('POST',`/api/cases/${caseId}/integrity-jobs`,{evidenceId:evidence.id,idempotencyKey:randomUUID(),kind});return {scope:{tenantId:tenant,caseId,jobId:job.id},evidence,job};}
- return {pool,owner,storage,store,caseId,demo,request,ok,member,queue,get app(){return app;},restart:async()=>{await app.close();app=await make();await app.ready();},close:async()=>{await app.close();await pool.end();await owner.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(storage,{recursive:true,force:true});key.fill(0);}};
+ return {pool,owner,storage,store,caseId,demo,request,ok,member,queue,get app(){return app;},restart:async(extraOrigin?:string)=>{await app.close();browserOrigin=extraOrigin;app=await make();await app.ready();},close:async()=>{await app.close();await pool.end();await owner.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(storage,{recursive:true,force:true});key.fill(0);}};
 }
 
 async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:string,rasterJobId:string){
- const dist=join(root,'apps/web/dist');const api=await f.app.listen({host:'127.0.0.1',port:0});
+ const dist=join(root,'apps/web/dist');let api='';const upstreams=new Set<ReturnType<typeof forwardBrowserApi>>();
  const server=createServer((req,res)=>{void(async()=>{const path=new URL(req.url!,'http://localhost').pathname;
-  if(path.startsWith('/api/')){const upstream=proxyRequest(api+req.url,{method:req.method,headers:req.headers},r=>{res.writeHead(r.statusCode!,r.headers);r.pipe(res);});upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;}
+  if(path.startsWith('/api/')){const upstream=forwardBrowserApi(req,res,api+req.url);upstreams.add(upstream);upstream.once('close',()=>upstreams.delete(upstream));return;}
   if(path==='/'){res.setHeader('content-type','text/html');res.end(await readFile(join(dist,'index.html')));return;}
   if(/^\/assets\/[A-Za-z0-9_.-]+\.(js|css)$/.test(path)){res.setHeader('content-type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(join(dist,path.slice(1))));return;}res.statusCode=404;res.end();})().catch(()=>{res.statusCode=500;res.end();});});
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+(server.address() as {port:number}).port;let b:Awaited<ReturnType<typeof launchBrowser>>|undefined;
+ await f.restart(url);api=await f.app.listen({host:'127.0.0.1',port:0});
  try{b=await launchBrowser();const browser=b;await b.send('Network.enable');await b.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   for(const pair of f.demo.cookie.split('; ')){const at=pair.indexOf('=');await b.send('Network.setCookie',{name:pair.slice(0,at),value:pair.slice(at+1),url,path:'/',sameSite:'Strict',httpOnly:pair.startsWith('inveos_session=')});}
   // Navigation and reload can expose the new document before its body exists.
@@ -56,7 +59,14 @@ async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:stri
   await eventually(async()=>await browser.evaluate<boolean>(`(()=>{const img=document.querySelector('img[alt="Unreviewed rendered page 1"]');return !!img&&img.complete&&img.naturalWidth===612&&img.naturalHeight===792;})()`),'actual original-page raster decoded beside OCR');
   assert.ok(await b.evaluate<number>(`document.querySelectorAll('svg[aria-label="Passage overlay for page 1"] rect').length`)>0);
   await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Compare page 1 passage 1');if(!button)throw new Error('OCR region unavailable');button.click();})()`);await eventually(async()=>(await text()).includes('Selected #/texts/0'),'OCR region comparison selection');
- }finally{await b?.close();server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
+  await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Brief'&&b.getClientRects().length);button.click();})()`);
+  await eventually(async()=>await browser.evaluate<boolean>(`!!document.querySelector('input[name="caseQuery"]')`),'supplier case search');
+  await b.evaluate(`(()=>{const input=document.querySelector('input[name="caseQuery"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'60');input.dispatchEvent(new Event('input',{bubbles:true}));const select=document.querySelector('select[name="caseKind"]');select.value='document_text';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+  await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Search case records');button.click();})()`);
+  await eventually(async()=>{const error=await browser.evaluate<string>(`document.querySelector('form[aria-label="Case record search"]')?.parentElement.querySelector('.form-error')?.textContent||''`);if(error)throw new Error('Actual OCR browser search: '+error);return await browser.evaluate<boolean>(`[...document.querySelectorAll('[aria-label="Case search results"] article')].some(article=>article.textContent.includes(${JSON.stringify(jobId)}))`);},'actual OCR searchable result');
+  await b.evaluate(`(()=>{const article=[...document.querySelectorAll('[aria-label="Case search results"] article')].find(article=>article.textContent.includes(${JSON.stringify(jobId)}));[...article.querySelectorAll('button')].find(button=>button.textContent==='Verify and inspect extraction').click();})()`);
+  await eventually(async()=>await browser.evaluate<boolean>(`document.querySelector('[aria-label="Verified unreviewed document derivative"]')?.textContent.includes(${JSON.stringify(jobId)})===true`),'actual searched OCR reverified');
+ }finally{try{await b?.close();}finally{server.closeAllConnections();for(const upstream of upstreams)upstream.destroy();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}
 }
 
 test('actual isolated supplier originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery',{timeout:270000},async t=>{
@@ -74,6 +84,10 @@ test('actual isolated supplier originals progress through OCR, independent revie
    assert.equal((await f.pool.query('SELECT status FROM evidence WHERE id=$1',[job.evidence.id])).rows[0].status,'Quarantined');jobs.push({...job,d});
   }
   const ocr=jobs[0]!,digitalJob=await f.queue(digital,'native_pdf_lab_v1');assert.equal((await runNativeDocumentJob(f.pool,f.store,digitalJob.scope,{researchOnly:true,repositoryRoot:root,qualification:nativeQualification}))?.status,'succeeded');const native=await f.ok('GET',`/api/cases/${f.caseId}/integrity-jobs/${digitalJob.job.id}/document-derivative`);
+  const search=await f.ok('POST',`/api/cases/${f.caseId}/search`,{query:'60',kind:'document_text',status:''});
+  assert.deepEqual(search.items.map((hit:{id:string})=>hit.id).sort(),jobs.map(job=>job.job.id).sort());assert.ok(search.items.every((hit:{status:string})=>hit.status==='Unreviewed OCR text'));
+  const nativeSearch=await f.ok('POST',`/api/cases/${f.caseId}/search`,{query:'100',kind:'document_text',status:''});assert.equal(nativeSearch.items.length,1);assert.equal(nativeSearch.items[0].id,digitalJob.job.id);assert.equal(nativeSearch.items[0].status,'Unreviewed extracted text');
+  assert.equal((await f.request('POST',`/api/cases/${f.caseId}/search`,{query:'60',kind:'document_text',status:''},client)).statusCode,403);
   const rasterJob=await f.ok('POST',`/api/cases/${f.caseId}/integrity-jobs`,{evidenceId:ocr.evidence.id,idempotencyKey:randomUUID(),kind:'pdf_raster_lab_v1'});assert.equal((await runRasterDocumentJob(f.pool,f.store,{tenantId:tenant,caseId:f.caseId,jobId:rasterJob.id},{researchOnly:true,repositoryRoot:root,qualification:nativeQualification}))?.status,'succeeded');
   assert.equal((await f.request('GET',`/api/cases/${f.caseId}/integrity-jobs/${ocr.job.id}/document-derivative`,undefined,outsider)).statusCode,404);
   const foreignTenant=randomUUID();await f.owner.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[foreignTenant,'Fictional isolated OCR tenant']);const foreign=await f.member('reviewer',false,foreignTenant);assert.equal((await f.request('GET',`/api/cases/${f.caseId}/integrity-jobs/${ocr.job.id}/document-derivative`,undefined,foreign)).statusCode,404);assert.equal(await runOcrDocumentJob(f.pool,f.store,{...ocr.scope,tenantId:foreignTenant},{researchOnly:true,repositoryRoot:root,qualification}),null);
@@ -118,6 +132,6 @@ test('actual isolated supplier originals progress through OCR, independent revie
   await f.ok('POST',`/api/cases/${f.caseId}/disclosures/${grant.id}/revoke`,{reason:'Fictional explicit withdrawal after scripted recipient acknowledgement.'});assert.equal((await f.request('GET',portal,undefined,client)).statusCode,404);
   assert.deepEqual((await readdir(join(root,'.research-cache'))).filter(n=>n.startsWith('leased-document-')),[]);
   const stored=(await f.pool.query('SELECT object_path FROM evidence WHERE id=$1',[ocr.evidence.id])).rows[0];assert.match(stored.object_path,/\.bin\.enc$/);const sealed=await readFile(join(f.store.rootPath,stored.object_path));assert.equal(sealed.includes(scan),false);assert.deepEqual(await readOriginalBounded(f.store,stored.object_path,65536),scan);
-  t.diagnostic('Actual isolated supplier acceptance: '+JSON.stringify({encryptedOriginals:true,scanSha256:sha256(scan),digitalSha256:sha256(digital),ocrRawDigest:ocr.d.rawDigest,ocrDerivativeDigest:ocr.d.derivativeDigest,ocrWords:ocr.d.derivative.references.length,documentFindings:2,documentWorkLinks:6,competingHypothesesRemainProposed:true,questionClosureHistory:true,independentPackageVerified:true,independentPdfVerified:true,browserOcrReload:true,browserOriginalPageComparison:true,restrictedPdfDelivery:true,acknowledgementAndRevocation:true,cancelledAttachmentDenied:true,realProfessionalReview:false}));
+  t.diagnostic('Actual isolated supplier acceptance: '+JSON.stringify({encryptedOriginals:true,scanSha256:sha256(scan),digitalSha256:sha256(digital),ocrRawDigest:ocr.d.rawDigest,ocrDerivativeDigest:ocr.d.derivativeDigest,ocrWords:ocr.d.derivative.references.length,documentFindings:2,documentWorkLinks:6,competingHypothesesRemainProposed:true,questionClosureHistory:true,independentPackageVerified:true,independentPdfVerified:true,browserOcrReload:true,browserStoredExtractionSearch:true,browserOriginalPageComparison:true,restrictedPdfDelivery:true,acknowledgementAndRevocation:true,cancelledAttachmentDenied:true,realProfessionalReview:false}));
  }finally{await f.close();}
 });

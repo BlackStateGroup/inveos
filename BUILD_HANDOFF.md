@@ -8,7 +8,7 @@ The user authorises review, fixes, testing and suitable merges into main without
 
 ## Main and recent verified work
 
-Main now includes **PR #88**, merge `3e2bccc626aafdfc38138d848d321f8fe8dc5a3e`. Post-merge Checks 40964816601 passed (325 Node/120 Python, zero failures/skips). The last verified preceding main is #87 `be7ac55500645571f9839cf97d7b3e16c2233030`, Checks 40963157827 (318 Node/120 Python, zero failures/skips). Main #86 passed Checks 40958284392 (311/120, zero failures/skips). Main after #85 failed one discussion-browser readiness assertion; #86 fixed it. No false passing receipt is claimed for #85 main.
+Main now includes **PR #89**, merge `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; resulting-main Checks 40969884003 failed during lifecycle test shutdown. Last verified main is #88 `3e2bccc626aafdfc38138d848d321f8fe8dc5a3e`, where Checks 40964816601 passed (325 Node/120 Python, zero failures/skips). The last verified preceding main is #87 `be7ac55500645571f9839cf97d7b3e16c2233030`, Checks 40963157827 (318 Node/120 Python, zero failures/skips). Main #86 passed Checks 40958284392 (311/120, zero failures/skips). Main after #85 failed one discussion-browser readiness assertion; #86 fixed it. No false passing receipt is claimed for #85 main.
 
 Preserve these completed journeys; do not rebuild them from old draft labels:
 
@@ -36,7 +36,7 @@ Continue remaining criteria in docs/71. Near-term independent work: broaden the 
 
 Still open: actual provider/MFA/invitations, KMS/provider/WORM and database/derivative/report/backup encryption, authorised destruction/copy inventory, off-site/PITR/live recovery and credentials/offline coordination, representative performance, cited AI/media alignment, native encrypted iOS/Android capture with actual device/restart/airplane-mode/conflict/lost-device tests, contractor policy/workload/preferences, budgets/billing/support boundaries, and independent professional/security/privacy/legal/licence approvals. Local Chrome/worker isolation remains unavailable and must not be bypassed; hosted CI supplies actual sandboxed evidence. Blockers apply only to their step; continue independent authorised work.
 
-## Verified OCR adversity increment awaiting merge
+## Merged #89 OCR adversity increment
 
 Draft #89 at `a05e5c9f362c8552916349e8e0a737f34dc9a5a4` passed Checks 40968344381 (job 123778463949): **325 Node/124 Python, zero failures/skips, 28 browsers**. Research 40968344362 (job 123778463599) passed the actual isolated corpus, encrypted supplier/native/OCR/package/PDF/browser delivery, repeated raster and five daemon-failure tests. Source/privacy diff and complete retained JSON were reviewed. [Evaluation and machine receipt](docs/evals/2026-10-29-ocr-adversity.md), [contract](docs/95_OCR_ADVERSITY_CORPUS.md).
 
@@ -44,4 +44,19 @@ Twelve controlled fictional English conditions, twice each: 14 attempts produced
 
 Earlier Checks 40965628365 timed out in the unchanged lifecycle browser test. Added step diagnostics; subsequent full Checks 40967439153 and 40968344381 passed all lifecycle steps without extending deadlines. The intermittent timeout is not root-caused or claimed fixed. Earlier Research 40965628205 had truncated logs and is not a verified per-condition receipt.
 
-Evidence-only head and resulting main still require checks before a merge receipt is recorded. Independent draft #90 on `feat/document-text-search` adds scoped stored native/OCR text search and exact job inspection; its browser/native acceptance is running. Integrate validated #89 before final #90 verification. Product requirements and external gates remain incomplete.
+Evidence head `71dee2c64cd267fa05144c37b0d8603469d67e0b` passed Checks 40969183957 (325/124, zero failures/skips) and Research 40969183955, including all five daemon checks. It merged as `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; post-merge main Checks 40969884003 failed during lifecycle test shutdown. Independent draft #90 on `feat/document-text-search` adds scoped stored native/OCR text search and exact job inspection; its browser/native acceptance is running. This branch now integrates validated #89; final #90 verification is required. Product requirements and external gates remain incomplete.
+
+## Verified #90 document search awaiting final checks and merge
+
+Draft #90, branch `feat/document-text-search`, integrates merged #89 through ordinary merge `150ea0f`. Only overlapping handoff/plan/index additions conflicted; both source/test sets and both document contracts are preserved. Implementation `8bb762b57144a98676bf81a25c27b78bda03bafd` passed **Checks 40971070659**, job 123787650359: **331 Node/124 Python, zero failures/skips, 29 browser journeys**. **Research 40971070725**, job 123787650625, passed actual encrypted native/OCR search/browser reinspection, supplier reviews/package/PDF delivery, adversity corpus, repeated raster and five daemon-failure tests. [Contract](docs/96_DOCUMENT_TEXT_SEARCH.md), [evaluation/machine receipt/renders](docs/evals/2026-10-29-document-search.md). Source/privacy diff and both rendered pages were inspected.
+
+The separate unreviewed search kind preserves processing-job identities, literal/bounded queries and current tenant/case access. Exact existing job lookup reopens older jobs and verifies original/raw/derivative bytes. Search remains stored metadata, not a citation, integrity attestation or finding. Actual PostgreSQL/HTTP tests cover scope/client/revocation/CSRF, corruption/recovery, restart and 51 results; browser checks cover an older job behind 26 later jobs, Enter activation, focused inspection, URL reload, corrupted-source denial/retry and revoked-data clearing.
+
+Earlier `1f1fe6b` passed 329 Node/120 Python but its native browser POST failed because the test server had not registered the browser proxy origin. Exact-origin registration passed actual Research 40969660127 at `57ba08f`. That head's new keyboard test failed; the complete CDP Enter sequence passed Checks 40970498736 and Research 40970498729 at `4c9b60e` (329/124, no failures/skips). All failures remain in the evaluation.
+
+Main #89 Checks 40969884003 timed out after every lifecycle assertion reached revoked-context clearing; shutdown did not complete. An actual HTTP/Fastify reproduction demonstrated an orphaned partial upload in the browser proxy. The new test-only forwarding helper propagates disconnects and destroys its own outstanding requests before API shutdown. Two real HTTP regressions pass; full Checks 40971070659 completed every lifecycle cleanup stage. No passing receipt is claimed for the failed #89 main run, and no production lifecycle defect is inferred.
+
+Final review limits automatic focus to search-selected inspection, preserving ordinary history/image comparison behaviour. Local lint/types/build pass; final hosted checks for this small change and the retained evidence are pending. Merge only after those pass, then verify resulting main. Full product/device/provider/operational and external approval gates remain open.
+
+
+Final review head `a1b2a1f` passed Research 40971770591 but Checks 40971770600 failed one pre-existing supplied-source browser readiness race (330/331 passed): the panel heading appeared before its asynchronous source rows, and the test immediately clicked an undefined choice. Lifecycle cleanup and the new search/keyboard/retry journey passed. The source selector now waits for the actual enabled row and loaded selected record, without relaxing assertions or deadlines. Rerun is required before merge.
