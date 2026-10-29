@@ -132,7 +132,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Create unredacted PDF {row.id.slice(0,8)}</button>
-      <ReportRenditionHistory key={`${caseId}:${row.id}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256}/>
+      <ReportRenditionHistory key={`${caseId}:${row.id}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256} csrf={csrf}/>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
       {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input aria-label={`Verified package SHA-256 ${row.id}`} readOnly value={verifiedPackages[row.id]}/></label>}

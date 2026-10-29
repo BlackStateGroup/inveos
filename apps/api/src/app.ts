@@ -1544,7 +1544,54 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-PDF-SHA256',built.digest).header('X-INVEOS-Report-SHA256',built.model.sourceReportSha256).header('X-INVEOS-Redaction-SHA256',built.redactionDigest).header('Content-Disposition',`attachment; filename="internal-report-${renditionId}.pdf"`).type('application/pdf').send(built.bytes);
   });
   const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
-  const disclosureReceipt=(r:QueryResultRow)=>{const reportSha256=r.digest.trim(),packageSha256=r.package_digest?.trim();return {id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:packageSha256??reportSha256,reportSha256,deliverable:packageSha256?'document_package':'report_json',authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'};};
+  const pdfDisclosureJoin=`LEFT JOIN report_disclosure_renditions dr ON dr.tenant_id=d.tenant_id AND dr.disclosure_id=d.id LEFT JOIN report_renditions pr ON pr.tenant_id=dr.tenant_id AND pr.case_id=dr.case_id AND pr.id=dr.rendition_id`;
+  const disclosureReceipt=(r:QueryResultRow)=>{const reportSha256=r.digest.trim(),packageSha256=r.package_digest?.trim(),pdfSha256=r.pdf_digest?.trim();return {id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:pdfSha256??packageSha256??reportSha256,reportSha256,deliverable:pdfSha256?'report_pdf':packageSha256?'document_package':'report_json',...(r.rendition_id?{renditionId:r.rendition_id}:{}),authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'};};
+  const pdfReviewReceipt=(r:QueryResultRow)=>({id:r.id,caseId:r.case_id,renditionId:r.rendition_id,reviewerId:r.reviewer_id,authorityVersion:r.authority_version,pdfSha256:r.pdf_digest.trim(),redactionSha256:r.redaction_digest.trim(),decision:r.decision,reason:r.reason,createdAt:iso(r.created_at),status:'rendition_review_not_release'});
+  async function loadRendition(client:PoolClient,actor:Actor,caseId:string,revisionId:string,renditionId:string){
+    await reportAccess(client,actor,caseId);
+    const row=(await client.query(`SELECT rr.*,r.report_bytes,r.created_by AS report_created_by FROM report_renditions rr JOIN report_revisions r ON r.tenant_id=rr.tenant_id AND r.case_id=rr.case_id AND r.id=rr.revision_id WHERE rr.tenant_id=$1 AND rr.case_id=$2 AND rr.revision_id=$3 AND rr.id=$4`,[actor.tenantId,caseId,revisionId,renditionId])).rows[0];
+    if(!row)notFound();const built=checkedPdf(row.report_bytes,row);return {row,built};
+  }
+  for(const method of ['GET','POST'] as const)app.route({method,url:'/api/cases/:caseId/report-revisions/:revisionId/renditions/:renditionId/reviews',preHandler:method==='GET'?authenticate:requireCsrf,
+    schema:{params:renditionParams,...(method==='POST'?{body:{type:'object',additionalProperties:false,required:['pdfSha256','redactionSha256','decision','reason','confirmInspected'],properties:{pdfSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},redactionSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},decision:{enum:['accept_for_disclosure','request_changes']},reason:{type:'string',minLength:10,maxLength:2000},confirmInspected:{const:true}}}}:{})},handler:async(request,reply)=>{
+      reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId,renditionId}=request.params as {caseId:string;revisionId:string;renditionId:string};rejectClientRole(actor);
+      return reportTransaction(async client=>{const kase=await findCase(client,actor,caseId,method==='POST'),{row,built}=await loadRendition(client,actor,caseId,revisionId,renditionId);
+        if(method==='GET'){const rows=await client.query('SELECT * FROM report_rendition_reviews WHERE tenant_id=$1 AND case_id=$2 AND rendition_id=$3 ORDER BY created_at,id LIMIT 51',[actor.tenantId,caseId,renditionId]);if(rows.rows.length>50)throw new ApiError(422,'Review listing limit exceeded.');return {items:rows.rows.map(pdfReviewReceipt)};}
+        if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
+        if(row.created_by===actor.userId||row.report_created_by===actor.userId)throw new ApiError(403,'A different reviewer must inspect the PDF and redactions.');
+        const input=request.body as {pdfSha256:string;redactionSha256:string;decision:string;reason:string};const reason=input.reason.trim();
+        if(reason.length<10)throw new ApiError(422,'Explain the PDF and redaction review.');
+        if(input.pdfSha256!==built.digest||input.redactionSha256!==built.redactionDigest)throw new ApiError(409,'PDF review fingerprint mismatch.');
+        const prior=(await client.query('SELECT * FROM report_rendition_reviews WHERE tenant_id=$1 AND case_id=$2 AND rendition_id=$3 AND reviewer_id=$4',[actor.tenantId,caseId,renditionId,actor.userId])).rows[0];
+        if(prior){if(prior.decision!==input.decision||prior.reason!==reason)throw new ApiError(409,'PDF review already recorded. Create a new rendition for a changed decision.');return pdfReviewReceipt(prior);}
+        if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
+        await verifyFrozenSources(client,actor,caseId,revisionId,built.model.sourceReportSha256);
+        const reviewed=(await client.query(`INSERT INTO report_rendition_reviews(tenant_id,case_id,rendition_id,id,reviewer_id,authority_version,pdf_digest,redaction_digest,decision,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING *`,[actor.tenantId,caseId,renditionId,randomUUID(),actor.userId,kase.authority_version,built.digest,built.redactionDigest,input.decision,reason])).rows[0];
+        if(!reviewed)throw Object.assign(new Error('Concurrent PDF review retry'),{code:'40001'});
+        await writeAudit(client,actor,caseId,'report.rendition_reviewed','report_rendition',renditionId,'Exact PDF and redactions independently reviewed',{reviewId:reviewed.id,pdfDigest:built.digest,redactionDigest:built.redactionDigest,decision:input.decision,inspectionConfirmed:true});return pdfReviewReceipt(reviewed);
+      });
+    }});
+  app.post('/api/cases/:caseId/report-revisions/:revisionId/renditions/:renditionId/disclosures',{preHandler:requireCsrf,schema:{params:renditionParams,body:{type:'object',additionalProperties:false,required:['pdfSha256','recipientId','idempotencyKey','expiresAt','reason','confirmReviewedDisclosure'],properties:{pdfSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},recipientId:uuidSchema,idempotencyKey:uuidSchema,expiresAt:{type:'string',maxLength:40},reason:{type:'string',minLength:10,maxLength:2000},confirmReviewedDisclosure:{const:true}}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId,renditionId}=request.params as {caseId:string;revisionId:string;renditionId:string};if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
+    const input=request.body as {pdfSha256:string;recipientId:string;idempotencyKey:string;expiresAt:string;reason:string},reason=input.reason.trim(),expiry=Date.parse(input.expiresAt);
+    if(reason.length<10||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(input.expiresAt)||!Number.isFinite(expiry))throw new ApiError(422,'Valid UTC expiry and disclosure reason required.');
+    return reportTransaction(async client=>{const kase=await findCase(client,actor,caseId,true);const old=(await client.query(`SELECT d.*,dr.rendition_id,pr.pdf_digest FROM report_disclosures d ${pdfDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.created_by=$3 AND d.idempotency_key=$4`,[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
+      if(old){if(old.revision_id!==revisionId||old.rendition_id!==renditionId||old.pdf_digest?.trim()!==input.pdfSha256||old.recipient_id!==input.recipientId||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason)throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
+      if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
+      const {built}=await loadRendition(client,actor,caseId,revisionId,renditionId);if(built.digest!==input.pdfSha256)throw new ApiError(409,'PDF disclosure fingerprint mismatch.');
+      await verifyFrozenSources(client,actor,caseId,revisionId,built.model.sourceReportSha256);
+      const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();if(expiry<=clock||expiry>clock+7*86400000)throw new ApiError(422,'Expiry must be within seven days.');
+      if(!(await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role='client'",[actor.tenantId,input.recipientId])).rowCount)throw new ApiError(422,'Recipient must be a client in this tenant.');
+      const accepted=await client.query(`SELECT 1 FROM report_rendition_reviews rr JOIN memberships m ON m.tenant_id=rr.tenant_id AND m.user_id=rr.reviewer_id JOIN case_memberships cm ON cm.tenant_id=rr.tenant_id AND cm.case_id=rr.case_id AND cm.user_id=rr.reviewer_id WHERE rr.tenant_id=$1 AND rr.case_id=$2 AND rr.rendition_id=$3 AND rr.authority_version=$4 AND rr.pdf_digest=$5 AND rr.redaction_digest=$6 AND rr.decision='accept_for_disclosure' AND m.role='reviewer'`,[actor.tenantId,caseId,renditionId,kase.authority_version,built.digest,built.redactionDigest]);
+      const rejected=await client.query("SELECT 1 FROM report_rendition_reviews WHERE tenant_id=$1 AND case_id=$2 AND rendition_id=$3 AND decision='request_changes'",[actor.tenantId,caseId,renditionId]);
+      const narrative=await client.query("SELECT 1 FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND decision='request_changes'",[actor.tenantId,caseId,revisionId]);
+      if(!accepted.rowCount||rejected.rowCount||narrative.rowCount)throw new ApiError(409,'Independent PDF acceptance and no change requests required.');
+      const row=(await client.query(`INSERT INTO report_disclosures(tenant_id,case_id,id,revision_id,recipient_id,created_by,idempotency_key,authority_version,digest,reason,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT DO NOTHING RETURNING *`,[actor.tenantId,caseId,randomUUID(),revisionId,input.recipientId,actor.userId,input.idempotencyKey,kase.authority_version,built.model.sourceReportSha256,reason,new Date(expiry)])).rows[0];
+      if(!row)throw Object.assign(new Error('Concurrent PDF disclosure retry'),{code:'40001'});
+      await client.query('INSERT INTO report_disclosure_renditions(tenant_id,case_id,revision_id,disclosure_id,rendition_id) VALUES($1,$2,$3,$4,$5)',[actor.tenantId,caseId,revisionId,row.id,renditionId]);
+      await writeAudit(client,actor,caseId,'report.disclosed','report_disclosure',row.id,'Independently reviewed PDF disclosure approved',{revisionId,renditionId,recipientId:input.recipientId,pdfDigest:built.digest,redactionDigest:built.redactionDigest,deliverable:'report_pdf'});return disclosureReceipt({...row,rendition_id:renditionId,pdf_digest:built.digest});
+    });
+  });
   app.post('/api/cases/:caseId/report-revisions/:revisionId/disclosures',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256','recipientId','idempotencyKey','expiresAt','reason','confirmFullDisclosure'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},recipientId:uuidSchema,idempotencyKey:uuidSchema,expiresAt:{type:'string',maxLength:40},reason:{type:'string',minLength:10,maxLength:2000},confirmFullDisclosure:{const:true},documentPackageSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},confirmDocumentPackageVerified:{const:true}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
     if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
@@ -1552,7 +1599,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     if(reason.length<10||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(input.expiresAt)||!Number.isFinite(expiry))throw new ApiError(422,'Valid UTC expiry and disclosure reason required.');
     return inTransaction(options.pool,async client=>{
       const kase=await findCase(client,actor,caseId,true);
-      const old=(await client.query('SELECT d.*,p.package_digest FROM report_disclosures d LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.created_by=$3 AND d.idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
+      const old=(await client.query(`SELECT d.*,p.package_digest,dr.rendition_id FROM report_disclosures d LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${pdfDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.created_by=$3 AND d.idempotency_key=$4`,[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
+      if(old?.rendition_id)throw new ApiError(409,'Disclosure retry differs.');
       if(old){const packageDigest=old.package_digest?.trim();if(old.revision_id!==revisionId||old.recipient_id!==input.recipientId||old.digest.trim()!==input.sha256||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason||(packageDigest??undefined)!==input.documentPackageSha256||Boolean(packageDigest)!==(input.confirmDocumentPackageVerified===true))throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
       if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
       const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();
@@ -1590,7 +1638,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   const disclosureEligibility=`c.status='Active' AND c.authority_version=d.authority_version
        AND NOT EXISTS(SELECT 1 FROM report_revision_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.revision_id=d.revision_id AND rr.decision='request_changes')
        AND EXISTS(SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=d.tenant_id AND m.user_id=d.created_by AND m.role='reviewer' AND cm.case_id=d.case_id)
-       AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)`;
+       AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)
+       AND (dr.rendition_id IS NULL OR (
+         EXISTS(SELECT 1 FROM report_rendition_reviews rr JOIN memberships rm ON rm.tenant_id=rr.tenant_id AND rm.user_id=rr.reviewer_id JOIN case_memberships rc ON rc.tenant_id=rr.tenant_id AND rc.user_id=rr.reviewer_id AND rc.case_id=rr.case_id
+          WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=dr.rendition_id AND rr.authority_version=d.authority_version AND rr.pdf_digest=pr.pdf_digest AND rr.redaction_digest=pr.redaction_digest AND rr.decision='accept_for_disclosure' AND rm.role='reviewer')
+         AND NOT EXISTS(SELECT 1 FROM report_rendition_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=dr.rendition_id AND rr.decision='request_changes')))`;
   app.get('/api/cases/:caseId/disclosures',{preHandler:authenticate,schema:{params:caseParamsSchema,querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
     const actor=request.actor!,{caseId}=request.params as {caseId:string};
@@ -1599,10 +1651,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return reportTransaction(async client=>{
       await findCase(client,actor,caseId);
       if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,before]);if(!anchor.rowCount)notFound();}
-      const rows=await client.query(`SELECT d.*,p.package_digest,v.revoked_by,v.reason AS revocation_reason,v.created_at AS revoked_at,a.acknowledged_at,
+      const rows=await client.query(`SELECT d.*,p.package_digest,dr.rendition_id,pr.pdf_digest,v.revoked_by,v.reason AS revocation_reason,v.created_at AS revoked_at,a.acknowledged_at,
         (d.expires_at>clock_timestamp() AND ${disclosureEligibility} AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')) AS access_policy_eligible
         FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
-        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${pdfDisclosureJoin}
         LEFT JOIN report_disclosure_revocations v ON v.tenant_id=d.tenant_id AND v.disclosure_id=d.id
         LEFT JOIN report_disclosure_acknowledgements a ON a.tenant_id=d.tenant_id AND a.disclosure_id=d.id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3))
@@ -1618,18 +1670,24 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return reportTransaction(async client=>{
       // An owned historical anchor remains usable after expiry/revocation, but foreign anchors never do.
       if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,before]);if(!anchor.rowCount)notFound();}
-      const rows=await client.query(`SELECT d.id,d.revision_id,d.digest,p.package_digest,d.created_at,d.expires_at
+      const rows=await client.query(`SELECT d.id,d.revision_id,d.digest,p.package_digest,dr.rendition_id,pr.pdf_digest,d.created_at,d.expires_at
         FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
-        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${pdfDisclosureJoin}
         WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.expires_at>clock_timestamp()
         AND ${disclosureEligibility}
         AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3))
         ORDER BY d.created_at DESC,d.id DESC LIMIT $4`,[actor.tenantId,actor.userId,before??null,limit+1]);
-      return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.package_digest?.trim()??r.digest.trim(),reportSha256:r.digest.trim(),deliverable:r.package_digest?'document_package':'report_json',createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+      return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.pdf_digest?.trim()??r.package_digest?.trim()??r.digest.trim(),reportSha256:r.digest.trim(),deliverable:r.rendition_id?'report_pdf':r.package_digest?'document_package':'report_json',createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
     });
   });
-  function disclosureDelivery(row:QueryResultRow){
+  async function disclosureDelivery(client:PoolClient,row:QueryResultRow){
     checkRevision(row);const reportDigest=row.digest.trim();
+    if(row.rendition_id){
+      if(row.package_bytes)throw new ApiError(409,'Disclosure has conflicting deliverables.');
+      const rendition=(await client.query('SELECT * FROM report_renditions WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND id=$4',[row.tenant_id,row.case_id,row.revision_id,row.rendition_id])).rows[0];
+      if(!rendition)throw new ApiError(409,'Released PDF is missing.');const checked=checkedPdf(row.report_bytes,rendition);
+      return {bytes:checked.bytes,digest:checked.digest,deliverable:'report_pdf' as const,header:'X-INVEOS-PDF-SHA256'};
+    }
     if(!row.package_bytes)return {bytes:row.report_bytes as Buffer,digest:reportDigest,deliverable:'report_json' as const,header:'X-INVEOS-Report-SHA256'};
     const bytes=row.package_bytes as Buffer,packageDigest=row.package_digest?.trim();
     if(!packageDigest||row.report_digest?.trim()!==reportDigest||createHash('sha256').update(bytes).digest('hex')!==packageDigest)throw new ApiError(409,'Released document package integrity verification failed.');
@@ -1647,11 +1705,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       // Match recipient before locking, then serialise with case authority and grant revocation.
       const scope=await client.query('SELECT case_id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,disclosureId]);
       if(!scope.rows[0])notFound();await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,scope.rows[0].case_id]);
-      const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+      const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes,dr.rendition_id,pr.pdf_digest FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
         JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
-        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${pdfDisclosureJoin}
         WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.id=$3 AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}`,[actor.tenantId,actor.userId,disclosureId]);
-      const grant=found.rows[0];if(!grant)notFound();const delivery=disclosureDelivery(grant);
+      const grant=found.rows[0];if(!grant)notFound();const delivery=await disclosureDelivery(client,grant);
       if(delivery.digest!==expected)throw new ApiError(409,'Disclosure fingerprint changed.');
       const inserted=await client.query(`INSERT INTO report_disclosure_acknowledgements(tenant_id,disclosure_id,recipient_id,digest) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING acknowledged_at`,[actor.tenantId,disclosureId,actor.userId,expected]);
       if(inserted.rowCount)await writeAudit(client,actor,grant.case_id,'report.disclosure_acknowledged','report_disclosure',disclosureId,'Recipient explicitly acknowledged receipt',{digest:expected});
@@ -1663,15 +1721,16 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
     if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
     const row=await inTransaction(options.pool,async client=>{
-      const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
+      const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes,dr.rendition_id,pr.pdf_digest FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
        JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
-       LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id
+       LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${pdfDisclosureJoin}
        WHERE d.tenant_id=$1 AND d.id=$2 AND d.recipient_id=$3 AND d.expires_at>clock_timestamp()
        AND ${disclosureEligibility}`,[actor.tenantId,disclosureId,actor.userId]);
-      const value=found.rows[0];if(!value)notFound();const delivery=disclosureDelivery(value);
+      const value=found.rows[0];if(!value)notFound();const delivery=await disclosureDelivery(client,value);
       await writeAudit(client,actor,value.case_id,'report.disclosure_downloaded','report_disclosure',disclosureId,'Recipient deliverable prepared for download',{reportDigest:value.digest.trim(),deliveryDigest:delivery.digest,deliverable:delivery.deliverable});return {...value,delivery};
     });
-    return reply.header('Content-Disposition',`attachment; filename="disclosure-${disclosureId}.json"`).header(row.delivery.header,row.delivery.digest).type('application/json').send(row.delivery.bytes);
+    if(row.delivery.deliverable==='report_pdf')reply.header('X-INVEOS-Report-SHA256',row.digest.trim());
+    return reply.header('Content-Disposition',`attachment; filename="disclosure-${disclosureId}.${row.delivery.deliverable==='report_pdf'?'pdf':'json'}"`).header(row.delivery.header,row.delivery.digest).type(row.delivery.deliverable==='report_pdf'?'application/pdf':'application/json').send(row.delivery.bytes);
   });
   app.post('/api/cases/:caseId/report-revisions/:revisionId/verify-sources',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
