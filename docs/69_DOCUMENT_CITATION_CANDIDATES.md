@@ -13,3 +13,7 @@ Run `npm run lint`, `npm run typecheck`, `node --import tsx --test apps/api/test
 ## Remaining and rollback
 
 Browser candidate authoring/recovery, candidate listing, explicit human review/approval, derived-claim/report integration and independent export verification remain open. No human review is claimed by candidate creation. Keep migration and immutable history on rollback; disable candidate writes rather than delete records. No runtime/dependency/approval changes, merge or production deployment. Wider product/security/licence gates remain open.
+
+## Executed evidence
+
+Draft PR #60 passed [Checks #154](https://github.com/BlackStateGroup/inveos/actions/runs/40851722585), job 123372578308, at `b6fa1bc6091e89043f5d023763dc180756fe64ea`, tree `309213c82832548e9e6abf7c671f10b18f699cc4`: 194 Node tests and 101 Python tests, zero failures/skips; lint/types/build/reference, actual PostgreSQL/browser/restore and host-isolation checks passed. Four new database scenarios verified concurrent retry/restart/conflicts/immutability, scope/CSRF/current-authority gates, changed original/selection rejection and atomic audit rollback with safe retry. Two new helper tests verified occurrence identity and UTF-8 boundaries. Local lint/types, 12 focused document tests and foundation/101 Python tests passed. This slice adds no browser authoring or human approval and replays recorded parser output; no fresh parser execution is claimed. Evidence follow-up changes documentation only. Resume #60 after fresh main/review checks.
