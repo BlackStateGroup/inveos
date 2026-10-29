@@ -15,6 +15,7 @@ CREATE TRIGGER document_claims_append_only BEFORE UPDATE OR DELETE ON document_c
 
 CREATE TABLE document_claim_decisions (
  tenant_id uuid NOT NULL, case_id uuid NOT NULL, job_id uuid NOT NULL, citation_id uuid NOT NULL, claim_id uuid NOT NULL, id uuid NOT NULL,
+ claim_digest char(64) NOT NULL CHECK(claim_digest ~ '^[a-f0-9]{64}$'),
  accepted boolean NOT NULL, reason text NOT NULL CHECK(octet_length(reason) BETWEEN 1 AND 6000),
  reviewed_by uuid NOT NULL REFERENCES users(id), reviewed_at timestamptz NOT NULL,
  decision_bytes bytea NOT NULL CHECK(octet_length(decision_bytes) BETWEEN 1 AND 16384), decision_digest char(64) NOT NULL CHECK(decision_digest ~ '^[a-f0-9]{64}$'),
