@@ -118,7 +118,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
-      {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input readOnly value={verifiedPackages[row.id]}/></label>}
+      {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input aria-label={`Verified package SHA-256 ${row.id}`} readOnly value={verifiedPackages[row.id]}/></label>}
       {reviewHistory[row.id]?.map(item=><p key={item.id}>{item.decision} · reviewer {item.reviewerId} · {item.createdAt}: {item.reason}</p>)}
       <details><summary>Review this frozen revision</summary><p>A different assigned reviewer must decide. Conflicting decisions remain separate; none releases the report. Download, verify and inspect its exact contents first.</p>
         <form className="work-form" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void act(()=>review(row,data));}}><fieldset disabled={busy||!verified[row.id]}>
