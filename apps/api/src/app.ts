@@ -593,7 +593,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
 
-  const {reportDocumentFindings}=registerIntegrityJobs(app, {documentLab: options.documentLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
+  const {reportDocumentFindings,documentReportExhibits}=registerIntegrityJobs(app, {documentLab: options.documentLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
@@ -1486,6 +1486,23 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return {ids:allIds,revision};
   }
   const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
+  app.get('/api/cases/:caseId/report-revisions/:revisionId/document-package',{preHandler:authenticate,schema:{params:reviewParams}},async(request,reply)=>{
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
+    const bytes=await reportTransaction(async client=>{
+      await reportAccess(client,actor,caseId);
+      const row=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];if(!row)notFound();
+      const {revision}=await verifyFrozenSources(client,actor,caseId,revisionId,row.digest.trim());
+      const report=JSON.parse(revision.report_bytes.toString('utf8')) as ReportDraft;
+      if(!report.documentFindings?.length)throw new ApiError(422,'A document package requires document-backed findings.');
+      const result={format:'inveos_document_report_package_v1',reportSha256:row.digest.trim(),reportBase64:'',exhibits:[] as unknown[]};
+      const budget=new ReportBudget(64*1024*1024);budget.add(result,4*Math.ceil(revision.report_bytes.length/3));result.reportBase64=revision.report_bytes.toString('base64');
+      for await(const exhibit of documentReportExhibits(client,actor,caseId,report.documentFindings)){budget.add(exhibit,0,result.exhibits.length>0);result.exhibits.push(exhibit);}
+      const encoded=Buffer.from(JSON.stringify(result));if(encoded.length>64*1024*1024)throw new ApiError(422,'Document package byte limit exceeded.');
+      await writeAudit(client,actor,caseId,'report.document_package_exported','report_revision',revisionId,'Internal document provenance package exported',{reportDigest:row.digest.trim(),packageDigest:createHash('sha256').update(encoded).digest('hex'),documentFindings:result.exhibits.length});
+      return encoded;
+    });
+    return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-Package-SHA256',createHash('sha256').update(bytes).digest('hex')).header('Content-Disposition',`attachment; filename="document-report-${revisionId}.json"`).type('application/json').send(bytes);
+  });
   const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
   const disclosureReceipt=(r:QueryResultRow)=>({id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:r.digest.trim(),authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'});
   app.post('/api/cases/:caseId/report-revisions/:revisionId/disclosures',{preHandler:requireCsrf,schema:{params:reviewParams,body:{type:'object',additionalProperties:false,required:['sha256','recipientId','idempotencyKey','expiresAt','reason','confirmFullDisclosure'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},recipientId:uuidSchema,idempotencyKey:uuidSchema,expiresAt:{type:'string',maxLength:40},reason:{type:'string',minLength:10,maxLength:2000},confirmFullDisclosure:{const:true}}}}},async(request,reply)=>{

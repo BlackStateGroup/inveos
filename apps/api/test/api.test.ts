@@ -3503,6 +3503,25 @@ async function documentReportFixture(){
  const accepted=await request('POST',`${f.claimUrl}/${claim.id}/decision`,context.demo!,{payload:decision});assert.equal(accepted.statusCode,200,accepted.body);
  return {...f,claim,decision,reportUrl:`/api/cases/${f.scope.caseId}/report`,revisionsUrl:`/api/cases/${f.scope.caseId}/report-revisions`};
 }
+test('actual document report packages verify offline, preserve mixed originals and deny stale or unaudited exports',async()=>{
+ const f=await documentReportFixture();try{
+  const frozen=await request('POST',f.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}});assert.equal(frozen.statusCode,200,frozen.body);const receipt=frozen.json(),url=`${f.revisionsUrl}/${receipt.id}/document-package`;
+  const exported=await request('GET',url,context.demo!);assert.equal(exported.statusCode,200,exported.body);assert.equal(exported.headers['cache-control'],'no-store');const packageDigest=digest(exported.body);assert.equal(exported.headers['x-inveos-package-sha256'],packageDigest);
+  const path=join(context.storageRoot!,'fictional-api-document-package.json'),verifier=fileURLToPath(new URL('../../../tools/verify_document_package.py',import.meta.url));await writeFile(path,exported.body);
+  const checked=await promisify(execFile)('python3',[verifier,path,'--expected-report-sha256',receipt.sha256,'--expected-package-sha256',packageDigest],{timeout:10000});assert.equal(JSON.parse(checked.stdout).documentFindingsChecked,1);assert.equal(JSON.parse(checked.stdout).trustedPackageDigestMatched,true);
+  await context.app!.close();context.app=await createAppInstance();assert.equal((await request('GET',url,context.demo!)).body,exported.body);
+  const clientId=await createMember(demoTenantId,'client','Fictional package recipient');assertError(await request('GET',url,await issueTestSession(clientId)),403);
+  const outsider=await createMember(demoTenantId,'reviewer','Fictional package outsider');assertError(await request('GET',url,await issueTestSession(outsider)),404);
+  const original=parseBody<Evidence>(await uploadEvidence(f.scope.caseId)),claim=(await createClaim(f.scope.caseId,original.id)).json();assert.equal((await request('POST',`/api/cases/${f.scope.caseId}/claims/${claim.id}/review`,context.demo!,{payload:{accepted:true,reason:'Fictional original-byte observation for mixed export.'}})).statusCode,200);
+  const mixed=(await request('POST',f.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}})).json(),mixedPackage=await request('GET',`${f.revisionsUrl}/${mixed.id}/document-package`,context.demo!);assert.equal(mixedPackage.statusCode,200,mixedPackage.body);await writeFile(path,mixedPackage.body);
+  const mixedCheck=await promisify(execFile)('python3',[verifier,path,'--expected-report-sha256',mixed.sha256],{timeout:10000});assert.equal(JSON.parse(mixedCheck.stdout).originalFindingsChecked,1);assert.equal(JSON.parse(mixedCheck.stdout).documentFindingsChecked,1);
+  await context.schemaAdminPool!.query("CREATE FUNCTION deny_document_export_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='report.document_package_exported' THEN RAISE EXCEPTION 'fictional export audit failure'; END IF; RETURN NEW; END $$");await context.schemaAdminPool!.query('CREATE TRIGGER deny_document_export_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_document_export_audit()');
+  try{assertError(await request('GET',url,context.demo!),500);}finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_document_export_audit ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION deny_document_export_audit()');}
+  const replacement={...f.reviewInput,id:randomUUID(),previousReviewId:f.reviewInput.id,decision:'rejected',reason:'Fictional correspondence withdrawn before export.',originalCompared:false};assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:replacement})).statusCode,200);assertError(await request('GET',url,context.demo!),409);
+  // Downloaded bytes remain independently checkable; offline checks cannot assert current server policy.
+  assert.equal((await promisify(execFile)('python3',[verifier,path],{timeout:10000})).stderr,'');
+ }finally{await f.app.close();}
+});
 test('document-only reports freeze exact page lineage concurrently and survive restart without becoming disclosures',async()=>{
  const f=await documentReportFixture();try{
   const draft=await request('GET',f.reportUrl,context.demo!);assert.equal(draft.statusCode,200,draft.body);const report=draft.json(),entry=report.documentFindings[0];assert.deepEqual(report.findings,[]);

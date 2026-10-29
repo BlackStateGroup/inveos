@@ -521,6 +521,19 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         limitations:'Human-reviewed extracted passage; offsets refer to extracted UTF-8, not original PDF bytes. Native-PDF research profile only; no OCR, complete-extraction or source-truth certification. This snapshot records lineage fingerprints; independent derivative exhibit verification and client release remain unavailable.'};
     }
   }
+  async function* documentReportExhibits(client:PoolClient,actor:Actor,caseId:string,findings:DocumentReportFinding[]){
+    for(const finding of findings){
+      const s=await verifiedDocumentClaims(client,actor,caseId,finding.extraction.jobId,finding.reference.citationId);
+      const claim=s.claims.find(c=>c.finding?.id===finding.id);
+      if(!claim||!claim.correspondenceCurrent||claim.digest!==finding.interpretation.claimDigest||claim.decision?.digest!==finding.interpretation.decisionDigest)throw new ApiError(409,'Document exhibit no longer matches the frozen finding.');
+      const original=await readOriginalBounded(svc.storageRoot,s.row.object_path,65536);
+      if(sha256(original)!==finding.source.sha256)throw new ApiError(409,'Document exhibit original changed.');
+      const stored=(await client.query('SELECT claim_bytes FROM document_claims WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND id=$5',[...s.key,claim.id])).rows[0];
+      const decision=(await client.query('SELECT decision_bytes FROM document_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',[...s.key,claim.id])).rows[0];
+      const reviews=(await client.query('SELECT review_bytes FROM document_citation_reviews WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 ORDER BY sequence LIMIT 101',s.key)).rows;
+      yield {findingId:finding.id,candidateCreatedBy:s.candidate.created_by,originalBase64:original.toString('base64'),rawBase64:s.row.raw_bytes.toString('base64'),derivativeBase64:s.row.output_bytes.toString('base64'),citationBase64:s.checked.bytes.toString('base64'),reviewBase64:reviews.map(r=>r.review_bytes.toString('base64')),claimBase64:stored.claim_bytes.toString('base64'),decisionBase64:decision.decision_bytes.toString('base64')};
+    }
+  }
   for(const create of [false,true])app.route({method:create?'POST':'GET',url:'/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId/claims',preHandler:create?svc.requireCsrf:svc.authenticate,schema:{params:citationParams,...(create?{body:documentClaimSchema}:{})},handler:async(request,reply)=>{
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal document claims only.');
     const {caseId,jobId,citationId}=request.params as {caseId:string;jobId:string;citationId:string};
@@ -617,5 +630,5 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         });
       }});
   }
-  return {reportDocumentFindings};
+  return {reportDocumentFindings,documentReportExhibits};
 }
