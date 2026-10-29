@@ -28,6 +28,8 @@ on:
       - 'apps/api/test/support/ocr-fixture.ts'
       - 'research/runtime_artifacts/tesseract-baseline.lock.json'
       - 'tools/supplier_scan_fixture.py'
+      - 'tools/run_ocr_corpus.py'
+      - 'tests/test_ocr_corpus.py'
       - 'research/runtime_artifacts/tesseract-baseline.Dockerfile'
       - 'tests/test_supplier_scan_fixture.py'
       - 'tools/experiment_pdf_render.py'
@@ -143,12 +145,34 @@ jobs:
       - name: Measure isolated fictional scanned supplier OCR baseline
         run: |
           npm run build
-          timeout 600s python3 tools/experiment_tesseract_supplier.py --case-acceptance
+          timeout 600s python3 tools/experiment_tesseract_supplier.py --case-acceptance --adverse-corpus > .research-cache/ocr-research-output.json
+          python3 - <<'PYTHON'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('.research-cache/ocr-research-output.json').read_text())
+          corpus=report['adversityCorpus']
+          retained={'imageId':report['imageId'],'measurement':corpus}
+          Path('.research-cache/ocr-adversity-measurement.json').write_text(json.dumps(retained,indent=2)+'\n')
+          print(json.dumps({'attemptCount':corpus['attemptCount'],'successfulOcrAttempts':corpus['successfulOcrAttempts'],
+            'cases':[{'case':c['case'],'bytes':c['originalBytes'],'repeatStable':c['repeatStable'],
+              'attempts':[{'outcome':a['outcome'],'reason':a.get('reason'),'metrics':a.get('metrics')} for a in c['attempts']]} for c in corpus['cases']]},indent=2))
+          PYTHON
       - name: Render fictional original pages twice inside isolation
         run: |
           timeout 180s python3 tools/experiment_pdf_render.py > .research-cache/render-output.json
           node --import tsx --test apps/api/test/raster-native.integration.ts
       - name: Exercise leased native jobs against PostgreSQL and actual daemon failures
         run: timeout 360s node --import tsx --test --test-concurrency=1 apps/api/test/native-worker.integration.ts
+      - name: Retain actual OCR research and adversity results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ocr-adversity-results
+          path: |
+            .research-cache/ocr-research-output.json
+            .research-cache/ocr-adversity-measurement.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Keep all acquired and generated third-party files untracked
         run: git diff --exit-code
