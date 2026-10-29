@@ -165,3 +165,9 @@ export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withd
 export type WorkCommentInput={body:string;mentions:string[];reason:string};
 export type WorkComment={id:string;itemId:string;authorId:string;authorName:string;version:number;body:string;mentions:{userId:string;name:string}[];withdrawn:boolean;reason:string;createdAt:string;recordedAt:string;canEdit:boolean};
 export type WorkMentionPage={items:{commentId:string;itemId:string;version:number;authorName:string;excerpt:string;title:string;recordedAt:string}[];more:boolean};
+
+export type EntitySource={kind:'text_finding'|'document_finding';findingId:string};
+export type EntityInput={id:string;entityType:'person'|'organisation'|'place'|'other';name:string;aliases:string[];reason:string};
+export type EntitySnapshot=Omit<EntityInput,'reason'>&{caseId:string;version:number;createdBy:string;createdAt:string;recordedAt:string;interpretation:'candidate_identity_not_merged'};
+export type EntityRelationshipInput={id:string;fromEntityId:string;toEntityId:string;relationshipType:'associated_with'|'controls'|'employed_by'|'contracted_with'|'located_at'|'other';source:EntitySource;rationale:string};
+export type EntityRelationship=EntityRelationshipInput&{status:'candidate'|'confirmed'|'rejected';createdBy:string;createdAt:string;reviewedBy:string|null;reviewedAt:string|null;reviewReason:string|null};

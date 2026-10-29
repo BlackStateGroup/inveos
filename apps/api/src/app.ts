@@ -1,5 +1,6 @@
 import {registerWorkDiscussions} from './work-discussions.js';
 import {registerCaseSearch} from './case-search.js';
+import {registerEntityGraph} from './entity-graph.js';
 import {identityRoutes} from './identity-routes.js';
 import type {IdentityProvider} from './oidc.js';
 import type {OriginalStore} from './original-encryption.js';
@@ -630,6 +631,18 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerEntityGraph(app, {
+    pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,
+    source:async(client,actor,caseId,reference)=>{
+      const kase=await findCase(client,actor,caseId);
+      const selected=await buildReport(client,actor,caseId,reference.kind==='text_finding'?[reference.findingId]:[],reference.kind==='document_finding'?[reference.findingId]:[]);
+      const finding=reference.kind==='text_finding'?selected.findings.find(f=>f.id===reference.findingId):selected.documentFindings?.find(f=>f.id===reference.findingId);
+      if(!finding)notFound();
+      const authorityVersion='policy' in finding.source?finding.source.policy.authorityVersion:finding.source.authorityVersion;
+      if(kase.status!=='Active'||kase.authority_version!==authorityVersion)throw new ApiError(409,'The relationship source requires current case authority. Historical candidate metadata remains available.');
+      return finding;
+    },
+  });
   registerChronology(app, {
     pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,
     source:async(client,actor,caseId,reference)=>{

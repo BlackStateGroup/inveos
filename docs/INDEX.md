@@ -175,3 +175,5 @@
 
 
 - [Internal work discussions and case mentions](86_WORK_DISCUSSIONS.md): attributed comments, immutable corrections, scoped mentions and explicit per-version read state.
+
+- [Reviewed entity relationships](87_REVIEWED_ENTITY_RELATIONSHIPS.md): separate identity candidates, source-linked relationship review and explicit limits.
