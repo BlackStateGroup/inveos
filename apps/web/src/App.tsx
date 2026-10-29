@@ -111,6 +111,7 @@ export default function App(){
   }
   const p:ViewProps={data,active,go,selectCase,open,notify:setToast,inspect,work:{
     enabled:foundation,
+    discussion:(path,body)=>api(`/cases/${active.id}${path}`,body),
     create:async input=>{await api(`/cases/${active.id}/work`,input);await refresh();setToast('Case record saved.');},
     revise:async(id,input)=>{await api(`/cases/${active.id}/work/${id}/revise`,input);await refresh();setToast('Revision saved. Previous versions remain in history.');},
     link:async(id,input)=>{await api(`/cases/${active.id}/work/${id}/links`,input);await refresh();setToast('Source link verified and saved.');},

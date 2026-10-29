@@ -1,3 +1,4 @@
+import {WorkDiscussion,WorkMentions} from './WorkDiscussion';
 import {DocumentWorkSources} from './DocumentWorkSources';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, History, Link2, Plus, Search, X } from 'lucide-react';
@@ -7,6 +8,7 @@ import type { ViewProps } from './CaseViews';
 
 export type WorkActions = {
   enabled: boolean;
+  discussion: <T>(path:string,body?:object)=>Promise<T>;
   create: (input: WorkInput) => Promise<void>;
   revise: (id: string, input: WorkEdit) => Promise<void>;
   link: (id: string, input: WorkLinkInput) => Promise<void>;
@@ -136,6 +138,7 @@ function WorkRecord({p, item}: {p: ViewProps; item: WorkItem}) {
     <div className="work-record-actions"><button className="text-button" aria-label={`Revise ${item.kind}: ${item.title}`} onClick={() => setEditing(!editing)}>{editing ? 'Cancel revision' : 'Revise record'}</button>
       <button className="text-button" aria-label={`History for ${item.title}`} onClick={() => void history()} disabled={loading}><History size={14}/>{loading ? 'Loading history…' : revisions ? 'Hide history' : 'History'}</button></div>
     {error && <div className="form-error" role="alert">{error}</div>}
+    <details className="work-detail"><summary>Team discussion</summary><WorkDiscussion key={item.caseId+':'+item.id} itemId={item.id} members={p.data.members.filter(m=>m.caseId===item.caseId)} api={p.work.discussion}/></details>
     {editing && <WorkForm p={p} kind={item.kind} item={item} onClose={() => {setEditing(false); setRevisions(null);}}/>}
     {revisions && <div className="work-history" aria-label={`History for ${item.title}`}>
       {revisions.map(revision => <details key={revision.version}><summary>Version {revision.version} · {revision.reason}</summary>{revision.sources&&<ul aria-label="Sources at this revision">{revision.sources.map(link=><li key={link.id}>{link.relation}: {'kind' in link ? `Document finding ${link.findingId}` : `Text claim ${link.claimId}`} — {link.reason}</li>)}</ul>}
@@ -165,6 +168,7 @@ export function CaseWorkDashboard({p}: {p: ViewProps}) {
   const blocked = items.filter(w => w.status === 'Blocked');
   const next = items.filter(w => w.kind === 'task' && !done.has(w.status)).sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))[0];
   return <>
+    {p.work.enabled&&<WorkMentions key={p.active.id} api={p.work.discussion} onOpen={id=>{const item=p.data.workItems.find(w=>w.caseId===p.active.id&&w.id===id);p.go(item?.kind==='task'?'Tasks':'Brief');requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById('work-'+id)?.scrollIntoView({block:'center'})));}}/>}
     {p.work.enabled && <div className="case-work-summary" aria-label="Case progress">
       <div><strong>{p.data.findings.filter(f => f.caseId === p.active.id).length}</strong><span>Reviewed findings</span></div>
       <div><strong>{questions.length}</strong><span>Unresolved questions</span></div>
