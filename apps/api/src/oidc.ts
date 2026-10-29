@@ -50,7 +50,8 @@ export function identityProvider(input:unknown,allowLoopback=false):IdentityProv
   }});
 }
 export function identityFromEnv(env:NodeJS.ProcessEnv):IdentityProvider|undefined {
- if(env.INVEOS_IDENTITY_MODE===undefined||env.INVEOS_IDENTITY_MODE==='demo')return undefined;
+ if(env.INVEOS_IDENTITY_MODE===undefined){if(env.INVEOS_IDENTITY_CONFIG!==undefined)fail();return undefined;}
+ if(env.INVEOS_IDENTITY_MODE==='demo')return undefined;
  if(env.INVEOS_IDENTITY_MODE!=='oidc-pinned')fail();
  const path=env.INVEOS_IDENTITY_CONFIG??'';if(!isAbsolute(path))fail();let fd:number|undefined;
  try{fd=openSync(path,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);const stat=fstatSync(fd);if(!stat.isFile()||stat.size<1||stat.size>32768||(stat.mode&0o077)!==0)fail();const raw=readFileSync(fd);if(raw.length>32768)fail();return identityProvider(parseDocumentRaw(raw),env.INVEOS_IDENTITY_LOOPBACK_TEST==='1'&&env.INVEOS_DEV_LAB==='1'&&env.NODE_ENV!=='production');}catch{return fail();}finally{if(fd!==undefined)closeSync(fd);}

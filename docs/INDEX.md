@@ -164,3 +164,5 @@
 - [Document findings in investigation reasoning](80_DOCUMENT_REASONING.md)
 
 - [Encrypted immutable original custody](81_ENCRYPTED_ORIGINAL_CUSTODY.md)
+
+- [Provider identity sessions](83_PROVIDER_IDENTITY.md): limited code/PKCE integration, membership enrolment/revocation, investigator and client sign-in, explicit remaining provider/MFA acceptance.
