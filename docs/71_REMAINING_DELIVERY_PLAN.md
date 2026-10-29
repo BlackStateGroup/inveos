@@ -1,6 +1,6 @@
 # Remaining delivery plan — 29 October 2026
 
-This is the active execution plan through draft PR #66, not a product-completion claim. The dated ledger in `24_DELIVERY_PLAN.md` describes the earlier baseline; `BUILD_HANDOFF.md` records the exact tested draft revisions. Main remains PR #1. Draft changes must be reviewed and merged explicitly by the user; no automated merge or production deployment is authorised.
+This is the active execution plan, not a product-completion claim. Main includes the cumulative application through user-authorised PR #67 (`441818f6`) and the preserved research audit through PR #2 (`0680e84f`). The dated ledger in `24_DELIVERY_PLAN.md` and earlier draft labels below describe historical delivery receipts; `BUILD_HANDOFF.md` records newer verification. New draft changes require review; the earlier merge instruction does not authorise automatic future merges or production deployment.
 
 ## Delivery order and acceptance evidence
 

@@ -1,5 +1,11 @@
 # INVEOS engineering handoff
 
+## 29 October: retrieve saved PDFs without generating new renditions
+
+Continues verifier hardening PR #68, whose head `2cc0dfb12f52f287e1ed5076400fa1e070e1c318` passed hosted Checks #189 (run 40893663083). The new report history UI uses the existing scoped pagination endpoint and verified historical download route. Users can reload, list redacted/unredacted saved PDFs and download the selected exact bytes without issuing a generation POST. Receipts are checked against case/revision/source identity; failed verification clears the list; unmount aborts pending requests. Existing generation/recovery also uses the new bounded streaming reader, which cancels downloads exceeding 32 MiB even without a trustworthy Content-Length header.
+
+Local lint, all workspace types and six focused Node PDF tests pass. The browser/database test now reloads after recovery, opens saved history, downloads an existing rendition and confirms the immutable row count remains one; hosted execution is pending, not claimed by helper tests. No schema/dependency changes, source licensing decisions, parser execution, client release, merge or deployment. Continue remaining R4 independent redaction review, DOCX/Unicode and release composition, then the full supplier journey and remaining capability plan.
+
 ## 29 October: merged baseline and PDF verifier input hardening
 
 Main includes the cumulative application through PR #67 (`441818f6`) and the separately preserved research decision/licence audit through PR #2 (`0680e84f`). Earlier draft/unmerged statements below are historical receipts, not current repository status. The research catalogue remains a candidate inventory, not blanket incorporation approval.
