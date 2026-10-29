@@ -70,3 +70,11 @@
   .work-record-top { flex-wrap: wrap; }
   .work-section-description { padding-inline: 16px; }
 }
+
+.work-discussion .work-mention-option { display: flex; gap: 10px; align-items: flex-start; margin-block: 10px; }
+.work-discussion .work-mention-option input[type="checkbox"] { width: 16px; height: 16px; flex: 0 0 16px; margin: 2px 0 0; }
+.work-discussion .work-mention-option span { min-width: 0; overflow-wrap: anywhere; }
+.work-comment-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-block: 8px 16px; }
+.work-discussion ol { padding-left: 24px; }
+.work-discussion li { margin-block: 14px; }
+.work-discussion form > fieldset > button { margin: 8px 8px 0 0; }

@@ -161,3 +161,7 @@ export type CaseSearchKind = 'original'|'claim'|'document_claim'|'text_finding'|
 export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
 export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
+
+export type WorkCommentInput={body:string;mentions:string[];reason:string};
+export type WorkComment={id:string;itemId:string;authorId:string;authorName:string;version:number;body:string;mentions:{userId:string;name:string}[];withdrawn:boolean;reason:string;createdAt:string;recordedAt:string;canEdit:boolean};
+export type WorkMentionPage={items:{commentId:string;itemId:string;version:number;authorName:string;excerpt:string;title:string;recordedAt:string}[];more:boolean};

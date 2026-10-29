@@ -1,3 +1,4 @@
+import {registerWorkDiscussions} from './work-discussions.js';
 import {registerCaseSearch} from './case-search.js';
 import {identityRoutes} from './identity-routes.js';
 import type {IdentityProvider} from './oidc.js';
@@ -627,6 +628,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   });
 
+  registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerChronology(app, {
     pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,
