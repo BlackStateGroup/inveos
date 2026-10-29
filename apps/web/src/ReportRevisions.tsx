@@ -4,7 +4,8 @@ import {readDocumentPackageBytes,readVerifiedDocumentPackage,saveVerifiedDocumen
 import {pendingReportFreeze, recoverableReportFreeze, reportRecoveryScope} from './reportRecovery';
 import {Panel, Notice} from './ui';
 import {DisclosureHistory} from './DisclosureHistory';
-import {verifyReportPdfDownload} from './reportPdfDownload';
+import {readReportPdfBytes,verifyReportPdfDownload} from './reportPdfDownload';
+import {ReportRenditionHistory} from './ReportRenditionHistory';
 
 type Receipt={id:string;caseId:string;status:string;sha256:string;createdAt:string};
 type Page={items:Receipt[];nextBefore:string|null};
@@ -93,7 +94,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     const store=window.sessionStorage,previous=pendingRendition(store,caseId,row.id),ids=String(data?.get('findingIds')??'').split(/[\s,]+/).map(v=>v.trim()).filter(Boolean);
     const payload:RenditionPayload=previous??{idempotencyKey:crypto.randomUUID(),redactedFindingIds:ids,...(ids.length?{reason:String(data?.get('reason')??'')}: {})};store.setItem(renditionKey(caseId,row.id),JSON.stringify(payload));setPendingRenditions(old=>({...old,[row.id]:true}));
     const receipt=await json<RenditionReceipt>(`${base}/${row.id}/renditions`,AbortSignal.timeout(30000),payload,csrf);if(receipt.caseId!==caseId||receipt.revisionId!==row.id||receipt.sourceReportSha256!==row.sha256||receipt.status!=='internal_rendition_not_released'||receipt.format!=='pdf')throw new Error('PDF rendition receipt mismatch.');
-    const response=await fetch(`${base}/${row.id}/renditions/${receipt.id}`,{credentials:'same-origin',cache:'no-store'});if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'PDF rendition download failed.');}const bytes=await response.arrayBuffer();await verifyReportPdfDownload(bytes,receipt.pdfSha256,row.sha256,response.headers.get('X-INVEOS-PDF-SHA256'),response.headers.get('X-INVEOS-Report-SHA256'));
+    const response=await fetch(`${base}/${row.id}/renditions/${receipt.id}`,{credentials:'same-origin',cache:'no-store'});if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'PDF rendition download failed.');}const bytes=await readReportPdfBytes(response);await verifyReportPdfDownload(bytes,receipt.pdfSha256,row.sha256,response.headers.get('X-INVEOS-PDF-SHA256'),response.headers.get('X-INVEOS-Report-SHA256'));
     store.removeItem(renditionKey(caseId,row.id));setPendingRenditions(old=>({...old,[row.id]:false}));const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),link=document.createElement('a');link.href=url;link.download=`internal-report-${receipt.id}.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);if(alive.current)setMessage(`${receipt.redactedFindingCount?'Redacted':'Unredacted'} PDF bytes verified and downloaded. Run tools/verify_report_pdf.py for independent semantic-stream verification. This is not a client release.`);
   }
   async function release(row:Receipt,data?:FormData){
@@ -131,6 +132,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Create unredacted PDF {row.id.slice(0,8)}</button>
+      <ReportRenditionHistory key={`${caseId}:${row.id}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256}/>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
       {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input aria-label={`Verified package SHA-256 ${row.id}`} readOnly value={verifiedPackages[row.id]}/></label>}
