@@ -1,3 +1,5 @@
+import {identityRoutes} from './identity-routes.js';
+import type {IdentityProvider} from './oidc.js';
 import type {OriginalStore} from './original-encryption.js';
 import {chronologyRows,registerChronology} from './chronology.js';
 import {sessionEpoch} from './session-epoch.js';
@@ -98,6 +100,7 @@ type ClaimRow = QueryResultRow & {
 };
 
 type AppOptions = {
+  identity?: IdentityProvider;
   pool: Pool;
   storageRoot: OriginalStore;
   allowedOrigins: string[];
@@ -520,10 +523,12 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return payload;
   });
 
+  identityRoutes(app,{...options,epoch});
+
   const authenticate = async (request: AppRequest): Promise<void> => {
     const token = request.cookies[sessionCookieName];
     if (!token) {
-      throw new ApiError(401, 'A valid local demo session is required.');
+      throw new ApiError(401, 'A valid session is required.');
     }
     const tokenHash = sha256(token);
     const result = await options.pool.query(
@@ -531,12 +536,14 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
          FROM sessions s
          JOIN memberships m ON m.tenant_id = s.tenant_id AND m.user_id = s.user_id
          JOIN users u ON u.id = s.user_id
-        WHERE s.token_hash = $1 AND s.epoch=$2 AND s.revoked_at IS NULL AND s.expires_at > now()`,
-      [tokenHash,epoch],
+         LEFT JOIN identity_bindings ib ON ib.id=s.identity_id AND ib.tenant_id=s.tenant_id AND ib.user_id=s.user_id
+        WHERE s.token_hash = $1 AND s.epoch=$2 AND s.revoked_at IS NULL AND s.expires_at > now()
+          AND (($3::text IS NULL AND s.identity_id IS NULL) OR ($3::text IS NOT NULL AND ib.issuer=$3 AND ib.revoked_at IS NULL AND s.identity_profile_hash=$4))`,
+      [tokenHash,epoch,options.identity?.issuer??null,options.identity?.fingerprint??null],
     );
     const row = result.rows[0] as QueryResultRow | undefined;
     if (!row) {
-      throw new ApiError(401, 'A valid local demo session is required.');
+      throw new ApiError(401, 'A valid session is required.');
     }
     request.actor = {
       tokenHash: row.token_hash,
@@ -643,6 +650,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       schema: {body: emptyBodySchema},
     },
     async (request, reply) => {
+      if(options.identity)throw new ApiError(403,'Use provider sign-in. Demo sessions are disabled.');
       const demo = await options.pool.query(
         `SELECT u.display_name, m.role
            FROM memberships m
@@ -709,7 +717,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           [actor.tokenHash],
         );
         if (revoked.rows[0]) {
-          await writeAudit(client, actor, null, 'session.ended', 'session', revoked.rows[0].id, 'Local demo session ended');
+          await writeAudit(client, actor, null, 'session.ended', 'session', revoked.rows[0].id, 'Session ended');
         }
       });
       reply.clearCookie(sessionCookieName, {path: '/', sameSite: 'strict'});
@@ -734,6 +742,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return {revokedCount:revoked.rows.length,moreRemaining:more.rows[0].remaining};
     });
   });
+
+  app.get('/api/session/me',{preHandler:authenticate},async request=>({name:request.actor!.displayName,role:request.actor!.role,mode:options.identity?'provider':'demo'}));
 
   app.get('/api/workspace', {preHandler: authenticate}, async (request, reply) => {
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');

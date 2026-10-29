@@ -1,8 +1,10 @@
+import {identityFromEnv,type IdentityProvider} from './oidc.js';
 import {originalStoreFromEnv,type OriginalStore} from './original-encryption.js';
 import {sessionEpoch} from './session-epoch.js';
 import { isAbsolute } from 'node:path';
 
 export type RuntimeConfig = {
+  identity?: IdentityProvider;
   host: '127.0.0.1';
   port: number;
   databaseUrl: string;
@@ -80,7 +82,11 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     throw new Error('INVEOS_SESSION_TTL_SECONDS must be between 60 and 86400.');
   }
 
+  const identity=identityFromEnv(env);
+  if(identity&&!allowedOrigins.includes(new URL(identity.returnUri).origin))throw new Error('The provider return origin must be explicitly allowed.');
+
   return {
+    identity,
     documentLab: env.INVEOS_DOCUMENT_LAB === '1',
     host,
     port,
