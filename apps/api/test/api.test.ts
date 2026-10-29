@@ -1031,7 +1031,7 @@ test('assigned work queue is bounded, role-gated and loses work when case access
   assert.equal(queue.statusCode, 200, queue.body);
   const body = parseBody<{items: Array<WorkItem & {caseRef:string;caseTitle:string}>; more:boolean; interpretation:string}>(queue);
   assert.equal(body.interpretation, 'assigned_work_not_a_finding');
-  assert.ok(body.items.some(item => item.id === assigned.id && item.caseId === kase.id && item.caseRef === 'SYN-SUPPLIER-001'));
+  assert.ok(body.items.some(item => item.id === assigned.id && item.caseId === kase.id && item.caseRef === kase.ref));
   assert.equal(body.items.some(item => item.id === own.id), false);
   const clientId = await createMember(demoTenantId, 'client', 'Fictional excluded queue client');
   const client = await issueTestSession(clientId);
