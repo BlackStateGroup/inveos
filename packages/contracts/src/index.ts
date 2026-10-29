@@ -1,4 +1,7 @@
-export type Case = {id: string; ref: string; title: string; client: string; category: string; status: string; owner: string; due: string; scope: string; jurisdiction: string; authority: boolean};
+export const caseStages=['Intake','Scope review','Active','Review','Released','Closed','Archived'] as const;
+export type CaseStage=typeof caseStages[number];
+export type CaseLifecycle={state:CaseStage;version:number;collectionOpen:boolean;canManage:boolean;allowed:CaseStage[];history:{id:string;version:number;from:CaseStage|null;to:CaseStage;actorId:string;reason:string;source:string;authorityVersion:number|null;disclosureId:string|null;recordedAt:string}[];nextBefore:number|null;disclosures:{id:string;createdAt:string}[]};
+export type Case = {id: string; ref: string; title: string; client: string; category: string; status: string; owner: string; due: string; scope: string; jurisdiction: string; authority: boolean; lifecycle?: {state:CaseStage;version:number;collectionOpen:boolean}};
 export type Evidence = {id: string; caseId: string; filename: string; kind: string; bytes: number; sourceTime: string; receivedTime: string; digest: string; status: string; text: string; method: string; authorityId?: string; authorityVersion?: number; originalKind?: 'original_utf8' | 'opaque_binary'};
 export type Claim = {id: string; caseId: string; evidenceId: string; text: string; quote: string; status: string; reason?: string; sourceStartByte?: number; sourceEndByte?: number; sourceDigest?: string};
 export type Finding = {id: string; caseId: string; claimId: string; text: string; reviewer: string; reviewedAt: string};

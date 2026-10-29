@@ -1,3 +1,4 @@
+import {appendCaseStage,collectionOpen,registerCaseLifecycle,type LifecycleCase} from './case-lifecycle.js';
 import {registerManualSources} from './manual-sources.js';
 import {registerCaseGraph} from './case-graph.js';
 import type {ChronologySource} from '@inveos/contracts';
@@ -50,7 +51,7 @@ export type Actor = {
   role: Role;
 };
 
-type CaseRow = QueryResultRow & {
+type CaseRow = QueryResultRow & LifecycleCase & {
   tenant_id: string;
   id: string;
   ref: string;
@@ -346,6 +347,7 @@ function displayCase(row: CaseRow): Case {
     client: row.client,
     category: row.category,
     status: row.status,
+    lifecycle: {state:row.lifecycle_state,version:row.lifecycle_version,collectionOpen:collectionOpen(row)},
     owner: row.owner_name ?? 'Synthetic reviewer',
     due: row.due,
     scope: row.scope,
@@ -915,6 +917,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const authorityId = randomUUID();
       const record = await inTransaction(options.pool, async (client) => {
         const kase = await findCase(client, actor, caseId, true);
+        if(['Closed','Archived'].includes(kase.lifecycle_state))throw new ApiError(409,'Reopen the case for scope review before approving authority.');
         const version = (kase.authority_version ?? 0) + 1;
         const inserted = await client.query(
           `INSERT INTO authority_records
@@ -939,6 +942,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
             WHERE tenant_id = $1 AND id = $2`,
           [actor.tenantId, caseId, input.scope, version],
         );
+        await appendCaseStage(client,actor,caseId,{...kase,authority_version:version},'Active','Reviewer approved a new version of case authority.','authority_approved');
         await writeAudit(
           client,
           actor,
@@ -1004,8 +1008,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               const upload=await client.query('SELECT *,expires_at>clock_timestamp() AS live FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND created_by=$4 FOR UPDATE',[actor.tenantId,caseId,uploadId,actor.userId]);
               const u=upload.rows[0];if(!u||u.status!=='open'||!u.live||u.authority_version!==kase.authority_version)throw new ApiError(409,'Upload is closed, expired or authority changed.');
             }
-            if (!kase.authority_version || kase.status !== 'Active') {
-              throw new ApiError(409, 'Evidence intake is blocked until authority scope is approved.');
+            if (!collectionOpen(kase)) {
+              throw new ApiError(409, 'Evidence intake requires approved authority and an open collection stage.');
             }
             const authorityResult = await client.query(
               `SELECT id, version
@@ -1622,7 +1626,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         if(input.pdfSha256!==built.digest||input.redactionSha256!==built.redactionDigest)throw new ApiError(409,'PDF review fingerprint mismatch.');
         const prior=(await client.query('SELECT * FROM report_rendition_reviews WHERE tenant_id=$1 AND case_id=$2 AND rendition_id=$3 AND reviewer_id=$4',[actor.tenantId,caseId,renditionId,actor.userId])).rows[0];
         if(prior){if(prior.decision!==input.decision||prior.reason!==reason)throw new ApiError(409,'PDF review already recorded. Create a new rendition for a changed decision.');return pdfReviewReceipt(prior);}
-        if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
+        if(kase.status!=='Active'||!kase.authority_version||!['Active','Review','Released'].includes(kase.lifecycle_state))throw new ApiError(409,'Active approved authority and an open case stage required.');
         await verifyFrozenSources(client,actor,caseId,revisionId,built.model.sourceReportSha256);
         const reviewed=(await client.query(`INSERT INTO report_rendition_reviews(tenant_id,case_id,rendition_id,id,reviewer_id,authority_version,pdf_digest,redaction_digest,decision,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING *`,[actor.tenantId,caseId,renditionId,randomUUID(),actor.userId,kase.authority_version,built.digest,built.redactionDigest,input.decision,reason])).rows[0];
         if(!reviewed)throw Object.assign(new Error('Concurrent PDF review retry'),{code:'40001'});
@@ -1635,7 +1639,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     if(reason.length<10||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(input.expiresAt)||!Number.isFinite(expiry))throw new ApiError(422,'Valid UTC expiry and disclosure reason required.');
     return reportTransaction(async client=>{const kase=await findCase(client,actor,caseId,true);const old=(await client.query(`SELECT d.*,dr.rendition_id,pr.pdf_digest FROM report_disclosures d ${pdfDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.created_by=$3 AND d.idempotency_key=$4`,[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
       if(old){if(old.revision_id!==revisionId||old.rendition_id!==renditionId||old.pdf_digest?.trim()!==input.pdfSha256||old.recipient_id!==input.recipientId||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason)throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
-      if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
+      if(kase.status!=='Active'||!kase.authority_version||!['Active','Review','Released'].includes(kase.lifecycle_state))throw new ApiError(409,'Active approved authority and an open case stage required.');
       const {built}=await loadRendition(client,actor,caseId,revisionId,renditionId);if(built.digest!==input.pdfSha256)throw new ApiError(409,'PDF disclosure fingerprint mismatch.');
       await verifyFrozenSources(client,actor,caseId,revisionId,built.model.sourceReportSha256);
       const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();if(expiry<=clock||expiry>clock+7*86400000)throw new ApiError(422,'Expiry must be within seven days.');
@@ -1660,7 +1664,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const old=(await client.query(`SELECT d.*,p.package_digest,dr.rendition_id FROM report_disclosures d LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${pdfDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.created_by=$3 AND d.idempotency_key=$4`,[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
       if(old?.rendition_id)throw new ApiError(409,'Disclosure retry differs.');
       if(old){const packageDigest=old.package_digest?.trim();if(old.revision_id!==revisionId||old.recipient_id!==input.recipientId||old.digest.trim()!==input.sha256||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason||(packageDigest??undefined)!==input.documentPackageSha256||Boolean(packageDigest)!==(input.confirmDocumentPackageVerified===true))throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
-      if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Active approved authority required.');
+      if(kase.status!=='Active'||!kase.authority_version||!['Active','Review','Released'].includes(kase.lifecycle_state))throw new ApiError(409,'Active approved authority and an open case stage required.');
       const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();
       if(expiry<=clock||expiry>clock+7*86400000)throw new ApiError(422,'Expiry must be within seven days.');
       const recipient=await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role='client'",[actor.tenantId,input.recipientId]);if(!recipient.rowCount)throw new ApiError(422,'Recipient must be a client in this tenant.');
@@ -1701,6 +1705,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
          EXISTS(SELECT 1 FROM report_rendition_reviews rr JOIN memberships rm ON rm.tenant_id=rr.tenant_id AND rm.user_id=rr.reviewer_id JOIN case_memberships rc ON rc.tenant_id=rr.tenant_id AND rc.user_id=rr.reviewer_id AND rc.case_id=rr.case_id
           WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=dr.rendition_id AND rr.authority_version=d.authority_version AND rr.pdf_digest=pr.pdf_digest AND rr.redaction_digest=pr.redaction_digest AND rr.decision='accept_for_disclosure' AND rm.role='reviewer')
          AND NOT EXISTS(SELECT 1 FROM report_rendition_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=dr.rendition_id AND rr.decision='request_changes')))`;
+  registerCaseLifecycle(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,disclosures:async(c,a,caseId,id)=>(await c.query(`SELECT d.id,d.created_at AS "createdAt" FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id ${pdfDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR d.id=$3) AND d.expires_at>clock_timestamp() AND ${disclosureEligibility} AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client') ORDER BY d.created_at DESC,d.id DESC LIMIT 50`,[a.tenantId,caseId,id??null])).rows});
   app.get('/api/cases/:caseId/disclosures',{preHandler:authenticate,schema:{params:caseParamsSchema,querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
     const actor=request.actor!,{caseId}=request.params as {caseId:string};
