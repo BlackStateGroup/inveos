@@ -1,3 +1,4 @@
+import {documentCitation,type DocumentSelection} from './document-citation.js';
 import {makeRasterDerivative,rasterProfile,rasterProfileDigest,type RasterResult} from './raster-derivative.js';
 const rasterKind='pdf_raster_lab_v1';
 import {documentKind,documentProfile,documentProfileDigest,makeDocumentDerivative,type DocumentContext,type DocumentResult} from './document-derivative.js';
@@ -345,11 +346,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         derivativeDigest:row.output_digest.trim(),processedAt:row.processed_at,sourceTime:row.source_time,receivedAt:row.received_time,derivative};
     });
   });
-  app.get('/api/cases/:caseId/integrity-jobs/:jobId/document-derivative',{preHandler:svc.authenticate,schema:{params}},async(request,reply)=>{
-    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
-    const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal derivatives only.');
-    const {caseId,jobId}=request.params as {caseId:string;jobId:string};
-    return inTransaction(svc.pool,async client=>{
+  async function verifiedDocument(client:PoolClient,actor:Actor,caseId:string,jobId:string){
       await svc.findCase(client,actor,caseId,true);
       const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time
         FROM document_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
@@ -363,6 +360,14 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         output=makeDocumentDerivative(original,context,{context,profileDigest:row.profile_digest.trim(),successful:true,raw:row.raw_bytes});
         if(output.digest!==row.output_digest.trim()||!output.bytes.equals(row.output_bytes))throw new Error('Derivative mismatch');
       } catch {throw new ApiError(409,'Original or document derivative integrity verification failed.');}
+      return {row,output};
+  }
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/document-derivative',{preHandler:svc.authenticate,schema:{params}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal derivatives only.');
+    const {caseId,jobId}=request.params as {caseId:string;jobId:string};
+    return inTransaction(svc.pool,async client=>{
+      const {row,output}=await verifiedDocument(client,actor,caseId,jobId);
       await svc.audit(client,actor,caseId,'document_derivative.read','integrity_job',jobId,'Verified unreviewed document derivative read');
       return {jobId,caseId,evidenceId:row.evidence_id,status:'unreviewed_derivative',authorityVersion:row.authority_version,
         sourceDigest:row.source_digest.trim(),attempt:row.attempt,profile:JSON.parse(row.profile),profileDigest:row.profile_digest.trim(),
@@ -370,6 +375,32 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         sourceTime:row.source_time,receivedAt:row.received_time,derivative:output.derivative};
     });
   });
+  const citationParams={...params,required:[...params.required,'citationId'],properties:{...params.properties,citationId:uuid}};
+  const selectionSchema={type:'object',additionalProperties:false,required:['derivativeDigest','itemRef','startByte','endByte','quote'],properties:{derivativeDigest:{type:'string',pattern:'^[a-f0-9]{64}$'},itemRef:{type:'string',pattern:'^#/texts/[0-9]{1,4}$'},startByte:{type:'integer',minimum:0,maximum:1048576},endByte:{type:'integer',minimum:1,maximum:1048576},quote:{type:'string',minLength:1,maxLength:4096}}};
+  for(const create of [false,true])app.route({method:create?'POST':'GET',url:'/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId',preHandler:create?svc.requireCsrf:svc.authenticate,schema:{params:citationParams,...(create?{body:selectionSchema}:{})},handler:async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal citation candidates only.');
+    const {caseId,jobId,citationId}=request.params as {caseId:string;jobId:string;citationId:string};
+    return inTransaction(svc.pool,async client=>{
+      const {row,output}=await verifiedDocument(client,actor,caseId,jobId);
+      if(create){const active=await client.query("SELECT 1 FROM cases WHERE tenant_id=$1 AND id=$2 AND status='Active' AND authority_version=$3",[actor.tenantId,caseId,row.authority_version]);if(!active.rowCount)throw new ApiError(409,'Current authority must match the extraction.');}
+      const key=[actor.tenantId,caseId,jobId,citationId];
+      let stored=(await client.query('SELECT * FROM document_citation_candidates WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND id=$4',key)).rows[0];
+      if(!create&&!stored)notFound();
+      const selection=(create?request.body:stored.selection) as DocumentSelection;
+      let checked;try{checked=documentCitation(output,selection);}catch{throw new ApiError(409,'Document citation selection failed verification.');}
+      if(stored){
+        let persisted;try{persisted=documentCitation(output,stored.selection);}catch{throw new ApiError(409,'Stored citation selection failed verification.');}
+        if(persisted.digest!==stored.citation_digest.trim()||!persisted.bytes.equals(stored.citation_bytes))throw new ApiError(409,'Stored citation bytes failed verification.');
+        if(create&&stored.created_by!==actor.userId)throw new ApiError(409,'Citation identity belongs to another author.');
+        if(stored.citation_digest.trim()!==checked.digest||!stored.citation_bytes.equals(checked.bytes))throw new ApiError(409,'Citation identity conflicts or stored bytes failed verification.');
+      }else{
+        stored=(await client.query(`INSERT INTO document_citation_candidates(tenant_id,case_id,job_id,id,created_by,selection,citation_bytes,citation_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,[...key,actor.userId,selection,checked.bytes,checked.digest])).rows[0];
+      }
+      await svc.audit(client,actor,caseId,create?'document_citation.saved':'document_citation.read','document_citation',citationId,'Verified unreviewed document citation candidate');
+      return {id:citationId,createdBy:stored.created_by,createdAt:stored.created_at,citationDigest:checked.digest,citation:checked.citation};
+    });
+  }});
   async function readRaster(actor:Actor,caseId:string,jobId:string){
     if(actor.role==='client')throw new ApiError(403,'Internal derivatives only.');
     return inTransaction(svc.pool,async client=>{

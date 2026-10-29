@@ -1181,7 +1181,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -3337,4 +3337,53 @@ test('real browser compares verified extraction regions with raster page two and
       assert.equal(await b.evaluate(`document.querySelector('section[aria-label="Verified unreviewed raster pages"]')===null`),true);
     });
   }finally{await f.app.close();}
+});
+
+async function citationFixture(){
+ await context.app!.close();context.app=await createAppInstance();const f=await documentFixture();
+ const lease=await claimIntegrityJob(context.pool!,f.scope);assert.ok(lease);await finishDocumentJob(context.pool!,context.storageRoot!,f.scope,lease.token,f.result);
+ const receipt=(await request('GET',f.url,context.demo!)).json();
+ return {...f,citationUrl:f.url.replace('/document-derivative','/document-citations/'+randomUUID()),selection:{derivativeDigest:receipt.derivativeDigest,itemRef:'#/texts/1',startByte:34,endByte:67,quote:'FICTIONAL INVEOS repeated passage'}};
+}
+test('document citation candidates persist exact occurrence with concurrent retry and remain outside findings',async()=>{
+ const f=await citationFixture();try{
+  const results=await Promise.all([1,2].map(()=>request('POST',f.citationUrl,context.demo!,{payload:f.selection})));for(const r of results)assert.equal(r.statusCode,200,r.body);assert.deepEqual(results[0]!.json(),results[1]!.json());
+  const saved=results[0]!.json();assert.equal(saved.citation.page,2);assert.equal(saved.citation.status,'unreviewed_candidate');assert.equal(saved.citation.offsetBasis,'extracted_utf8_not_original_pdf');
+  await context.app!.close();context.app=await createAppInstance();assert.deepEqual((await request('GET',f.citationUrl,context.demo!)).json(),saved);
+  assertError(await request('POST',f.citationUrl,context.demo!,{payload:{...f.selection,startByte:35,quote:f.selection.quote.slice(1)}}),409);
+  const count=await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[f.scope.caseId]);assert.equal(count.rows[0].n,0);
+  for(const sql of ['UPDATE document_citation_candidates SET citation_digest=citation_digest WHERE job_id=$1','DELETE FROM document_citation_candidates WHERE job_id=$1'])await assert.rejects(context.schemaAdminPool!.query(sql,[f.job.id]),/immutable|append.only/i);
+ }finally{await f.app.close();}
+});
+test('document citation candidates enforce CSRF, case membership, client denial and current authority',async()=>{
+ const f=await citationFixture();try{
+  assertError(await request('POST',f.citationUrl,context.demo!,{payload:f.selection,csrfHeader:false}),403);
+  const client=await createMember(demoTenantId,'client','Fictional citation client');assertError(await request('POST',f.citationUrl,await issueTestSession(client),{payload:f.selection}),403);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional citation outsider');assertError(await request('POST',f.citationUrl,await issueTestSession(outsider),{payload:f.selection}),404);
+  assert.equal((await request('POST',f.citationUrl,context.demo!,{payload:f.selection})).statusCode,200);
+  await approveAuthority(f.scope.caseId);assertError(await request('POST',f.citationUrl,context.demo!,{payload:f.selection}),409);
+  assert.equal((await request('GET',f.citationUrl,context.demo!)).statusCode,200); // Historical candidate, never current approval.
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE case_id=$1 AND user_id=$2',[f.scope.caseId,demoUserId]);assertError(await request('GET',f.citationUrl,context.demo!),404);
+ }finally{await f.app.close();}
+});
+test('document citation candidates reject altered selection and original on save and read',async()=>{
+ const f=await citationFixture();try{
+  for(const patch of [{itemRef:'#/texts/0'},{quote:'invented'},{derivativeDigest:'f'.repeat(64)}])assertError(await request('POST',f.citationUrl,context.demo!,{payload:{...f.selection,...patch}}),409);
+  assert.equal((await request('POST',f.citationUrl,context.demo!,{payload:f.selection})).statusCode,200);
+  const source=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.result.context.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,source.object_path),'Fictional corrupt cited original');
+  assertError(await request('GET',f.citationUrl,context.demo!),409);assertError(await request('POST',f.citationUrl,context.demo!,{payload:f.selection}),409);
+ }finally{await f.app.close();}
+});
+
+test('citation audit failure rolls back candidate and stored tampering fails closed',async()=>{
+ const f=await citationFixture();try{
+  await context.schemaAdminPool!.query("CREATE FUNCTION deny_citation_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='document_citation.saved' THEN RAISE EXCEPTION 'fictional citation audit failure'; END IF; RETURN NEW; END $$");
+  await context.schemaAdminPool!.query('CREATE TRIGGER deny_citation_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_citation_audit()');
+  try{assertError(await request('POST',f.citationUrl,context.demo!,{payload:f.selection}),500);assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_citation_candidates WHERE job_id=$1',[f.job.id])).rows[0].n,0);}
+  finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_citation_audit ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION deny_citation_audit()');}
+  assert.equal((await request('POST',f.citationUrl,context.demo!,{payload:f.selection})).statusCode,200);
+  await context.schemaAdminPool!.query('ALTER TABLE document_citation_candidates DISABLE TRIGGER document_citation_candidates_append_only');
+  try{await context.schemaAdminPool!.query('UPDATE document_citation_candidates SET selection=$2 WHERE job_id=$1',[f.job.id,{...f.selection,quote:'invented'}]);assertError(await request('GET',f.citationUrl,context.demo!),409);assertError(await request('POST',f.citationUrl,context.demo!,{payload:f.selection}),409);}
+  finally{await context.schemaAdminPool!.query('ALTER TABLE document_citation_candidates ENABLE TRIGGER document_citation_candidates_append_only');}
+ }finally{await f.app.close();}
 });

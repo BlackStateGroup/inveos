@@ -143,3 +143,5 @@
 - [Verified raster page inspection](67_RASTER_PAGE_INSPECTION.md) — bounded verified page display with stale-image cleanup.
 
 - [Raster passage comparison](68_RASTER_PASSAGE_COMPARISON.md) — explicit lineage-matched extraction overlays.
+
+- [Document citation candidates](69_DOCUMENT_CITATION_CANDIDATES.md) — durable exact extracted selections, separate from approval.

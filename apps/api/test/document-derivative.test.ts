@@ -95,3 +95,15 @@ test('page map converts both origins without mutating native coordinates and rej
   const {job,response}=await clientFixture();const {inspectDocumentDerivative}=await import('../../web/src/documentInspection.js');
   const checked=await inspectDocumentDerivative(response,job);assert.deepEqual(checked.pages,response.derivative.pages);
 });
+
+test('document citation binds the selected repeated occurrence and rejects cross-item ranges',async()=>{
+ const {documentCitation}=await import('../src/document-citation.js');const output=run();
+ const selection={derivativeDigest:output.digest,itemRef:'#/texts/1',startByte:34,endByte:67,quote:'FICTIONAL INVEOS repeated passage'};
+ const c=documentCitation(output,selection);assert.equal(c.citation.page,2);assert.equal(c.citation.status,'unreviewed_candidate');assert.equal(c.citation.offsetBasis,'extracted_utf8_not_original_pdf');
+ for(const patch of [{itemRef:'#/texts/0'},{startByte:0},{endByte:68},{quote:'invented'},{derivativeDigest:'f'.repeat(64)}])assert.throws(()=>documentCitation(output,{...selection,...patch}));
+});
+test('document citations enforce UTF-8 boundaries without normalising quotes',async()=>{
+ const {documentCitation}=await import('../src/document-citation.js');const data=structuredClone(recorded);data.texts=[data.texts[0]];data.texts[0].text='Fictional café';data.texts[0].prov[0].charspan=[0,14];const output=run(data);
+ const s={derivativeDigest:output.digest,itemRef:'#/texts/0',startByte:10,endByte:15,quote:'café'};assert.equal(documentCitation(output,s).citation.quote,'café');
+ assert.throws(()=>documentCitation(output,{...s,startByte:14,quote:'é'}));assert.throws(()=>documentCitation(output,{...s,endByte:14,quote:'caf'}));
+});
