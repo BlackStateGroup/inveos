@@ -15,3 +15,5 @@ The list is mutable: concurrent ownership/deadline/status changes can move rows 
 [Contract and reproduction](../89_ASSIGNED_WORK_QUEUE.md).
 
 ![Personal assignments with scoped paging and case navigation](assets/assigned-work-desktop.png)
+
+Final merged head **`b229c18d11db632cfa753d942e01e8e0c0148b8f`** passed [Checks 40945812670](https://github.com/BlackStateGroup/inveos/actions/runs/40945812670): **287 Node/116 Python, zero failures/skips**. Evidence-head Checks 40945286401 exposed an early click on the disabled Previous button while loading. The final test waits for enabled navigation and actual results; the application/render is unchanged from the inspected run. PR #83 merged as `4eca42dcae5c62c3fc60656347e95fc5822972ba`.
