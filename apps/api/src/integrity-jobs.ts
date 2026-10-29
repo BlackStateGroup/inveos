@@ -42,7 +42,7 @@ async function permitted(client: PoolClient, row: QueryResultRow): Promise<boole
   const r = await client.query(`SELECT 1 FROM cases c JOIN case_memberships cm ON cm.tenant_id=c.tenant_id AND cm.case_id=c.id
     JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
     WHERE c.tenant_id=$1 AND c.id=$2 AND cm.user_id=$3 AND m.role <> 'client'
-      AND c.status='Active' AND c.authority_version=$4 FOR SHARE OF c`, [row.tenant_id,row.case_id,row.requested_by,row.authority_version]);
+      AND c.status='Active' AND c.lifecycle_state IN ('Active','Review') AND c.authority_version=$4 FOR SHARE OF c`, [row.tenant_id,row.case_id,row.requested_by,row.authority_version]);
   return r.rowCount === 1;
 }
 async function terminal(client: PoolClient, s: Scope, status: string, code: string | null, token: string | null = null) {
@@ -315,7 +315,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         return dto(old.rows[0]);
       }
       const source = await client.query(`SELECT e.digest,e.original_kind,e.byte_length,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
-        WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active'`, [actor.tenantId,caseId,input.evidenceId]);
+        WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
       if([documentKind,rasterKind,ocrKind].includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>65536))throw new ApiError(409,'Document lab requires a bounded binary original.');

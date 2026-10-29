@@ -1,3 +1,4 @@
+import {collectionOpen,type LifecycleCase} from './case-lifecycle.js';
 import {randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
@@ -6,7 +7,7 @@ import type {Actor} from './app.js';
 import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
- findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<{status:string;authority_version:number|null}>;
+ findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<LifecycleCase>;
  audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>;
  receive:(a:Actor,caseId:string,input:BinaryEvidenceInput,uploadId:string)=>Promise<Evidence>;
  receipt:(a:Actor,caseId:string,id:string)=>Promise<Evidence>;
@@ -108,7 +109,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
    const metadata={filename:input.filename,sourceTime:input.sourceTime,method:input.method,expectedSha256:input.expectedSha256};
    const prior=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
    if(prior.rows[0]){const row=prior.rows[0];if(row.byte_length!==input.byteLength||Object.entries(metadata).some(([k,v])=>row.metadata[k]!==v))throw new ApiError(409,'Reservation key already used.');return dto(row);}
-   if(kase.status!=='Active'||!kase.authority_version)throw new ApiError(409,'Approved authority required.');
+   if(!collectionOpen(kase))throw new ApiError(409,'Approved authority required.');
    const count=await c.query("SELECT count(*)::int AS n FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND status='open'",[actor.tenantId,caseId]);
    if(count.rows[0].n>=10)throw new ApiError(409,'Cancel or complete outstanding reservations before reserving more.');
    const id=randomUUID();const row=await c.query('INSERT INTO upload_reservations(tenant_id,case_id,id,created_by,idempotency_key,authority_version,metadata,byte_length) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[actor.tenantId,caseId,id,actor.userId,input.idempotencyKey,kase.authority_version,metadata,input.byteLength]);
@@ -128,7 +129,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
     await s.audit(c,actor,caseId,'upload.cancelled','upload',uploadId,'Pending upload cancelled; staging bytes removed');row.status='cancelled';
    }
    if(action==='chunk'||(action==='complete'&&row.status!=='completed')){
-    if(row.status!=='open'||!row.live||kase.status!=='Active'||kase.authority_version!==row.authority_version)throw new ApiError(409,'Upload is closed, expired or authority changed.');
+    if(row.status!=='open'||!row.live||!collectionOpen(kase)||kase.authority_version!==row.authority_version)throw new ApiError(409,'Upload is closed, expired or authority changed.');
    }
    if(action==='chunk'){
     const input=request.body as {ordinal:number;contentBase64:string},bytes=Buffer.from(input.contentBase64,'base64');
