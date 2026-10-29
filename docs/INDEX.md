@@ -170,3 +170,5 @@
 - [Encrypted recovery and restored worker retirement](84_ENCRYPTED_RESTORE.md): actual database/object/key restoration, stale worker/session denial and remaining production recovery gates.
 
 - [Provider identity sessions](83_PROVIDER_IDENTITY.md): limited code/PKCE integration, membership enrolment/revocation, investigator and client sign-in, explicit remaining provider/MFA acceptance.
+
+- [Case search and private saved views](85_CASE_SEARCH_VIEWS.md): permission-filtered stored records, private versioned filters and actual test boundaries.
