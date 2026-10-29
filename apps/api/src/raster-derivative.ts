@@ -49,7 +49,7 @@ export function makeRasterDerivative(original:Buffer,context:DocumentContext,res
     if(checked.digest!==p.pngSha256||checked.byteLength!==p.pngBytes)fail();
     return {page:p.page,...checked,bytes};
   });
-  const manifest={format:'inveos_raster_derivative_v1',context:{...context},profileDigest:rasterProfileDigest,reviewState:'unreviewed',
+  const manifest={format:'inveos_raster_derivative_v1',context:{tenantId:context.tenantId,caseId:context.caseId,jobId:context.jobId,evidenceId:context.evidenceId,sourceDigest:context.sourceDigest,authorityVersion:context.authorityVersion},profileDigest:rasterProfileDigest,reviewState:'unreviewed',
     coordinates:'top_left_pixels',limitations:['forms_omitted','annotations_omitted','greyscale','visual_fidelity_unapproved'],
     pages:pages.map(p=>({page:p.page,width:p.width,height:p.height,byteLength:p.byteLength,digest:p.digest}))};
   const bytes=Buffer.from(JSON.stringify(manifest));

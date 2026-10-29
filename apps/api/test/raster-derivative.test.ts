@@ -40,3 +40,9 @@ test('raster boundary denies changed context, source, profile, hashes and page o
     (r:ReturnType<typeof result>)=>{r.pages=[];}]){const r=result();mutate(r);assert.throws(()=>makeRasterDerivative(original,context,r));}
   assert.throws(()=>makeRasterDerivative(Buffer.from('%PDF-substituted'),context,result()));
 });
+
+test('manifest context ordering is fixed and unrelated caller metadata is excluded',()=>{
+  const reordered={authorityVersion:1,sourceDigest:context.sourceDigest,evidenceId:context.evidenceId,jobId:context.jobId,caseId:context.caseId,tenantId:context.tenantId,internalNote:'must not enter manifest'};
+  const a=makeRasterDerivative(original,context,result()),b=makeRasterDerivative(original,reordered,result());
+  assert.equal(a.digest,b.digest);assert.ok(!b.bytes.toString().includes('internalNote'));
+});
