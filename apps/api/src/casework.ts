@@ -259,6 +259,33 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     });
   });
 
+
+  app.get('/api/work/queue', {preHandler: internal, schema:{querystring:{type:'object',additionalProperties:false,properties:{
+    kind:{enum:kinds},status:{enum:allStatuses},afterId:uuid,afterDue:{type:'string',pattern:'^(none|[1-9][0-9]{3}-[0-9]{2}-[0-9]{2})$'},
+  }}}}, async (request) => {
+    const actor=request.actor!,input=request.query as {kind?:string;status?:string;afterId?:string;afterDue?:string};
+    if(Boolean(input.afterId)!==(input.afterDue!==undefined))throw new ApiError(422,'Supply the complete queue cursor.');
+    if(input.afterDue&&input.afterDue!=='none')validateText({title:'Queue cursor',body:'',dueDate:input.afterDue});
+    return inTransaction(services.pool, async (client) => {
+      await client.query("SET LOCAL statement_timeout='2s'");
+      // Current membership and ownership apply to every page; assignment never grants access.
+      const rows=await client.query(
+        `SELECT w.id,w.case_id,w.kind,w.title,w.status,w.version,w.updated_at,
+                w.due_date::text AS due_date,left(w.body,260) AS excerpt,c.ref AS case_ref,c.title AS case_title
+           FROM case_work_items w
+           JOIN case_memberships cm ON cm.tenant_id=w.tenant_id AND cm.case_id=w.case_id AND cm.user_id=$2
+           JOIN cases c ON c.tenant_id=w.tenant_id AND c.id=w.case_id
+          WHERE w.tenant_id=$1 AND w.owner_id=$2 AND ($3::text IS NULL OR w.kind=$3) AND ($4::text IS NULL OR w.status=$4)
+            AND ($5::uuid IS NULL OR (coalesce(w.due_date,'infinity'::date),w.id)>(coalesce($6::date,'infinity'::date),$5::uuid))
+          ORDER BY w.due_date ASC NULLS LAST,w.id ASC LIMIT 101`,
+        [actor.tenantId,actor.userId,input.kind??null,input.status??null,input.afterId??null,input.afterDue==='none'?null:input.afterDue??null],
+      );
+      const more=rows.rows.length>100,items=rows.rows.slice(0,100).map(row=>({id:row.id,caseId:row.case_id,kind:row.kind,title:row.title,
+        status:row.status,version:row.version,dueDate:row.due_date,updatedAt:iso(row.updated_at),excerpt:row.excerpt,caseRef:row.case_ref,caseTitle:row.case_title})),last=items.at(-1);
+      return {items,more,next:more?{id:last!.id,dueDate:last!.dueDate}:null,interpretation:'assigned_work_not_a_finding'};
+    });
+  });
+
   app.post('/api/cases/:caseId/work/:itemId/links', {
     preHandler: services.requireCsrf,
     schema: {params, body: {type: 'object', additionalProperties: false, required: ['id', 'claimId', 'relation', 'reason'],

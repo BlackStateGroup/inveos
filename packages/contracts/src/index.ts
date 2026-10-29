@@ -176,6 +176,8 @@ export type WorkCommentInput={body:string;mentions:string[];reason:string};
 export type WorkComment={id:string;itemId:string;authorId:string;authorName:string;version:number;body:string;mentions:{userId:string;name:string}[];withdrawn:boolean;reason:string;createdAt:string;recordedAt:string;canEdit:boolean};
 export type WorkMentionPage={items:{commentId:string;itemId:string;version:number;authorName:string;excerpt:string;title:string;recordedAt:string}[];more:boolean};
 
+export type AssignedWorkEntry=Pick<WorkItem,'id'|'caseId'|'kind'|'title'|'status'|'version'|'dueDate'|'updatedAt'>&{excerpt:string;caseRef:string;caseTitle:string};
+export type AssignedWorkPage={items:AssignedWorkEntry[];more:boolean;next:{id:string;dueDate:string|null}|null;interpretation:'assigned_work_not_a_finding'};
 export type ManualSourceFields={url:string;publisher:string;retrievedAt:string;method:string;trustGrade:'unassessed'|'primary_record'|'secondary_report'|'disputed';termsReference:string;purpose:string;lawfulBasis:string;scope:string;retentionDays:number;minimisation:string;annotation:string};
 export type ManualSourceOriginal={id:string;filename:string;sha256:string;sourceTime:string;receivedTime:string;authorityId:string;authorityVersion:number;status:string};
 export type ManualSourceRecord=ManualSourceFields&{id:string;caseId:string;version:number;original:ManualSourceOriginal;recordedBy:string;recordedAt:string;withdrawn:boolean;digest:string};

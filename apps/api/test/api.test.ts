@@ -1007,6 +1007,80 @@ async function reviseWork(item: WorkItem, input = workEdit(item), session = cont
   return request('POST', `/api/cases/${item.caseId}/work/${item.id}/revise`, session, {payload: input});
 }
 
+
+test('assigned work queue is bounded, role-gated and loses work when case access is removed', async () => {
+  await context.app!.close();context.app=await createAppInstance();
+  context.demo = await issueTestSession(demoUserId);
+  const kase = await createCase();
+  const colleagueId = await createMember(demoTenantId, 'investigator', 'Fictional queue investigator');
+  await context.schemaAdminPool!.query(
+    'INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',
+    [demoTenantId, kase.id, colleagueId],
+  );
+  const colleague = await issueTestSession(colleagueId);
+  const assigned = parseBody<WorkItem>(await createWork(kase.id, workInput({
+    title: 'Check fictional supplier declaration',
+    ownerId: colleagueId,
+    dueDate: '2026-10-30',
+  })));
+  const own = parseBody<WorkItem>(await createWork(kase.id, workInput({
+    title: 'Keep this fictional reviewer work private to its owner',
+    ownerId: demoUserId,
+    dueDate: '2026-10-31',
+  })));
+  const queue = await request('GET', '/api/work/queue', colleague);
+  assert.equal(queue.statusCode, 200, queue.body);
+  const body = parseBody<{items: Array<WorkItem & {caseRef:string;caseTitle:string}>; more:boolean; interpretation:string}>(queue);
+  assert.equal(body.interpretation, 'assigned_work_not_a_finding');
+  assert.ok(body.items.some(item => item.id === assigned.id && item.caseId === kase.id && item.caseRef === kase.ref));
+  assert.equal(body.items.some(item => item.id === own.id), false);
+  const clientId = await createMember(demoTenantId, 'client', 'Fictional excluded queue client');
+  const client = await issueTestSession(clientId);
+  assertError(await request('GET', '/api/work/queue', client), 403);
+  await context.schemaAdminPool!.query(
+    'DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',
+    [demoTenantId, kase.id, colleagueId],
+  );
+  const revoked = parseBody<{items: WorkItem[]}>(await request('GET', '/api/work/queue', colleague));
+  assert.equal(revoked.items.some(item => item.id === assigned.id), false);
+});
+
+test('assigned queue pages all dated and undated work, filters current records and enforces tenant boundaries',async()=>{
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);
+ const kase=await createCase(),ids=Array.from({length:201},()=>randomUUID());
+ await context.schemaAdminPool!.query(`INSERT INTO case_work_items(tenant_id,case_id,id,kind,title,body,status,owner_id,due_date,request_hash,created_by)
+  SELECT $1,$2,id,'task','Fictional bounded queue entry',repeat('Fictional assigned work. ',30),CASE WHEN n%2=0 THEN 'Complete' ELSE 'Blocked' END,$3,CASE WHEN n<=90 THEN '2026-01-01'::date WHEN n<=150 THEN '2026-02-01'::date ELSE NULL END,$4,$3 FROM unnest($5::uuid[]) WITH ORDINALITY AS rows(id,n)`,[demoTenantId,kase.id,demoUserId,'a'.repeat(64),ids]);
+ // Other cases can already exist in this suite; use an isolated assigned member for exact page counts.
+ const member=await createMember(demoTenantId,'investigator','Fictional pagination owner');await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,kase.id,member]);await context.schemaAdminPool!.query('UPDATE case_work_items SET owner_id=$1 WHERE case_id=$2',[member,kase.id]);const session=await issueTestSession(member);
+ const page=async(query='')=>{const r=await request('GET','/api/work/queue'+query,session);assert.equal(r.statusCode,200,r.body);return r.json();};
+ const first=await page();assert.equal(first.items.length,100);assert.equal(first.more,true);assert.equal(first.items[0].dueDate,'2026-01-01');assert.equal(first.items[0].excerpt.length,260);assert.equal('body' in first.items[0],false);
+ const query=(next:{id:string;dueDate:string|null})=>'?afterId='+next.id+'&afterDue='+(next.dueDate??'none'),second=await page(query(first.next)),third=await page(query(second.next));assert.equal(second.items.length,100);assert.equal(third.items.length,1);assert.equal(third.items[0].dueDate,null);assert.equal(third.next,null);assert.equal(third.more,false);assert.deepEqual([...first.items,...second.items,...third.items].map((i:{id:string})=>i.id).sort(),ids.sort());
+ const filtered=await page('?kind=task&status=Complete');assert.equal(filtered.items.length,100);assert.ok(filtered.items.every((i:{status:string})=>i.status==='Complete'));assert.equal(filtered.more,false);assert.equal((await page('?kind=question')).items.length,0);
+ for(const query of ['?afterId='+randomUUID(),'?afterDue=none','?afterId='+randomUUID()+'&afterDue=2026-02-30','?kind=unknown','?status=unknown','?tenantId='+demoTenantId])assertError(await request('GET','/api/work/queue'+query,session),422);
+ const tenant=randomUUID();await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional separate queue tenant']);await context.schemaAdminPool!.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'investigator')",[tenant,member]);const foreign=await issueTestSession(member,tenant),foreignCase=await createCase(foreign),foreignItem=parseBody<WorkItem>(await createWork(foreignCase.id,workInput({ownerId:member,title:'Fictional separate tenant work'}),foreign));
+ const foreignQueue=await request('GET','/api/work/queue',foreign);assert.equal(foreignQueue.statusCode,200,foreignQueue.body);assert.deepEqual(foreignQueue.json().items.map((i:{id:string})=>i.id),[foreignItem.id]);assert.equal((await page()).items.some((i:{id:string})=>i.id===foreignItem.id),false);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,kase.id,member]);assert.deepEqual((await page(query(first.next))).items,[]);
+});
+
+test('assigned queue reflects reassignment, deadline corrections and current role immediately',async()=>{
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);const kase=await createCase(),member=await createMember(demoTenantId,'investigator','Fictional changing queue owner');await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,kase.id,member]);const session=await issueTestSession(member),item=parseBody<WorkItem>(await createWork(kase.id,workInput({ownerId:member,dueDate:null})));
+ const initial=await request('GET','/api/work/queue',session);assert.equal(initial.json().items[0].dueDate,null);const correction=parseBody<WorkItem>(await reviseWork(item,workEdit(item,{dueDate:'2026-02-01'})));assert.equal((await request('GET','/api/work/queue',session)).json().items[0].dueDate,'2026-02-01');assert.equal((await reviseWork(correction,workEdit(correction,{ownerId:demoUserId}))).statusCode,200);assert.deepEqual((await request('GET','/api/work/queue',session)).json().items,[]);
+ await context.schemaAdminPool!.query("UPDATE memberships SET role='client' WHERE tenant_id=$1 AND user_id=$2",[demoTenantId,member]);assertError(await request('GET','/api/work/queue',session),403);
+});
+
+test('real browser filters personal assignments, opens the correct case and clears revoked work',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ await context.app!.close();context.app=await createAppInstance();context.demo=await issueTestSession(demoUserId);const firstCase=await createCase(context.demo!,{title:'Fictional first queue case'}),secondCase=await createCase(context.demo!,{title:'Fictional second queue case'});await approveAuthority(firstCase.id);await approveAuthority(secondCase.id);
+ const first=parseBody<WorkItem>(await createWork(firstCase.id,workInput({kind:'task',title:'Fictional first assigned task',ownerId:demoUserId,dueDate:'2026-01-01'}))),second=parseBody<WorkItem>(await createWork(secondCase.id,workInput({kind:'task',title:'Fictional second assigned task',ownerId:demoUserId,dueDate:'2026-02-01'})));assert.equal((await reviseWork(second,workEdit(second,{status:'Complete'}))).statusCode,200);
+ const extra=Array.from({length:101},()=>randomUUID());await context.schemaAdminPool!.query(`INSERT INTO case_work_items(tenant_id,case_id,id,kind,title,body,status,owner_id,request_hash,created_by) SELECT $1,$2,id,'task','Fictional undated queue fixture','Fictional pagination context','To do',$3,$4,$3 FROM unnest($5::uuid[]) id`,[demoTenantId,firstCase.id,demoUserId,'a'.repeat(64),extra]);
+ await withBrowserApp(async(b,origin)=>{const ui=await binaryBrowserControls(b,origin,firstCase.id);await ui.click('Assignments');await eventually(async()=>(await ui.text()).includes('Your assigned work.')&&(await ui.text()).includes(first.title)&&(await ui.text()).includes(second.title),'cross-case own queue');await ui.click('Next assignments');await eventually(async()=>await b.evaluate<boolean>(`!![...document.querySelectorAll('button')].find(button=>button.textContent==='Previous assignments'&&!button.disabled)&&!!document.querySelector('[aria-label=\"Assigned work results\"] article')`)&&!(await ui.text()).includes(first.title),'next assignment page ready');await ui.click('Previous assignments');await eventually(async()=>(await ui.text()).includes(first.title)&&(await ui.text()).includes(second.title),'previous assignment page');
+  await b.evaluate(`(()=>{const field=[...document.querySelectorAll('label')].find(l=>l.textContent.startsWith('Work status')).querySelector('select');field.value='Complete';field.dispatchEvent(new Event('change',{bubbles:true}));})()`);await eventually(async()=>(await ui.text()).includes(second.title)&&!(await ui.text()).includes(first.title),'queue status filter');await ui.click('Open assigned work: '+second.title);await eventually(async()=>await b.evaluate<boolean>(`location.hash.includes(${JSON.stringify('case='+secondCase.id)})&&!!document.getElementById(${JSON.stringify('work-'+second.id)})`),'correct case work opened');
+  await ui.click('Assignments');await eventually(async()=>(await ui.text()).includes(first.title)&&(await ui.text()).includes(second.title),'queue return');const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous&&(await ui.text()).includes('Your assigned work.')&&(await ui.text()).includes(second.title),'queue reload');
+  const artifact=fileURLToPath(new URL('../../../output/evals/assigned-work-desktop.png',import.meta.url));await mkdir(resolve(artifact,'..'),{recursive:true});const shot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(artifact,Buffer.from(shot.data,'base64'));
+  await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=window.innerWidth+1'));
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,secondCase.id,demoUserId]);await ui.click('Refresh assignments');await eventually(async()=>(await ui.text()).includes(first.title)&&!(await ui.text()).includes(second.title),'revoked case removed from queue');
+ });
+});
+
 test('persistent objectives, questions, hypotheses, tasks, notes and handovers share case state and survive restart', async () => {
   context.demo = await issueTestSession(demoUserId);
   const kase = await createCase();
@@ -1181,7 +1255,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql', '034_saved_case_views.sql', '035_work_discussions.sql', '036_case_graph.sql', '037_manual_sources.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql', '034_saved_case_views.sql', '035_work_discussions.sql', '036_case_graph.sql', '037_manual_sources.sql', '038_assigned_work_queue_index.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
