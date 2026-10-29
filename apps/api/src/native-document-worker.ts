@@ -1,6 +1,7 @@
 /** Opt-in research orchestration, not an approved production parser service. */
-import {mkdtemp,mkdir,rm,writeFile} from 'node:fs/promises';
+import {mkdtemp,mkdir,rm,writeFile,readFile} from 'node:fs/promises';
 import {isAbsolute,join} from 'node:path';
+import {isDeepStrictEqual} from 'node:util';
 import type {Pool} from 'pg';
 import {claimIntegrityJob,renewIntegrityJob,finishDocumentJob,finishRasterJob,finishIntegrityJob} from './integrity-jobs.js';
 import {documentKind,documentProfile,documentProfileDigest} from './document-derivative.js';
@@ -10,14 +11,15 @@ import {superviseWorker,WorkerStopped} from './leased-worker.js';
 import {runResearchContainer} from './container-worker.js';
 
 import {rasterProfileDigest} from './raster-derivative.js';
+import {ocrKind,ocrProfileDigest,ocrArtifactLock} from './ocr-derivative.js';
 type Scope={tenantId:string;caseId:string;jobId:string};
-export function validateNativeQualification(value:unknown){
+export function validateNativeQualification(value:unknown,ocr=false){
   const q=value as {status?:string;checkedAt?:string;profile?:string;imageId?:string;repoDigests?:string[];checks?:string[];daemonLogging?:boolean;resourceEvidence?:{oomKilled?:boolean;pids?:number;cpu?:number}}|null;
   const profile=JSON.parse(documentProfile);
   const age=Date.now()-Date.parse(q?.checkedAt??'');
   if(!Number.isFinite(age)||age<0||age>15*60*1000)throw new WorkerStopped('host_not_qualified');
-  if(!q||q.status!=='host_probe_passed'||q.profile!=='runtime-1g'||q.imageId!=='sha256:'+profile.imageId||q.daemonLogging!==false
-    ||!Array.isArray(q.repoDigests)||!q.repoDigests.includes(profile.image)||!Array.isArray(q.checks)
+  if(!q||q.status!=='host_probe_passed'||q.profile!=='runtime-1g'||(ocr?!/^sha256:[a-f0-9]{64}$/.test(q.imageId??''):q.imageId!=='sha256:'+profile.imageId)||q.daemonLogging!==false
+    ||!Array.isArray(q.repoDigests)||(!ocr&&!q.repoDigests.includes(profile.image))||!Array.isArray(q.checks)
     ||!['boundaries','timeout','stdout_limit','stderr_limit','memory','pids','cpu'].every(c=>q.checks!.includes(c))
     ||q.resourceEvidence?.oomKilled!==true||!(Number(q.resourceEvidence?.pids)>0)||!(Number(q.resourceEvidence?.cpu)>0))throw new WorkerStopped('host_not_qualified');
 }
@@ -28,11 +30,14 @@ exec python /original/run.py`;
 type Options={researchOnly:true;repositoryRoot:string;qualification:unknown;signal?:AbortSignal};
 export function runNativeDocumentJob(pool:Pool,storageRoot:string,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'document');}
 export function runRasterDocumentJob(pool:Pool,storageRoot:string,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'raster');}
-async function runNativeJob(pool:Pool,storageRoot:string,scope:Scope,options:Options,kind:'document'|'raster'){
+export function runOcrDocumentJob(pool:Pool,storageRoot:string,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'ocr');}
+async function runNativeJob(pool:Pool,storageRoot:string,scope:Scope,options:Options,kind:'document'|'raster'|'ocr'){
   if(options.researchOnly!==true||!isAbsolute(options.repositoryRoot))throw new WorkerStopped('configuration');
-  validateNativeQualification(options.qualification);
+  validateNativeQualification(options.qualification,kind==='ocr');
+  const qualified=options.qualification as {imageId:string;artifactLock?:string};
+  if(kind==='ocr'&&qualified.artifactLock!==ocrArtifactLock)throw new WorkerStopped('host_not_qualified');
   const row=(await pool.query('SELECT kind FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[scope.tenantId,scope.caseId,scope.jobId])).rows[0];
-  if(row?.kind!==(kind==='document'?documentKind:'pdf_raster_lab_v1'))return null;
+  if(row?.kind!==({document:documentKind,raster:'pdf_raster_lab_v1',ocr:ocrKind}[kind]))return null;
   if(options.signal?.aborted)throw new WorkerStopped('aborted');
   const lease=await claimIntegrityJob(pool,scope);if(!lease)return null;
   const renew=async()=>Boolean(await renewIntegrityJob(pool,scope,lease.token));
@@ -50,10 +55,26 @@ async function runNativeJob(pool:Pool,storageRoot:string,scope:Scope,options:Opt
     // First-party verifier expands hash-locked wheels as data. It never imports them.
     await superviseWorker({command:'/usr/bin/python3',args:[join(options.repositoryRoot,'tools/prepare_document_worker.py'),'--bundle',bundle,'--kind',kind],cwd:options.repositoryRoot,signal:options.signal,timeoutMs:90000,outputLimit:16384},renew);
     await writeFile(join(bundle,'input.pdf'),original,{flag:'wx',mode:0o444});
-    const output=await runResearchContainer({bundle,imageId:'sha256:'+JSON.parse(documentProfile).imageId,script,signal:options.signal},renew);
+    if(kind==='ocr'){
+      // Inspect actual files in this immutable image before any parser import.
+      // The large package tree is never trusted merely from a qualification label.
+      const inventoryScript=`export PYTHONPATH=/original PYTHONDONTWRITEBYTECODE=1\nexec python /original/run_tesseract_supplier.py --inventory`;
+      const inventory=JSON.parse(new TextDecoder('utf8',{fatal:true}).decode(await runResearchContainer({bundle,imageId:qualified.imageId,script:inventoryScript,signal:options.signal,outputLimit:262144},renew)));
+      const lockPath=join(options.repositoryRoot,'research/runtime_artifacts/tesseract-baseline.lock.json');
+      const lockBytes=await readFile(lockPath);
+      if(sha256(lockBytes)!==ocrArtifactLock)throw new WorkerStopped('runtime_drift');
+      const lock=JSON.parse(lockBytes.toString());
+      if(inventory.parserExecuted!==false||!isDeepStrictEqual(inventory.packages,lock.packages)||!isDeepStrictEqual(inventory.artifacts,lock.artifacts))throw new WorkerStopped('runtime_drift');
+    }
+    const output=await runResearchContainer({bundle,imageId:kind==='ocr'?qualified.imageId:'sha256:'+JSON.parse(documentProfile).imageId,script,signal:options.signal},renew);
     const parsed=JSON.parse(new TextDecoder('utf8',{fatal:true}).decode(output));
     if(kind==='raster'){
       return await finishRasterJob(pool,storageRoot,scope,lease.token,{context:{...scope,evidenceId:lease.evidenceId,sourceDigest:lease.digest,authorityVersion:source.authority_version},profileDigest:rasterProfileDigest,originalSha256:parsed.originalSha256,pages:parsed.pages});
+    }
+    if(kind==='ocr'){
+      if(parsed.originalSha256!==lease.digest||parsed.format!=='inveos_tesseract_pages_v1'||Object.keys(parsed).sort().join(' ')!=='format originalSha256 pages')throw new WorkerStopped('document_output');
+      const raw=Buffer.from(JSON.stringify({...parsed,runtimeImageId:qualified.imageId,artifactLock:ocrArtifactLock}));
+      return await finishDocumentJob(pool,storageRoot,scope,lease.token,{context:{...scope,evidenceId:lease.evidenceId,sourceDigest:lease.digest,authorityVersion:source.authority_version},profileDigest:ocrProfileDigest,successful:true,raw});
     }
     if(parsed.successful!==true||parsed.originalSha256!==lease.digest||!parsed.document)throw new WorkerStopped('document_output');
     // Cleanup is already confirmed before attachment. Bind authority from the job,

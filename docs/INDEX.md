@@ -158,3 +158,5 @@
 - [Canonical internal report PDF and redaction](77_CANONICAL_REPORT_PDF.md)
 - [Independent PDF review and recipient release](78_REVIEWED_PDF_RELEASE.md)
 - [Document-processing research decision and synthetic contract](../research/document_processing/DECISION.md): pinned licence/dependency review, worker boundary and explicit verification limits.
+
+- [Scanned document lineage and supplier case acceptance](79_SCANNED_DOCUMENT_LINEAGE.md)

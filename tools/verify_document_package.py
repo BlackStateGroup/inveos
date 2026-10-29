@@ -16,8 +16,10 @@ import sys
 
 if __package__:
     from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report
+    from .verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE
 else:
     from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report
+    from verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE
 
 MAX_PACKAGE = 64 * 1024 * 1024
 PROFILE = '3598b04aaddec299619919cb1f54922d6f3b0431929cc9124e23bb2b013d27a3'
@@ -147,9 +149,10 @@ def verify_exhibit(f, exhibit, case_id):
             and context['evidenceId'] == f['source']['id'] and context['sourceDigest'] == sha(original)
             and type(context['authorityVersion']) is int and context['authorityVersion'] > 0
             and context['authorityVersion'] == f['extraction']['authorityVersion'], 'Extraction scope')
-    require(sha(f['extraction']['profile'].encode('utf-8')) == PROFILE == f['extraction']['profileDigest'], 'Unsupported processing profile')
+    profile = f['extraction']['profileDigest']
+    require(profile in (PROFILE, OCR_PROFILE) and sha(f['extraction']['profile'].encode('utf-8')) == profile, 'Unsupported processing profile')
     require(sha(raw) == f['extraction']['rawDigest'] and sha(derivative_bytes) == f['extraction']['derivativeDigest'], 'Extraction fingerprints')
-    require(same(d, native_derivative(raw, context)), 'Normalised extraction does not replay')
+    require(same(d, ocr_derivative(raw, context, original) if profile == OCR_PROFILE else native_derivative(raw, context)), 'Normalised extraction does not replay')
     ref = f['reference']
     selected = next((r for r in d['references'] if r['itemRef'] == ref['itemRef']), None)
     require(selected is not None, 'Missing selected occurrence')
@@ -159,7 +162,7 @@ def verify_exhibit(f, exhibit, case_id):
     text[:start].decode('utf-8')
     require(text[start:end].decode('utf-8') == ref['quote'] and len(ref['quote'].encode('utf-8')) <= 4096, 'Exact quote')
     expected = {'format': 'inveos_document_citation_candidate_v1', 'context': context,
-                'derivativeDigest': sha(derivative_bytes), 'rawDigest': sha(raw), 'profileDigest': PROFILE,
+                'derivativeDigest': sha(derivative_bytes), 'rawDigest': sha(raw), 'profileDigest': profile,
                 'status': 'unreviewed_candidate', 'offsetBasis': d['offsetBasis'], 'itemRef': selected['itemRef'],
                 'page': selected['page'], 'bbox': selected['bbox'], 'startByte': start, 'endByte': end, 'quote': ref['quote']}
     require(same(c, expected) and sha(citation_bytes) == ref['citationDigest'] and same(ref['page'], selected['page'])

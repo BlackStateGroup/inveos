@@ -23,19 +23,24 @@ def package(objects):
     data.extend(f'trailer\n<< /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode());return bytes(data)
 
 
-def digital_supplier_pdf():
-    objects=[b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>']
-    for index,lines in enumerate(PAGES):
-        objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents {4+index*2} 0 R >>'.encode())
+def digital_supplier_pdf(page_index=None):
+    if page_index is not None and (type(page_index) is not int or page_index not in (0,1)):
+        raise ValueError('Unknown fictional supplier record')
+    pages=PAGES if page_index is None else [PAGES[page_index]]
+    kids=' '.join(f'{3+i*2} 0 R' for i in range(len(pages)))
+    objects=[b'<< /Type /Catalog /Pages 2 0 R >>',f'<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>'.encode()]
+    for index,lines in enumerate(pages):
+        objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 {3+2*len(pages)} 0 R >> >> /Contents {4+index*2} 0 R >>'.encode())
         stream=b'BT /F1 14 Tf 48 720 Td 28 TL\n'+b'\n'.join(b'('+line.encode('ascii')+b') Tj T*' for line in lines)+b'\nET\n'
         objects.append(f'<< /Length {len(stream)} >>\nstream\n'.encode()+stream+b'endstream')
     objects.append(b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');return package(objects)
 
 
 def scanned_supplier_pdf(images):
-    """Embed two explicit RGB page rasters; no text/font layer is added."""
-    if len(images)!=2:raise ValueError('Exactly two fictional supplier pages required')
-    objects=[b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>']
+    """Embed one or two explicit RGB page rasters; no text/font layer is added."""
+    if len(images) not in (1,2):raise ValueError('One or two fictional supplier pages required')
+    kids=' '.join(f'{3+i*3} 0 R' for i in range(len(images)))
+    objects=[b'<< /Type /Catalog /Pages 2 0 R >>',f'<< /Type /Pages /Kids [{kids}] /Count {len(images)} >>'.encode()]
     for index,(width,height,rgb) in enumerate(images):
         if type(width) is not int or type(height) is not int or not 1<=width<=2048 or not 1<=height<=2048 or len(rgb)!=width*height*3:raise ValueError('Invalid bounded page raster')
         image_number=5+index*3;stream=b'q 612 0 0 792 0 0 cm /Scan Do Q\n';image=zlib.compress(rgb,9)

@@ -22,7 +22,7 @@ export async function verifyCitation(value:unknown,d:InspectedDocument,expectedI
   const bytes=new TextEncoder().encode(ref!.text),decode=new TextDecoder('utf-8',{fatal:true});
   decode.decode(bytes.subarray(0,c.startByte-ref!.startByte));
   const quote=decode.decode(bytes.subarray(c.startByte-ref!.startByte,c.endByte-ref!.startByte));if(new TextEncoder().encode(quote).length>4096)fail();
-  const expected={format:'inveos_document_citation_candidate_v1',context:{tenantId:c.context.tenantId,caseId:d.caseId,jobId:d.jobId,evidenceId:d.evidenceId,sourceDigest:d.sourceDigest,authorityVersion:d.authorityVersion},derivativeDigest:d.derivativeDigest,rawDigest:d.rawDigest,profileDigest:d.profileDigest,status:'unreviewed_candidate',offsetBasis:'extracted_utf8_not_original_pdf',itemRef:ref!.itemRef,page:ref!.page,bbox:ref!.bbox,startByte:c.startByte,endByte:c.endByte,quote};
+  const expected={format:'inveos_document_citation_candidate_v1',context:{tenantId:c.context.tenantId,caseId:d.caseId,jobId:d.jobId,evidenceId:d.evidenceId,sourceDigest:d.sourceDigest,authorityVersion:d.authorityVersion},derivativeDigest:d.derivativeDigest,rawDigest:d.rawDigest,profileDigest:d.profileDigest,status:'unreviewed_candidate',offsetBasis:d.offsetBasis??'extracted_utf8_not_original_pdf',itemRef:ref!.itemRef,page:ref!.page,bbox:ref!.bbox,startByte:c.startByte,endByte:c.endByte,quote};
   if(JSON.stringify(c)!==JSON.stringify(expected))fail();
   const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(expected)))),b=>b.toString(16).padStart(2,'0')).join('');
   if(row!.citationDigest!==digest)fail();return row!;

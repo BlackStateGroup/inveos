@@ -10,13 +10,17 @@ from pathlib import Path
 import shutil
 import tempfile
 import uuid
-from experiment_native_pdf import prepare_bundle
+import hashlib
+import os
+from datetime import datetime,timezone
+from bounded_process import run_bounded
+from prepare_ocr_worker import prepare_ocr_bundle
 from probe_worker_isolation import command,container_args,check_configuration,require,run_probe
 
 ROOT=Path(__file__).resolve().parent.parent
 
 
-def experiment():
+def experiment(case_acceptance=False):
     cache=ROOT/'.research-cache';cache.mkdir(exist_ok=True)
     tag='inveos-tesseract-research:'+uuid.uuid4().hex
     # Only the first-party Dockerfile enters build context; no private files,
@@ -27,7 +31,7 @@ def experiment():
     try:
         qualification=run_probe(tag,runtime=True);image_id=qualification['imageId']
         with tempfile.TemporaryDirectory(dir=cache,prefix='ocr-supplier-') as directory:
-            bundle=Path(directory).resolve();bundle.chmod(0o755);prepare_bundle(bundle)
+            bundle=Path(directory).resolve();bundle.chmod(0o755);prepare_ocr_bundle(bundle)
             for name in ['run_tesseract_supplier.py','supplier_scan_fixture.py','bounded_process.py']:
                 shutil.copyfile(ROOT/'tools'/name,bundle/name)
             # Start detached: no host attach process enforces this deadline.
@@ -57,11 +61,27 @@ def experiment():
                     results.append(report)
                 finally:
                     command('rm','-f','-v',name);require(command('inspect',name,check=False).returncode!=0,'OCR container cleanup failed')
-        return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,detachedDeadlineVerified=True,
+        # Fail closed on *all* installed versions and selected native/model/notice
+        # bytes before enabling the fictional case worker. This is a content
+        # acceptance lock, not a complete package-archive or legal clearance.
+        lock_bytes=(ROOT/'research/runtime_artifacts/tesseract-baseline.lock.json').read_bytes()
+        lock=json.loads(lock_bytes)
+        require(lock['packages']==results[0]['packages'] and lock['artifacts']==results[0]['artifacts'],'OCR runtime artifact drift')
+        acceptance=None
+        if case_acceptance:
+            require(os.environ.get('INVEOS_TEST_DATABASE_URL','').endswith('/inveos_test'),'Disposable test database required')
+            (cache/'tesseract-worker-qualification.json').write_text(json.dumps({**qualification,'checkedAt':datetime.now(timezone.utc).isoformat(),'artifactLock':hashlib.sha256(lock_bytes).hexdigest()}))
+            (cache/'tesseract-supplier-input.json').write_text(json.dumps(results[1]['supplierSources']))
+            checked=run_bounded(['node','--import','tsx','--test','--test-concurrency=1','apps/api/test/ocr-worker.integration.ts'],timeout=300,max_output=1024*1024)
+            if checked.returncode:raise ValueError('Actual OCR case acceptance failed: '+checked.stdout.decode()[-20000:]+'\n'+checked.stderr.decode()[-4000:])
+            acceptance=checked.stdout.decode()
+        return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,detachedDeadlineVerified=True,caseAcceptance=acceptance,
                     inventory=results[0],experiment=results[1],approval='research_only_not_product_or_licence_approval',
                     remaining='Pinned-source Tesseract comparison, Tika/OCRmyPDF comparisons, noise/skew/multilingual/table corpus and durable OCR lineage/API acceptance remain open')
     finally:
         command('image','rm',tag,check=False)
 
 
-if __name__=='__main__':print(json.dumps(experiment(),indent=2))
+if __name__=='__main__':
+    import sys
+    print(json.dumps(experiment('--case-acceptance' in sys.argv),indent=2))

@@ -1,5 +1,6 @@
 """Runs only inside the qualified OCR research container; no application writes."""
 import collections
+import base64
 import csv
 import hashlib
 import io
@@ -95,7 +96,15 @@ def experiment():
     malformed=root/'malformed.png';malformed.write_bytes(b'FICTIONAL malformed image')
     bad=run_bounded(['tesseract',str(malformed),'stdout','-l','eng','tsv'],timeout=15,max_output=65536)
     if bad.returncode==0:raise ValueError('Malformed input unexpectedly succeeded')
-    return dict(status='fictional_scanned_supplier_measured',digitalGeneratorSha256=sha(digital),originalScanSha256=sha(scan),originalUnchanged=True,
+    # The case journey uses genuinely separate records; the historical two-page
+    # benchmark above remains byte-for-byte comparable with previous receipts.
+    register=pdfium.PdfDocument(digital_supplier_pdf(1))
+    page=register[0];bitmap=page.render(scale=2,may_draw_forms=False,draw_annots=False)
+    image=bitmap.to_pil().convert('RGB')
+    register_scan=scanned_supplier_pdf([(image.width,image.height,image.tobytes())])
+    image.close();bitmap.close();page.close();register.close()
+    return dict(status='fictional_scanned_supplier_measured',digitalGeneratorSha256=sha(digital),originalScanSha256=sha(scan),originalScanBase64=base64.b64encode(scan).decode(),originalUnchanged=True,
+                supplierSources={'declarationPdfBase64':base64.b64encode(digital_supplier_pdf(0)).decode(),'scannedRegisterPdfBase64':base64.b64encode(register_scan).decode()},
                 runs=results,malformedInputRejected=True,allExpectedTokensRecovered=all(p['matchedTokens']==p['expectedTokens'] for p in results[0]),
                 sourceRevision='Debian tesseract-ocr 5.3.0-2; not the catalogue source-head pin',
                 limitations='English clean synthetic raster only; no skew/noise/multilingual/table/real scan accuracy, API attachment, human acceptance or product approval')
