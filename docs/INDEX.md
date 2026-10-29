@@ -162,3 +162,5 @@
 - [Scanned document lineage and supplier case acceptance](79_SCANNED_DOCUMENT_LINEAGE.md)
 
 - [Document findings in investigation reasoning](80_DOCUMENT_REASONING.md)
+
+- [Encrypted immutable original custody](81_ENCRYPTED_ORIGINAL_CUSTODY.md)

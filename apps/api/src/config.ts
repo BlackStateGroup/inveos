@@ -1,3 +1,4 @@
+import {originalStoreFromEnv,type OriginalStore} from './original-encryption.js';
 import {sessionEpoch} from './session-epoch.js';
 import { isAbsolute } from 'node:path';
 
@@ -6,7 +7,7 @@ export type RuntimeConfig = {
   port: number;
   databaseUrl: string;
   adminDatabaseUrl: string;
-  storageRoot: string;
+  storageRoot: OriginalStore;
   allowedOrigins: string[];
   demoTenantId: string;
   demoUserId: string;
@@ -85,7 +86,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     port,
     databaseUrl,
     adminDatabaseUrl,
-    storageRoot,
+    storageRoot: originalStoreFromEnv(storageRoot,env),
     allowedOrigins,
     demoTenantId,
     demoUserId,
