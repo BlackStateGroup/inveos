@@ -1107,6 +1107,19 @@ test('source-linked transcript preserves raw segments and appends bounded speake
   assertError(await request('GET',`/api/cases/${kase.id}/interviews`,client),403);
 });
 
+
+test('case time ledger retains corrections and enforces recorder and reviewer scope', async () => {
+  context.demo=await issueTestSession(demoUserId);const kase=await createCase(),entryId=randomUUID();
+  const create=await request('POST',`/api/cases/${kase.id}/time-entries`,context.demo!,{payload:{id:entryId,startedAt:'2026-10-29T09:00:00Z',minutes:45,description:'Review fictional supplier material.',billable:false}});
+  assert.equal(create.statusCode,200,create.body);
+  const corrected=await request('POST',`/api/cases/${kase.id}/time-entries/${entryId}/corrections`,context.demo!,{payload:{expectedVersion:1,startedAt:'2026-10-29T09:00:00Z',minutes:50,description:'Review fictional supplier material and record uncertainty.',billable:false,reason:'Corrected the fictional duration after checking the time note.'}});
+  assert.equal(corrected.statusCode,200,corrected.body);
+  assertError(await request('POST',`/api/cases/${kase.id}/time-entries/${entryId}/corrections`,context.demo!,{payload:{expectedVersion:1,startedAt:'2026-10-29T09:00:00Z',minutes:55,description:'Stale fictional correction.',billable:true,reason:'This stale version must fail.'}}),409);
+  const colleagueId=await createMember(demoTenantId,'investigator','Fictional time colleague');await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,kase.id,colleagueId]);const colleague=await issueTestSession(colleagueId);
+  assert.equal((await request('GET',`/api/cases/${kase.id}/time-entries`,colleague)).json().items.length,0);
+  assertError(await request('POST',`/api/cases/${kase.id}/time-entries/${entryId}/corrections`,colleague,{payload:{expectedVersion:2,startedAt:'2026-10-29T09:00:00Z',minutes:55,description:'Foreign fictional correction.',billable:false,reason:'The recorder alone may correct this record.'}}),403);
+});
+
 test('persistent objectives, questions, hypotheses, tasks, notes and handovers share case state and survive restart', async () => {
   context.demo = await issueTestSession(demoUserId);
   const kase = await createCase();
