@@ -187,6 +187,10 @@ export type ManualSourceRecord=ManualSourceFields&{id:string;caseId:string;versi
 export type ManualSourceReview={id:string;digest:string;accepted:boolean;reviewerId:string;reviewerName:string;reason:string;recordedAt:string};
 export type ManualSourceEntry={record:ManualSourceRecord;review:ManualSourceReview|null;state:'pending'|'record_accepted'|'record_rejected'|'withdrawn'|'authority_changed';canReview:boolean};
 
+export type SuppliedTranscriptSegment={id:string;startMs:number;endMs:number;speakerLabel:string;speakerUncertain:boolean;text:string};
+export type TranscriptCorrection={id:string;version:number;startMs:number;endMs:number;speakerLabel:string;speakerUncertain:boolean;text:string;reason:string;actorId:string;actorName:string;recordedAt:string};
+export type InterviewTranscript={id:string;caseId:string;title:string;createdBy:string;createdAt:string;source:{evidenceId:string;digest:string;authorityVersion:number;sourceTime:string;receivedTime:string;filename:string};segments:{id:string;sourcePointer:string;raw:SuppliedTranscriptSegment;current:TranscriptCorrection|null;currentVersion:number}[];interpretation:'raw_and_corrected_transcript_not_findings'};
+
 export type CaseAccessAction='member_added'|'member_removed'|'owner_transferred';
 export type CaseAccessMember={id:string;name:string;role:'reviewer'|'investigator'|'client';joinedAt:string};
 export type CaseAccessState={version:number;ownerId:string;canManage:boolean;members:CaseAccessMember[];next:string|null};

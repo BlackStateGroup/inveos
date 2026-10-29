@@ -1,0 +1,7 @@
+{
+  "format": "inveos.supplied_transcript.v1",
+  "segments": [
+    {"id":"e788f1c7-7dcc-482d-87fb-73d606c0be88","startMs":0,"endMs":4200,"speakerLabel":"Fictional speaker A","speakerUncertain":true,"text":"Fictional supplied account — the delivery date remains uncertain."},
+    {"id":"9ae9ee63-62ef-4586-b8b7-9c1a76af22ee","startMs":4000,"endMs":8200,"speakerLabel":"Fictional speaker B","speakerUncertain":true,"text":"Fictional contrary account. Preserve the overlap and investigate the discrepancy."}
+  ]
+}
