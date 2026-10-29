@@ -1,4 +1,5 @@
 import {documentReview,type DocumentReviewInput,type ReviewPredecessor} from './document-review.js';
+import {documentClaim,documentClaimDecision,type DocumentClaimDecisionInput,type DocumentClaimInput,type ReviewedCitation} from './document-claim.js';
 import {documentCitation,type DocumentSelection} from './document-citation.js';
 import {makeRasterDerivative,rasterProfile,rasterProfileDigest,type RasterResult} from './raster-derivative.js';
 const rasterKind='pdf_raster_lab_v1';
@@ -455,6 +456,86 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       return {citationId,citationDigest:checked.digest,currentReviewId:reviews.at(-1)?.id??null,reviews};
     });
   }});
+  async function verifiedReviewedCitation(client:PoolClient,actor:Actor,caseId:string,jobId:string,citationId:string){
+    const {row,output}=await verifiedDocument(client,actor,caseId,jobId),key=[actor.tenantId,caseId,jobId,citationId];
+    const candidate=(await client.query('SELECT * FROM document_citation_candidates WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND id=$4',key)).rows[0];if(!candidate)notFound();
+    let checked;try{checked=documentCitation(output,candidate.selection);}catch{throw new ApiError(409,'Stored citation selection failed verification.');}
+    if(checked.digest!==candidate.citation_digest.trim()||!checked.bytes.equals(candidate.citation_bytes))throw new ApiError(409,'Stored citation bytes failed verification.');
+    const storedReviews=(await client.query('SELECT * FROM document_citation_reviews WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 ORDER BY sequence LIMIT 101',key)).rows;
+    let previous:ReviewPredecessor|null=null;const reviews:ReviewedCitation[]=[];
+    for(const stored of storedReviews){
+      let verified;try{verified=documentReview(citationId,checked,stored.request,stored.reviewed_by,new Date(stored.reviewed_at).toISOString(),previous);}catch{throw new ApiError(409,'Stored review chain failed verification.');}
+      if(stored.id!==verified.record.id||stored.sequence!==verified.record.sequence||stored.reviewed_by===candidate.created_by||stored.review_digest.trim()!==verified.digest||!stored.review_bytes.equals(verified.bytes))throw new ApiError(409,'Stored review bytes failed verification.');
+      previous={id:stored.id,sequence:stored.sequence,digest:verified.digest};reviews.push({...verified.record,digest:verified.digest});
+    }
+    return {row,key,candidate,checked,reviews};
+  }
+  const documentClaimSchema={type:'object',additionalProperties:false,required:['id','citationDigest','correspondenceReviewId','correspondenceReviewDigest','text'],properties:{id:uuid,citationDigest:{type:'string',pattern:'^[a-f0-9]{64}$'},correspondenceReviewId:uuid,correspondenceReviewDigest:{type:'string',pattern:'^[a-f0-9]{64}$'},text:{type:'string',minLength:1,maxLength:8000}}};
+  const claimParams={...citationParams,required:[...citationParams.required,'claimId'],properties:{...citationParams.properties,claimId:uuid}};
+  const documentDecisionSchema={type:'object',additionalProperties:false,required:['id','claimDigest','accepted','reason'],properties:{id:uuid,claimDigest:{type:'string',pattern:'^[a-f0-9]{64}$'},accepted:{type:'boolean'},reason:{type:'string',minLength:1,maxLength:6000}}};
+  async function verifiedDocumentClaims(client:PoolClient,actor:Actor,caseId:string,jobId:string,citationId:string){
+    const verified=await verifiedReviewedCitation(client,actor,caseId,jobId,citationId),latest=verified.reviews.at(-1)??null;
+    const storedClaims=(await client.query('SELECT * FROM document_claims WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 ORDER BY created_at,id LIMIT 51',verified.key)).rows;
+    if(storedClaims.length>50)throw new ApiError(409,'Document claim limit exceeded.');
+    const claims=[];
+    for(const stored of storedClaims){
+      const correspondence=verified.reviews.find(r=>r.id===stored.correspondence_review_id);if(!correspondence)throw new ApiError(409,'Stored claim correspondence review is unavailable.');
+      const input:DocumentClaimInput={id:stored.id,citationDigest:stored.citation_digest.trim(),correspondenceReviewId:stored.correspondence_review_id,correspondenceReviewDigest:stored.correspondence_review_digest.trim(),text:stored.text};
+      let claim;try{claim=documentClaim(citationId,verified.checked,correspondence,input,stored.created_by,new Date(stored.created_at).toISOString());}catch{throw new ApiError(409,'Stored document claim failed verification.');}
+      if(claim.digest!==stored.claim_digest.trim()||!claim.bytes.equals(stored.claim_bytes))throw new ApiError(409,'Stored document claim bytes failed verification.');
+      const decisionRow=(await client.query('SELECT * FROM document_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',[...verified.key,stored.id])).rows[0];
+      let decision=null,finding=null;
+      if(decisionRow){
+        const decisionInput:DocumentClaimDecisionInput={id:decisionRow.id,claimDigest:decisionRow.claim_digest.trim(),accepted:decisionRow.accepted,reason:decisionRow.reason};
+        let checkedDecision;try{checkedDecision=documentClaimDecision(claim,decisionInput,decisionRow.reviewed_by,new Date(decisionRow.reviewed_at).toISOString());}catch{throw new ApiError(409,'Stored document claim decision failed verification.');}
+        if(checkedDecision.digest!==decisionRow.decision_digest.trim()||!checkedDecision.bytes.equals(decisionRow.decision_bytes))throw new ApiError(409,'Stored document claim decision bytes failed verification.');
+        decision={...checkedDecision.record,digest:checkedDecision.digest};
+        const findingRow=(await client.query('SELECT * FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',[...verified.key,stored.id])).rows[0];
+        if(decisionRow.accepted){if(!findingRow||findingRow.id!==decisionRow.id||findingRow.decision_id!==decisionRow.id||findingRow.text!==stored.text||findingRow.reviewer_user_id!==decisionRow.reviewed_by||new Date(findingRow.reviewed_at).toISOString()!==new Date(decisionRow.reviewed_at).toISOString())throw new ApiError(409,'Stored document finding failed verification.');finding={id:findingRow.id,text:findingRow.text};}
+        else if(findingRow)throw new ApiError(409,'Rejected document claim has an invalid finding.');
+      }
+      claims.push({...claim.record,digest:claim.digest,correspondenceCurrent:latest?.id===correspondence.id&&latest.decision==='accepted',decision,finding});
+    }
+    return {...verified,latest,claims};
+  }
+  for(const create of [false,true])app.route({method:create?'POST':'GET',url:'/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId/claims',preHandler:create?svc.requireCsrf:svc.authenticate,schema:{params:citationParams,...(create?{body:documentClaimSchema}:{})},handler:async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal document claims only.');
+    const {caseId,jobId,citationId}=request.params as {caseId:string;jobId:string;citationId:string};
+    return inTransaction(svc.pool,async client=>{
+      let state=await verifiedDocumentClaims(client,actor,caseId,jobId,citationId);
+      if(create){
+        const input=request.body as DocumentClaimInput,existing=state.claims.find(c=>c.id===input.id);
+        if(existing){if(existing.createdBy!==actor.userId||(['citationDigest','correspondenceReviewId','correspondenceReviewDigest','text'] as const).some(k=>existing[k]!==input[k]))throw new ApiError(409,'Claim identity conflicts with an existing proposal.');}
+        else{
+          const active=await client.query("SELECT 1 FROM cases WHERE tenant_id=$1 AND id=$2 AND status='Active' AND authority_version=$3",[actor.tenantId,caseId,state.row.authority_version]);if(!active.rowCount)throw new ApiError(409,'Current authority must match the extraction before proposing a claim.');
+          const review=state.latest;if(!review||review.decision!=='accepted'||review.id!==input.correspondenceReviewId||review.digest!==input.correspondenceReviewDigest)throw new ApiError(409,'The latest independent correspondence review must be accepted.');
+          const createdAt=new Date().toISOString();let claim;try{claim=documentClaim(citationId,state.checked,review,input,actor.userId,createdAt);}catch{throw new ApiError(422,'Claim must bind the current accepted correspondence review and include proposed text.');}
+          await client.query('INSERT INTO document_claims(tenant_id,case_id,job_id,citation_id,id,text,citation_digest,correspondence_review_id,correspondence_review_digest,created_by,created_at,claim_bytes,claim_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',[...state.key,input.id,input.text,input.citationDigest,input.correspondenceReviewId,input.correspondenceReviewDigest,actor.userId,createdAt,claim.bytes,claim.digest]);
+          await svc.audit(client,actor,caseId,'document_claim.proposed','document_claim',input.id,'Document-derived interpretation proposed; not a finding');
+          state=await verifiedDocumentClaims(client,actor,caseId,jobId,citationId);
+        }
+      }else await svc.audit(client,actor,caseId,'document_claims.read','document_citation',citationId,'Verified document-derived claim workspace read');
+      return {citationId,citationDigest:state.checked.digest,currentCorrespondenceReviewId:state.latest?.id??null,currentCorrespondenceDecision:state.latest?.decision??null,claims:state.claims};
+    });
+  }});
+  app.post('/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId/claims/:claimId/decision',{preHandler:svc.requireCsrf,schema:{params:claimParams,body:documentDecisionSchema}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');const actor=request.actor!;if(actor.role!=='reviewer')throw new ApiError(403,'Only a reviewer can decide a document-derived claim.');
+    const {caseId,jobId,citationId,claimId}=request.params as {caseId:string;jobId:string;citationId:string;claimId:string};const input=request.body as DocumentClaimDecisionInput;
+    return inTransaction(svc.pool,async client=>{
+      let state=await verifiedDocumentClaims(client,actor,caseId,jobId,citationId),claim=state.claims.find(c=>c.id===claimId);if(!claim)notFound();
+      if(claim.decision){if(claim.decision.id!==input.id||claim.decision.reviewedBy!==actor.userId||claim.decision.claimDigest!==input.claimDigest||claim.decision.accepted!==input.accepted||claim.decision.reason!==input.reason)throw new ApiError(409,'Claim already has a different decision.');return {claimId,decision:claim.decision,finding:claim.finding};}
+      if(claim.createdBy===actor.userId)throw new ApiError(403,'A different reviewer must decide this claim.');
+      const active=await client.query("SELECT 1 FROM cases WHERE tenant_id=$1 AND id=$2 AND status='Active' AND authority_version=$3",[actor.tenantId,caseId,state.row.authority_version]);if(!active.rowCount)throw new ApiError(409,'Current authority must match the extraction before deciding a claim.');
+      if(!state.latest||state.latest.decision!=='accepted'||state.latest.id!==claim.correspondenceReviewId||state.latest.digest!==claim.correspondenceReviewDigest)throw new ApiError(409,'The claim no longer has the current accepted correspondence review.');
+      const stored=(await client.query('SELECT * FROM document_claims WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND id=$5',[...state.key,claimId])).rows[0],correspondence=state.reviews.find(r=>r.id===stored.correspondence_review_id)!;
+      const checkedClaim=documentClaim(citationId,state.checked,correspondence,{id:stored.id,citationDigest:stored.citation_digest.trim(),correspondenceReviewId:stored.correspondence_review_id,correspondenceReviewDigest:stored.correspondence_review_digest.trim(),text:stored.text},stored.created_by,new Date(stored.created_at).toISOString());
+      const reviewedAt=new Date().toISOString();let decision;try{decision=documentClaimDecision(checkedClaim,input,actor.userId,reviewedAt);}catch{throw new ApiError(422,'Decision must bind the exact claim and include a reason.');}
+      await client.query('INSERT INTO document_claim_decisions(tenant_id,case_id,job_id,citation_id,claim_id,id,accepted,reason,reviewed_by,reviewed_at,decision_bytes,decision_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[...state.key,claimId,input.id,input.accepted,input.reason,actor.userId,reviewedAt,decision.bytes,decision.digest]);
+      if(input.accepted)await client.query('INSERT INTO document_findings(tenant_id,case_id,job_id,citation_id,claim_id,id,decision_id,text,reviewer_user_id,reviewed_at) VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,$9)',[...state.key,claimId,input.id,stored.text,actor.userId,reviewedAt]);
+      await svc.audit(client,actor,caseId,input.accepted?'document_claim.accepted':'document_claim.rejected','document_claim_decision',input.id,input.accepted?'Document-derived interpretation accepted as a finding':'Document-derived interpretation rejected');
+      state=await verifiedDocumentClaims(client,actor,caseId,jobId,citationId);claim=state.claims.find(c=>c.id===claimId)!;return {claimId,decision:claim.decision,finding:claim.finding};
+    });
+  });
   async function readRaster(actor:Actor,caseId:string,jobId:string){
     if(actor.role==='client')throw new ApiError(403,'Internal derivatives only.');
     return inTransaction(svc.pool,async client=>{

@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import type {CitationReceipt} from './citationRequest';
 import {verifyReviewHistory,type ReviewHistory,type ReviewRequest} from './citationReview';
+import {DocumentClaims} from './DocumentClaims';
 export function CitationReviewPanel({candidate,csrf}:{candidate:CitationReceipt;csrf:string}){
  const [history,setHistory]=useState<ReviewHistory|null>(null),[reason,setReason]=useState(''),[decision,setDecision]=useState<'accepted'|'rejected'>('rejected'),[compared,setCompared]=useState(false),[pending,setPending]=useState<ReviewRequest|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(true);
  const alive=useRef(true),lock=useRef(false),c=candidate.citation.context,url=`/api/cases/${c.caseId}/integrity-jobs/${c.jobId}/document-citations/${candidate.id}/reviews`;
@@ -36,5 +37,6 @@ export function CitationReviewPanel({candidate,csrf}:{candidate:CitationReceipt;
    <button className="primary" disabled={busy||(!pending&&(!history||!reason.trim()||decision==='accepted'&&!compared))}>{pending?'Recover pending review':current?'Record replacement decision':'Record correspondence decision'}</button>
    <p>Replacement decisions retain all earlier decisions. Unconfirmed submissions can be recovered in this view; after reload, refresh history before submitting again.</p>
   </form>
+  {history&&<DocumentClaims key={history.currentReviewId??'none'} candidate={candidate} reviews={history} csrf={csrf}/>}
  </section>;
 }
