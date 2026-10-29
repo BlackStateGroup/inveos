@@ -133,3 +133,5 @@
 - [Document region map](62_DOCUMENT_REGION_MAP.md) — page-scaled unreviewed extraction locations.
 
 - [Isolated page rendering](63_ISOLATED_PAGE_RENDERING.md) — bounded original-page raster research.
+
+- [Raster derivative boundary](64_RASTER_DERIVATIVE_BOUNDARY.md) — bounded PNG validation and original-linked manifests.
