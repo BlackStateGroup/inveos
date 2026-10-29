@@ -1,3 +1,4 @@
+import {parseDocumentRaw} from './document-derivative.js';
 import {ApiError} from './errors.js';
 export type SuppliedSegment={id:string;startMs:number;endMs:number;speakerLabel:string;speakerUncertain:boolean;text:string};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -13,7 +14,7 @@ export function suppliedSegments(value:unknown):SuppliedSegment[]{
  });
 }
 export function parseSuppliedTranscript(bytes:Buffer):SuppliedSegment[]{
- let value;try{value=JSON.parse(bytes.toString('utf8').replace(/^\uFEFF/,''));}catch{throw new ApiError(422,'Original must contain a supplied transcript JSON record.');}
- if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join(',')!=='format,segments'||value.format!==transcriptFormat)throw new ApiError(422,'Original must use the supplied transcript format.');
+ let value;try{value=parseDocumentRaw(bytes);}catch{throw new ApiError(422,'Original must contain a supplied transcript JSON record.');}
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join(',')!=='format,segments'||!('format' in value)||value.format!==transcriptFormat||!('segments' in value))throw new ApiError(422,'Original must use the supplied transcript format.');
  return suppliedSegments(value.segments);
 }

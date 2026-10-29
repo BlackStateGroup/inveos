@@ -186,3 +186,7 @@ export type ManualSourceOriginal={id:string;filename:string;sha256:string;source
 export type ManualSourceRecord=ManualSourceFields&{id:string;caseId:string;version:number;original:ManualSourceOriginal;recordedBy:string;recordedAt:string;withdrawn:boolean;digest:string};
 export type ManualSourceReview={id:string;digest:string;accepted:boolean;reviewerId:string;reviewerName:string;reason:string;recordedAt:string};
 export type ManualSourceEntry={record:ManualSourceRecord;review:ManualSourceReview|null;state:'pending'|'record_accepted'|'record_rejected'|'withdrawn'|'authority_changed';canReview:boolean};
+
+export type SuppliedTranscriptSegment={id:string;startMs:number;endMs:number;speakerLabel:string;speakerUncertain:boolean;text:string};
+export type TranscriptCorrection={id:string;version:number;startMs:number;endMs:number;speakerLabel:string;speakerUncertain:boolean;text:string;reason:string;actorId:string;actorName:string;recordedAt:string};
+export type InterviewTranscript={id:string;caseId:string;title:string;createdBy:string;createdAt:string;source:{evidenceId:string;digest:string;authorityVersion:number;sourceTime:string;receivedTime:string;filename:string};segments:{id:string;sourcePointer:string;raw:SuppliedTranscriptSegment;current:TranscriptCorrection|null;currentVersion:number}[];interpretation:'raw_and_corrected_transcript_not_findings'};
