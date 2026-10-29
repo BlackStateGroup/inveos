@@ -26,6 +26,10 @@ async function event(client: PoolClient, s: Scope, row: QueryResultRow) {
   await client.query(`INSERT INTO integrity_job_events (tenant_id,case_id,job_id,status,attempt,failure_code)
     VALUES ($1,$2,$3,$4,$5,$6)`, [...values(s), row.status, row.attempt, row.failure_code]);
 }
+// Match HTTP cancellation/authority lock order: case first, then job.
+async function lockWorkerCase(client:PoolClient,s:{tenantId:string;caseId:string}) {
+  await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR SHARE',[s.tenantId,s.caseId]);
+}
 async function permitted(client: PoolClient, row: QueryResultRow): Promise<boolean> {
   const r = await client.query(`SELECT 1 FROM cases c JOIN case_memberships cm ON cm.tenant_id=c.tenant_id AND cm.case_id=c.id
     JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
@@ -61,6 +65,7 @@ async function claimLocked(client: PoolClient, s: Scope, row: QueryResultRow) {
 /** Trusted worker entry point, never an HTTP route. Scope must be supplied explicitly. */
 export async function claimIntegrityJob(pool: Pool, s: Scope) {
   return inTransaction(pool, async client => {
+    await lockWorkerCase(client,s);
     const found = await client.query(`SELECT *, lease_until > clock_timestamp() AS live FROM integrity_jobs
       WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE`, values(s));
     const row = found.rows[0];
@@ -74,6 +79,7 @@ export async function renewIntegrityJob(pool: Pool, s: Scope, token: string) {
   return inTransaction(pool,async client=>{
     await client.query("SET LOCAL lock_timeout = '2s'");
     await client.query("SET LOCAL statement_timeout = '5s'");
+    await lockWorkerCase(client,s);
     const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp()
       AND lease_deadline>clock_timestamp() FOR UPDATE`,[...values(s),token]);
@@ -117,6 +123,7 @@ export async function dispatchIntegrityJobs(pool: Pool, root: string, scope: Dis
       // Bound waits on authority locks and database statements; these are not an OS sandbox.
       await client.query("SET LOCAL lock_timeout = '2s'");
       await client.query("SET LOCAL statement_timeout = '5s'");
+      await lockWorkerCase(client,scope);
       const r=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2
         AND kind IN ('original_sha256_v1','utf8_line_index_v1')
         AND (status='queued' OR (status='running' AND lease_until<=clock_timestamp()))
@@ -140,6 +147,7 @@ export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, fa
 type Failure = 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed';
 async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure: Failure | null, output?: DerivativeOutput) {
   return inTransaction(pool, async client => {
+    await lockWorkerCase(client,s);
     const r = await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until > clock_timestamp() FOR UPDATE`, [...values(s),token]);
     if (!r.rows[0]) return null; // Expired, cancelled or superseded worker cannot commit.
@@ -190,6 +198,7 @@ export async function finishDocumentJob(pool:Pool,root:string,s:Scope,token:stri
   return inTransaction(pool,async client=>{
     await client.query("SET LOCAL lock_timeout = '2s'");
     await client.query("SET LOCAL statement_timeout = '5s'");
+    await lockWorkerCase(client,s);
     const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE`,[...values(s),token]);
     const row=found.rows[0];if(!row||row.kind!==documentKind)return null;

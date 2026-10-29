@@ -3188,3 +3188,23 @@ test('real browser inspects durable unreviewed page references and removes stale
     });
   }finally{await f.app.close();}
 });
+
+
+test('renewal waits for the case before locking the job, avoiding cancellation lock inversion',async()=>{
+  const {scope,lease}=await renewalFixture();
+  const blocker=await context.pool!.connect();let renewal:ReturnType<typeof renewIntegrityJob>|undefined;
+  try {
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[scope.tenantId,scope.caseId]);
+    renewal=renewIntegrityJob(context.pool!,scope,lease.token);
+    // Observe the real database wait rather than relying on process scheduling.
+    await eventually(async()=>Number((await context.pool!.query(
+      "SELECT count(*) AS n FROM pg_stat_activity WHERE usename=current_user AND datname=current_database() AND wait_event_type='Lock' AND query LIKE '%FROM cases%'"
+    )).rows[0].n)>0,'renewal case lock wait',1500);
+    // Cancellation already owns the case and must be able to acquire its job.
+    await blocker.query('SELECT id FROM integrity_jobs WHERE id=$1 FOR UPDATE NOWAIT',[scope.jobId]);
+  } finally {
+    await blocker.query('ROLLBACK');blocker.release();
+    if(renewal)assert.ok(await renewal);
+  }
+});
