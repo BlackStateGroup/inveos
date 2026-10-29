@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {mkdtemp,readFile,writeFile,rm,cp} from 'node:fs/promises';
@@ -25,6 +28,15 @@ test('real API and durable worker preserve encrypted originals through key rotat
   const job=await ok('POST',base+'/integrity-jobs',{evidenceId:evidence.id,kind:'original_sha256_v1',idempotencyKey:randomUUID()});assert.equal((await runIntegrityJob(pool,store,{tenantId:tenant,caseId:kase.id,jobId:job.id}))?.status,'succeeded');
   const claim=await ok('POST',base+'/claims',{evidenceId:evidence.id,text:'The supplied fictional source states 100 percent; no ownership truth is certified.',quote:'100 percent'});await ok('POST',base+'/claims/'+claim.id+'/review',{accepted:true,reason:'Fictional exact source quote compared.'});
   const report=await ok('GET',base+'/report');assert.equal(report.findings[0].source.contentBase64,original.toString('base64'));
+  const keyFile=join(root,'protected-keys.json'),cliJob=await ok('POST',base+'/integrity-jobs',{evidenceId:evidence.id,kind:'utf8_line_index_v1',idempotencyKey:randomUUID()});
+  await writeFile(keyFile,'invalid fictional key configuration',{mode:0o600});
+  const args=['--import','tsx',fileURLToPath(new URL('../src/dispatch-integrity-jobs.ts',import.meta.url)),tenant,kase.id,'1'];
+  const env={...process.env,INVEOS_DEV_LAB:'1',NODE_ENV:'test',INVEOS_DATABASE_URL:database,INVEOS_ADMIN_DATABASE_URL:'',INVEOS_STORAGE_ROOT:join(root,'objects'),INVEOS_WORKER_SCHEMA:schema,INVEOS_ORIGINAL_STORAGE_MODE:'encrypted-v1',INVEOS_ORIGINAL_KEYS_FILE:keyFile};
+  await assert.rejects(promisify(execFile)(process.execPath,args,{env,timeout:15000}),error=>{const failure=error as Error&{stdout:string;stderr:string};assert.equal(failure.stdout,'');assert.equal(failure.stderr,'Dispatch failed. Check lab configuration and scoped job history before retrying.\n');return true;});
+  assert.equal((await pool.query('SELECT status FROM integrity_jobs WHERE id=$1',[cliJob.id])).rows[0].status,'queued');
+  await writeFile(keyFile,JSON.stringify({format:'inveos_original_keys_v1',activeKeyId:'old',keys:{old:old.toString('hex')}}));
+  const dispatched=await promisify(execFile)(process.execPath,args,{env,timeout:15000});assert.equal(dispatched.stderr,'');assert.deepEqual(JSON.parse(dispatched.stdout),{selected:1,stopReason:'limit',results:[{jobId:cliJob.id,status:'succeeded',attempt:1,failureCode:null}]});
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM text_derivatives WHERE job_id=$1',[cliJob.id])).rows[0].n,1);
   await app.close();store=encryptedOriginalStore(join(root,'objects'),'next',{old,next});app=await make();const restarted=await ok('GET',base+'/report');assert.deepEqual(restarted,report);assert.deepEqual(await readFile(join(root,'objects',row.object_path)),ciphertext);
   const binary=Buffer.from([0,1,2,255,0,13,10]),input={filename:'fictional-binary.bin',contentBase64:binary.toString('base64'),expectedSha256:sha(binary),sourceTime:'2026-10-26T00:00:00Z',method:'Fictional byte fixture',idempotencyKey:randomUUID()};const received=await ok('POST',base+'/evidence/binary',input);assert.deepEqual(await ok('POST',base+'/evidence/binary',input),received);
   const binaryRow=(await pool.query('SELECT object_path FROM evidence WHERE id=$1',[received.id])).rows[0];assert.match(binaryRow.object_path,/\.bin\.enc$/);assert.equal((await readFile(join(root,'objects',binaryRow.object_path))).includes(binary),false);

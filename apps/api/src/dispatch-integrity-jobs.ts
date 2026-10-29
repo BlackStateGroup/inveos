@@ -1,4 +1,5 @@
 /** Trusted, synthetic-lab, single-pass consumer. No HTTP listener or automatic collection. */
+import {originalStoreFromEnv} from './original-encryption.js';
 import { isAbsolute } from 'node:path';
 import { createPool } from './db.js';
 import { dispatchIntegrityJobs, validateDispatch } from './integrity-jobs.js';
@@ -12,12 +13,13 @@ async function main() {
   const url=process.env.INVEOS_DATABASE_URL??'',root=process.env.INVEOS_STORAGE_ROOT??'';
   if(!/^postgres(ql)?:\/\//.test(url) || !isAbsolute(root))throw new Error('Invalid worker configuration');
   // The worker never reads an administrator URL or runs migrations. This is still the lab application role.
+  const store=originalStoreFromEnv(root);
   const pool=createPool(url,process.env.INVEOS_WORKER_SCHEMA??'inveos',2);
   const controller=new AbortController();
   const stop=()=>controller.abort();
   process.once('SIGTERM',stop);process.once('SIGINT',stop);
   try {
-    const receipt=await dispatchIntegrityJobs(pool,root,{tenantId,caseId},limit,controller.signal);
+    const receipt=await dispatchIntegrityJobs(pool,store,{tenantId,caseId},limit,controller.signal);
     process.stdout.write(JSON.stringify(receipt)+'\n');
   } finally {
     process.removeListener('SIGTERM',stop);process.removeListener('SIGINT',stop);
