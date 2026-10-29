@@ -1,17 +1,24 @@
 {
   "verification": {
-    "workflow": "Pinned Docling research build #28",
-    "runId": 40901923672,
-    "jobId": 123546231244,
+    "workflow": "Pinned Docling research build #29",
+    "runId": 40903254918,
+    "jobId": 123550982858,
+    "commit": "077c0904aac021faa362290d411566f876ed2229",
+    "tree": "1a403f182032a5a01fea736ac11213c5bfe7da9a",
+    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40903254918"
+  },
+  "comparisonWithPrevious": {
     "commit": "4a9a92af0051e1533a3daa493bb47e14b87282b4",
-    "tree": "08e223e4a9e7684f2814dd63bbde6431b2e912ad",
-    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40901923672"
+    "runId": 40901923672,
+    "inputScanSha256Matched": true,
+    "nativeModelAndNoticeFileHashesMatched": true,
+    "firstRunTsvHashesMatched": true
   },
   "status": "isolated_scanned_supplier_baseline_measured",
-  "imageId": "sha256:c2c91c7e0125214c7c7d59731704499ad3bace7c00c55c15e140e1287da26aaa",
+  "imageId": "sha256:3f24d239f418800788d6e1626f674d128e1446c9c3bfc07d82100e9816326e79",
   "qualification": {
     "status": "host_probe_passed",
-    "imageId": "sha256:c2c91c7e0125214c7c7d59731704499ad3bace7c00c55c15e140e1287da26aaa",
+    "imageId": "sha256:3f24d239f418800788d6e1626f674d128e1446c9c3bfc07d82100e9816326e79",
     "repoDigests": [],
     "checks": [
       "boundaries",
@@ -29,12 +36,13 @@
     "resourceEvidence": {
       "oomKilled": true,
       "pids": 2,
-      "cpu": 1155992
+      "cpu": 1150533
     },
     "combinedCaptureLimitBytes": 16384,
     "daemonLogging": false,
     "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
   },
+  "detachedDeadlineVerified": true,
   "inventory": {
     "approval": "research_only_no_shipping_or_licence_approval",
     "artifacts": [
@@ -1891,7 +1899,7 @@
     "runs": [
       [
         {
-          "cumulativeChildrenPeakRssKiB": 92692,
+          "cumulativeChildrenPeakRssKiB": 92776,
           "expectedTokens": 17,
           "height": 1584,
           "inputPngSha256": "a866f803b1b65a91ec589ccc70a3b400f0f1b2992538b565a45c4bf2a642cc91",
@@ -1901,7 +1909,7 @@
           "rawTsvSha256": "19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7",
           "renderScale": 2,
           "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
-          "wallSeconds": 0.3045685029999845,
+          "wallSeconds": 0.4854248590000054,
           "width": 1224,
           "words": [
             {
@@ -2128,7 +2136,7 @@
           ]
         },
         {
-          "cumulativeChildrenPeakRssKiB": 92692,
+          "cumulativeChildrenPeakRssKiB": 92776,
           "expectedTokens": 22,
           "height": 1584,
           "inputPngSha256": "570267430c18ca0b7114d36ded5adb4c0df830f0b2a62da36c7922ed7a44619e",
@@ -2138,7 +2146,7 @@
           "rawTsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99",
           "renderScale": 2,
           "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
-          "wallSeconds": 0.36557445799999755,
+          "wallSeconds": 0.5052590909999992,
           "width": 1224,
           "words": [
             {
@@ -2452,7 +2460,7 @@
       ],
       [
         {
-          "cumulativeChildrenPeakRssKiB": 92692,
+          "cumulativeChildrenPeakRssKiB": 92776,
           "expectedTokens": 17,
           "height": 1584,
           "inputPngSha256": "a866f803b1b65a91ec589ccc70a3b400f0f1b2992538b565a45c4bf2a642cc91",
@@ -2462,7 +2470,7 @@
           "rawTsvSha256": "19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7",
           "renderScale": 2,
           "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
-          "wallSeconds": 0.3009099550000087,
+          "wallSeconds": 0.4867455389999975,
           "width": 1224,
           "words": [
             {
@@ -2689,7 +2697,7 @@
           ]
         },
         {
-          "cumulativeChildrenPeakRssKiB": 92692,
+          "cumulativeChildrenPeakRssKiB": 92776,
           "expectedTokens": 22,
           "height": 1584,
           "inputPngSha256": "570267430c18ca0b7114d36ded5adb4c0df830f0b2a62da36c7922ed7a44619e",
@@ -2699,7 +2707,7 @@
           "rawTsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99",
           "renderScale": 2,
           "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
-          "wallSeconds": 0.30794319099999257,
+          "wallSeconds": 0.5014515050000057,
           "width": 1224,
           "words": [
             {

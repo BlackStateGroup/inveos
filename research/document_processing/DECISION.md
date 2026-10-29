@@ -3,6 +3,19 @@
 27 October 2026. Based on merged application commit `95b5c35` (PR #1).
 Status: **research spike; no production dependency approval, parser benchmark or live collection**.
 
+## Current follow-up — 29 October 2026
+
+The 27 October statements below are historical. Exact-source native Docling has since run against fictional PDFs in qualified isolation, with durable research jobs and page/region review; see [native experiment](../runtime_artifacts/NATIVE_EXPERIMENT.md) and [boundary](../runtime_artifacts/NATIVE_BOUNDARY.md). A separately identified packaged Tesseract baseline has now read an actual raster-only fictional supplier PDF twice: all 39 expected tokens were recovered, output fingerprints repeated, original bytes stayed unchanged and malformed input failed. See [measured scan experiment and inventory](../runtime_artifacts/SCANNED_SUPPLIER_OCR.md). This is a clean English fixture, not general OCR accuracy or completion of the supplier/application acceptance scenario.
+
+| Component | Engineering disposition after the measured experiments |
+|---|---|
+| Pinned native Docling | Continue the isolated digital-PDF research path with its existing precise page/region contract; keep runtime, licence and production approvals separate. |
+| Packaged Tesseract 5.3.0-2 baseline | Useful measured OCR reference, not a shipping selection or source-head equivalent. Its 58 native/model files and broad component notices make the full packaged image unsuitable for automatic adoption. Prefer evaluating a minimal, fully locked isolated OCR runtime and a separately versioned result/lineage adapter before application attachment. |
+| Pinned OCRmyPDF | Still an isolated comparison candidate for searchable scan derivatives. The direct Tesseract experiment does not validate OCRmyPDF, PDF/A transformation, sidecar completeness or its two-stage provenance. |
+| Pinned Tika | Still a reduced-parser document/metadata comparison candidate. No actual Tika benchmark or precise-region qualification is claimed. |
+
+Do not import these engines into Fastify, substitute extracted text as an original, or infer incorporation rights from attribution/root SPDX labels. Resolve exact runtime/transitive/data artifacts and file-specific obligations before integration. Current report-review/release capabilities are documented separately in `docs/78_REVIEWED_PDF_RELEASE.md`; they do not clear OCR runtime selection.
+
 ## Decision
 
 Prioritise a **Docling native-PDF worker experiment** for digital documents, because its source exposes page, bounding-box and character-span provenance. Evaluate a separately packaged **OCRmyPDF worker** for scanned-document derivatives, then extract page-linked text from that derivative with an explicit two-stage lineage. Keep **Tika as the comparison/fallback candidate** for broad document detection and metadata, using an explicitly limited parser set. None belongs inside the Fastify request process. This is a source-informed engineering choice, not a measured quality ranking.
