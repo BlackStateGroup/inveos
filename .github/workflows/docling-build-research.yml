@@ -14,6 +14,8 @@ on:
       - 'tools/experiment_native_pdf.py'
       - 'tools/experiment_pdf_render.py'
       - 'tools/run_pdf_render_fixture.py'
+      - 'tools/pdf_render.py'
+      - 'tools/run_raster_document.py'
       - 'tools/pdf_render_limits.py'
       - 'apps/api/src/raster-derivative.ts'
       - 'apps/api/test/raster-derivative.test.ts'

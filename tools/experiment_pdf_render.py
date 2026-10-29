@@ -14,7 +14,7 @@ def experiment():
                   'raster':coverage_pdf(['raster']),'overpages':coverage_pdf(['text']*3),
                   'oversize':digital_pdf()+b' '*65536,'malformed':b'%PDF-1.4\nFICTIONAL malformed'}
         for name,data in fixtures.items():(bundle/(name+'.pdf')).write_bytes(data)
-        for source,target in [('run_pdf_render_fixture.py','run.py'),('pdf_render_limits.py','pdf_render_limits.py')]:
+        for source,target in [('run_pdf_render_fixture.py','run.py'),('pdf_render_limits.py','pdf_render_limits.py'),('pdf_render.py','pdf_render.py')]:
             shutil.copyfile(ROOT/'tools'/source,bundle/target)
         runs=[]
         for _ in range(2):

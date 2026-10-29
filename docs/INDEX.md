@@ -137,3 +137,5 @@
 - [Raster derivative boundary](64_RASTER_DERIVATIVE_BOUNDARY.md) — bounded PNG validation and original-linked manifests.
 
 - [Durable raster results](65_DURABLE_RASTER_RESULTS.md) — fenced attachment and reverified PNG page delivery.
+
+- [Leased raster worker](66_LEASED_RASTER_WORKER.md) — qualified isolated rendering attached to durable research jobs.

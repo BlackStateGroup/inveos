@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {spawn,spawnSync} from 'node:child_process';
 import {createPool,runMigrations} from '../src/db.js';
 import {createApp} from '../src/app.js';
-import {runNativeDocumentJob} from '../src/native-document-worker.js';
+import {runNativeDocumentJob,runRasterDocumentJob} from '../src/native-document-worker.js';
 import {runResearchContainer} from '../src/container-worker.js';
 import {documentProfile} from '../src/document-derivative.js';
 import {claimIntegrityJob,renewIntegrityJob} from '../src/integrity-jobs.js';
@@ -30,9 +30,9 @@ async function fixture(){
   const created=await request('POST','/api/cases',{title:'Fictional actual native worker case',client:'Fictional supplier',scope:'Supplied fictional PDF only',jurisdiction:'England and Wales'});assert.equal(created.statusCode,200,created.body);const caseId=JSON.parse(created.body).id;
   const authority=()=>request('POST',`/api/cases/${caseId}/authority`,{purpose:'Fictional document worker acceptance',lawfulBasis:'Synthetic no-personal-data exercise',scope:'Supplied fictional PDF only',retentionDays:30,minimisation:'Fictional test passages only'});
   assert.equal((await authority()).statusCode,200);
-  async function queue(bytes:Buffer){
+  async function queue(bytes:Buffer,kind='native_pdf_lab_v1'){
     const intake=await request('POST',`/api/cases/${caseId}/evidence/binary`,{filename:'fictional.pdf',contentBase64:bytes.toString('base64'),expectedSha256:sha(bytes),sourceTime:'2026-01-01T00:00:00Z',method:'Fictional native worker input',idempotencyKey:randomUUID()});assert.equal(intake.statusCode,200,intake.body);
-    const e=JSON.parse(intake.body);const queued=await request('POST',`/api/cases/${caseId}/integrity-jobs`,{evidenceId:e.id,idempotencyKey:randomUUID(),kind:'native_pdf_lab_v1'});assert.equal(queued.statusCode,200,queued.body);return {tenantId:tenant,caseId,jobId:JSON.parse(queued.body).id};
+    const e=JSON.parse(intake.body);const queued=await request('POST',`/api/cases/${caseId}/integrity-jobs`,{evidenceId:e.id,idempotencyKey:randomUUID(),kind});assert.equal(queued.statusCode,200,queued.body);return {tenantId:tenant,caseId,jobId:JSON.parse(queued.body).id};
   }
   return {pool,owner,storage,request,queue,authority,close:async()=>{await app.close();await pool.end();await owner.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(storage,{recursive:true,force:true});}};
 }
@@ -79,14 +79,14 @@ test('actual daemon containers stop and disappear on lease loss, abort, output o
 
 test('actual PostgreSQL cancellation and authority change stop a running daemon worker before attachment',{timeout:90000},async()=>{
   const f=await fixture();const bundle=await mkdtemp('/tmp/inveos-scoped-container-');await chmod(bundle,0o755);
-  try{for(const mode of ['cancel','authority'] as const){
-    const scope=await f.queue(pdf());const lease=await claimIntegrityJob(f.pool,scope);assert.ok(lease);let changed=false;
+  try{for(const kind of ['native_pdf_lab_v1','pdf_raster_lab_v1'])for(const mode of ['cancel','authority'] as const){
+    const scope=await f.queue(pdf(),kind);const lease=await claimIntegrityJob(f.pool,scope);assert.ok(lease);let changed=false;
     await assert.rejects(runResearchContainer({bundle,imageId:image,script:'sleep 30',heartbeatMs:100,timeoutMs:15000},async()=>{
       const running=(await docker(['container','ls','-q','--filter','label=inveos.research-worker=true'])).trim();
       if(running&&!changed){changed=true;if(mode==='cancel')assert.equal((await f.request('POST',`/api/cases/${scope.caseId}/integrity-jobs/${scope.jobId}/cancel`,{})).statusCode,200);else assert.equal((await f.authority()).statusCode,200);}
       return Boolean(await renewIntegrityJob(f.pool,scope,lease.token));
     }),(e:unknown)=>e instanceof WorkerStopped&&e.code==='lease_lost');
-    assert.equal(changed,true);assert.equal(await containers(),'');assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM document_derivatives WHERE job_id=$1',[scope.jobId])).rows[0].n,0);
+    assert.equal(changed,true);assert.equal(await containers(),'');assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM document_derivatives WHERE job_id=$1',[scope.jobId])).rows[0].n,0);assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM raster_derivatives WHERE job_id=$1',[scope.jobId])).rows[0].n,0);
   }}finally{await f.close();await rm(bundle,{recursive:true,force:true});}
 });
 
@@ -113,4 +113,30 @@ test('container deadline survives SIGKILL of the orchestrator and stops the daem
     if(id)await docker(['rm','-f','-v',id]);await rm(bundle,{recursive:true,force:true});
   }
   assert.equal(await containers(),'');
+});
+
+
+test('actual isolated raster jobs persist repeatable PNGs, reject malformed originals and preserve quarantine',{timeout:240000},async t=>{
+  const f=await fixture();try{
+    const qualification=JSON.parse(await readFile(join(root,'.research-cache/worker-qualification.json'),'utf8'));
+    const results=[];
+    for(let i=0;i<2;i++){
+      const scope=await f.queue(pdf(),'pdf_raster_lab_v1');
+      assert.equal(await runNativeDocumentJob(f.pool,f.storage,scope,{researchOnly:true,repositoryRoot:root,qualification}),null);
+      const result=await runRasterDocumentJob(f.pool,f.storage,scope,{researchOnly:true,repositoryRoot:root,qualification});assert.equal(result?.status,'succeeded');
+      const base=`/api/cases/${scope.caseId}/integrity-jobs/${scope.jobId}`;
+      const response=await f.request('GET',base+'/raster-derivative');assert.equal(response.statusCode,200,response.body);const body=JSON.parse(response.body);
+      const page=await f.request('GET',base+'/raster-pages/2');assert.equal(page.statusCode,200,page.body);
+      assert.equal(sha(page.rawPayload),body.manifest.pages[1].digest);assert.equal(body.manifest.pages[1].width,612);assert.equal(body.manifest.pages[1].height,792);
+      assert.equal(body.manifest.reviewState,'unreviewed');assert.equal(body.sourceDigest,sha(pdf()));assert.equal(await containers(),'');
+      assert.equal((await f.pool.query('SELECT status FROM evidence WHERE id=$1',[body.evidenceId])).rows[0].status,'Quarantined');
+      results.push({sourceDigest:body.sourceDigest,profileDigest:body.profileDigest,pages:body.manifest.pages});
+      assert.equal(await runRasterDocumentJob(f.pool,f.storage,scope,{researchOnly:true,repositoryRoot:root,qualification}),null);
+    }
+    assert.deepEqual(results[0],results[1]);t.diagnostic('Actual raster job evidence: '+JSON.stringify(results[0]));
+    const scope=await f.queue(Buffer.from('%PDF-1.4\nFICTIONAL malformed\n'),'pdf_raster_lab_v1');
+    assert.equal((await runRasterDocumentJob(f.pool,f.storage,scope,{researchOnly:true,repositoryRoot:root,qualification}))?.status,'failed');
+    assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM raster_derivatives WHERE job_id=$1',[scope.jobId])).rows[0].n,0);
+    assert.equal(await containers(),'');assert.deepEqual((await readdir(join(root,'.research-cache'))).filter(n=>n.startsWith('leased-document-')),[]);
+  }finally{await f.close();}
 });
