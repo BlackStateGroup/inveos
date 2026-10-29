@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {Panel,Notice} from './ui';
-type Grant={id:string;caseId:string;revisionId:string;recipientId:string;sha256:string;reportSha256:string;deliverable:'report_json'|'document_package';createdBy:string;reason:string;createdAt:string;expiresAt:string;accessPolicyEligible:boolean;acknowledgedAt:string|null;revocation:{revokedBy:string;reason:string;createdAt:string}|null};
+type Grant={id:string;caseId:string;revisionId:string;recipientId:string;sha256:string;reportSha256:string;deliverable:'report_json'|'document_package'|'report_pdf';createdBy:string;reason:string;createdAt:string;expiresAt:string;accessPolicyEligible:boolean;acknowledgedAt:string|null;revocation:{revokedBy:string;reason:string;createdAt:string}|null};
 type Page={items:Grant[];nextBefore:string|null};
 export function DisclosureHistory({caseId,csrf}:{caseId:string;csrf:string}){
  const [items,setItems]=useState<Grant[]>([]),[next,setNext]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');

@@ -1,5 +1,11 @@
 # INVEOS engineering handoff
 
+## 29 October: independent PDF review and controlled recipient delivery
+
+Continues PR #69's saved-rendition UI. Migration 029 adds immutable, exact-fingerprint PDF/redaction reviews and case/revision-bound grant references. Independent assigned reviewers inspect the exact PDF; authors/creators cannot self-review. An explicit reviewer release revalidates current source lineage and independent acceptance, then uses existing recipient/expiry/revocation/acknowledgement controls to deliver only those immutable PDF bytes. The portal verifies PDF and source-report fingerprints; the oversight view distinguishes PDF, package and JSON grants. Stable browser request recovery and concurrent identical retries preserve one grant. Old JSON/package disclosure behaviour remains covered by the shared suite.
+
+Local lint, workspace types, production build and ten focused Node tests pass. Three new database scenarios and a complete browser independent-review → lost-release response → reload/recovery → client PDF/independent verifier → acknowledgement journey await hosted execution. Do not claim those tests have passed until the hosted receipt is recorded. See `docs/78_REVIEWED_PDF_RELEASE.md` for contract, trust limits and rollback; old servers must not reinterpret PDF grants as JSON. No new parser/dependency/source licence decision, merge, deployment or product completion. Continue DOCX/Unicode and remaining report/exhibit composition, representative OCR comparisons and the full supplier acceptance scenario, then the broader product requirements.
+
 ## 29 October: retrieve saved PDFs without generating new renditions
 
 Verified receipt: draft PR #69 implementation `3b389409b89bf750f01b853a91f598262a728bbd`, tree `e4b2bc0d4bcb864e2da1324bd8e14cf8437f9048`, passed Checks #190 (https://github.com/BlackStateGroup/inveos/actions/runs/40894463640), job 123519685205. All 229 Node and 105 Python tests passed with zero failures/skips, alongside lint/types/build/reference and host isolation. The actual PostgreSQL/browser journey passed saved-rendition listing, reload, verified historical download and no duplicate creation. The pending wording below records the pre-CI local checkpoint; this receipt supersedes it. This follow-up changes documentation only.

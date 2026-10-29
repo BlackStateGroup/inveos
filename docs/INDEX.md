@@ -156,4 +156,5 @@
 - [Independent document report packages](75_DOCUMENT_REPORT_PACKAGE.md)
 - [Browser-verified document package release](76_DOCUMENT_PACKAGE_RELEASE.md)
 - [Canonical internal report PDF and redaction](77_CANONICAL_REPORT_PDF.md)
+- [Independent PDF review and recipient release](78_REVIEWED_PDF_RELEASE.md)
 - [Document-processing research decision and synthetic contract](../research/document_processing/DECISION.md): pinned licence/dependency review, worker boundary and explicit verification limits.
