@@ -375,6 +375,22 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         sourceTime:row.source_time,receivedAt:row.received_time,derivative:output.derivative};
     });
   });
+  app.get('/api/cases/:caseId/integrity-jobs/:jobId/document-citations',{preHandler:svc.authenticate,schema:{params,querystring:{type:'object',additionalProperties:false,properties:{after:uuid}}}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal citation candidates only.');
+    const {caseId,jobId}=request.params as {caseId:string;jobId:string},after=(request.query as {after?:string}).after;
+    return inTransaction(svc.pool,async client=>{
+      const {output}=await verifiedDocument(client,actor,caseId,jobId);
+      const rows=(await client.query('SELECT * FROM document_citation_candidates WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND ($4::uuid IS NULL OR id>$4::uuid) ORDER BY id LIMIT 51',[actor.tenantId,caseId,jobId,after??null])).rows;
+      const items=rows.slice(0,50).map(stored=>{
+        let checked;try{checked=documentCitation(output,stored.selection);}catch{throw new ApiError(409,'Stored citation selection failed verification.');}
+        if(checked.digest!==stored.citation_digest.trim()||!checked.bytes.equals(stored.citation_bytes))throw new ApiError(409,'Stored citation bytes failed verification.');
+        return {id:stored.id,createdBy:stored.created_by,createdAt:stored.created_at,citationDigest:checked.digest,citation:checked.citation};
+      });
+      await svc.audit(client,actor,caseId,'document_citation.listed','integrity_job',jobId,'Verified unreviewed document citation candidates listed');
+      return {items,nextAfter:rows.length>50?items.at(-1)!.id:null};
+    });
+  });
   const citationParams={...params,required:[...params.required,'citationId'],properties:{...params.properties,citationId:uuid}};
   const selectionSchema={type:'object',additionalProperties:false,required:['derivativeDigest','itemRef','startByte','endByte','quote'],properties:{derivativeDigest:{type:'string',pattern:'^[a-f0-9]{64}$'},itemRef:{type:'string',pattern:'^#/texts/[0-9]{1,4}$'},startByte:{type:'integer',minimum:0,maximum:1048576},endByte:{type:'integer',minimum:1,maximum:1048576},quote:{type:'string',minLength:1,maxLength:4096}}};
   for(const create of [false,true])app.route({method:create?'POST':'GET',url:'/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId',preHandler:create?svc.requireCsrf:svc.authenticate,schema:{params:citationParams,...(create?{body:selectionSchema}:{})},handler:async(request,reply)=>{

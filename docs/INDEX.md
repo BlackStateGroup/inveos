@@ -145,3 +145,5 @@
 - [Raster passage comparison](68_RASTER_PASSAGE_COMPARISON.md) — explicit lineage-matched extraction overlays.
 
 - [Document citation candidates](69_DOCUMENT_CITATION_CANDIDATES.md) — durable exact extracted selections, separate from approval.
+
+- [Document citation workspace](70_DOCUMENT_CITATION_WORKSPACE.md)

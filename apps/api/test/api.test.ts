@@ -3387,3 +3387,42 @@ test('citation audit failure rolls back candidate and stored tampering fails clo
   finally{await context.schemaAdminPool!.query('ALTER TABLE document_citation_candidates ENABLE TRIGGER document_citation_candidates_append_only');}
  }finally{await f.app.close();}
 });
+
+test('document candidate listing is bounded, scoped, verified and recoverable after restart',async()=>{
+ const f=await citationFixture();try{
+  const base=f.citationUrl.slice(0,f.citationUrl.lastIndexOf('/'));
+  assert.deepEqual((await request('GET',base,context.demo!)).json(),{items:[],nextAfter:null});
+  const saved=(await request('POST',f.citationUrl,context.demo!,{payload:f.selection})).json();
+  // Populate an additional page using already-validated immutable bytes, without HTTP rate-limit noise.
+  await context.schemaAdminPool!.query(`INSERT INTO document_citation_candidates(tenant_id,case_id,job_id,id,created_by,selection,citation_bytes,citation_digest) SELECT tenant_id,case_id,job_id,gen_random_uuid(),created_by,selection,citation_bytes,citation_digest FROM document_citation_candidates CROSS JOIN generate_series(1,50) WHERE id=$1`,[saved.id]);
+  await context.app!.close();context.app=await createAppInstance();
+  const first=await request('GET',base,context.demo!);assert.equal(first.statusCode,200,first.body);assert.equal(first.headers['cache-control'],'no-store');const page=first.json();assert.equal(page.items.length,50);assert.equal(page.nextAfter,page.items.at(-1).id);
+  const tail=(await request('GET',base+'?after='+page.nextAfter,context.demo!)).json();assert.equal(tail.items.length,1);assert.equal(tail.nextAfter,null);assert.equal(new Set([...page.items,...tail.items].map(r=>r.id)).size,51);
+  assertError(await request('GET',base+'?after=invalid',context.demo!),422);
+  const outsider=await createMember(demoTenantId,'investigator','Fictional citation outsider');assertError(await request('GET',base,await issueTestSession(outsider)),404);
+  const client=await createMember(demoTenantId,'client','Fictional citation client');assertError(await request('GET',base,await issueTestSession(client)),403);
+  const evidence=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,evidence.object_path),'Fictional changed list source');assertError(await request('GET',base,context.demo!),409);
+ }finally{await f.app.close();}
+});
+
+test('real browser saves page-two candidate, recovers lost response after reload and clears corrupted list',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await citationFixture();try{
+  await withBrowserApp(async(b,origin)=>{
+   const ui=await binaryBrowserControls(b,origin,f.scope.caseId),label='Inspect unreviewed pages '+f.job.id.slice(0,8);
+   await eventually(async()=>(await ui.text()).includes(label),'document inspection');await ui.click(label);
+   await eventually(async()=>(await ui.text()).includes('No saved candidates for this extraction.'),'empty candidate list');
+   await b.evaluate(`(()=>{const s=document.querySelector('section[aria-label="Document citation candidates"] select');s.value='#/texts/1';s.dispatchEvent(new Event('change',{bubbles:true}));const original=window.fetch;window.fetch=async(...args)=>{const r=await original(...args);if(String(args[0]).includes('/document-citations/')&&args[1]?.method==='POST'&&r.ok){window.fetch=original;throw new Error('Fictional lost citation response');}return r;};})()`);
+   await ui.click('Save passage candidate');await eventually(async()=>(await ui.text()).includes('Recover pending citation'),'pending candidate after committed response loss');
+   const stored=(await context.pool!.query('SELECT id,selection FROM document_citation_candidates WHERE job_id=$1',[f.job.id])).rows;assert.equal(stored.length,1);assert.equal(stored[0].selection.itemRef,'#/texts/1');
+   await b.send('Page.reload');await eventually(async()=>(await ui.text()).includes(label),'reloaded job history');await ui.click(label);
+   await eventually(async()=>(await ui.text()).includes('Recover pending citation'),'reload retry identity');await ui.click('Recover pending citation');
+   await eventually(async()=>(await ui.text()).includes('saved as unreviewed. No finding was approved.'),'recovered verified receipt');
+   assert.ok((await ui.text()).includes('Unreviewed candidate · page 2'));assert.ok((await ui.text()).includes(stored[0].id));
+   assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_citation_candidates WHERE job_id=$1',[f.job.id])).rows[0].n,1);
+   assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);
+   const evidence=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,evidence.object_path),'Fictional corrupt citation source');
+   await ui.click('Refresh citation candidates');await eventually(async()=>(await ui.text()).includes('integrity verification failed'),'corrupt list rejected');
+   assert.equal(await b.evaluate(`document.querySelector('section[aria-label="Document citation candidates"] ol').children.length`),0);
+  });
+ }finally{await f.app.close();}
+});

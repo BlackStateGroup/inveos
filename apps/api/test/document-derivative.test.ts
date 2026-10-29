@@ -107,3 +107,26 @@ test('document citations enforce UTF-8 boundaries without normalising quotes',as
  const s={derivativeDigest:output.digest,itemRef:'#/texts/0',startByte:10,endByte:15,quote:'café'};assert.equal(documentCitation(output,s).citation.quote,'café');
  assert.throws(()=>documentCitation(output,{...s,startByte:14,quote:'é'}));assert.throws(()=>documentCitation(output,{...s,endByte:14,quote:'caf'}));
 });
+
+async function citationClientFixture(){
+ const {documentCitation}=await import('../src/document-citation.js');const {inspectDocumentDerivative}=await import('../../web/src/documentInspection.js');
+ const {job,response}=await clientFixture(),d=await inspectDocumentDerivative(response,job),output=run();
+ output.derivative.context={tenantId:'11111111-1111-4111-8111-111111111111',caseId:d.caseId,jobId:d.jobId,evidenceId:d.evidenceId,sourceDigest:d.sourceDigest,authorityVersion:d.authorityVersion};
+ const {wholePassage}=await import('../../web/src/citationRequest.js');
+ return {d,receipt:(id:string,itemRef='#/texts/1')=>{const c=documentCitation(output,wholePassage(d,itemRef));return {id,createdBy:'22222222-2222-4222-8222-222222222222',createdAt:'2026-10-29T00:00:00Z',citationDigest:c.digest,citation:c.citation};}};
+}
+test('citation client verifies exact occurrence and rejects rehashed false lineage and approval',async()=>{
+ const {verifyCitation}=await import('../../web/src/citationRequest.js'),f=await citationClientFixture(),id='33333333-3333-4333-8333-333333333333',r=f.receipt(id);
+ assert.equal((await verifyCitation(r,f.d,id)).citation.page,2);
+ for(const patch of [{page:1},{status:'approved'},{quote:'invented'},{startByte:0},{itemRef:'#/texts/0'},{rawDigest:'f'.repeat(64)}]){const changed={...r,citation:{...r.citation,...patch}};changed.citationDigest=sha256(JSON.stringify(changed.citation));await assert.rejects(verifyCitation(changed,f.d,id));}
+ await assert.rejects(verifyCitation({...r,citationDigest:'a'.repeat(64)},f.d,id));await assert.rejects(verifyCitation(r,{...f.d,caseId:'foreign'},id));
+});
+test('citation retry persists only identity before send, recovers same passage and rejects mismatched receipt',async()=>{
+ const {pendingCitation,saveCitationRecoverably}=await import('../../web/src/citationRequest.js'),f=await citationClientFixture();const data=new Map<string,string>(),store={getItem:(k:string)=>data.get(k)??null,setItem:(k:string,v:string)=>{data.set(k,v);},removeItem:(k:string)=>{data.delete(k);}};
+ let first='';await assert.rejects(saveCitationRecoverably(store,'scope',f.d,'#/texts/1',async p=>{first=p.id;assert.equal(pendingCitation(store,'scope')!.id,first);throw new Error('response lost');}));
+ assert.ok(!data.get('scope')!.includes('FICTIONAL'));assert.equal(pendingCitation(store,'scope')!.itemRef,'#/texts/1');
+ await assert.rejects(saveCitationRecoverably(store,'scope',f.d,'#/texts/0',async p=>f.receipt(p.id,'#/texts/0')));assert.ok(pendingCitation(store,'scope'));
+ const r=await saveCitationRecoverably(store,'scope',f.d,'#/texts/0',async(p,s)=>{assert.equal(p.id,first);assert.equal(s.itemRef,'#/texts/1');return f.receipt(p.id);});assert.equal(r.id,first);assert.equal(pendingCitation(store,'scope'),null);
+ let sent=false;await assert.rejects(saveCitationRecoverably({...store,setItem:()=>{}},'scope',f.d,'#/texts/1',async()=>{sent=true;}));assert.equal(sent,false);
+ store.setItem('scope','{}');await assert.rejects(saveCitationRecoverably(store,'scope',f.d,'#/texts/1',async()=>{sent=true;}));assert.equal(sent,false);
+});
