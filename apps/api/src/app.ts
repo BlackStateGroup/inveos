@@ -37,6 +37,7 @@ import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
 import { readOriginalBounded, writeOriginal, type StoredOriginal } from './storage.js';
 import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
+import { registerInterviews } from './interviews.js';
 import {buildReportPdf,reportPdfProfileDigest} from './report-pdf.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
@@ -648,6 +649,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
+
+  registerInterviews(app, {pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   app.post(
     '/api/session/start',
