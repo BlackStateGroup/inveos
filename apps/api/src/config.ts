@@ -1,8 +1,10 @@
+import {identityFromEnv,type IdentityProvider} from './oidc.js';
 import {originalStoreFromEnv,type OriginalStore} from './original-encryption.js';
 import {sessionEpoch} from './session-epoch.js';
 import { isAbsolute } from 'node:path';
 
 export type RuntimeConfig = {
+  identity?: IdentityProvider;
   host: '127.0.0.1';
   port: number;
   databaseUrl: string;
@@ -81,6 +83,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
   }
 
   return {
+    identity: identityFromEnv(env),
     documentLab: env.INVEOS_DOCUMENT_LAB === '1',
     host,
     port,
