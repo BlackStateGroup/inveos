@@ -503,9 +503,10 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   // Yield one entry at a time so the report's shared byte budget remains authoritative.
   async function* reportDocumentFindings(client:PoolClient,actor:Actor,caseId:string,selected?:string[]):AsyncGenerator<DocumentReportFinding>{
     if(actor.role==='client')throw new ApiError(403,'Internal document findings only.');
-    const kase=await svc.findCase(client,actor,caseId,true) as QueryResultRow;
     const rows=(await client.query('SELECT id,job_id,citation_id,claim_id FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid[] IS NULL OR id=ANY($3)) ORDER BY reviewed_at,id LIMIT 1001',[actor.tenantId,caseId,selected??null])).rows;
     if(rows.length>1000)throw new ApiError(422,'Report document finding limit exceeded.');
+    if(!rows.length)return; // Preserve the established original-only repeatable-read snapshot without a new write lock.
+    const kase=await svc.findCase(client,actor,caseId,true) as QueryResultRow;
     for(const entry of rows){
       const state=await verifiedDocumentClaims(client,actor,caseId,entry.job_id,entry.citation_id),claim=state.claims.find(c=>c.id===entry.claim_id);
       if(kase.status!=='Active'||kase.authority_version!==state.row.authority_version)throw new ApiError(409,'Current authority must match report document extraction.');
