@@ -1,4 +1,5 @@
 import {documentReview,type DocumentReviewInput,type ReviewPredecessor} from './document-review.js';
+import type {DocumentReportFinding} from '@inveos/contracts';
 import {documentClaim,documentClaimDecision,type DocumentClaimDecisionInput,type DocumentClaimInput,type ReviewedCitation} from './document-claim.js';
 import {documentCitation,type DocumentSelection} from './document-citation.js';
 import {makeRasterDerivative,rasterProfile,rasterProfileDigest,type RasterResult} from './raster-derivative.js';
@@ -350,7 +351,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   });
   async function verifiedDocument(client:PoolClient,actor:Actor,caseId:string,jobId:string){
       await svc.findCase(client,actor,caseId,true);
-      const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time
+      const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time,e.filename,e.authority_id,e.authority_version AS source_authority_version
         FROM document_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
       if(!row)notFound();let output;
@@ -498,6 +499,27 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
     }
     return {...verified,latest,claims};
   }
+  // Reuse the exact read/review verifier inside the caller's report transaction.
+  // Yield one entry at a time so the report's shared byte budget remains authoritative.
+  async function* reportDocumentFindings(client:PoolClient,actor:Actor,caseId:string,selected?:string[]):AsyncGenerator<DocumentReportFinding>{
+    if(actor.role==='client')throw new ApiError(403,'Internal document findings only.');
+    const kase=await svc.findCase(client,actor,caseId,true) as QueryResultRow;
+    const rows=(await client.query('SELECT id,job_id,citation_id,claim_id FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid[] IS NULL OR id=ANY($3)) ORDER BY reviewed_at,id LIMIT 1001',[actor.tenantId,caseId,selected??null])).rows;
+    if(rows.length>1000)throw new ApiError(422,'Report document finding limit exceeded.');
+    for(const entry of rows){
+      const state=await verifiedDocumentClaims(client,actor,caseId,entry.job_id,entry.citation_id),claim=state.claims.find(c=>c.id===entry.claim_id);
+      if(kase.status!=='Active'||kase.authority_version!==state.row.authority_version)throw new ApiError(409,'Current authority must match report document extraction.');
+      if(!claim?.finding||claim.finding.id!==entry.id||!claim.decision?.accepted||!claim.correspondenceCurrent||!state.latest||state.latest.digest!==claim.correspondenceReviewDigest)throw new ApiError(409,'Report document finding requires its current accepted correspondence review.');
+      const r=state.row,c=state.checked.citation,d=claim.decision,review=state.latest;
+      yield {kind:'derived_document',id:entry.id,text:claim.text,reviewer:d.reviewedBy,reviewedAt:d.reviewedAt,
+        source:{id:r.evidence_id,filename:r.filename,sha256:r.source_digest.trim(),sourceTime:r.source_time,receivedTime:new Date(r.received_time).toISOString(),authorityId:r.authority_id,authorityVersion:r.source_authority_version},
+        extraction:{jobId:r.job_id,authorityVersion:r.authority_version,attempt:r.attempt,processedAt:new Date(r.processed_at).toISOString(),profile:r.profile,profileDigest:r.profile_digest.trim(),rawDigest:r.raw_digest.trim(),derivativeDigest:r.output_digest.trim()},
+        reference:{citationId:entry.citation_id,citationDigest:state.checked.digest,offsetBasis:c.offsetBasis,itemRef:c.itemRef,page:c.page,bbox:{...c.bbox,origin:String(c.bbox.origin)},startByte:c.startByte,endByte:c.endByte,quote:c.quote},
+        correspondence:{id:review.id,digest:review.digest,reviewer:review.reviewedBy,reviewedAt:review.reviewedAt,reason:review.reason},
+        interpretation:{claimId:claim.id,claimDigest:claim.digest,decisionId:d.id,decisionDigest:d.digest,reason:d.reason},
+        limitations:'Human-reviewed extracted passage; offsets refer to extracted UTF-8, not original PDF bytes. Native-PDF research profile only; no OCR, complete-extraction or source-truth certification. This snapshot records lineage fingerprints; independent derivative exhibit verification and client release remain unavailable.'};
+    }
+  }
   for(const create of [false,true])app.route({method:create?'POST':'GET',url:'/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId/claims',preHandler:create?svc.requireCsrf:svc.authenticate,schema:{params:citationParams,...(create?{body:documentClaimSchema}:{})},handler:async(request,reply)=>{
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');const actor=request.actor!;if(actor.role==='client')throw new ApiError(403,'Internal document claims only.');
     const {caseId,jobId,citationId}=request.params as {caseId:string;jobId:string;citationId:string};
@@ -594,4 +616,5 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         });
       }});
   }
+  return {reportDocumentFindings};
 }

@@ -30,6 +30,13 @@ def encode(report):
 
 
 class ReportVerifierTests(unittest.TestCase):
+    def test_document_lineage_is_never_silently_ignored(self):
+        for value in ([], [{'kind': 'derived_document'}], None):
+            report = fixture()
+            report['documentFindings'] = value
+            with self.assertRaisesRegex(InvalidReport, 'derivative package verifier'):
+                verify_report(encode(report))
+
     def test_valid_unanchored_and_anchored(self):
         raw = encode(fixture())
         self.assertFalse(verify_report(raw)['trustedReportDigestMatched'])

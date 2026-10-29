@@ -152,3 +152,4 @@
 
 - [Independent document citation review](72_DOCUMENT_CITATION_REVIEW.md)
 - [Document-derived claims and findings](73_DOCUMENT_DERIVED_FINDINGS.md)
+- [Frozen document-backed report lineage](74_DOCUMENT_REPORT_LINEAGE.md)

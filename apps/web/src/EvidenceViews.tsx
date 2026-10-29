@@ -1,4 +1,5 @@
 import {OriginalDownload} from './OriginalDownload';
+import {DocumentReport} from './DocumentReport';
 import type { ReportDraft } from '@inveos/contracts';
 import { useState } from 'react';
 import { FileText, Upload, Search, Fingerprint, Link2, Check, X, ArrowUpRight, Download, LockKeyhole, GitBranch, Building2, AlertTriangle, ChevronRight, Quote, Headphones } from 'lucide-react';
@@ -35,7 +36,7 @@ export function Reports(p:ViewProps&{exportReport:()=>void;foundation:boolean;fi
   async function print(){
     setBusy(true);setError('');
     try {setPrintDraft(await p.preparePrint());setSection('Full draft');requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));}
-    catch(e){setError((e as Error).message);}finally{setBusy(false);}
+    catch(e){setPrintDraft(null);setError((e as Error).message);}finally{setBusy(false);}
   }
   async function copy(){
     try{await navigator.clipboard.writeText(p.fingerprint!);setCopied('Fingerprint copied.');}
@@ -43,7 +44,7 @@ export function Reports(p:ViewProps&{exportReport:()=>void;foundation:boolean;fi
   }
   function content(name:string){
     if(name==='Overview')return <><p>This internal draft records the scope and reviewed findings of a fictional investigation. External release requires a separate approval.</p><p>{snapshot?.case.scope||p.active.scope}</p></>;
-    if(name==='Method')return <p>Human review of supplied synthetic UTF-8 originals. Each finding refers to an exact source passage. No automated external collection, PDF extraction, OCR or AI inference has been performed.</p>;
+    if(name==='Method')return <p>Human review of supplied synthetic records. Original UTF-8 passages and document-derived interpretations retain separate reference types. Any document extraction is identified by its saved processing profile; no external collection or automatic finding approval is performed.</p>;
     if(name==='Findings')return findings.length?findings.map((f,i)=>{
       const claim=p.data.claims.find(c=>c.id===('claimId' in f?f.claimId:''));
       const source='source' in f?f.source:undefined;
@@ -52,7 +53,7 @@ export function Reports(p:ViewProps&{exportReport:()=>void;foundation:boolean;fi
       return <div className="report-finding" key={f.id}><h3>{i+1}. Reviewed observation</h3><p>{f.text}</p>{quote&&<blockquote>{quote}</blockquote>}
         <button className="paper-citation" disabled={!evidence} onClick={()=>evidence&&p.inspect(evidence.id)}>[{i+1}] {evidence?.filename||'Supporting source unavailable'} <ArrowUpRight size={12}/></button>
         <small>Reviewed by {f.reviewer} · {new Date(f.reviewedAt).toLocaleString('en-GB',{timeZone:'UTC'})} UTC</small></div>;
-    }):<p>Accept a supported claim in the review desk before exporting a draft.</p>;
+    }):<p>{snapshot?.documentFindings?.length?'Document-backed interpretations are listed separately below.':'Accept a supported claim in the review desk before exporting a draft.'}</p>;
     if(name==='Open questions')return questions.filter(q=>q.status!=='Resolved').length?questions.filter(q=>q.status!=='Resolved').map(q=><div key={q.id}><h3>{q.title}</h3><p>{q.body}</p><p>Status: {q.status}. This working question is separate from the reviewed findings.</p></div>):<p>No unresolved questions are recorded. This does not establish that the investigation is complete.</p>;
     if(name==='Limitations')return <p>This draft uses fictional records in a development lab. A statement appearing in a source does not establish its truth. Source dates may differ; missing or contrary material must be considered. Integrity checks do not certify authenticity, legal admissibility or client release. Production identity, encrypted production storage and independent custody anchoring remain outstanding.</p>;
     const sources=snapshot?Array.from(new Map(snapshot.findings.map(f=>[f.source.id,f.source])).values()):p.data.evidence.filter(e=>e.caseId===p.active.id&&findings.some(f=>p.data.claims.some(c=>c.id===('claimId' in f?f.claimId:'')&&c.evidenceId===e.id)));
@@ -61,7 +62,7 @@ export function Reports(p:ViewProps&{exportReport:()=>void;foundation:boolean;fi
       <p className="small report-digest">SHA-256: {'sha256' in source?source.sha256:source.digest}</p></div>)}</>;
   }
   return <><SectionTitle eyebrow="RESULTS / REPORT STUDIO" title="Make every statement count." description="A clear account, grounded in reviewed sources."
-    action={<div className="report-export-actions"><button className="secondary" disabled={busy||!p.foundation||!findings.length} onClick={()=>void print()}>{busy?'Verifying sources…':'Print complete draft'}</button><button className="secondary" onClick={p.exportReport}><Download size={16}/>Export JSON draft</button></div>}/>
+    action={<div className="report-export-actions"><button className="secondary" disabled={busy||!p.foundation} onClick={()=>void print()}>{busy?'Verifying sources…':'Print complete draft'}</button><button className="secondary" onClick={p.exportReport}><Download size={16}/>Export JSON draft</button></div>}/>
     {error&&<div className="form-error" role="alert">{error}</div>}
     {p.fingerprint&&<div className="report-fingerprint"><label className="form-label">Exported JSON fingerprint (SHA-256)<input readOnly value={p.fingerprint} aria-label="Exported draft fingerprint"/></label><button className="secondary" onClick={()=>void copy()}>Copy fingerprint</button><p className="small muted" role="status">{copied||'Share this separately through a trusted channel to authenticate the exported draft.'}</p></div>}
     <div className="report-layout"><section className="panel report-outline"><div className="panel-heading"><h2>Report structure</h2></div>
@@ -71,6 +72,7 @@ export function Reports(p:ViewProps&{exportReport:()=>void;foundation:boolean;fi
       <div className="report-stage"><article className="report-paper"><div className="report-letterhead"><strong>INVEOS<span>BLACK STATE GROUP</span></strong><span>CONFIDENTIAL<br/>SYNTHETIC MATERIAL</span></div>
         <div className="report-title"><span className="paper-kicker">INVESTIGATION REPORT / INTERNAL DRAFT</span><h1>{snapshot?.case.title||p.active.title}</h1><p>{p.active.ref} · Prepared for {snapshot?.case.client||p.active.client}</p></div>
         {(section==='Full draft'?sections:[section]).map(name=><section key={name} className="report-document-section"><h2>{name}</h2>{content(name)}</section>)}
+        {snapshot?.documentFindings&&<DocumentReport findings={snapshot.documentFindings}/>}
         <div className="report-bottom">DRAFT — NOT RELEASED<span>{p.foundation?'Persisted lab records':'Illustrative report'}</span></div></article></div>
       <aside className="report-checks"><h3>Release readiness</h3><div><Check size={16}/><span>Human review required</span></div><div><Check size={16}/><span>Source-linked findings</span></div>
         <div className="amber-text"><AlertTriangle size={16}/><span>Redaction review pending</span></div><div className="amber-text"><LockKeyhole size={16}/><span>Release not authorised</span></div>

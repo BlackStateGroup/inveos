@@ -105,8 +105,19 @@ export type SourcePolicyReference = {
   minimisation: string;
 };
 
+export type DocumentReportFinding = {
+  kind: 'derived_document'; id: string; text: string; reviewer: string; reviewedAt: string;
+  source: {id: string; filename: string; sha256: string; sourceTime: string; receivedTime: string; authorityId: string; authorityVersion: number};
+  extraction: {jobId: string; authorityVersion: number; attempt: number; processedAt: string; profile: string; profileDigest: string; rawDigest: string; derivativeDigest: string};
+  reference: {citationId: string; citationDigest: string; offsetBasis: string; itemRef: string; page: number; bbox: {l:number;t:number;r:number;b:number;origin:string}; startByte: number; endByte: number; quote: string};
+  correspondence: {id: string; digest: string; reviewer: string; reviewedAt: string; reason: string};
+  interpretation: {claimId: string; claimDigest: string; decisionId: string; decisionDigest: string; reason: string};
+  limitations: string;
+};
+
 export type ReportDraft = {
   status: 'draft_not_released';
+  documentFindings?: DocumentReportFinding[];
   case: Pick<Case, 'id' | 'ref' | 'title' | 'client' | 'scope' | 'jurisdiction'>;
   findings: Array<{
     id: string;

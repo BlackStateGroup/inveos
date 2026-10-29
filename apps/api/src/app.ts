@@ -593,7 +593,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
 
-  registerIntegrityJobs(app, {documentLab: options.documentLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
+  const {reportDocumentFindings}=registerIntegrityJobs(app, {documentLab: options.documentLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
@@ -1276,7 +1276,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     await client.query(`CLOSE ${name}`);
   }
 
-  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[]): Promise<ReportDraft> {
+  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[]): Promise<ReportDraft> {
       await findCase(client,actor,caseId);
       const caseResult = await client.query<CaseRow>(
         `SELECT c.*, u.display_name AS owner_name
@@ -1382,7 +1382,16 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         source.contentBase64 = bytes.toString('base64');
         report.findings.push(finding);
       }
-      if (!report.findings.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
+      for await(const finding of reportDocumentFindings(client,actor,caseId,selectedDocuments)){
+        if(!report.documentFindings){
+          budget.add({documentFindings:[]},0,true);report.documentFindings=[];
+          const note=' Document findings carry lineage fingerprints only: tools/verify_report.py and exhibit packaging reject this format until independent derivative verification is implemented. Client disclosure is blocked.';
+          budget.add(note);report.limitations+=note;
+        }
+        if(report.findings.length+report.documentFindings.length>=REPORT_MAX_ITEMS)throw new ApiError(422,'Report finding limit exceeded.');
+        budget.add(finding,0,report.documentFindings.length>0);report.documentFindings.push(finding);
+      }
+      if (!report.findings.length&&!report.documentFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
       if(selectedFindings)return report; // Verification inspects only the frozen finding set, not later working context.
       for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
@@ -1450,7 +1459,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const inserted=await client.query(`INSERT INTO report_revisions (tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest)
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);
       if(!inserted.rows[0]) throw Object.assign(new Error('Concurrent revision retry'),{code:'40001'});
-      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,findingIds:report.findings.map(f=>f.id)});
+      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[]});
       return revisionReceipt(inserted.rows[0],caseId);
     });
   });
@@ -1466,13 +1475,15 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(expected!==revision.digest.trim())throw new ApiError(409,'Verification fingerprint does not match the frozen revision.');
       let frozen:ReportDraft;
       try{frozen=JSON.parse(revision.report_bytes.toString('utf8'));}catch{throw new ApiError(409,'Frozen report structure is invalid.');}
-      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||!frozen.findings.length||frozen.findings.length>1000)throw new ApiError(409,'Frozen report structure is invalid.');
+      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||frozen.documentFindings!==undefined&&!Array.isArray(frozen.documentFindings))throw new ApiError(409,'Frozen report structure is invalid.');
       const ids=frozen.findings.map(f=>f?.id);
-      if(ids.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))||new Set(ids).size!==ids.length)throw new ApiError(409,'Frozen finding identities are invalid.');
-      const current=await buildReport(client,actor,caseId,ids);
+      const documentIds=frozen.documentFindings?.map(f=>f?.id)??[],allIds=[...ids,...documentIds];
+      if(!allIds.length||allIds.length>1000||allIds.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))||new Set(allIds).size!==allIds.length)throw new ApiError(409,'Frozen finding identities are invalid.');
+      const current=await buildReport(client,actor,caseId,ids,documentIds);
       // Preserve the exact frozen claim/review/source/policy representation, including byte spans and embedded originals.
       if(JSON.stringify(current.findings)!==JSON.stringify(frozen.findings))throw new ApiError(409,'Frozen findings no longer match their current source records.');
-      return {ids,revision};
+      if(JSON.stringify(current.documentFindings??[])!==JSON.stringify(frozen.documentFindings??[]))throw new ApiError(409,'Frozen document findings no longer match their current source records.');
+      return {ids:allIds,revision};
   }
   const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
   const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
@@ -1495,7 +1506,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
        WHERE r.tenant_id=$1 AND r.case_id=$2 AND r.revision_id=$3 AND m.role='reviewer' AND r.authority_version=$4 AND r.digest=$5`,[actor.tenantId,caseId,revisionId,kase.authority_version,input.sha256]);
       const rejected=await client.query("SELECT 1 FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND decision='request_changes' LIMIT 1",[actor.tenantId,caseId,revisionId]);
       if(rejected.rowCount||!reviews.rows.some(r=>r.decision==='accept_internal'))throw new ApiError(409,'Current independent acceptance and no change requests required.');
-      await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256);
+      const verified=await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256);
+      if(JSON.parse(verified.revision.report_bytes.toString('utf8')).documentFindings!==undefined)throw new ApiError(409,'Document-derived report disclosure requires independent derivative package verification.');
       const row=(await client.query(`INSERT INTO report_disclosures(tenant_id,case_id,id,revision_id,recipient_id,created_by,idempotency_key,authority_version,digest,reason,expires_at)
        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[actor.tenantId,caseId,randomUUID(),revisionId,input.recipientId,actor.userId,input.idempotencyKey,kase.authority_version,input.sha256,reason,new Date(expiry)])).rows[0];
       await writeAudit(client,actor,caseId,'report.disclosed','report_disclosure',row.id,'Full frozen snapshot disclosure approved',{revisionId,recipientId:input.recipientId,digest:input.sha256,fullDisclosureConfirmed:true});return disclosureReceipt(row);

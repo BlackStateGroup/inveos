@@ -3496,6 +3496,57 @@ async function documentClaimFixture(){
  const f=await citationReviewFixture(),reviewResponse=await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput});assert.equal(reviewResponse.statusCode,200,reviewResponse.body);const history=reviewResponse.json(),review=history.reviews[0];
  return {...f,history,claimUrl:f.citationUrl+'/claims',claimInput:{id:randomUUID(),citationDigest:f.candidate.citationDigest,correspondenceReviewId:review.id,correspondenceReviewDigest:review.digest,text:'Fictional records may indicate a separately reviewable pattern; this interpretation is not source truth.'}};
 }
+async function documentReportFixture(){
+ const f=await documentClaimFixture();
+ const proposed=await request('POST',f.claimUrl,f.authorSession,{payload:f.claimInput});assert.equal(proposed.statusCode,200,proposed.body);const claim=proposed.json().claims[0];
+ const decision={id:randomUUID(),claimDigest:claim.digest,accepted:true,reason:'Fictional independent interpretation for the report lineage check.'};
+ const accepted=await request('POST',`${f.claimUrl}/${claim.id}/decision`,context.demo!,{payload:decision});assert.equal(accepted.statusCode,200,accepted.body);
+ return {...f,claim,decision,reportUrl:`/api/cases/${f.scope.caseId}/report`,revisionsUrl:`/api/cases/${f.scope.caseId}/report-revisions`};
+}
+test('document-only reports freeze exact page lineage concurrently and survive restart without becoming disclosures',async()=>{
+ const f=await documentReportFixture();try{
+  const draft=await request('GET',f.reportUrl,context.demo!);assert.equal(draft.statusCode,200,draft.body);const report=draft.json(),entry=report.documentFindings[0];assert.deepEqual(report.findings,[]);
+  assert.equal(entry.kind,'derived_document');assert.equal(entry.id,f.decision.id);assert.equal(entry.reference.page,2);assert.equal(entry.reference.offsetBasis,'extracted_utf8_not_original_pdf');assert.equal(entry.reference.citationDigest,f.candidate.citationDigest);assert.equal(entry.extraction.derivativeDigest,f.selection.derivativeDigest);assert.equal(entry.correspondence.id,f.reviewInput.id);assert.equal(entry.interpretation.claimDigest,f.claim.digest);assert.equal(entry.text,f.claimInput.text);assert.ok(entry.source.filename);assert.ok(entry.extraction.profile.includes('NativePdfPipeline'));
+  const payload={idempotencyKey:randomUUID()},responses=await Promise.all([1,2].map(()=>request('POST',f.revisionsUrl,f.authorSession,{payload})));for(const r of responses)assert.equal(r.statusCode,200,r.body);assert.deepEqual(responses[0]!.json(),responses[1]!.json());const receipt=responses[0]!.json(),url=f.revisionsUrl+'/'+receipt.id;
+  const download=await request('GET',url,context.demo!);assert.deepEqual(download.json(),report);assert.equal(createHash('sha256').update(download.body).digest('hex'),receipt.sha256);
+  await context.app!.close();context.app=await createAppInstance();assert.equal((await request('GET',url,context.demo!)).body,download.body);
+  const verified=await request('POST',url+'/verify-sources',context.demo!,{payload:{sha256:receipt.sha256}});assert.equal(verified.statusCode,200,verified.body);assert.equal(verified.json().findingCount,1);
+  const internal=await request('POST',url+'/reviews',context.demo!,{payload:{sha256:receipt.sha256,decision:'accept_internal',reason:'Fictional internal report acceptance; no release.'}});assert.equal(internal.statusCode,200,internal.body);
+  const recipientId=await createMember(demoTenantId,'client','Fictional report lineage recipient');
+  const disclosure=await request('POST',url+'/disclosures',context.demo!,{payload:{sha256:receipt.sha256,recipientId,idempotencyKey:randomUUID(),expiresAt:new Date(Date.now()+3600000).toISOString(),reason:'Fictional disclosure must fail pending independent verification.',confirmFullDisclosure:true}});assertError(disclosure,409);assert.match(disclosure.body,/derivative package verification/);
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_disclosures WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);
+  const client=await issueTestSession(recipientId);assertError(await request('GET',url,client),403);const outsider=await createMember(demoTenantId,'reviewer','Fictional report outsider');assertError(await request('GET',url,await issueTestSession(outsider)),404);
+  // The legacy offline verifier must not silently verify just the original-byte array.
+  const reportFile=join(context.storageRoot!,'fictional-document-report.json');await writeFile(reportFile,download.body);
+  const verifier=spawnSync('python3',[fileURLToPath(new URL('../../../tools/verify_report.py',import.meta.url)),reportFile],{encoding:'utf8'});assert.equal(verifier.status,1);assert.match(verifier.stderr,/derivative package verifier/);
+ }finally{await f.app.close();}
+});
+test('report document lineage rejects stale correspondence and authority while preserving historical frozen bytes',async()=>{
+ const f=await documentReportFixture();try{
+  const payload={idempotencyKey:randomUUID()},frozen=await request('POST',f.revisionsUrl,context.demo!,{payload});assert.equal(frozen.statusCode,200,frozen.body);const receipt=frozen.json(),url=f.revisionsUrl+'/'+receipt.id,bytes=(await request('GET',url,context.demo!)).body;
+  const replacement={...f.reviewInput,id:randomUUID(),previousReviewId:f.reviewInput.id,decision:'rejected',reason:'Fictional corrected comparison invalidates new report use.',originalCompared:false};assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:replacement})).statusCode,200);
+  assertError(await request('GET',f.reportUrl,context.demo!),409);assertError(await request('POST',f.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}}),409);assertError(await request('POST',url+'/verify-sources',context.demo!,{payload:{sha256:receipt.sha256}}),409);
+  assert.equal((await request('GET',url,context.demo!)).body,bytes);assert.deepEqual((await request('POST',f.revisionsUrl,context.demo!,{payload})).json(),receipt);
+ }finally{await f.app.close();}
+ const g=await documentReportFixture();try{await approveAuthority(g.scope.caseId);assertError(await request('POST',g.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}}),409);}finally{await g.app.close();}
+});
+test('document report freeze rolls back with audit and rejects changed source bytes',async()=>{
+ const f=await documentReportFixture();try{
+  const payload={idempotencyKey:randomUUID()};
+  await context.schemaAdminPool!.query("CREATE FUNCTION deny_document_report_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='report.frozen' THEN RAISE EXCEPTION 'fictional report audit failure'; END IF; RETURN NEW; END $$");await context.schemaAdminPool!.query('CREATE TRIGGER deny_document_report_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_document_report_audit()');
+  try{assertError(await request('POST',f.revisionsUrl,context.demo!,{payload}),500);assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM report_revisions WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);}
+  finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_document_report_audit ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION deny_document_report_audit()');}
+  assert.equal((await request('POST',f.revisionsUrl,context.demo!,{payload})).statusCode,200);
+  const evidence=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,evidence.object_path),'Fictional changed report original');assertError(await request('GET',f.reportUrl,context.demo!),409);assertError(await request('POST',f.revisionsUrl,context.demo!,{payload:{idempotencyKey:randomUUID()}}),409);
+ }finally{await f.app.close();}
+});
+test('real browser prints document-only findings with page provenance and clears a stale verified preview',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await documentReportFixture();try{await withBrowserApp(async(b,origin)=>{
+  const ui=await binaryBrowserControls(b,origin,f.scope.caseId);await ui.click('Reports');await b.evaluate('window.print=()=>{window.__fictionalPrintCalled=true;}');await ui.click('Print complete draft');
+  await eventually(async()=>(await ui.text()).includes('Reviewed document interpretations')&&await b.evaluate<boolean>('window.__fictionalPrintCalled===true'),'document-backed report preview and print callback');assert.ok((await ui.text()).includes(f.claimInput.text));assert.ok((await ui.text()).includes('page 2'));assert.ok((await ui.text()).includes('not original PDF byte offsets'));
+  const evidence=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,evidence.object_path),'Fictional corrupt print source');await ui.click('Print complete draft');await eventually(async()=>(await ui.text()).includes('integrity verification failed'),'fresh print corruption failure');assert.equal(await b.evaluate('Boolean(document.querySelector("section[aria-label=\"Document-backed report findings\"]"))'),false);
+ });}finally{await f.app.close();}
+});
 test('document-derived claims persist independent accepted findings with idempotent retries and immutable records',async()=>{
  const f=await documentClaimFixture();try{
   const proposed=await Promise.all([1,2].map(()=>request('POST',f.claimUrl,f.authorSession,{payload:f.claimInput})));for(const r of proposed)assert.equal(r.statusCode,200,r.body);assert.deepEqual(proposed[0]!.json(),proposed[1]!.json());const claim=proposed[0]!.json().claims[0];assert.equal(claim.status,'proposed_interpretation');assert.equal(claim.decision,null);assert.equal(claim.finding,null);

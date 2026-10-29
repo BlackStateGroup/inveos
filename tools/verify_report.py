@@ -67,6 +67,8 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         raise InvalidReport('Malformed UTF-8 JSON') from exc
     require(isinstance(report, dict), 'Expected report object')
     require(report.get('status') == 'draft_not_released', 'Unsupported report status')
+    require('documentFindings' not in report,
+            'Document-derived reports require the derivative package verifier; unsupported by this verifier')
     case = object_field(report, 'case')
     case_id = text_field(case, 'id')
     for key in ('ref', 'title', 'client', 'scope', 'jurisdiction'):
