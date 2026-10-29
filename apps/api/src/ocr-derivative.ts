@@ -37,7 +37,7 @@ export function ocrWords(raw:Buffer,width:number,height:number){
   return words;
 }
 export function makeOcrDerivative(original:Buffer,context:DocumentContext,result:DocumentResult){
-  if(!original.length||original.length>65536||original.subarray(0,5).toString()!=='%PDF-'||sha256(original)!==context.sourceDigest||!result.successful||result.profileDigest!==ocrProfileDigest)fail();
+  if(!original.length||original.length>65536||original.subarray(0,5).toString()!=='%PDF-'||sha256(original)!==context.sourceDigest||result.successful!==true||result.profileDigest!==ocrProfileDigest)fail();
   for(const key of ['tenantId','caseId','jobId','evidenceId','sourceDigest','authorityVersion'] as const)if(result.context[key]!==context[key])fail();
   const raw=object(parseDocumentRaw(result.raw));exact(raw,'format originalSha256 runtimeImageId artifactLock pages');
   if(raw.format!=='inveos_tesseract_pages_v1'||raw.originalSha256!==context.sourceDigest||raw.artifactLock!==ocrArtifactLock||typeof raw.runtimeImageId!=='string'||!/^sha256:[a-f0-9]{64}$/.test(raw.runtimeImageId)||!Array.isArray(raw.pages)||raw.pages.length<1||raw.pages.length>2)fail();

@@ -3,6 +3,7 @@ import base64
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 from bounded_process import run_bounded
 from pdf_render_limits import render_size
@@ -52,6 +53,8 @@ def extract(original):
 
 
 if __name__ == '__main__':
+    os.environ['OMP_THREAD_LIMIT']='1'
+    os.environ['OMP_NUM_THREADS']='1'
     with Path('/original/input.pdf').open('rb') as stream:
         original = stream.read(65537)
     output = json.dumps(extract(original), separators=(',', ':'))
