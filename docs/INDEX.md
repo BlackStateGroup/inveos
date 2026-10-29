@@ -166,3 +166,5 @@
 - [Encrypted immutable original custody](81_ENCRYPTED_ORIGINAL_CUSTODY.md)
 
 - [82 — Evidential chronology](82_EVIDENTIAL_CHRONOLOGY.md): uncertain alleged dates, typed sources, immutable corrections and frozen verified report context.
+
+- [Encrypted recovery and restored worker retirement](84_ENCRYPTED_RESTORE.md): actual database/object/key restoration, stale worker/session denial and remaining production recovery gates.
