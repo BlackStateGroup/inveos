@@ -1,6 +1,6 @@
 # Stored document text search and exact extraction inspection
 
-This increment is in progress. Actual browser and isolated worker acceptance must be recorded before merge.
+The implementation and actual browser/isolated supplier search passed at `8bb762b57144a98676bf81a25c27b78bda03bafd`; see the [evaluation and machine receipt](evals/2026-10-29-document-search.md). Final review/merge state is recorded in BUILD_HANDOFF.md. This does not complete the wider product or performance requirements.
 
 The case brief searches text from published native PDF and OCR derivatives alongside existing stored records. Choose **Extracted document text** to narrow results. Each completed processing job is a separate identity, even when repeated runs extracted identical text. Failed, pending or cancelled jobs without a published derivative do not become search results. Text remains labelled **Unreviewed extracted text** or **Unreviewed OCR text**, regardless of whether a later finding was reviewed. This does not promote a raw extraction into a claim or finding.
 

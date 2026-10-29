@@ -1,0 +1,44 @@
+{
+  "commit": "8bb762b57144a98676bf81a25c27b78bda03bafd",
+  "checks": {
+    "run": 40971070659,
+    "job": 123787650359,
+    "nodePassed": 331,
+    "pythonPassed": 124,
+    "browserJourneys": 29,
+    "failed": 0,
+    "skipped": 0
+  },
+  "research": {
+    "run": 40971070725,
+    "job": 123787650625,
+    "imageId": "sha256:5fec42949a838c15516c70dce6633183891ae638769652a38ad64930e46d35fa",
+    "completeReportSha256": "f25f5459f66aeb89c861305b3e8f9121bca53ace8315d5a4c7169c9186ec75e4",
+    "rasterIntegrationPassed": 1,
+    "daemonFailureIntegrationPassed": 5
+  },
+  "actualSupplierAcceptance": {
+    "encryptedOriginals": true,
+    "scanSha256": "575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393",
+    "digitalSha256": "7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e",
+    "ocrRawDigest": "8dbb48649be47b9f8e581e1ca336a40bb08038b9df3a3f68793823d15c2e1d57",
+    "ocrDerivativeDigest": "762510bbc4cefd940fcb6de9f115caaf86c6f0d6080d95adf5f46c8a38b245c3",
+    "ocrWords": 18,
+    "documentFindings": 2,
+    "documentWorkLinks": 6,
+    "competingHypothesesRemainProposed": true,
+    "questionClosureHistory": true,
+    "independentPackageVerified": true,
+    "independentPdfVerified": true,
+    "browserOcrReload": true,
+    "browserStoredExtractionSearch": true,
+    "browserOriginalPageComparison": true,
+    "restrictedPdfDelivery": true,
+    "acknowledgementAndRevocation": true,
+    "cancelledAttachmentDenied": true,
+    "realProfessionalReview": false
+  },
+  "actualSupplierTap": "TAP version 13\n# Subtest: actual isolated supplier originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 1 - actual isolated supplier originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 30593.037517\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"encryptedOriginals\":true,\"scanSha256\":\"575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"8dbb48649be47b9f8e581e1ca336a40bb08038b9df3a3f68793823d15c2e1d57\",\"ocrDerivativeDigest\":\"762510bbc4cefd940fcb6de9f115caaf86c6f0d6080d95adf5f46c8a38b245c3\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 30920.662588\n",
+  "professionalApproval": false,
+  "productionReady": false
+}

@@ -18,8 +18,8 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
   const [inspection,setInspection]=useState<InspectedDerivative|null>(null),[linePage,setLinePage]=useState(0);
   const [raster,setRaster]=useState<InspectedRaster|null>(null);
   const [document,setDocument]=useState<InspectedDocument|null>(null);
-  const documentRegion=useRef<HTMLElement|null>(null);
-  useEffect(()=>{if(document){documentRegion.current?.scrollIntoView({block:'start'});documentRegion.current?.focus({preventScroll:true});}},[document]);
+  const documentRegion=useRef<HTMLElement|null>(null),focusRequested=useRef(false);
+  useEffect(()=>{if(document&&focusRequested.current){focusRequested.current=false;documentRegion.current?.scrollIntoView({block:'start'});documentRegion.current?.focus({preventScroll:true});}},[document]);
   const [history,setHistory]=useState<{jobId:string;items:Event[];nextAfter:string|null}|null>(null);
   const alive=useRef(true),locked=useRef(false),base=`/api/cases/${caseId}/integrity-jobs`;
   async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const value=await r.json();if(!r.ok){if([401,403,404].includes(r.status)&&alive.current){setRows([]);setNext(null);setInspection(null);setDocument(null);setRaster(null);setHistory(null);setPending(null);await onDenied?.();}throw new Error(value.error||'Processing history unavailable.');}return value;}
@@ -36,7 +36,7 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
     const job=await get<Job>(base+'/'+requestedJobId,signal);
     if(job.id!==requestedJobId||job.caseId!==caseId||job.status!=='succeeded'||!['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind))throw new Error('Selected extraction is unavailable.');
     const checked=await inspectDocumentDerivative(await get<unknown>(base+'/'+job.id+'/document-derivative',signal),job);
-    if(alive.current&&!signal?.aborted){setSource(job.evidenceId);onSource?.(job.evidenceId);setDocument(checked);setHistory(null);setRows(old=>old.some(v=>v.id===job.id)?old:[job,...old]);}
+    if(alive.current&&!signal?.aborted){focusRequested.current=true;setSource(job.evidenceId);onSource?.(job.evidenceId);setDocument(checked);setHistory(null);setRows(old=>old.some(v=>v.id===job.id)?old:[job,...old]);}
   }
   async function act(operation:()=>Promise<void>){if(locked.current)return;locked.current=true;setBusy(true);setError('');setMessage('');setInspection(null);setDocument(null);setRaster(null);setLinePage(0);
     try{await operation();}catch(e){if(alive.current)setError((e as Error).message);}finally{locked.current=false;if(alive.current)setBusy(false);}}
