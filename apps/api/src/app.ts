@@ -28,6 +28,7 @@ import { ApiError, notFound } from './errors.js';
 import { inTransaction } from './db.js';
 import { readOriginalBounded, writeOriginal, type StoredOriginal } from './storage.js';
 import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
+import {buildReportPdf,reportPdfProfileDigest} from './report-pdf.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
 
@@ -1506,6 +1507,41 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return built;
     });
     return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-Package-SHA256',result.packageDigest).header('Content-Disposition',`attachment; filename="document-report-${revisionId}.json"`).type('application/json').send(result.bytes);
+  });
+  const renditionInputSchema={type:'object',additionalProperties:false,required:['idempotencyKey','redactedFindingIds'],properties:{idempotencyKey:uuidSchema,redactedFindingIds:{type:'array',maxItems:1000,items:uuidSchema},reason:{type:'string',maxLength:500}}};
+  function renditionReceipt(row:QueryResultRow){return {id:row.id,caseId:row.case_id,revisionId:row.revision_id,status:'internal_rendition_not_released',format:'pdf',sourceReportSha256:row.source_report_digest.trim(),pdfSha256:row.pdf_digest.trim(),profileDigest:row.profile_digest.trim(),redactionSha256:row.redaction_digest.trim(),redactedFindingCount:(row.redaction_plan as {findingIds?:unknown[]}).findingIds?.length??0,createdAt:iso(row.created_at)};}
+  function canonicalJson(value:unknown):string{return value===null||typeof value!=='object'?JSON.stringify(value):Array.isArray(value)?`[${value.map(canonicalJson).join(',')}]`:`{${Object.entries(value as Record<string,unknown>).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>`${JSON.stringify(key)}:${canonicalJson(item)}`).join(',')}}`;}
+  function checkedPdf(reportBytes:Buffer,row:QueryResultRow){
+    const reportDigest=createHash('sha256').update(reportBytes).digest('hex');if(reportDigest!==row.source_report_digest.trim())throw new ApiError(409,'Rendition source report integrity failed.');
+    let report:ReportDraft,plan:{findingIds?:string[];reason?:string};try{report=JSON.parse(reportBytes.toString('utf8'));plan=row.redaction_plan;}catch{throw new ApiError(409,'Rendition metadata is invalid.');}
+    let built;try{built=buildReportPdf(report,reportDigest,{findingIds:plan.findingIds,reason:plan.reason});}catch{throw new ApiError(409,'Rendition cannot be reproduced from its immutable inputs.');}
+    const bytes=row.pdf_bytes as Buffer;
+    if(row.profile!=='inveos_report_pdf_v1'||row.profile_digest.trim()!==reportPdfProfileDigest||row.redaction_digest.trim()!==built.redactionDigest||row.content_digest.trim()!==built.contentDigest||canonicalJson(row.redaction_plan)!==canonicalJson(built.plan)||canonicalJson(row.content_model)!==canonicalJson(built.model)||row.pdf_digest.trim()!==built.digest||!bytes.equals(built.bytes)||createHash('sha256').update(bytes).digest('hex')!==built.digest)throw new ApiError(409,'Stored rendition integrity verification failed.');
+    return built;
+  }
+  app.post('/api/cases/:caseId/report-revisions/:revisionId/renditions',{preHandler:requireCsrf,schema:{params:reviewParams,body:renditionInputSchema}},async(request,reply)=>{
+    reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required.');
+    const input=request.body as {idempotencyKey:string;redactedFindingIds:string[];reason?:string};
+    return reportTransaction(async client=>{await reportAccess(client,actor,caseId);const revision=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];if(!revision)notFound();checkRevision(revision);
+      const reportDigest=revision.digest.trim();let built;try{built=buildReportPdf(JSON.parse(revision.report_bytes.toString('utf8')),reportDigest,{findingIds:input.redactedFindingIds,reason:input.reason});}catch(error){throw new ApiError(422,error instanceof Error?error.message:'Invalid rendition request.');}
+      const old=(await client.query('SELECT * FROM report_renditions WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey])).rows[0];
+      if(old){if(old.revision_id!==revisionId||old.pdf_digest.trim()!==built.digest||old.redaction_digest.trim()!==built.redactionDigest)throw new ApiError(409,'Rendition retry differs.');checkedPdf(revision.report_bytes,old);return renditionReceipt(old);}
+      await verifyFrozenSources(client,actor,caseId,revisionId,reportDigest);
+      const id=randomUUID(),inserted=(await client.query(`INSERT INTO report_renditions(tenant_id,case_id,revision_id,id,created_by,idempotency_key,source_report_digest,profile,profile_digest,redaction_plan,redaction_digest,content_model,content_digest,pdf_bytes,pdf_digest)
+        VALUES($1,$2,$3,$4,$5,$6,$7,'inveos_report_pdf_v1',$8,$9,$10,$11,$12,$13,$14) ON CONFLICT(tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING *`,[actor.tenantId,caseId,revisionId,id,actor.userId,input.idempotencyKey,reportDigest,built.profileDigest,built.plan,built.redactionDigest,built.model,built.contentDigest,built.bytes,built.digest])).rows[0];
+      if(!inserted)throw Object.assign(new Error('Concurrent rendition retry'),{code:'40001'});
+      await writeAudit(client,actor,caseId,'report.rendition_created','report_rendition',id,'Immutable internal PDF rendition created',{revisionId,sourceReportDigest:reportDigest,pdfDigest:built.digest,profileDigest:built.profileDigest,redactionDigest:built.redactionDigest,redactedFindingCount:built.plan.findingIds.length});return renditionReceipt(inserted);
+    });
+  });
+  app.get('/api/cases/:caseId/report-revisions/:revisionId/renditions',{preHandler:authenticate,schema:{params:reviewParams,querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string},{before,limit=25}=request.query as {before?:string;limit?:number};const page=await reportTransaction(async client=>{await reportAccess(client,actor,caseId);
+      if(before&&!await client.query('SELECT 1 FROM report_renditions WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND id=$4',[actor.tenantId,caseId,revisionId,before]).then(r=>r.rowCount))notFound();
+      const rows=await client.query(`SELECT * FROM report_renditions WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND ($4::uuid IS NULL OR (created_at,id)<(SELECT created_at,id FROM report_renditions WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND id=$4)) ORDER BY created_at DESC,id DESC LIMIT $5`,[actor.tenantId,caseId,revisionId,before??null,limit+1]);return {items:rows.rows.slice(0,limit).map(renditionReceipt),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};});return reply.header('Cache-Control','no-store').send(page);
+  });
+  const renditionParams={type:'object',additionalProperties:false,required:['caseId','revisionId','renditionId'],properties:{caseId:uuidSchema,revisionId:uuidSchema,renditionId:uuidSchema}};
+  app.get('/api/cases/:caseId/report-revisions/:revisionId/renditions/:renditionId',{preHandler:authenticate,schema:{params:renditionParams}},async(request,reply)=>{
+    const actor=request.actor!,{caseId,revisionId,renditionId}=request.params as {caseId:string;revisionId:string;renditionId:string};const built=await reportTransaction(async client=>{await reportAccess(client,actor,caseId);const row=(await client.query(`SELECT rr.*,r.report_bytes FROM report_renditions rr JOIN report_revisions r ON r.tenant_id=rr.tenant_id AND r.case_id=rr.case_id AND r.id=rr.revision_id WHERE rr.tenant_id=$1 AND rr.case_id=$2 AND rr.revision_id=$3 AND rr.id=$4`,[actor.tenantId,caseId,revisionId,renditionId])).rows[0];if(!row)notFound();const checked=checkedPdf(row.report_bytes,row);await writeAudit(client,actor,caseId,'report.rendition_downloaded','report_rendition',renditionId,'Verified internal PDF rendition downloaded',{revisionId,pdfDigest:checked.digest,redactionDigest:checked.redactionDigest});return checked;});
+    return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-PDF-SHA256',built.digest).header('X-INVEOS-Report-SHA256',built.model.sourceReportSha256).header('X-INVEOS-Redaction-SHA256',built.redactionDigest).header('Content-Disposition',`attachment; filename="internal-report-${renditionId}.pdf"`).type('application/pdf').send(built.bytes);
   });
   const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
   const disclosureReceipt=(r:QueryResultRow)=>{const reportSha256=r.digest.trim(),packageSha256=r.package_digest?.trim();return {id:r.id,caseId:r.case_id,revisionId:r.revision_id,recipientId:r.recipient_id,sha256:packageSha256??reportSha256,reportSha256,deliverable:packageSha256?'document_package':'report_json',authorityVersion:r.authority_version,expiresAt:iso(r.expires_at),createdAt:iso(r.created_at),status:'recipient_disclosure_grant'};};

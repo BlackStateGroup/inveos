@@ -4,11 +4,16 @@ import {readDocumentPackageBytes,readVerifiedDocumentPackage,saveVerifiedDocumen
 import {pendingReportFreeze, recoverableReportFreeze, reportRecoveryScope} from './reportRecovery';
 import {Panel, Notice} from './ui';
 import {DisclosureHistory} from './DisclosureHistory';
+import {verifyReportPdfDownload} from './reportPdfDownload';
 
 type Receipt={id:string;caseId:string;status:string;sha256:string;createdAt:string};
 type Page={items:Receipt[];nextBefore:string|null};
+type RenditionReceipt={id:string;caseId:string;revisionId:string;status:string;format:'pdf';sourceReportSha256:string;pdfSha256:string;profileDigest:string;redactionSha256:string;redactedFindingCount:number;createdAt:string};
+type RenditionPayload={idempotencyKey:string;redactedFindingIds:string[];reason?:string};
 type ReleasePayload={sha256:string;recipientId:string;idempotencyKey:string;expiresAt:string;reason:string;confirmFullDisclosure:true;documentPackageSha256?:string;confirmDocumentPackageVerified?:true};
 const releaseKey=(caseId:string,revisionId:string)=>`inveos:report-release:v1:${caseId}:${revisionId}`;
+const renditionKey=(caseId:string,revisionId:string)=>`inveos:report-rendition:v1:${caseId}:${revisionId}`;
+function pendingRendition(store:Pick<Storage,'getItem'>,caseId:string,revisionId:string):RenditionPayload|null{try{const value=JSON.parse(store.getItem(renditionKey(caseId,revisionId))||'null') as RenditionPayload|null;return value&&typeof value.idempotencyKey==='string'&&Array.isArray(value.redactedFindingIds)?value:null;}catch{return null;}}
 function pendingRelease(store:Pick<Storage,'getItem'>,caseId:string,row:Receipt):ReleasePayload|null{try{const raw=store.getItem(releaseKey(caseId,row.id));if(!raw)return null;const value=JSON.parse(raw) as ReleasePayload;return value.sha256===row.sha256&&typeof value.recipientId==='string'&&typeof value.idempotencyKey==='string'?value:null;}catch{return null;}}
 async function json<T>(url:string,signal?:AbortSignal,body?:object,csrf?:string):Promise<T>{
   const response=await fetch(url,{signal,credentials:'same-origin',method:body?'POST':'GET',
@@ -23,6 +28,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   const [verified,setVerified]=useState<Record<string,boolean>>({});
   const [verifiedPackages,setVerifiedPackages]=useState<Record<string,string>>({});
   const [pendingReleases,setPendingReleases]=useState<Record<string,boolean>>({});
+  const [pendingRenditions,setPendingRenditions]=useState<Record<string,boolean>>({});
   const inFlight=useRef(false),alive=useRef(true);
   const base=`/api/cases/${caseId}/report-revisions`;
   useEffect(()=>{
@@ -32,6 +38,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       setRows(page.items);setNext(page.nextBefore);setPending(!!pendingReportFreeze(window.sessionStorage,scope));
       setVerifiedPackages(Object.fromEntries(page.items.flatMap(row=>{const saved=readVerifiedDocumentPackage(window.sessionStorage,caseId,row.id,row.sha256);return saved?[[row.id,saved.packageSha256]]:[];})));
       setPendingReleases(Object.fromEntries(page.items.filter(row=>pendingRelease(window.sessionStorage,caseId,row)).map(row=>[row.id,true])));
+      setPendingRenditions(Object.fromEntries(page.items.filter(row=>pendingRendition(window.sessionStorage,caseId,row.id)).map(row=>[row.id,true])));
     })
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
     return()=>{alive.current=false;controller.abort();};
@@ -82,6 +89,13 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     setVerifiedPackages(old=>({...old,[row.id]:checked.packageSha256}));const url=URL.createObjectURL(new Blob([bytes],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`document-report-${row.id}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     setMessage(`Verified and downloaded a ${checked.documentFindings}-finding document package. Retain its package and report fingerprints separately.`);
   }
+  async function rendition(row:Receipt,data?:FormData){
+    const store=window.sessionStorage,previous=pendingRendition(store,caseId,row.id),ids=String(data?.get('findingIds')??'').split(/[\s,]+/).map(v=>v.trim()).filter(Boolean);
+    const payload:RenditionPayload=previous??{idempotencyKey:crypto.randomUUID(),redactedFindingIds:ids,...(ids.length?{reason:String(data?.get('reason')??'')}: {})};store.setItem(renditionKey(caseId,row.id),JSON.stringify(payload));setPendingRenditions(old=>({...old,[row.id]:true}));
+    const receipt=await json<RenditionReceipt>(`${base}/${row.id}/renditions`,AbortSignal.timeout(30000),payload,csrf);if(receipt.caseId!==caseId||receipt.revisionId!==row.id||receipt.sourceReportSha256!==row.sha256||receipt.status!=='internal_rendition_not_released'||receipt.format!=='pdf')throw new Error('PDF rendition receipt mismatch.');
+    const response=await fetch(`${base}/${row.id}/renditions/${receipt.id}`,{credentials:'same-origin',cache:'no-store'});if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'PDF rendition download failed.');}const bytes=await response.arrayBuffer();await verifyReportPdfDownload(bytes,receipt.pdfSha256,row.sha256,response.headers.get('X-INVEOS-PDF-SHA256'),response.headers.get('X-INVEOS-Report-SHA256'));
+    store.removeItem(renditionKey(caseId,row.id));setPendingRenditions(old=>({...old,[row.id]:false}));const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),link=document.createElement('a');link.href=url;link.download=`internal-report-${receipt.id}.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);if(alive.current)setMessage(`${receipt.redactedFindingCount?'Redacted':'Unredacted'} PDF bytes verified and downloaded. Run tools/verify_report_pdf.py for independent semantic-stream verification. This is not a client release.`);
+  }
   async function release(row:Receipt,data?:FormData){
     if(!verified[row.id]&&!verifiedPackages[row.id])throw new Error('Verify the exact report or document package before creating a release.');
     const store=window.sessionStorage,previous=pendingRelease(store,caseId,row),packageSha256=verifiedPackages[row.id];
@@ -116,10 +130,18 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <label className="form-label">SHA-256 for revision {row.id}<input readOnly value={row.sha256}/></label>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
+      <button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Create unredacted PDF {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
       {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input aria-label={`Verified package SHA-256 ${row.id}`} readOnly value={verifiedPackages[row.id]}/></label>}
       {reviewHistory[row.id]?.map(item=><p key={item.id}>{item.decision} · reviewer {item.reviewerId} · {item.createdAt}: {item.reason}</p>)}
+      <details><summary>Create an internal redacted PDF</summary><p>Enter whole finding UUIDs only. Redacted findings and their source metadata are omitted from both visible PDF streams and the embedded semantic model. This narrow profile rejects unsupported Unicode; it does not release the result.</p>
+        {pendingRenditions[row.id]&&<><p role="status">A rendition request has no confirmed receipt. Recover it with the saved request identity before starting another.</p><button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Recover pending PDF rendition</button></>}
+        <form className="work-form" onSubmit={e=>{e.preventDefault();void act(()=>rendition(row,new FormData(e.currentTarget)));}}><fieldset disabled={busy||pendingRenditions[row.id]}>
+          <label className="form-label">Finding UUIDs to redact<textarea name="findingIds" required placeholder="One or more UUIDs, separated by spaces, commas or new lines"/></label>
+          <label className="form-label">Redaction reason<textarea name="reason" required minLength={10} maxLength={500}/></label>
+          <label><input type="checkbox" required/> I understand this omits whole findings only and requires independent review before any disclosure.</label><button className="secondary">Create redacted PDF</button>
+        </fieldset></form></details>
       <details><summary>Review this frozen revision</summary><p>A different assigned reviewer must decide. Conflicting decisions remain separate; none releases the report. Download, verify and inspect its exact contents first.</p>
         <form className="work-form" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void act(()=>review(row,data));}}><fieldset disabled={busy||!verified[row.id]}>
           <label className="form-label">Decision<select name="decision"><option value="request_changes">Request changes</option><option value="accept_internal">Accept internal draft</option></select></label>
