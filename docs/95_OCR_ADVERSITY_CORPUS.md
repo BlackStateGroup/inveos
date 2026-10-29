@@ -1,6 +1,6 @@
 # Controlled fictional OCR adversity corpus
 
-This increment is in progress. Definition/metric tests are not parser benchmarks; actual isolated execution and exact commit/run results must be recorded before any measured claim.
+This increment is in progress. Definition/metric tests are not parser benchmarks. Research 40965628205 at `ef069b6` completed native execution, but the oversized stdout log truncated before its new measurements. The workflow now retains full JSON artifacts plus a compact summary; an inspectable rerun is required before quality claims. Exact commit/run/results belong in the evaluation receipt.
 
 The existing pinned English OCR worker profile is exercised against twelve first-party fictional conditions, each repeated twice: the known clean supplier scan, small type, lower raster resolution, +2°/−2°/+7° skew, low contrast, blur, JPEG compression, fixed-seed speckles, a simple three-column work record and a blank page. No new parser, language model, third-party data set, font file or runtime package is added. The existing audited/hash-locked Pillow and PDFium wheels and Tesseract image content lock still gate execution.
 
