@@ -1,3 +1,4 @@
+import {forwardBrowserApi} from './support/browser-proxy.js';
 /** Actual isolated OCR, PostgreSQL, browser and verifier acceptance; research workflow only. */
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
@@ -6,7 +7,7 @@ import {mkdtemp,readFile,writeFile,rm,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {createServer,request as proxyRequest} from 'node:http';
+import {createServer} from 'node:http';
 import {createPool,runMigrations} from '../src/db.js';
 import {createApp} from '../src/app.js';
 import {encryptedOriginalStore} from '../src/original-encryption.js';
@@ -38,9 +39,9 @@ async function fixture(){
 }
 
 async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:string,rasterJobId:string){
- const dist=join(root,'apps/web/dist');let api='';
+ const dist=join(root,'apps/web/dist');let api='';const upstreams=new Set<ReturnType<typeof forwardBrowserApi>>();
  const server=createServer((req,res)=>{void(async()=>{const path=new URL(req.url!,'http://localhost').pathname;
-  if(path.startsWith('/api/')){const upstream=proxyRequest(api+req.url,{method:req.method,headers:req.headers},r=>{res.writeHead(r.statusCode!,r.headers);r.pipe(res);});upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;}
+  if(path.startsWith('/api/')){const upstream=forwardBrowserApi(req,res,api+req.url);upstreams.add(upstream);upstream.once('close',()=>upstreams.delete(upstream));return;}
   if(path==='/'){res.setHeader('content-type','text/html');res.end(await readFile(join(dist,'index.html')));return;}
   if(/^\/assets\/[A-Za-z0-9_.-]+\.(js|css)$/.test(path)){res.setHeader('content-type',path.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(join(dist,path.slice(1))));return;}res.statusCode=404;res.end();})().catch(()=>{res.statusCode=500;res.end();});});
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+(server.address() as {port:number}).port;let b:Awaited<ReturnType<typeof launchBrowser>>|undefined;
@@ -65,7 +66,7 @@ async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:stri
   await eventually(async()=>{const error=await browser.evaluate<string>(`document.querySelector('form[aria-label="Case record search"]')?.parentElement.querySelector('.form-error')?.textContent||''`);if(error)throw new Error('Actual OCR browser search: '+error);return await browser.evaluate<boolean>(`[...document.querySelectorAll('[aria-label="Case search results"] article')].some(article=>article.textContent.includes(${JSON.stringify(jobId)}))`);},'actual OCR searchable result');
   await b.evaluate(`(()=>{const article=[...document.querySelectorAll('[aria-label="Case search results"] article')].find(article=>article.textContent.includes(${JSON.stringify(jobId)}));[...article.querySelectorAll('button')].find(button=>button.textContent==='Verify and inspect extraction').click();})()`);
   await eventually(async()=>await browser.evaluate<boolean>(`document.querySelector('[aria-label="Verified unreviewed document derivative"]')?.textContent.includes(${JSON.stringify(jobId)})===true`),'actual searched OCR reverified');
- }finally{await b?.close();server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
+ }finally{try{await b?.close();}finally{server.closeAllConnections();for(const upstream of upstreams)upstream.destroy();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}
 }
 
 test('actual isolated supplier originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery',{timeout:270000},async t=>{

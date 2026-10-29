@@ -8,7 +8,7 @@ The user authorises review, fixes, testing and suitable merges into main without
 
 ## Main and recent verified work
 
-Main now includes **PR #89**, merge `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; resulting-main Checks 40969884003 is pending. Last verified main is #88 `3e2bccc626aafdfc38138d848d321f8fe8dc5a3e`, where Checks 40964816601 passed (325 Node/120 Python, zero failures/skips). The last verified preceding main is #87 `be7ac55500645571f9839cf97d7b3e16c2233030`, Checks 40963157827 (318 Node/120 Python, zero failures/skips). Main #86 passed Checks 40958284392 (311/120, zero failures/skips). Main after #85 failed one discussion-browser readiness assertion; #86 fixed it. No false passing receipt is claimed for #85 main.
+Main now includes **PR #89**, merge `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; resulting-main Checks 40969884003 failed during lifecycle test shutdown. Last verified main is #88 `3e2bccc626aafdfc38138d848d321f8fe8dc5a3e`, where Checks 40964816601 passed (325 Node/120 Python, zero failures/skips). The last verified preceding main is #87 `be7ac55500645571f9839cf97d7b3e16c2233030`, Checks 40963157827 (318 Node/120 Python, zero failures/skips). Main #86 passed Checks 40958284392 (311/120, zero failures/skips). Main after #85 failed one discussion-browser readiness assertion; #86 fixed it. No false passing receipt is claimed for #85 main.
 
 Preserve these completed journeys; do not rebuild them from old draft labels:
 
@@ -44,7 +44,7 @@ Twelve controlled fictional English conditions, twice each: 14 attempts produced
 
 Earlier Checks 40965628365 timed out in the unchanged lifecycle browser test. Added step diagnostics; subsequent full Checks 40967439153 and 40968344381 passed all lifecycle steps without extending deadlines. The intermittent timeout is not root-caused or claimed fixed. Earlier Research 40965628205 had truncated logs and is not a verified per-condition receipt.
 
-Evidence head `71dee2c64cd267fa05144c37b0d8603469d67e0b` passed Checks 40969183957 (325/124, zero failures/skips) and Research 40969183955, including all five daemon checks. It merged as `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; post-merge main Checks 40969884003 is pending. Independent draft #90 on `feat/document-text-search` adds scoped stored native/OCR text search and exact job inspection; its browser/native acceptance is running. This branch now integrates validated #89; final #90 verification is required. Product requirements and external gates remain incomplete.
+Evidence head `71dee2c64cd267fa05144c37b0d8603469d67e0b` passed Checks 40969183957 (325/124, zero failures/skips) and Research 40969183955, including all five daemon checks. It merged as `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; post-merge main Checks 40969884003 failed during lifecycle test shutdown. Independent draft #90 on `feat/document-text-search` adds scoped stored native/OCR text search and exact job inspection; its browser/native acceptance is running. This branch now integrates validated #89; final #90 verification is required. Product requirements and external gates remain incomplete.
 
 ## Active document search increment
 
@@ -61,3 +61,6 @@ Integration preserves both independent increments. Conflicts were overlapping de
 
 
 At `57ba08f`, Research 40969660127 passed actual native/OCR text search, browser reinspection, supplier/export/PDF delivery and all five daemon-failure tests; the exact-origin fixture correction is confirmed. Checks 40969660138 passed 328 tests and failed the added keyboard step before extraction inspection (329 total). The CDP Enter sequence now includes its character text and asserts selected-job navigation separately; keyboard acceptance remains pending. Inspection also now scrolls/moves focus to verified passages. Final integration must pass the combined suite before merge.
+
+
+Main #89 Checks 40969884003 reproduced the lifecycle timeout. All eight functional milestones completed through revoked-context clearing; cleanup did not complete, so no passing main receipt is claimed. A separate actual loopback HTTP/Fastify reproduction showed the proxy left an incomplete upload alive after its client disconnected (`apiClosedAfterBrowserDisconnect: false`); destroying the upstream let shutdown finish. The test proxy now forwards disconnects and destroys its own outstanding requests before API shutdown. Two actual HTTP regressions pass, preserving complete bodies/origin headers and aborting partial uploads. Lifecycle cleanup stages are instrumented to distinguish Chrome, API and proxy shutdown if another stall occurs. This is a test-harness fix, not evidence of a production lifecycle defect. Final combined checks remain required.

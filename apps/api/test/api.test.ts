@@ -1,4 +1,5 @@
-import {createServer,request as proxyRequest} from 'node:http';
+import {forwardBrowserApi} from './support/browser-proxy.js';
+import {createServer} from 'node:http';
 import {launchBrowser,eventually} from './support/browser.js';
 import {uploadBinaryChunks} from '../../web/src/chunkUpload.js';
 import {prepareBinary,binaryIntakeScope,sendBinaryRecoverably} from '../../web/src/binaryIntake.js';
@@ -2794,19 +2795,15 @@ test('real sandboxed browser verifies portal downloads, acknowledgement, revoked
  });
 });
 
-type BrowserProxyProbe={epoch?:string;request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
+type BrowserProxyProbe={diagnostic?:(message:string)=>void;epoch?:string;request?:(path:string,method:string)=>void;response?:(path:string,status:number)=>'hold'|'drop'|undefined};
 async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,origin:string)=>Promise<void>,probe:BrowserProxyProbe={}){
- const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';
+ const dist=fileURLToPath(new URL('../../web/dist/',import.meta.url));let apiAddress='';const upstreams=new Set<ReturnType<typeof forwardBrowserApi>>();
  const server=createServer((req,res)=>{void(async()=>{
   const pathname=new URL(req.url!,'http://localhost').pathname;
   if(pathname.startsWith('/api/')){
    probe.request?.(pathname,req.method!);
-   const upstream=proxyRequest(apiAddress+req.url,{method:req.method,headers:req.headers},response=>{
-    const fault=probe.response?.(pathname,response.statusCode!);
-    // Consume an actual committed API response without delivering it to Chrome.
-    if(fault){response.resume();if(fault==='drop')res.destroy();return;}
-    res.writeHead(response.statusCode!,response.headers);response.pipe(res);
-   });upstream.on('error',()=>{res.statusCode=502;res.end();});req.pipe(upstream);return;
+   const upstream=forwardBrowserApi(req,res,apiAddress+req.url,status=>probe.response?.(pathname,status));
+   upstreams.add(upstream);upstream.once('close',()=>upstreams.delete(upstream));return;
   }
   if(pathname==='/portal'||pathname==='/'){res.setHeader('content-type','text/html');res.end(await readFile(join(dist,'index.html')));return;}
   if(/^\/assets\/[A-Za-z0-9_.-]+\.(js|css)$/.test(pathname)){res.setHeader('content-type',pathname.endsWith('.js')?'text/javascript':'text/css');res.end(await readFile(join(dist,pathname.slice(1))));return;}
@@ -2819,7 +2816,7 @@ async function withBrowserApp(run:(b:Awaited<ReturnType<typeof launchBrowser>>,o
   apiAddress=await app.listen({host:'127.0.0.1',port:0});browser=await launchBrowser();const b=browser;
   await b.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await run(b,origin);
- }finally{try{await browser?.close();}finally{try{await app.close();}finally{server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
+ }finally{try{probe.diagnostic?.('Closing browser');await browser?.close();probe.diagnostic?.('Browser closed');}finally{server.closeAllConnections();for(const upstream of upstreams)upstream.destroy();try{probe.diagnostic?.('Closing test API');await app.close();probe.diagnostic?.('Test API closed');}finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));probe.diagnostic?.('Proxy closed');}}}
 }
 
 test('real browser creates a case, enforces authority and restores versioned scope', {skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async t=>{
@@ -4396,7 +4393,7 @@ test('real browser records case closure and reopening with persistent history an
   await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=window.innerWidth+1'));
   await decide('Scope review','Fictional case reopened for fresh authority approval before any further collection.');await eventually(async()=>(await ui.text()).includes('Stage version 4.'),'scope review saved');assertError(await uploadEvidence(f.kase.id),409);assert.equal((await approveAuthority(f.kase.id)).statusCode,200);await click('Refresh case stage');await eventually(async()=>(await ui.text()).includes('Stage version 5.'),'new approved stage visible');t.diagnostic('Lifecycle browser: fresh authority visible');
   await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);await click('Refresh case stage');await eventually(async()=>!(await ui.text()).includes(f.kase.title)&&!(await ui.text()).includes('outstanding questions retained')&&await b.evaluate<boolean>(`![...document.querySelectorAll('[aria-label=\"Active case\"] option')].some(option=>option.value===${JSON.stringify(f.kase.id)})`),'revoked case and its stage history cleared');t.diagnostic('Lifecycle browser: revoked context cleared');
- }).catch(error=>{t.diagnostic('Lifecycle browser failure: '+String(error));throw error;});
+ },{diagnostic:message=>t.diagnostic('Lifecycle cleanup: '+message)}).catch(error=>{t.diagnostic('Lifecycle browser failure: '+String(error));throw error;});
  t.diagnostic('Lifecycle browser: cleanup complete');
 });
 
