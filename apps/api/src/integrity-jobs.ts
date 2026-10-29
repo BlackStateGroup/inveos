@@ -1,3 +1,4 @@
+import type {OriginalStore} from './original-encryption.js';
 import {ocrKind,ocrProfile,ocrProfileDigest,makeOcrDerivative} from './ocr-derivative.js';
 import {documentReview,type DocumentReviewInput,type ReviewPredecessor} from './document-review.js';
 import type {DocumentReportFinding} from '@inveos/contracts';
@@ -17,7 +18,7 @@ import { makeTextDerivative, sha256, textConfiguration, textProcessor, verifyTex
 
 type Scope = {tenantId: string; caseId: string; jobId: string};
 type Services = {
-  pool: Pool; storageRoot: string; documentLab?: boolean; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
+  pool: Pool; storageRoot: OriginalStore; documentLab?: boolean; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
   audit: (c: PoolClient, a: Actor, caseId: string, action: string, entityType: string, id: string, summary: string) => Promise<void>;
   findCase: (c: PoolClient, a: Actor, id: string, lock?: boolean) => Promise<unknown>;
 };
@@ -120,7 +121,7 @@ export function validateDispatch(s: DispatchScope, limit: number) {
 }
 
 /** One bounded pass. No global tenant discovery, HTTP endpoint or privileged credentials. */
-export async function dispatchIntegrityJobs(pool: Pool, root: string, scope: DispatchScope, limit = 10, signal?: AbortSignal) {
+export async function dispatchIntegrityJobs(pool: Pool, root: OriginalStore, scope: DispatchScope, limit = 10, signal?: AbortSignal) {
   validateDispatch(scope,limit);
   const results: {jobId:string;status:string;attempt:number|null;failureCode:string|null}[] = [];
   let stopReason: 'limit' | 'empty' | 'aborted' = 'limit';
@@ -171,14 +172,14 @@ async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure:
     return completed;
   });
 }
-export async function runIntegrityJob(pool: Pool, root: string, s: Scope) {
+export async function runIntegrityJob(pool: Pool, root: OriginalStore, s: Scope) {
   const kind=await pool.query('SELECT kind FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',values(s));
   if([documentKind,rasterKind,ocrKind].includes(kind.rows[0]?.kind))return null; // Separate qualified worker required.
   const lease = await claimIntegrityJob(pool,s);
   if (!lease) return null;
   return processLeasedJob(pool,root,s,lease);
 }
-async function processLeasedJob(pool: Pool, root: string, s: Scope, lease: Lease) {
+async function processLeasedJob(pool: Pool, root: OriginalStore, s: Scope, lease: Lease) {
   let failure: Failure | null = null;
   let output: DerivativeOutput | undefined;
   try {
@@ -201,7 +202,7 @@ function documentContext(row:QueryResultRow):DocumentContext {
     sourceDigest:row.source_digest.trim(),authorityVersion:row.authority_version};
 }
 /** Trusted attachment only. Worker context/profile are attestations, never browser inputs. */
-export async function finishDocumentJob(pool:Pool,root:string,s:Scope,token:string,result:DocumentResult) {
+export async function finishDocumentJob(pool:Pool,root:OriginalStore,s:Scope,token:string,result:DocumentResult) {
   return inTransaction(pool,async client=>{
     await client.query("SET LOCAL lock_timeout = '2s'");
     await client.query("SET LOCAL statement_timeout = '5s'");
@@ -230,7 +231,7 @@ export async function finishDocumentJob(pool:Pool,root:string,s:Scope,token:stri
   });
 }
 
-export async function finishRasterJob(pool:Pool,root:string,s:Scope,token:string,result:RasterResult) {
+export async function finishRasterJob(pool:Pool,root:OriginalStore,s:Scope,token:string,result:RasterResult) {
   return inTransaction(pool,async client=>{
     await client.query("SET LOCAL lock_timeout = '2s'");
     await client.query("SET LOCAL statement_timeout = '5s'");

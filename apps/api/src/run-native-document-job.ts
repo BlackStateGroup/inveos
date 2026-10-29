@@ -1,3 +1,4 @@
+import {originalStoreFromEnv} from './original-encryption.js';
 /** Explicit single-job research CLI; never discovers cases or automatically dispatches. */
 import {readFile,stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -16,7 +17,7 @@ if((await stat(path)).size>16384)throw new Error('Qualification receipt limit');
 const qualification=JSON.parse(await readFile(path,'utf8')),pool=createPool(database),controller=new AbortController();
 const stop=()=>controller.abort();process.once('SIGINT',stop);process.once('SIGTERM',stop);
 try{
-  const result=await (ocr?runOcrDocumentJob:runNativeDocumentJob)(pool,storageRoot,{tenantId,caseId,jobId},{researchOnly:true,repositoryRoot,qualification,signal:controller.signal});
+  const result=await (ocr?runOcrDocumentJob:runNativeDocumentJob)(pool,originalStoreFromEnv(storageRoot),{tenantId,caseId,jobId},{researchOnly:true,repositoryRoot,qualification,signal:controller.signal});
   process.stdout.write(JSON.stringify({jobId,status:result?.status??'not_claimed',failureCode:result?.failureCode??null})+'\n');
   if(result?.status==='failed')process.exitCode=1;
 }catch(error){process.stderr.write(JSON.stringify({jobId,error:error instanceof WorkerStopped?error.code:'worker_failed'})+'\n');process.exitCode=1;}

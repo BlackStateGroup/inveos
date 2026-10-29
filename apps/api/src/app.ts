@@ -1,3 +1,4 @@
+import type {OriginalStore} from './original-encryption.js';
 import {sessionEpoch} from './session-epoch.js';
 import {registerUploads} from './uploads.js';
 import { randomBytes, randomUUID, createHash, timingSafeEqual } from 'node:crypto';
@@ -97,7 +98,7 @@ type ClaimRow = QueryResultRow & {
 
 type AppOptions = {
   pool: Pool;
-  storageRoot: string;
+  storageRoot: OriginalStore;
   allowedOrigins: string[];
   demoTenantId: string;
   demoUserId: string;
@@ -444,7 +445,7 @@ async function findClaim(
   return row;
 }
 
-async function verifiedBytes(storageRoot: string, evidence: EvidenceRow): Promise<Buffer> {
+async function verifiedBytes(storageRoot: OriginalStore, evidence: EvidenceRow): Promise<Buffer> {
   let bytes: Buffer;
   try {
     bytes = await readOriginalBounded(storageRoot, evidence.object_path, 262144);

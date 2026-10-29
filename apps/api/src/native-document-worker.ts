@@ -1,3 +1,4 @@
+import type {OriginalStore} from './original-encryption.js';
 /** Opt-in research orchestration, not an approved production parser service. */
 import {mkdtemp,mkdir,rm,writeFile,readFile} from 'node:fs/promises';
 import {isAbsolute,join} from 'node:path';
@@ -28,10 +29,10 @@ export PYTHONPATH=/original/source:/original/runtime
 exec python /original/run.py`;
 
 type Options={researchOnly:true;repositoryRoot:string;qualification:unknown;signal?:AbortSignal};
-export function runNativeDocumentJob(pool:Pool,storageRoot:string,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'document');}
-export function runRasterDocumentJob(pool:Pool,storageRoot:string,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'raster');}
-export function runOcrDocumentJob(pool:Pool,storageRoot:string,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'ocr');}
-async function runNativeJob(pool:Pool,storageRoot:string,scope:Scope,options:Options,kind:'document'|'raster'|'ocr'){
+export function runNativeDocumentJob(pool:Pool,storageRoot:OriginalStore,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'document');}
+export function runRasterDocumentJob(pool:Pool,storageRoot:OriginalStore,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'raster');}
+export function runOcrDocumentJob(pool:Pool,storageRoot:OriginalStore,scope:Scope,options:Options){return runNativeJob(pool,storageRoot,scope,options,'ocr');}
+async function runNativeJob(pool:Pool,storageRoot:OriginalStore,scope:Scope,options:Options,kind:'document'|'raster'|'ocr'){
   if(options.researchOnly!==true||!isAbsolute(options.repositoryRoot))throw new WorkerStopped('configuration');
   validateNativeQualification(options.qualification,kind==='ocr');
   const qualified=options.qualification as {imageId:string;artifactLock?:string};
