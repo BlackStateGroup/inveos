@@ -157,7 +157,18 @@ export type ReportDraft = {
   limitations: string;
 };
 
-export type CaseSearchKind = 'original'|'claim'|'document_claim'|'text_finding'|'document_finding'|'work'|'chronology';
+export type CaseSearchKind = 'original'|'claim'|'document_claim'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship';
 export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
 export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
+
+export type GraphEntityKind = 'person'|'organisation'|'asset'|'place'|'incident'|'document';
+export type GraphEntityInput = {id:string;kind:GraphEntityKind;label:string;detail:string};
+export type GraphEntity = GraphEntityInput & {caseId:string;version:number;withdrawn:boolean;createdBy:string;recordedAt:string};
+export type GraphEntityRef = Pick<GraphEntity,'id'|'version'|'kind'|'label'>;
+export type GraphSource = ChronologySource & {sha256:string;authorityVersion:number};
+export type GraphProposalInput = {id:string;from:Pick<GraphEntityRef,'id'|'version'>;to:Pick<GraphEntityRef,'id'|'version'>;relationship:string;account:string;sources:ChronologySource[]};
+export type GraphProposal = Omit<GraphProposalInput,'from'|'to'|'sources'> & {caseId:string;from:GraphEntityRef;to:GraphEntityRef;sources:GraphSource[];version:number;proposedBy:string;proposedAt:string;withdrawn:boolean;digest:string};
+export type GraphReview = {id:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string;digest:string};
+export type GraphRelationship = {proposal:GraphProposal;review:GraphReview|null;state:'candidate'|'confirmed'|'rejected'|'withdrawn'|'needs_review';canReview:boolean};
+export type CaseGraph = {entities:GraphEntity[];relationships:GraphRelationship[];sourceVerification:'not_checked_on_listing'};
