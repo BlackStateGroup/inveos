@@ -1,5 +1,7 @@
 # 24 — Investigation workspace delivery plan
 
+**29 October execution update:** follow [the remaining delivery plan](71_REMAINING_DELIVERY_PLAN.md) for citation review, reports/independent export and the remaining product gates after draft PR #61. The baseline and capability ledger below retain their dated historical scope; they do not override later tested receipts in `BUILD_HANDOFF.md`.
+
 Updated 27 October 2026. Product direction: take an assignment, gather material,
 establish what it supports, coordinate the work and deliver a defensible report.
 The acceptance target is one complete fictional supplier investigation.

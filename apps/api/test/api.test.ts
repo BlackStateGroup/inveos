@@ -1181,7 +1181,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -3425,4 +3425,69 @@ test('real browser saves page-two candidate, recovers lost response after reload
    assert.equal(await b.evaluate(`document.querySelector('section[aria-label="Document citation candidates"] ol').children.length`),0);
   });
  }finally{await f.app.close();}
+});
+
+async function citationReviewFixture(){
+ const f=await citationFixture(),author=await createMember(demoTenantId,'investigator','Fictional document citation author');
+ await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.scope.caseId,author]);const authorSession=await issueTestSession(author);
+ const response=await request('POST',f.citationUrl,authorSession,{payload:f.selection});assert.equal(response.statusCode,200,response.body);const candidate=response.json();
+ return {...f,author,authorSession,candidate,reviewUrl:f.citationUrl+'/reviews',reviewInput:{id:randomUUID(),previousReviewId:null as string|null,citationDigest:candidate.citationDigest,decision:'accepted',reason:'Fictional exact page-two passage compared with supplied original; source truth not assessed.',originalCompared:true}};
+}
+test('citation correspondence reviews retain independent decisions, replacements, retries and immutable history',async()=>{
+ const f=await citationReviewFixture();try{
+  const results=await Promise.all([1,2].map(()=>request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput})));for(const r of results)assert.equal(r.statusCode,200,r.body);assert.deepEqual(results[0]!.json(),results[1]!.json());
+  const first=results[0]!.json();assert.equal(first.reviews[0].scope,'extraction_correspondence_not_finding');
+  const replacement={...f.reviewInput,id:randomUUID(),previousReviewId:f.reviewInput.id,decision:'rejected',reason:'Fictional later comparison found correspondence uncertain.',originalCompared:false};
+  const rejected=await request('POST',f.reviewUrl,context.demo!,{payload:replacement});assert.equal(rejected.statusCode,200,rejected.body);const h=rejected.json();assert.equal(h.reviews.length,2);assert.equal(h.reviews[1].previousReviewDigest,h.reviews[0].digest);assert.equal(h.currentReviewId,replacement.id);
+  assertError(await request('POST',f.reviewUrl,context.demo!,{payload:{...f.reviewInput,id:randomUUID()}}),409);
+  assertError(await request('POST',f.reviewUrl,context.demo!,{payload:{...f.reviewInput,reason:'changed'}}),409);
+  assert.deepEqual((await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput})).json(),h);
+  await context.app!.close();context.app=await createAppInstance();assert.deepEqual((await request('GET',f.reviewUrl,context.demo!)).json(),h);
+  const race=await Promise.all(['accepted','rejected'].map(decision=>request('POST',f.reviewUrl,context.demo!,{payload:{...f.reviewInput,id:randomUUID(),previousReviewId:replacement.id,decision}})));assert.deepEqual(race.map(r=>r.statusCode).sort(),[200,409]);assert.equal((await request('GET',f.reviewUrl,context.demo!)).json().reviews.length,3);
+  for(const sql of ['UPDATE document_citation_reviews SET review_digest=review_digest WHERE citation_id=$1','DELETE FROM document_citation_reviews WHERE citation_id=$1'])await assert.rejects(context.schemaAdminPool!.query(sql,[f.candidate.id]),/immutable|append.only/i);
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);
+ }finally{await f.app.close();}
+});
+test('citation review denies self-review, missing comparison, roles, scope and stale authority',async()=>{
+ const f=await citationReviewFixture();try{
+  assertError(await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput,csrfHeader:false}),403);
+  assertError(await request('POST',f.reviewUrl,f.authorSession,{payload:f.reviewInput}),403);
+  for(const patch of [{originalCompared:false},{reason:' '},{citationDigest:'0'.repeat(64)}])assertError(await request('POST',f.reviewUrl,context.demo!,{payload:{...f.reviewInput,...patch}}),422);
+  const ownUrl=f.citationUrl.slice(0,f.citationUrl.lastIndexOf('/'))+'/'+randomUUID();const own=(await request('POST',ownUrl,context.demo!,{payload:f.selection})).json();assertError(await request('POST',ownUrl+'/reviews',context.demo!,{payload:{...f.reviewInput,citationDigest:own.citationDigest}}),403);
+  const outsider=await createMember(demoTenantId,'reviewer','Fictional unrelated reviewer');assertError(await request('GET',f.reviewUrl,await issueTestSession(outsider)),404);assertError(await request('POST',f.reviewUrl,await issueTestSession(outsider),{payload:f.reviewInput}),404);
+  const client=await createMember(demoTenantId,'client','Fictional denied citation recipient');assertError(await request('GET',f.reviewUrl,await issueTestSession(client)),403);
+  assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput})).statusCode,200);
+  await approveAuthority(f.scope.caseId);assertError(await request('POST',f.reviewUrl,context.demo!,{payload:{...f.reviewInput,id:randomUUID(),previousReviewId:f.reviewInput.id}}),409);
+  assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput})).statusCode,200); // historical retry only
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE case_id=$1 AND user_id=$2',[f.scope.caseId,demoUserId]);assertError(await request('GET',f.reviewUrl,context.demo!),404);
+ }finally{await f.app.close();}
+});
+test('citation review audit rollback and tampered review or original fail closed',async()=>{
+ const f=await citationReviewFixture();try{
+  await context.schemaAdminPool!.query("CREATE FUNCTION deny_document_review_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='document_citation.reviewed' THEN RAISE EXCEPTION 'fictional review audit failure'; END IF; RETURN NEW; END $$");
+  await context.schemaAdminPool!.query('CREATE TRIGGER deny_document_review_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_document_review_audit()');
+  try{assertError(await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput}),500);assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_citation_reviews WHERE citation_id=$1',[f.candidate.id])).rows[0].n,0);}
+  finally{await context.schemaAdminPool!.query('DROP TRIGGER deny_document_review_audit ON audit_events');await context.schemaAdminPool!.query('DROP FUNCTION deny_document_review_audit()');}
+  assert.equal((await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput})).statusCode,200);
+  const old=(await context.pool!.query('SELECT review_bytes FROM document_citation_reviews WHERE citation_id=$1',[f.candidate.id])).rows[0].review_bytes;
+  await context.schemaAdminPool!.query('ALTER TABLE document_citation_reviews DISABLE TRIGGER document_citation_reviews_append_only');
+  try{await context.schemaAdminPool!.query('UPDATE document_citation_reviews SET review_bytes=$2 WHERE citation_id=$1',[f.candidate.id,Buffer.from('{}')]);assertError(await request('GET',f.reviewUrl,context.demo!),409);assertError(await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput}),409);await context.schemaAdminPool!.query('UPDATE document_citation_reviews SET review_bytes=$2 WHERE citation_id=$1',[f.candidate.id,old]);}
+  finally{await context.schemaAdminPool!.query('ALTER TABLE document_citation_reviews ENABLE TRIGGER document_citation_reviews_append_only');}
+  const evidence=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[f.job.evidenceId])).rows[0];await writeFile(resolve(context.storageRoot!,evidence.object_path),'Fictional corrupted reviewed source');assertError(await request('GET',f.reviewUrl,context.demo!),409);assertError(await request('POST',f.reviewUrl,context.demo!,{payload:f.reviewInput}),409);
+ }finally{await f.app.close();}
+});
+test('real browser independently accepts citation correspondence, recovers a lost response and retains rejection history',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await citationReviewFixture();try{await withBrowserApp(async(b,origin)=>{
+  const ui=await binaryBrowserControls(b,origin,f.scope.caseId),inspect='Inspect unreviewed pages '+f.job.id.slice(0,8),review='Review candidate '+f.candidate.id.slice(0,8);
+  await eventually(async()=>(await ui.text()).includes(inspect),'review document');await ui.click(inspect);await eventually(async()=>(await ui.text()).includes(review),'candidate review button');await ui.click(review);
+  await eventually(async()=>(await ui.text()).includes('No human correspondence decision recorded.'),'empty review history');
+  await b.evaluate(`(()=>{const p=document.querySelector('section[aria-label="Citation correspondence review"]'),s=p.querySelector('select'),t=p.querySelector('textarea');s.value='accepted';s.dispatchEvent(new Event('change',{bubbles:true}));Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Fictional page two compared; no source truth conclusion.');t.dispatchEvent(new Event('input',{bubbles:true}));p.querySelector('input[type=checkbox]').click();const original=window.fetch;window.fetch=async(...args)=>{const r=await original(...args);if(String(args[0]).endsWith('/reviews')&&args[1]?.method==='POST'&&r.ok){window.fetch=original;throw new Error('Fictional lost review response');}return r;};})()`);
+  await ui.click('Record correspondence decision');await eventually(async()=>(await ui.text()).includes('Recover pending review'),'unconfirmed review');await ui.click('Recover pending review');await eventually(async()=>(await ui.text()).includes('Current correspondence decision: accepted · revision 1'),'accepted review recovered');
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM document_citation_reviews WHERE citation_id=$1',[f.candidate.id])).rows[0].n,1);
+  await b.evaluate(`(()=>{const p=document.querySelector('section[aria-label="Citation correspondence review"]'),s=p.querySelector('select'),t=p.querySelector('textarea');s.value='rejected';s.dispatchEvent(new Event('change',{bubbles:true}));Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Fictional corrected comparison: correspondence uncertain.');t.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await ui.click('Record replacement decision');await eventually(async()=>(await ui.text()).includes('Current correspondence decision: rejected · revision 2'),'replacement rejection');
+  await b.send('Page.reload');await eventually(async()=>(await ui.text()).includes(inspect),'reloaded review case');await ui.click(inspect);await eventually(async()=>(await ui.text()).includes(review),'reloaded candidate');await ui.click(review);await eventually(async()=>(await ui.text()).includes('Current correspondence decision: rejected · revision 2'),'persisted review chain');
+  assert.ok((await ui.text()).includes('Revision 1: accepted'));assert.ok((await ui.text()).includes('Revision 2: rejected'));
+  assert.equal((await context.pool!.query('SELECT count(*)::int AS n FROM findings WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);
+ });}finally{await f.app.close();}
 });

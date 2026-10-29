@@ -147,3 +147,7 @@
 - [Document citation candidates](69_DOCUMENT_CITATION_CANDIDATES.md) — durable exact extracted selections, separate from approval.
 
 - [Document citation workspace](70_DOCUMENT_CITATION_WORKSPACE.md)
+
+- [Remaining delivery plan after PR #61](71_REMAINING_DELIVERY_PLAN.md)
+
+- [Independent document citation review](72_DOCUMENT_CITATION_REVIEW.md)

@@ -130,3 +130,19 @@ test('citation retry persists only identity before send, recovers same passage a
  let sent=false;await assert.rejects(saveCitationRecoverably({...store,setItem:()=>{}},'scope',f.d,'#/texts/1',async()=>{sent=true;}));assert.equal(sent,false);
  store.setItem('scope','{}');await assert.rejects(saveCitationRecoverably(store,'scope',f.d,'#/texts/1',async()=>{sent=true;}));assert.equal(sent,false);
 });
+
+test('human correspondence review requires exact digest, predecessor, reason and original-comparison attestation',async()=>{
+ const {documentReview}=await import('../src/document-review.js');const {documentCitation}=await import('../src/document-citation.js');const output=run(),candidate=documentCitation(output,{derivativeDigest:output.digest,itemRef:'#/texts/1',startByte:34,endByte:67,quote:'FICTIONAL INVEOS repeated passage'});
+ const input={id:'review',previousReviewId:null,citationDigest:candidate.digest,decision:'accepted' as const,reason:'Fictional exact source comparison',originalCompared:true};
+ const reviewedAt='2026-10-29T00:00:00Z',first=documentReview('candidate',candidate,input,'reviewer',reviewedAt,null);assert.equal(first.record.scope,'extraction_correspondence_not_finding');
+ for(const patch of [{reason:' '},{originalCompared:false},{citationDigest:'f'.repeat(64)},{previousReviewId:'wrong'}])assert.throws(()=>documentReview('candidate',candidate,{...input,...patch},'reviewer',reviewedAt,null));
+ const previous={id:first.record.id,sequence:1,digest:first.digest};const second=documentReview('candidate',candidate,{...input,id:'replacement',previousReviewId:'review',decision:'rejected',originalCompared:false},'reviewer',reviewedAt,previous);assert.equal(second.record.previousReviewDigest,first.digest);assert.equal(second.record.sequence,2);
+});
+test('browser verifies review chain and rejects rehashed self-review, missing attestation and altered predecessor',async()=>{
+ const {verifyReviewHistory}=await import('../../web/src/citationReview.js');const {documentReview}=await import('../src/document-review.js');const f=await citationClientFixture();const {verifyCitation}=await import('../../web/src/citationRequest.js');const candidate=await verifyCitation(f.receipt('33333333-3333-4333-8333-333333333333'),f.d);
+ const checked={citation:candidate.citation,digest:candidate.citationDigest,bytes:Buffer.from(JSON.stringify(candidate.citation))};
+ const input={id:'44444444-4444-4444-8444-444444444444',previousReviewId:null,citationDigest:candidate.citationDigest,decision:'accepted' as const,reason:'Fictional comparison',originalCompared:true};
+ const first=documentReview(candidate.id,checked,input,'55555555-5555-4555-8555-555555555555','2026-10-29T00:00:00Z',null);const record={...first.record,digest:first.digest},h={citationId:candidate.id,citationDigest:candidate.citationDigest,currentReviewId:record.id,reviews:[record]};assert.equal((await verifyReviewHistory(h,candidate)).reviews.length,1);
+ for(const patch of [{reviewedBy:candidate.createdBy},{originalCompared:false},{previousReviewId:record.id},{sequence:2},{scope:'finding'}]){const altered={...first.record,...patch};await assert.rejects(verifyReviewHistory({...h,reviews:[{...altered,digest:sha256(JSON.stringify(altered))}]},candidate));}
+ await assert.rejects(verifyReviewHistory({...h,currentReviewId:null},candidate));
+});

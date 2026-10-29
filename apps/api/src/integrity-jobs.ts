@@ -1,3 +1,4 @@
+import {documentReview,type DocumentReviewInput,type ReviewPredecessor} from './document-review.js';
 import {documentCitation,type DocumentSelection} from './document-citation.js';
 import {makeRasterDerivative,rasterProfile,rasterProfileDigest,type RasterResult} from './raster-derivative.js';
 const rasterKind='pdf_raster_lab_v1';
@@ -415,6 +416,43 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       }
       await svc.audit(client,actor,caseId,create?'document_citation.saved':'document_citation.read','document_citation',citationId,'Verified unreviewed document citation candidate');
       return {id:citationId,createdBy:stored.created_by,createdAt:stored.created_at,citationDigest:checked.digest,citation:checked.citation};
+    });
+  }});
+  const reviewSchema={type:'object',additionalProperties:false,required:['id','previousReviewId','citationDigest','decision','reason','originalCompared'],properties:{id:uuid,previousReviewId:{anyOf:[uuid,{type:'null'}]},citationDigest:{type:'string',pattern:'^[a-f0-9]{64}$'},decision:{enum:['accepted','rejected']},reason:{type:'string',minLength:1,maxLength:4096},originalCompared:{type:'boolean'}}};
+  for(const create of [false,true])app.route({method:create?'POST':'GET',url:'/api/cases/:caseId/integrity-jobs/:jobId/document-citations/:citationId/reviews',preHandler:create?svc.requireCsrf:svc.authenticate,schema:{params:citationParams,...(create?{body:reviewSchema}:{})},handler:async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const actor=request.actor!;if(actor.role==='client'||create&&actor.role!=='reviewer')throw new ApiError(403,'Only internal reviewers can record citation decisions.');
+    const {caseId,jobId,citationId}=request.params as {caseId:string;jobId:string;citationId:string};
+    return inTransaction(svc.pool,async client=>{
+      const {row,output}=await verifiedDocument(client,actor,caseId,jobId),key=[actor.tenantId,caseId,jobId,citationId];
+      const candidate=(await client.query('SELECT * FROM document_citation_candidates WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND id=$4',key)).rows[0];if(!candidate)notFound();
+      let checked;try{checked=documentCitation(output,candidate.selection);}catch{throw new ApiError(409,'Stored citation selection failed verification.');}
+      if(checked.digest!==candidate.citation_digest.trim()||!checked.bytes.equals(candidate.citation_bytes))throw new ApiError(409,'Stored citation bytes failed verification.');
+      const rows=(await client.query('SELECT * FROM document_citation_reviews WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 ORDER BY sequence LIMIT 101',key)).rows;
+      let previous:ReviewPredecessor|null=null;
+      const reviews:(ReturnType<typeof documentReview>['record']&{digest:string})[]=[];
+      for(const stored of rows){
+        let verified;try{verified=documentReview(citationId,checked,stored.request,stored.reviewed_by,new Date(stored.reviewed_at).toISOString(),previous);}catch{throw new ApiError(409,'Stored review chain failed verification.');}
+        if(stored.id!==verified.record.id||stored.sequence!==verified.record.sequence||stored.reviewed_by===candidate.created_by||stored.review_digest.trim()!==verified.digest||!stored.review_bytes.equals(verified.bytes))throw new ApiError(409,'Stored review bytes failed verification.');
+        previous={id:stored.id,sequence:stored.sequence,digest:verified.digest};reviews.push({...verified.record,digest:verified.digest});
+      }
+      if(create){
+        const input=request.body as DocumentReviewInput;
+        if(actor.userId===candidate.created_by)throw new ApiError(403,'A different reviewer must assess this citation.');
+        const existing=rows.find(r=>r.id===input.id);
+        if(existing){
+          if(existing.reviewed_by!==actor.userId||(['id','previousReviewId','citationDigest','decision','reason','originalCompared'] as const).some(k=>existing.request[k]!==input[k]))throw new ApiError(409,'Review identity conflicts with an existing decision.');
+        }else{
+          const active=await client.query("SELECT 1 FROM cases WHERE tenant_id=$1 AND id=$2 AND status='Active' AND authority_version=$3",[actor.tenantId,caseId,row.authority_version]);if(!active.rowCount)throw new ApiError(409,'Current authority must match the extraction before review.');
+          if(input.previousReviewId!==(previous?.id??null))throw new ApiError(409,'Review changed; refresh before recording a replacement.');
+          const reviewedAt=new Date().toISOString();let review;
+          try{review=documentReview(citationId,checked,input,actor.userId,reviewedAt,previous);}catch{throw new ApiError(422,'Review requires the exact citation digest, a reason and original comparison for acceptance.');}
+          await client.query('INSERT INTO document_citation_reviews(tenant_id,case_id,job_id,citation_id,id,sequence,reviewed_by,reviewed_at,request,review_bytes,review_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[...key,input.id,review.record.sequence,actor.userId,reviewedAt,input,review.bytes,review.digest]);
+          reviews.push({...review.record,digest:review.digest});
+        }
+      }
+      await svc.audit(client,actor,caseId,create?'document_citation.reviewed':'document_citation.reviews_read','document_citation',citationId,'Verified citation correspondence review history; no finding approval');
+      return {citationId,citationDigest:checked.digest,currentReviewId:reviews.at(-1)?.id??null,reviews};
     });
   }});
   async function readRaster(actor:Actor,caseId:string,jobId:string){
