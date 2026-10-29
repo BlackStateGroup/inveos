@@ -118,7 +118,29 @@ results through the API and rejects malformed PDF input. It also runs actual
 daemon workloads to test lease loss, abort, output overflow, timeout, nonzero exit,
 PostgreSQL cancellation and changed authority, confirming container absence and
 no derivative attachment. These failure workloads are first-party shell probes,
-not hostile PDFs or upstream exploit tests. Exact hosted evidence is pending.
+not hostile PDFs or upstream exploit tests. Hosted [research #16](https://github.com/BlackStateGroup/inveos/actions/runs/40799861215),
+job `123205098936`, passed at implementation
+`262d87b4c6c6417432e83c39bd2a6c735c55b6d6`, tree
+`291afc7cebef233d2d7b237c5052270dacafdae9`: all three integration tests passed,
+zero failures/skips. The two actual jobs preserved original SHA-256
+`4d1c88eb334bd4128dacb6579ec90de296d8ed0b4a0e8501b4daff5f1bf776f9`
+and returned matching stored native-output SHA-256
+`f9857d52bd433bc1632d6df6cbc75c2946da53a720a890383820a64e96a824b8`.
+Page two retains item `#/texts/1`, UTF-8 bytes [34,67), bottom-left region
+[72,697.516,282.7560000000001,708.616]. Malformed rejection and all daemon stop/
+cleanup checks above passed. Container listings and private bundle checks were
+empty afterwards. Exact source builds, native inventory/provider inspection,
+earlier actual parser experiments and fresh host qualification passed too.
+
+[Checks #133](https://github.com/BlackStateGroup/inveos/actions/runs/40799861493),
+job `123205100083`, passed all 167 Node tests and 98 Python tests, zero failures/
+skips, including existing actual browser/restore checks, lint/types/build/reference
+and isolation probes. Local lint/types, three policy tests, Python compilation,
+all Python/foundation checks passed. Local Docker is absent; no local parser or
+container run is claimed. The follow-up stores documentation and a compact
+[machine receipt](../research/runtime_artifacts/native-worker-receipt.json) only.
+The native output digest uses the parent-serialised stored bytes described above;
+the receipt does not redistribute an upstream runtime.
 
 ## Remaining gates and rollback
 
