@@ -1,3 +1,4 @@
+import {registerCaseAccess} from './case-access.js';
 import {appendCaseStage,collectionOpen,registerCaseLifecycle,type LifecycleCase} from './case-lifecycle.js';
 import {registerManualSources} from './manual-sources.js';
 import {registerCaseGraph} from './case-graph.js';
@@ -60,6 +61,7 @@ type CaseRow = QueryResultRow & LifecycleCase & {
   category: string;
   status: 'Scope review' | 'Active';
   owner_user_id: string;
+  access_version: number;
   due: string;
   scope: string;
   jurisdiction: string;
@@ -409,6 +411,14 @@ async function findCase(
   if (!row) {
     notFound();
   }
+  // The original SELECT may have waited on a case lock using an older statement
+  // snapshot. Recheck access in a fresh statement after acquiring that lock.
+  if (lock && !(await client.query(
+    `SELECT 1 FROM case_memberships cm JOIN memberships m
+       ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
+     WHERE cm.tenant_id=$1 AND cm.case_id=$2 AND cm.user_id=$3 AND m.role=$4`,
+    [actor.tenantId,caseId,actor.userId,actor.role],
+  )).rowCount) notFound();
   return row;
 }
 
@@ -648,6 +658,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return finding;
   };
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
+  registerCaseAccess(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
 

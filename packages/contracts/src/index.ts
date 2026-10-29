@@ -186,3 +186,8 @@ export type ManualSourceOriginal={id:string;filename:string;sha256:string;source
 export type ManualSourceRecord=ManualSourceFields&{id:string;caseId:string;version:number;original:ManualSourceOriginal;recordedBy:string;recordedAt:string;withdrawn:boolean;digest:string};
 export type ManualSourceReview={id:string;digest:string;accepted:boolean;reviewerId:string;reviewerName:string;reason:string;recordedAt:string};
 export type ManualSourceEntry={record:ManualSourceRecord;review:ManualSourceReview|null;state:'pending'|'record_accepted'|'record_rejected'|'withdrawn'|'authority_changed';canReview:boolean};
+
+export type CaseAccessAction='member_added'|'member_removed'|'owner_transferred';
+export type CaseAccessMember={id:string;name:string;role:'reviewer'|'investigator'|'client';joinedAt:string};
+export type CaseAccessState={version:number;ownerId:string;canManage:boolean;members:CaseAccessMember[];next:string|null};
+export type CaseAccessEvent={id:string;version:number;action:CaseAccessAction|'case_created'|'legacy_checkpoint';ownerId:string;subjectId:string|null;subjectName:string|null;actorId:string|null;actorName:string|null;reason:string;recordedAt:string};

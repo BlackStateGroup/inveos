@@ -127,5 +127,13 @@ jobs:
           path: output/evals/case-lifecycle-desktop.png
           if-no-files-found: ignore
           retention-days: 7
+      - name: Retain fictional case access browser render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: case-access-browser
+          path: output/evals/case-access-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Check tracked sources remain unchanged
         run: git diff --exit-code
