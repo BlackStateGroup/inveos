@@ -157,7 +157,7 @@ export type ReportDraft = {
   limitations: string;
 };
 
-export type CaseSearchKind = 'original'|'claim'|'document_claim'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship';
+export type CaseSearchKind = 'original'|'claim'|'document_claim'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context';
 export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
 export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
@@ -175,3 +175,9 @@ export type CaseGraph = {entities:GraphEntity[];relationships:GraphRelationship[
 export type WorkCommentInput={body:string;mentions:string[];reason:string};
 export type WorkComment={id:string;itemId:string;authorId:string;authorName:string;version:number;body:string;mentions:{userId:string;name:string}[];withdrawn:boolean;reason:string;createdAt:string;recordedAt:string;canEdit:boolean};
 export type WorkMentionPage={items:{commentId:string;itemId:string;version:number;authorName:string;excerpt:string;title:string;recordedAt:string}[];more:boolean};
+
+export type ManualSourceFields={url:string;publisher:string;retrievedAt:string;method:string;trustGrade:'unassessed'|'primary_record'|'secondary_report'|'disputed';termsReference:string;purpose:string;lawfulBasis:string;scope:string;retentionDays:number;minimisation:string;annotation:string};
+export type ManualSourceOriginal={id:string;filename:string;sha256:string;sourceTime:string;receivedTime:string;authorityId:string;authorityVersion:number;status:string};
+export type ManualSourceRecord=ManualSourceFields&{id:string;caseId:string;version:number;original:ManualSourceOriginal;recordedBy:string;recordedAt:string;withdrawn:boolean;digest:string};
+export type ManualSourceReview={id:string;digest:string;accepted:boolean;reviewerId:string;reviewerName:string;reason:string;recordedAt:string};
+export type ManualSourceEntry={record:ManualSourceRecord;review:ManualSourceReview|null;state:'pending'|'record_accepted'|'record_rejected'|'withdrawn'|'authority_changed';canReview:boolean};
