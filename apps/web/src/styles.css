@@ -16,3 +16,5 @@
 .case-graph-panel .checkbox-row{display:flex;align-items:flex-start;gap:8px;margin:10px 0;overflow-wrap:anywhere}.case-graph-panel .checkbox-row input[type=checkbox]{width:16px;height:16px;flex:0 0 16px;margin:2px 0}.case-graph-panel .checkbox-row span{min-width:0}
 
 .manual-source-panel .metadata dt{margin:0;align-self:start;padding-top:2px}
+
+.attention-preferences{border:1px solid var(--border);border-radius:8px;padding:16px;margin:16px 0}.attention-preferences legend{padding:0 6px;font-weight:600}.attention-preferences .checkbox-row{margin:8px 0}

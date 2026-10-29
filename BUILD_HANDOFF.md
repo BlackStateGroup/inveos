@@ -8,7 +8,7 @@ The user authorises review, fixes, testing and suitable merges into main without
 
 ## Main and recent verified work
 
-Main now includes **PR #89**, merge `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; resulting-main Checks 40969884003 failed during lifecycle test shutdown. Last verified main is #88 `3e2bccc626aafdfc38138d848d321f8fe8dc5a3e`, where Checks 40964816601 passed (325 Node/120 Python, zero failures/skips). The last verified preceding main is #87 `be7ac55500645571f9839cf97d7b3e16c2233030`, Checks 40963157827 (318 Node/120 Python, zero failures/skips). Main #86 passed Checks 40958284392 (311/120, zero failures/skips). Main after #85 failed one discussion-browser readiness assertion; #86 fixed it. No false passing receipt is claimed for #85 main.
+Main now includes **PR #90**, merge `096c25f0588bfc4e062903bfed2900916761228c`. Resulting-main **Checks 40973473163 passed: 331 Node/124 Python, zero failures/skips, 29 actual browser journeys**. Final reviewed head `17b90d62de5261b0384f0d81f8c59551b57e87aa` passed Checks 40972596838 and actual native supplier/worker Research 40972596843 before merge. No unresolved feedback remained. Main #89 Checks 40969884003 failed during lifecycle shutdown; #90 fixes a reproduced test-proxy orphaned partial upload. Do not relabel that failed run as passed.
 
 Preserve these completed journeys; do not rebuild them from old draft labels:
 
@@ -46,7 +46,7 @@ Earlier Checks 40965628365 timed out in the unchanged lifecycle browser test. Ad
 
 Evidence head `71dee2c64cd267fa05144c37b0d8603469d67e0b` passed Checks 40969183957 (325/124, zero failures/skips) and Research 40969183955, including all five daemon checks. It merged as `5bca5e0ed398c43fdb0c61d7495d8066ffe35186`; post-merge main Checks 40969884003 failed during lifecycle test shutdown. Independent draft #90 on `feat/document-text-search` adds scoped stored native/OCR text search and exact job inspection; its browser/native acceptance is running. This branch now integrates validated #89; final #90 verification is required. Product requirements and external gates remain incomplete.
 
-## Verified #90 document search awaiting final checks and merge
+## Merged #90 document search — earlier verification trail
 
 Draft #90, branch `feat/document-text-search`, integrates merged #89 through ordinary merge `150ea0f`. Only overlapping handoff/plan/index additions conflicted; both source/test sets and both document contracts are preserved. Implementation `8bb762b57144a98676bf81a25c27b78bda03bafd` passed **Checks 40971070659**, job 123787650359: **331 Node/124 Python, zero failures/skips, 29 browser journeys**. **Research 40971070725**, job 123787650625, passed actual encrypted native/OCR search/browser reinspection, supplier reviews/package/PDF delivery, adversity corpus, repeated raster and five daemon-failure tests. [Contract](docs/96_DOCUMENT_TEXT_SEARCH.md), [evaluation/machine receipt/renders](docs/evals/2026-10-29-document-search.md). Source/privacy diff and both rendered pages were inspected.
 
@@ -60,3 +60,8 @@ Final review limits automatic focus to search-selected inspection, preserving or
 
 
 Final review head `a1b2a1f` passed Research 40971770591 but Checks 40971770600 failed one pre-existing supplied-source browser readiness race (330/331 passed): the panel heading appeared before its asynchronous source rows, and the test immediately clicked an undefined choice. Lifecycle cleanup and the new search/keyboard/retry journey passed. The source selector now waits for the actual enabled row and loaded selected record, without relaxing assertions or deadlines. Rerun is required before merge.
+
+
+## Current attention increment
+
+Branch `feat/attention-queue` starts from verified #90 main. Migration 044, API and notification interface add personal current deadline/expired-upload/failed-job/pending-claim reminders, append-only scoped preferences and version-specific acknowledgements. Existing mention UI remains. Eight focused actual PostgreSQL/HTTP tests pass, including race/restart/audit rollback, UTC boundary/role-wait checks, 101-item pagination, scoped denials and post-lock revocation. Initial restricted-role locking failure is fixed with an advisory lock rather than broader grants. Local lint/build/types, foundation validation and 124 Python tests passed. The first full local run had 307 passes, 30 explicit browser skips and one outdated migration-inventory expectation; the corrected migration test and all eight attention tests pass (9/9). Full hosted application/browser checks are pending. Contract docs/97 and its evaluation record exact scope and remaining gates. Do not merge until final checks and review pass.
