@@ -1,0 +1,3020 @@
+{
+  "verification": {
+    "workflow": "Pinned Docling research build #28",
+    "runId": 40901923672,
+    "jobId": 123546231244,
+    "commit": "4a9a92af0051e1533a3daa493bb47e14b87282b4",
+    "tree": "08e223e4a9e7684f2814dd63bbde6431b2e912ad",
+    "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40901923672"
+  },
+  "status": "isolated_scanned_supplier_baseline_measured",
+  "imageId": "sha256:c2c91c7e0125214c7c7d59731704499ad3bace7c00c55c15e140e1287da26aaa",
+  "qualification": {
+    "status": "host_probe_passed",
+    "imageId": "sha256:c2c91c7e0125214c7c7d59731704499ad3bace7c00c55c15e140e1287da26aaa",
+    "repoDigests": [],
+    "checks": [
+      "boundaries",
+      "timeout",
+      "stdout_limit",
+      "stderr_limit",
+      "memory",
+      "pids",
+      "cpu"
+    ],
+    "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+    "parserExecuted": false,
+    "imageVolumeOverrides": [],
+    "profile": "runtime-1g",
+    "resourceEvidence": {
+      "oomKilled": true,
+      "pids": 2,
+      "cpu": 1155992
+    },
+    "combinedCaptureLimitBytes": 16384,
+    "daemonLogging": false,
+    "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+  },
+  "inventory": {
+    "approval": "research_only_no_shipping_or_licence_approval",
+    "artifacts": [
+      {
+        "bytes": 616464,
+        "copyright": {
+          "bytes": 1242,
+          "path": "/usr/share/doc/liblerc4/copyright",
+          "resolvedPath": "/usr/share/doc/liblerc4/copyright",
+          "sha256": "6c55caa8cb2c87c4f6fbe23c21e887a506455d81b5a8e98a7a62e6c81af39daf"
+        },
+        "declaredLicences": [
+          "Apache-2.0"
+        ],
+        "package": "liblerc4:amd64",
+        "packageVersion": "4.0.0+ds-2",
+        "path": "/lib/x86_64-linux-gnu/libLerc.so.4",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libLerc.so.4",
+        "sha256": "6b465f547b06f1b3ac7aef08d4f2233f1417417c3e4e5a5f80f8dec806b0e2c7"
+      },
+      {
+        "bytes": 38832,
+        "copyright": {
+          "bytes": 2048,
+          "path": "/usr/share/doc/libacl1/copyright",
+          "resolvedPath": "/usr/share/doc/libacl1/copyright",
+          "sha256": "9a2dfb4a5abc7e84be2cc41f1089be665519c9409549296f6c19de57ab1d37c2"
+        },
+        "declaredLicences": [
+          "GPL-2+",
+          "LGPL-2+"
+        ],
+        "package": "libacl1:amd64",
+        "packageVersion": "2.3.1-3",
+        "path": "/lib/x86_64-linux-gnu/libacl.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libacl.so.1.1.2301",
+        "sha256": "4b46c012b15c9753a3b86b05088782edc51a6627017144da85e0b95428d15869"
+      },
+      {
+        "bytes": 817080,
+        "copyright": {
+          "bytes": 21582,
+          "path": "/usr/share/doc/libarchive13/copyright",
+          "resolvedPath": "/usr/share/doc/libarchive13/copyright",
+          "sha256": "110589f39b975d51836677b1501933f9e14925aa8ea7e33db6ee6a5c164aeeb5"
+        },
+        "declaredLicences": [
+          "Apache-2.0",
+          "Apache-2.0 or CC0-1.0 or OpenSSL+SSLeay",
+          "BSD-1-clause-UCB",
+          "BSD-124-clause-UCB",
+          "BSD-2-clause",
+          "BSD-2-clause and BSD-1-clause-UCB",
+          "BSD-2-clause and BSD-124-clause-UCB",
+          "BSD-2-clause and BSD-3-clause-UCB",
+          "BSD-2-clause and Expat",
+          "BSD-3-clause-UCB",
+          "BSD-4-clause-UCB",
+          "CC0-1.0",
+          "Expat",
+          "OpenSSL+SSLeay",
+          "PD"
+        ],
+        "package": "libarchive13:amd64",
+        "packageVersion": "3.6.2-1+deb12u5",
+        "path": "/lib/x86_64-linux-gnu/libarchive.so.13",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libarchive.so.13.6.2",
+        "sha256": "479b73f73539b1f067da995dbadbf0801276221875f0ddbdcba3e1106d88333b"
+      },
+      {
+        "bytes": 137376,
+        "copyright": {
+          "bytes": 1354,
+          "path": "/usr/share/doc/libbrotli1/copyright",
+          "resolvedPath": "/usr/share/doc/libbrotli1/copyright",
+          "sha256": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1"
+        },
+        "declaredLicences": [
+          "MIT"
+        ],
+        "package": "libbrotli1:amd64",
+        "packageVersion": "1.0.9-2+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libbrotlicommon.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.0.9",
+        "sha256": "7a22eb878ad6033f1ee0908faeb5d665aa0809a1da2eb6f49bf37081cfff888a"
+      },
+      {
+        "bytes": 47264,
+        "copyright": {
+          "bytes": 1354,
+          "path": "/usr/share/doc/libbrotli1/copyright",
+          "resolvedPath": "/usr/share/doc/libbrotli1/copyright",
+          "sha256": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1"
+        },
+        "declaredLicences": [
+          "MIT"
+        ],
+        "package": "libbrotli1:amd64",
+        "packageVersion": "1.0.9-2+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libbrotlidec.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.0.9",
+        "sha256": "0ed56000cc214627a4f00af7b7a20c86ffdc9de4d81d56ce12cba637ab9b3ff0"
+      },
+      {
+        "bytes": 74688,
+        "copyright": {
+          "bytes": 2228,
+          "path": "/usr/share/doc/libbz2-1.0/copyright",
+          "resolvedPath": "/usr/share/doc/libbz2-1.0/copyright",
+          "sha256": "832ed535ff3c3d025a8d2348eb1b697b89addcf2eaadbc17650262040b9145e2"
+        },
+        "declaredLicences": [
+          "BSD-variant",
+          "GPL-2"
+        ],
+        "package": "libbz2-1.0:amd64",
+        "packageVersion": "1.0.8-5+b1",
+        "path": "/lib/x86_64-linux-gnu/libbz2.so.1.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4",
+        "sha256": "e4f501c8bd22390e42422691093d8af4e744a3e854809b809948055e8b08bda5"
+      },
+      {
+        "bytes": 1926232,
+        "copyright": {
+          "bytes": 25467,
+          "path": "/usr/share/doc/libc6/copyright",
+          "resolvedPath": "/usr/share/doc/libc6/copyright",
+          "sha256": "40c7e1f2118531f038ca22999bd976901254e1bc5cd1b0f0211bdd064c599987"
+        },
+        "declaredLicences": [],
+        "package": "libc6:amd64",
+        "packageVersion": "2.36-9+deb12u14",
+        "path": "/lib/x86_64-linux-gnu/libc.so.6",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "6b4a45352fd0c540a9c7c718f35ce8c8e46a4e482f9d3885a910c32d1a0e1421"
+      },
+      {
+        "bytes": 18344,
+        "copyright": {
+          "bytes": 15209,
+          "path": "/usr/share/doc/libcom-err2/copyright",
+          "resolvedPath": "/usr/share/doc/libcom-err2/copyright",
+          "sha256": "1ca415a294c0e56958c4f795b3f1f69ea3479bca53d7811f5cdd020a258949db"
+        },
+        "declaredLicences": [
+          "Apache-2",
+          "BSD-3-Clause",
+          "GPL or MIT-US-export",
+          "GPL-2",
+          "GPL-2+ with Texinfo exception",
+          "ISC",
+          "Kazlib",
+          "LGPL-2",
+          "Latex2e"
+        ],
+        "package": "libcom-err2:amd64",
+        "packageVersion": "1.47.0-2+b2",
+        "path": "/lib/x86_64-linux-gnu/libcom_err.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libcom_err.so.2.1",
+        "sha256": "857baae57e13a2e8aab83e0c29f660e28a9e1c209bf0ac277edccdedb29fab38"
+      },
+      {
+        "bytes": 4742424,
+        "copyright": {
+          "bytes": 2543,
+          "path": "/usr/share/doc/libssl3/copyright",
+          "resolvedPath": "/usr/share/doc/libssl3/copyright",
+          "sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35"
+        },
+        "declaredLicences": [
+          "Apache-2.0",
+          "Artistic",
+          "Artistic or GPL-1+",
+          "GPL-1+"
+        ],
+        "package": "libssl3:amd64",
+        "packageVersion": "3.0.22-1~deb12u2",
+        "path": "/lib/x86_64-linux-gnu/libcrypto.so.3",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+        "sha256": "aa01e614af634bc7c8b678c9250b5c4f613c61989bacf0a5d6aed6570e7dcabd"
+      },
+      {
+        "bytes": 712120,
+        "copyright": {
+          "bytes": 21749,
+          "path": "/usr/share/doc/libcurl4/copyright",
+          "resolvedPath": "/usr/share/doc/libcurl4/copyright",
+          "sha256": "a7c131b21e6e73b3b085a7d9f1637b68f5f92b832cc6f462e0c978fbe7841ccb"
+        },
+        "declaredLicences": [
+          "BSD-3-Clause",
+          "BSD-3-clause",
+          "BSD-4-Clause-UC",
+          "FSFULLR",
+          "GPL-2+ with Autoconf-data exception",
+          "GPL-2+ with Libtool exception",
+          "GPL-3+ with Autoconf-data exception",
+          "ISC",
+          "OLDAP-2.8",
+          "X11",
+          "curl"
+        ],
+        "package": "libcurl4:amd64",
+        "packageVersion": "7.88.1-10+deb12u15",
+        "path": "/lib/x86_64-linux-gnu/libcurl.so.4",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libcurl.so.4.8.0",
+        "sha256": "02fbea31e63cd827ee61644851f1d336de6850a7df0f7af30ba74da97c4b99ab"
+      },
+      {
+        "bytes": 149384,
+        "copyright": {
+          "bytes": 1483,
+          "path": "/usr/share/doc/libdeflate0/copyright",
+          "resolvedPath": "/usr/share/doc/libdeflate0/copyright",
+          "sha256": "06b1e73b344fa5ad4c24a79547dd787623f3d118d681d6c9bd3fdc10a7070381"
+        },
+        "declaredLicences": [
+          "Expat"
+        ],
+        "package": "libdeflate0:amd64",
+        "packageVersion": "1.14-1",
+        "path": "/lib/x86_64-linux-gnu/libdeflate.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0",
+        "sha256": "7a20781883ba5f05bdf0a259b026109142b9d9af9169e489af608b51c4e233d5"
+      },
+      {
+        "bytes": 43480,
+        "copyright": {
+          "bytes": 10165,
+          "path": "/usr/share/doc/libffi8/copyright",
+          "resolvedPath": "/usr/share/doc/libffi8/copyright",
+          "sha256": "f83d2ecba1ea4d99957e81c50bebbd076a128194288a3ec22cc8ccdb77c43087"
+        },
+        "declaredLicences": [
+          "Expat",
+          "GPL",
+          "GPL-2+",
+          "GPL-3+",
+          "MPL-1.1 or GPL-2+ or LGPL-2.1+",
+          "X11",
+          "public-domain"
+        ],
+        "package": "libffi8:amd64",
+        "packageVersion": "3.4.4-1",
+        "path": "/lib/x86_64-linux-gnu/libffi.so.8",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libffi.so.8.1.2",
+        "sha256": "983e72b7e964f3db43fe8a3dc8b338e731fade6ca38df6867aebb58186aaeb68"
+      },
+      {
+        "bytes": 125312,
+        "copyright": {
+          "bytes": 68194,
+          "path": "/usr/share/doc/libgcc-s1/copyright",
+          "resolvedPath": "/usr/share/doc/gcc-12-base/copyright",
+          "sha256": "da8191658b3452ce9caf31638ba61dab31a38c619fa39df119812e050f592fd3"
+        },
+        "declaredLicences": [],
+        "package": "libgcc-s1:amd64",
+        "packageVersion": "12.2.0-14+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "2bd1552c47799ef67e701e81d4383061fd76059868e446e63560f0dd0d5ec14e"
+      },
+      {
+        "bytes": 38752,
+        "copyright": {
+          "bytes": 2562,
+          "path": "/usr/share/doc/libgif7/copyright",
+          "resolvedPath": "/usr/share/doc/libgif7/copyright",
+          "sha256": "02757e541ee17e403a5caf5bcef74cc1c53a9560220b31aea78c726c78f789b6"
+        },
+        "declaredLicences": [
+          "ISC",
+          "MIT"
+        ],
+        "package": "libgif7:amd64",
+        "packageVersion": "5.2.1-2.5+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libgif.so.7",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libgif.so.7.2.0",
+        "sha256": "0df633fac4ababc59518fb41c476e296af70abd4b3bee4883a5980075c296492"
+      },
+      {
+        "bytes": 529216,
+        "copyright": {
+          "bytes": 4153,
+          "path": "/usr/share/doc/libgmp10/copyright",
+          "resolvedPath": "/usr/share/doc/libgmp10/copyright",
+          "sha256": "7d366aef5ba325150246de1d7820c4c9926cd27ca61a69948492b26cd3b61601"
+        },
+        "declaredLicences": [
+          "GPL-2+",
+          "GPL-2+ or LGPL-3+",
+          "GPL-3+",
+          "GPL-3+ with Bison exception",
+          "LGPL-3+"
+        ],
+        "package": "libgmp10:amd64",
+        "packageVersion": "2:6.2.1+dfsg1-1.1",
+        "path": "/lib/x86_64-linux-gnu/libgmp.so.10",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libgmp.so.10.4.1",
+        "sha256": "7376c9af0afd6e7698a64ee19de3c8a0199418664974384c70435a51c7ff7f3f"
+      },
+      {
+        "bytes": 2209528,
+        "copyright": {
+          "bytes": 51588,
+          "path": "/usr/share/doc/libgnutls30/copyright",
+          "resolvedPath": "/usr/share/doc/libgnutls30/copyright",
+          "sha256": "bb7e5c24b3e27bbba5671dd710d159a0066833bda4caa1d55d8027ffed539337"
+        },
+        "declaredLicences": [
+          "Apache-2.0",
+          "BSD-3-Clause",
+          "CC0 license",
+          "Expat",
+          "GPLv3+",
+          "LGPLv2.1+",
+          "LGPLv3+_or_GPLv2+",
+          "The main library is licensed under GNU Lesser"
+        ],
+        "package": "libgnutls30:amd64",
+        "packageVersion": "3.7.9-2+deb12u7",
+        "path": "/lib/x86_64-linux-gnu/libgnutls.so.30",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+        "sha256": "779b25d20249988bea2c1aa6bbeb218f5ae7ea8a9d30ce4f54ea37372965cc4b"
+      },
+      {
+        "bytes": 290392,
+        "copyright": {
+          "bytes": 68194,
+          "path": "/usr/share/doc/libgomp1/copyright",
+          "resolvedPath": "/usr/share/doc/gcc-12-base/copyright",
+          "sha256": "da8191658b3452ce9caf31638ba61dab31a38c619fa39df119812e050f592fd3"
+        },
+        "declaredLicences": [],
+        "package": "libgomp1:amd64",
+        "packageVersion": "12.2.0-14+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libgomp.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+        "sha256": "f9a9ad78a8dc39c0e90a265ffa551fae6c92a40f360889b44a7e141f9a2adfb1"
+      },
+      {
+        "bytes": 338680,
+        "copyright": {
+          "bytes": 63047,
+          "path": "/usr/share/doc/libgssapi-krb5-2/copyright",
+          "resolvedPath": "/usr/share/doc/libgssapi-krb5-2/copyright",
+          "sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+        },
+        "declaredLicences": [],
+        "package": "libgssapi-krb5-2:amd64",
+        "packageVersion": "1.20.1-2+deb12u5",
+        "path": "/lib/x86_64-linux-gnu/libgssapi_krb5.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2",
+        "sha256": "850b2e9351a5aaffb92292c5b3e3d85ca21735d486714843d8b2870e9631e8bc"
+      },
+      {
+        "bytes": 292856,
+        "copyright": {
+          "bytes": 24923,
+          "path": "/usr/share/doc/libhogweed6/copyright",
+          "resolvedPath": "/usr/share/doc/libhogweed6/copyright",
+          "sha256": "ca2ca597320220c00ef6dc0fe5d0d82025548d6d4ba80e85615eb691f9021f93"
+        },
+        "declaredLicences": [
+          "Expat",
+          "GAP",
+          "GPL-2",
+          "GPL-2+",
+          "GPL-3+",
+          "GPL-3+ with Autoconf exception",
+          "LGPL-2+",
+          "LGPL-3+",
+          "LGPL-3+ or GPL-2+",
+          "public-domain"
+        ],
+        "package": "libhogweed6:amd64",
+        "packageVersion": "3.8.1-2",
+        "path": "/lib/x86_64-linux-gnu/libhogweed.so.6",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libhogweed.so.6.6",
+        "sha256": "480675ed8d58f9266ced954eb746c74a6c4ae3479bf5dccbcbc56ff0c814b9e4"
+      },
+      {
+        "bytes": 31262256,
+        "copyright": {
+          "bytes": 2214,
+          "path": "/usr/share/doc/libicu72/copyright",
+          "resolvedPath": "/usr/share/doc/libicu72/copyright",
+          "sha256": "5bbff5f646ce750ac0a347e7f91793279b7422a1119820b5f75d98879c201c68"
+        },
+        "declaredLicences": [
+          "GPL-3",
+          "MIT"
+        ],
+        "package": "libicu72:amd64",
+        "packageVersion": "72.1-3+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libicudata.so.72",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libicudata.so.72.1",
+        "sha256": "5f572a055d6410ab50fc45770d529109dcc4fe8888f3b2834f76730ff19ebf58"
+      },
+      {
+        "bytes": 2078888,
+        "copyright": {
+          "bytes": 2214,
+          "path": "/usr/share/doc/libicu72/copyright",
+          "resolvedPath": "/usr/share/doc/libicu72/copyright",
+          "sha256": "5bbff5f646ce750ac0a347e7f91793279b7422a1119820b5f75d98879c201c68"
+        },
+        "declaredLicences": [
+          "GPL-3",
+          "MIT"
+        ],
+        "package": "libicu72:amd64",
+        "packageVersion": "72.1-3+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libicuuc.so.72",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libicuuc.so.72.1",
+        "sha256": "6ae74e03d74c29774be16f877aeba4b8c347ea83d8cb43b730fd283e205b375e"
+      },
+      {
+        "bytes": 198776,
+        "copyright": {
+          "bytes": 5348,
+          "path": "/usr/share/doc/libidn2-0/copyright",
+          "resolvedPath": "/usr/share/doc/libidn2-0/copyright",
+          "sha256": "41702469f28e8ff406345e3d1dd0c741f11bdfca319264f67036efd6aaa79e4b"
+        },
+        "declaredLicences": [
+          "GPL-2+",
+          "GPL-3+",
+          "LGPL-3+",
+          "LGPL-3+ or GPL-2+",
+          "Unicode"
+        ],
+        "package": "libidn2-0:amd64",
+        "packageVersion": "2.3.3-1+b1",
+        "path": "/lib/x86_64-linux-gnu/libidn2.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libidn2.so.0.3.8",
+        "sha256": "864f32ec2dc74d90c51d389a02b30003465b84e2090bf940039c0cd4b41b8f63"
+      },
+      {
+        "bytes": 66240,
+        "copyright": {
+          "bytes": 1849,
+          "path": "/usr/share/doc/libjbig0/copyright",
+          "resolvedPath": "/usr/share/doc/libjbig0/copyright",
+          "sha256": "89ab20c324a191652e94598f2144a65442faed4f14f77bbd10516130ee20f05a"
+        },
+        "declaredLicences": [
+          "GPL-2+"
+        ],
+        "package": "libjbig0:amd64",
+        "packageVersion": "2.1-6.1",
+        "path": "/lib/x86_64-linux-gnu/libjbig.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libjbig.so.0",
+        "sha256": "92f86d0ba0b9c6e342d61abe8edec5810d0d9cedad41e28a61fa1ecdbc040710"
+      },
+      {
+        "bytes": 600128,
+        "copyright": {
+          "bytes": 38846,
+          "path": "/usr/share/doc/libjpeg62-turbo/copyright",
+          "resolvedPath": "/usr/share/doc/libjpeg62-turbo/copyright",
+          "sha256": "3821184e23385bf2cdc01f56bd999b34036fc3aa03d5135d41680374eb81bf8a"
+        },
+        "declaredLicences": [
+          "BSD-3-clause",
+          "BSD-BY-LC-NE",
+          "Expat",
+          "NTP",
+          "Zlib"
+        ],
+        "package": "libjpeg62-turbo:amd64",
+        "packageVersion": "1:2.1.5-2",
+        "path": "/lib/x86_64-linux-gnu/libjpeg.so.62",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0",
+        "sha256": "dad87949ccad2be7e40a02986306087fdcfb35ccaadd59aea923a3f96d290eec"
+      },
+      {
+        "bytes": 183048,
+        "copyright": {
+          "bytes": 63047,
+          "path": "/usr/share/doc/libk5crypto3/copyright",
+          "resolvedPath": "/usr/share/doc/libk5crypto3/copyright",
+          "sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+        },
+        "declaredLicences": [],
+        "package": "libk5crypto3:amd64",
+        "packageVersion": "1.20.1-2+deb12u5",
+        "path": "/lib/x86_64-linux-gnu/libk5crypto.so.3",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1",
+        "sha256": "6c7fa0480ed36f756eb63f83baef482bb2a01a5157f32d92be84832a63b926e6"
+      },
+      {
+        "bytes": 22448,
+        "copyright": {
+          "bytes": 2104,
+          "path": "/usr/share/doc/libkeyutils1/copyright",
+          "resolvedPath": "/usr/share/doc/libkeyutils1/copyright",
+          "sha256": "c62fe37d22203046611112bc10a9e03a39a7f73bec1b061e7c615326166d9ff5"
+        },
+        "declaredLicences": [
+          "GPL-2+",
+          "LGPL-2+"
+        ],
+        "package": "libkeyutils1:amd64",
+        "packageVersion": "1.6.3-2",
+        "path": "/lib/x86_64-linux-gnu/libkeyutils.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libkeyutils.so.1.10",
+        "sha256": "3b2f8f3f07a1f8083f1084c6d61f242071fb6e6938a318dbf968b345507c7b71"
+      },
+      {
+        "bytes": 888080,
+        "copyright": {
+          "bytes": 63047,
+          "path": "/usr/share/doc/libkrb5-3/copyright",
+          "resolvedPath": "/usr/share/doc/libkrb5-3/copyright",
+          "sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+        },
+        "declaredLicences": [],
+        "package": "libkrb5-3:amd64",
+        "packageVersion": "1.20.1-2+deb12u5",
+        "path": "/lib/x86_64-linux-gnu/libkrb5.so.3",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libkrb5.so.3.3",
+        "sha256": "47b51d738881cbab3825dfcf8eb69fc64922a60d67609bb55b3f46e69276d572"
+      },
+      {
+        "bytes": 52224,
+        "copyright": {
+          "bytes": 63047,
+          "path": "/usr/share/doc/libkrb5support0/copyright",
+          "resolvedPath": "/usr/share/doc/libkrb5support0/copyright",
+          "sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+        },
+        "declaredLicences": [],
+        "package": "libkrb5support0:amd64",
+        "packageVersion": "1.20.1-2+deb12u5",
+        "path": "/lib/x86_64-linux-gnu/libkrb5support.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1",
+        "sha256": "2feeee09768665c44514696ef3b919426fc6f4726f8868e3d9a8885b7137215d"
+      },
+      {
+        "bytes": 63832,
+        "copyright": {
+          "bytes": 62837,
+          "path": "/usr/share/doc/libldap-2.5-0/copyright",
+          "resolvedPath": "/usr/share/doc/libldap-2.5-0/copyright",
+          "sha256": "b4081907f0d9a4110736fa6540dc8ca9d7d60a20878b5d78f84916cc04907bdc"
+        },
+        "declaredLicences": [
+          "BSD-3-clause",
+          "BSD-3-clause-California",
+          "BSD-3-clause-variant",
+          "BSD-4-clause-California",
+          "Beerware",
+          "Expat",
+          "Expat-ISC",
+          "Expat-UNM",
+          "F5",
+          "FSF-unlimited",
+          "FSF-unlimited and GPL-2+ with Autoconf exception",
+          "FSF-unlimited and GPL-2+ with Libtool exception",
+          "FSF-unlimited and OpenLDAP-2.8",
+          "GPL-2+",
+          "GPL-2+ with Autoconf exception",
+          "GPL-2+ with Libtool exception",
+          "GPL-2+ with Libtool exception and GPL-3+ with Libtool exception and GPL-3+",
+          "GPL-3+",
+          "GPL-3+ with Autoconf exception",
+          "GPL-3+ with Libtool exception",
+          "JCG",
+          "MIT-XC",
+          "NeoSoft-permissive",
+          "OpenLDAP-2.8",
+          "OpenLDAP-2.8 and BSD-3-clause",
+          "OpenLDAP-2.8 and BSD-3-clause-variant",
+          "OpenLDAP-2.8 and BSD-4-clause-California",
+          "OpenLDAP-2.8 and Beerware",
+          "OpenLDAP-2.8 and Expat",
+          "OpenLDAP-2.8 and Expat-ISC",
+          "OpenLDAP-2.8 and Expat-UNM",
+          "OpenLDAP-2.8 and FSF-unlimited and GPL-2+ with Libtool exception",
+          "OpenLDAP-2.8 and JCG and UMich",
+          "OpenLDAP-2.8 and UMich",
+          "OpenLDAP-2.8 and UMich and F5",
+          "UMich",
+          "public-domain"
+        ],
+        "package": "libldap-2.5-0:amd64",
+        "packageVersion": "2.5.13+dfsg-5",
+        "path": "/lib/x86_64-linux-gnu/liblber-2.5.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/liblber-2.5.so.0.1.8",
+        "sha256": "64f183c14330855843841747ff1975ed87e767de2e2f1b1cc4d7abd2302cb7a9"
+      },
+      {
+        "bytes": 380432,
+        "copyright": {
+          "bytes": 62837,
+          "path": "/usr/share/doc/libldap-2.5-0/copyright",
+          "resolvedPath": "/usr/share/doc/libldap-2.5-0/copyright",
+          "sha256": "b4081907f0d9a4110736fa6540dc8ca9d7d60a20878b5d78f84916cc04907bdc"
+        },
+        "declaredLicences": [
+          "BSD-3-clause",
+          "BSD-3-clause-California",
+          "BSD-3-clause-variant",
+          "BSD-4-clause-California",
+          "Beerware",
+          "Expat",
+          "Expat-ISC",
+          "Expat-UNM",
+          "F5",
+          "FSF-unlimited",
+          "FSF-unlimited and GPL-2+ with Autoconf exception",
+          "FSF-unlimited and GPL-2+ with Libtool exception",
+          "FSF-unlimited and OpenLDAP-2.8",
+          "GPL-2+",
+          "GPL-2+ with Autoconf exception",
+          "GPL-2+ with Libtool exception",
+          "GPL-2+ with Libtool exception and GPL-3+ with Libtool exception and GPL-3+",
+          "GPL-3+",
+          "GPL-3+ with Autoconf exception",
+          "GPL-3+ with Libtool exception",
+          "JCG",
+          "MIT-XC",
+          "NeoSoft-permissive",
+          "OpenLDAP-2.8",
+          "OpenLDAP-2.8 and BSD-3-clause",
+          "OpenLDAP-2.8 and BSD-3-clause-variant",
+          "OpenLDAP-2.8 and BSD-4-clause-California",
+          "OpenLDAP-2.8 and Beerware",
+          "OpenLDAP-2.8 and Expat",
+          "OpenLDAP-2.8 and Expat-ISC",
+          "OpenLDAP-2.8 and Expat-UNM",
+          "OpenLDAP-2.8 and FSF-unlimited and GPL-2+ with Libtool exception",
+          "OpenLDAP-2.8 and JCG and UMich",
+          "OpenLDAP-2.8 and UMich",
+          "OpenLDAP-2.8 and UMich and F5",
+          "UMich",
+          "public-domain"
+        ],
+        "package": "libldap-2.5-0:amd64",
+        "packageVersion": "2.5.13+dfsg-5",
+        "path": "/lib/x86_64-linux-gnu/libldap-2.5.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libldap-2.5.so.0.1.8",
+        "sha256": "062bb940f27b45cdcac5d3d66a727f441755b17f59842641ceaebaf990e1634d"
+      },
+      {
+        "bytes": 2876488,
+        "copyright": {
+          "bytes": 1766,
+          "path": "/usr/share/doc/liblept5/copyright",
+          "resolvedPath": "/usr/share/doc/liblept5/copyright",
+          "sha256": "cff4f0cb5db14528a8b84f4a3389012d5c6e0f5a75a882509367b2147c05a83e"
+        },
+        "declaredLicences": [],
+        "package": "liblept5:amd64",
+        "packageVersion": "1.82.0-3+b3",
+        "path": "/lib/x86_64-linux-gnu/liblept.so.5",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/liblept.so.5.0.4",
+        "sha256": "8bc9d7fc7246b0d38de2fd99ff0273bfce35158f83279bbd03464c40736d3501"
+      },
+      {
+        "bytes": 149952,
+        "copyright": {
+          "bytes": 3275,
+          "path": "/usr/share/doc/liblz4-1/copyright",
+          "resolvedPath": "/usr/share/doc/liblz4-1/copyright",
+          "sha256": "d3be0f43fe14da244f97c451bbae789c0acf868612598a69f5f22a289abeca40"
+        },
+        "declaredLicences": [
+          "BSD-2-clause",
+          "GPL-2+",
+          "GPL-2+ or BSD-2-clause"
+        ],
+        "package": "liblz4-1:amd64",
+        "packageVersion": "1.9.4-1",
+        "path": "/lib/x86_64-linux-gnu/liblz4.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4",
+        "sha256": "0f0ce52208a22570370eb2e96d250b3c088cb024f15cb7c48565e749eeab7cd5"
+      },
+      {
+        "bytes": 190456,
+        "copyright": {
+          "bytes": 15465,
+          "path": "/usr/share/doc/liblzma5/copyright",
+          "resolvedPath": "/usr/share/doc/liblzma5/copyright",
+          "sha256": "a2dc8fac0f496e1c58aff67018cf0c6b88336316afa5642f9335b71642e28aa8"
+        },
+        "declaredLicences": [
+          "Autoconf",
+          "GPL-2",
+          "GPL-2+",
+          "LGPL-2.1+",
+          "PD",
+          "PD-debian",
+          "config-h",
+          "noderivs",
+          "none",
+          "permissive-fsf",
+          "permissive-nowarranty",
+          "probably-PD"
+        ],
+        "package": "liblzma5:amd64",
+        "packageVersion": "5.4.1-1+deb12u2",
+        "path": "/lib/x86_64-linux-gnu/liblzma.so.5",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1",
+        "sha256": "5de60ec1bf90cd3d699188eb9ebb333c22b531394e0b030b55048edbd729ed17"
+      },
+      {
+        "bytes": 911904,
+        "copyright": {
+          "bytes": 25467,
+          "path": "/usr/share/doc/libc6/copyright",
+          "resolvedPath": "/usr/share/doc/libc6/copyright",
+          "sha256": "40c7e1f2118531f038ca22999bd976901254e1bc5cd1b0f0211bdd064c599987"
+        },
+        "declaredLicences": [],
+        "package": "libc6:amd64",
+        "packageVersion": "2.36-9+deb12u14",
+        "path": "/lib/x86_64-linux-gnu/libm.so.6",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "7f2ca87f652f56b094462474b076749e90e689d0ecb9cb63c7679820b271b4e7"
+      },
+      {
+        "bytes": 317544,
+        "copyright": {
+          "bytes": 24923,
+          "path": "/usr/share/doc/libnettle8/copyright",
+          "resolvedPath": "/usr/share/doc/libnettle8/copyright",
+          "sha256": "ca2ca597320220c00ef6dc0fe5d0d82025548d6d4ba80e85615eb691f9021f93"
+        },
+        "declaredLicences": [
+          "Expat",
+          "GAP",
+          "GPL-2",
+          "GPL-2+",
+          "GPL-3+",
+          "GPL-3+ with Autoconf exception",
+          "LGPL-2+",
+          "LGPL-3+",
+          "LGPL-3+ or GPL-2+",
+          "public-domain"
+        ],
+        "package": "libnettle8:amd64",
+        "packageVersion": "3.8.1-2",
+        "path": "/lib/x86_64-linux-gnu/libnettle.so.8",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libnettle.so.8.6",
+        "sha256": "63f8ec7a41906ad65a800d27294cdbb34bf6c709252a575ed513a3c048d71019"
+      },
+      {
+        "bytes": 190928,
+        "copyright": {
+          "bytes": 6535,
+          "path": "/usr/share/doc/libnghttp2-14/copyright",
+          "resolvedPath": "/usr/share/doc/libnghttp2-14/copyright",
+          "sha256": "a34ae32a5eba61e535835a8de7c398f47e420247d339bc400a3b9c618ba29a3d"
+        },
+        "declaredLicences": [
+          "BSD-2-clause",
+          "Expat",
+          "GPL-3+ with autoconf exception",
+          "MIT",
+          "all-permissive"
+        ],
+        "package": "libnghttp2-14:amd64",
+        "packageVersion": "1.52.0-1+deb12u3",
+        "path": "/lib/x86_64-linux-gnu/libnghttp2.so.14",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libnghttp2.so.14.24.1",
+        "sha256": "13a70f96a181a2b8d793f2561cb7857137f194130104ff39a1ff6b90eef280d3"
+      },
+      {
+        "bytes": 408000,
+        "copyright": {
+          "bytes": 42620,
+          "path": "/usr/share/doc/libopenjp2-7/copyright",
+          "resolvedPath": "/usr/share/doc/libopenjp2-7/copyright",
+          "sha256": "eee37e01db9d8eabac77a49dbacb9ea8962e5cfc98a35b87ee02cc81eef94f40"
+        },
+        "declaredLicences": [
+          "BSD-2",
+          "BSD-3",
+          "LIBPNG",
+          "LIBTIFF",
+          "LIBTIFF-GLARSON",
+          "LIBTIFF-PIXAR",
+          "MIT",
+          "ZLIB",
+          "public-domain"
+        ],
+        "package": "libopenjp2-7:amd64",
+        "packageVersion": "2.5.0-2+deb12u3",
+        "path": "/lib/x86_64-linux-gnu/libopenjp2.so.7",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libopenjp2.so.2.5.0",
+        "sha256": "a666217fc2c9835acff70422584d9947e8c43c97c23f2a95dc581e64e3f2ca5f"
+      },
+      {
+        "bytes": 1261376,
+        "copyright": {
+          "bytes": 8646,
+          "path": "/usr/share/doc/libp11-kit0/copyright",
+          "resolvedPath": "/usr/share/doc/libp11-kit0/copyright",
+          "sha256": "ed139379f7c874f0ee75f3ddcc2e01091dd828d84ee1a0bdff6a1c5673ee6e58"
+        },
+        "declaredLicences": [
+          "Apache-2.0",
+          "BSD-3-Clause",
+          "ISC",
+          "ISC+IBM",
+          "LGPL-2.1+",
+          "permissive-like-automake-output",
+          "same-as-rest-of-p11kit"
+        ],
+        "package": "libp11-kit0:amd64",
+        "packageVersion": "0.24.1-2",
+        "path": "/lib/x86_64-linux-gnu/libp11-kit.so.0",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0.3.0",
+        "sha256": "a0a560ae54a793a11ab78d6ce12b902537932b2d7aab2352250391a035977ef1"
+      },
+      {
+        "bytes": 219056,
+        "copyright": {
+          "bytes": 12976,
+          "path": "/usr/share/doc/libpng16-16/copyright",
+          "resolvedPath": "/usr/share/doc/libpng16-16/copyright",
+          "sha256": "68bd3997355bc44ccb97ff5e2bb146360e762c7d9c721945a4fabf77d1349e4a"
+        },
+        "declaredLicences": [
+          "Apache-2.0",
+          "BSD-3-clause",
+          "BSD-like-with-advertising-clause",
+          "GPL-2+",
+          "GPL-2+ or BSD-like-with-advertising-clause",
+          "expat",
+          "libpng",
+          "libpng OR Apache-2.0 OR BSD-3-clause"
+        ],
+        "package": "libpng16-16:amd64",
+        "packageVersion": "1.6.39-2+deb12u6",
+        "path": "/lib/x86_64-linux-gnu/libpng16.so.16",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.39.0",
+        "sha256": "8a6b5ae14e223d7c01bf09988ea9631c38fd5c898df6d330c343654b76414897"
+      },
+      {
+        "bytes": 75616,
+        "copyright": {
+          "bytes": 3310,
+          "path": "/usr/share/doc/libpsl5/copyright",
+          "resolvedPath": "/usr/share/doc/libpsl5/copyright",
+          "sha256": "bbafb0cf52d34465fc69f5ffd22d724224f6a2f28402c88b045c69d88af06aaf"
+        },
+        "declaredLicences": [
+          "Chromium",
+          "MIT",
+          "gnulib"
+        ],
+        "package": "libpsl5:amd64",
+        "packageVersion": "0.21.2-1",
+        "path": "/lib/x86_64-linux-gnu/libpsl.so.5",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libpsl.so.5.3.4",
+        "sha256": "20f0bf67e12445271935d9c05d9a9d8fd567046132c6873388eb1c0a8681c28e"
+      },
+      {
+        "bytes": 60328,
+        "copyright": {
+          "bytes": 25467,
+          "path": "/usr/share/doc/libc6/copyright",
+          "resolvedPath": "/usr/share/doc/libc6/copyright",
+          "sha256": "40c7e1f2118531f038ca22999bd976901254e1bc5cd1b0f0211bdd064c599987"
+        },
+        "declaredLicences": [],
+        "package": "libc6:amd64",
+        "packageVersion": "2.36-9+deb12u14",
+        "path": "/lib/x86_64-linux-gnu/libresolv.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+        "sha256": "ac3924c6cdb26cdfff10fec2ab2748705c83931b39c7f6e638a2b31ae34d420b"
+      },
+      {
+        "bytes": 122280,
+        "copyright": {
+          "bytes": 2726,
+          "path": "/usr/share/doc/librtmp1/copyright",
+          "resolvedPath": "/usr/share/doc/librtmp1/copyright",
+          "sha256": "4302abcc1ea1b6cbe8d19c79b892acf78878030220210707c19006828866207c"
+        },
+        "declaredLicences": [],
+        "package": "librtmp1:amd64",
+        "packageVersion": "2.4+20151223.gitfa8646d.1-2+b2",
+        "path": "/lib/x86_64-linux-gnu/librtmp.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/librtmp.so.1",
+        "sha256": "60631c5df675831d9e9338e5cf859f3df713f8b04571aaff1ca65c9287832cb8"
+      },
+      {
+        "bytes": 113392,
+        "copyright": {
+          "bytes": 32354,
+          "path": "/usr/share/doc/libsasl2-2/copyright",
+          "resolvedPath": "/usr/share/doc/libsasl2-2/copyright",
+          "sha256": "5e77ddcac7fb682d696bc4b034dc2869e5a9011e8c2ed3c570ab8db0f4506931"
+        },
+        "declaredLicences": [
+          "BSD-2-clause",
+          "BSD-2-clause and MIT-CMU",
+          "BSD-2.2-clause",
+          "BSD-3-clause",
+          "BSD-3-clause-JANET",
+          "BSD-3-clause-JANET and BSD-4-clause",
+          "BSD-3-clause-PADL",
+          "BSD-3-clause-PADL and MIT-OpenVision",
+          "BSD-4-clause",
+          "BSD-4-clause and BSD-4-clause-KTH",
+          "BSD-4-clause and IBM-as-is",
+          "BSD-4-clause and MIT-Export",
+          "BSD-4-clause-KTH",
+          "BSD-4-clause-UC",
+          "FSFULLR",
+          "FSFULLR and MIT-CMU",
+          "GPL-3",
+          "GPL-3+",
+          "IBM-as-is",
+          "MIT-CMU",
+          "MIT-Export",
+          "MIT-OpenVision",
+          "OpenLDAP",
+          "OpenSSL",
+          "OpenSSL and SSLeay",
+          "RSA-MD",
+          "SSLeay"
+        ],
+        "package": "libsasl2-2:amd64",
+        "packageVersion": "2.1.28+dfsg-10",
+        "path": "/lib/x86_64-linux-gnu/libsasl2.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libsasl2.so.2.0.25",
+        "sha256": "0e214d8cc294d6ce547946b2b1145d394a06bba3aea7506f0f37b38d32d660bf"
+      },
+      {
+        "bytes": 260552,
+        "copyright": {
+          "bytes": 2099,
+          "path": "/usr/share/doc/libssh2-1/copyright",
+          "resolvedPath": "/usr/share/doc/libssh2-1/copyright",
+          "sha256": "98978241c573785aa7c8504e399bb66cfb3c40c1f20507a0d3c7580bfbf9d8d4"
+        },
+        "declaredLicences": [
+          "BSD3"
+        ],
+        "package": "libssh2-1:amd64",
+        "packageVersion": "1.10.0-3+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libssh2.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libssh2.so.1.0.1",
+        "sha256": "e481655791a9b75f4d5957e40101d7d0b5d9c13a18d1ca233731d03365ad0aec"
+      },
+      {
+        "bytes": 688160,
+        "copyright": {
+          "bytes": 2543,
+          "path": "/usr/share/doc/libssl3/copyright",
+          "resolvedPath": "/usr/share/doc/libssl3/copyright",
+          "sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35"
+        },
+        "declaredLicences": [
+          "Apache-2.0",
+          "Artistic",
+          "Artistic or GPL-1+",
+          "GPL-1+"
+        ],
+        "package": "libssl3:amd64",
+        "packageVersion": "3.0.22-1~deb12u2",
+        "path": "/lib/x86_64-linux-gnu/libssl.so.3",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+        "sha256": "cab3f5b0a1febd4a80db5319f3bca4a9378c797dc6e5dc8bce36a575eaa77e78"
+      },
+      {
+        "bytes": 2190440,
+        "copyright": {
+          "bytes": 68194,
+          "path": "/usr/share/doc/libstdc++6/copyright",
+          "resolvedPath": "/usr/share/doc/gcc-12-base/copyright",
+          "sha256": "da8191658b3452ce9caf31638ba61dab31a38c619fa39df119812e050f592fd3"
+        },
+        "declaredLicences": [],
+        "package": "libstdc++6:amd64",
+        "packageVersion": "12.2.0-14+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30",
+        "sha256": "e7848e32af4932840ba775169041759a2a8dd5a008af360e5c55bce506eebcf4"
+      },
+      {
+        "bytes": 83968,
+        "copyright": {
+          "bytes": 3451,
+          "path": "/usr/share/doc/libtasn1-6/copyright",
+          "resolvedPath": "/usr/share/doc/libtasn1-6/copyright",
+          "sha256": "572ad60ad184d8f52c6dc66d83a61a68f137db560b3452ce00588c9ecf128a65"
+        },
+        "declaredLicences": [],
+        "package": "libtasn1-6:amd64",
+        "packageVersion": "4.19.0-2+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libtasn1.so.6",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.3",
+        "sha256": "139e933ac55f26bb80520fc63893ff2a528055fdf8058d8341bbd9d7bd762a5e"
+      },
+      {
+        "bytes": 3516952,
+        "copyright": {
+          "bytes": 1231,
+          "path": "/usr/share/doc/libtesseract5/copyright",
+          "resolvedPath": "/usr/share/doc/libtesseract5/copyright",
+          "sha256": "6970bc4b54eea0b95aa1bdddc713e6c568ccfc527857739d6bb9056faa85ab9c"
+        },
+        "declaredLicences": [
+          "Apache-2.0"
+        ],
+        "package": "libtesseract5:amd64",
+        "packageVersion": "5.3.0-2",
+        "path": "/lib/x86_64-linux-gnu/libtesseract.so.5",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3",
+        "sha256": "caf99587c86adceb8e082fabb99c6da69439c6e618a7f762107db1cb060ac901"
+      },
+      {
+        "bytes": 571400,
+        "copyright": {
+          "bytes": 1935,
+          "path": "/usr/share/doc/libtiff6/copyright",
+          "resolvedPath": "/usr/share/doc/libtiff6/copyright",
+          "sha256": "d73e31b03a0d7a515851601c19fee5792c7db03a312efacae146ddf9c91f86f1"
+        },
+        "declaredLicences": [
+          "Hylafax"
+        ],
+        "package": "libtiff6:amd64",
+        "packageVersion": "4.5.0-6+deb12u4",
+        "path": "/lib/x86_64-linux-gnu/libtiff.so.6",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.0.0",
+        "sha256": "4cadf3729e353ef2eb5a2bb3bac9c5d1acdba859cb50c28036d79b0e878966c5"
+      },
+      {
+        "bytes": 1792040,
+        "copyright": {
+          "bytes": 6068,
+          "path": "/usr/share/doc/libunistring2/copyright",
+          "resolvedPath": "/usr/share/doc/libunistring2/copyright",
+          "sha256": "0035f89e5317f3cec389383e8727788521b0fde3e75cea881fa0e92e1d48cb57"
+        },
+        "declaredLicences": [
+          "FreeSoftware",
+          "GFDL-1.2+",
+          "GPL-2+",
+          "GPL-2+ with distribution exception",
+          "GPL-3+",
+          "GPL-3+ or GFDL-1.2+",
+          "LGPL-3+",
+          "LGPL-3+ or GPL-2+",
+          "MIT"
+        ],
+        "package": "libunistring2:amd64",
+        "packageVersion": "1.0-2",
+        "path": "/lib/x86_64-linux-gnu/libunistring.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libunistring.so.2.2.0",
+        "sha256": "bc5951aa3d6eaba20ff9688efa3420dc95785aae3709ec48ff6df46d6f409ee5"
+      },
+      {
+        "bytes": 453240,
+        "copyright": {
+          "bytes": 2027,
+          "path": "/usr/share/doc/libwebp7/copyright",
+          "resolvedPath": "/usr/share/doc/libwebp7/copyright",
+          "sha256": "01eb328708a9454061dd13931b19135e1c2c6251a7e6a6d0efc4b9bc436109c7"
+        },
+        "declaredLicences": [],
+        "package": "libwebp7:amd64",
+        "packageVersion": "1.2.4-0.2+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libwebp.so.7",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.5",
+        "sha256": "4fedb320592cad963eab7f598d3acf3fa9054a2ccffac95bc97085b134ffdc3e"
+      },
+      {
+        "bytes": 43272,
+        "copyright": {
+          "bytes": 2027,
+          "path": "/usr/share/doc/libwebpmux3/copyright",
+          "resolvedPath": "/usr/share/doc/libwebpmux3/copyright",
+          "sha256": "01eb328708a9454061dd13931b19135e1c2c6251a7e6a6d0efc4b9bc436109c7"
+        },
+        "declaredLicences": [],
+        "package": "libwebpmux3:amd64",
+        "packageVersion": "1.2.4-0.2+deb12u1",
+        "path": "/lib/x86_64-linux-gnu/libwebpmux.so.3",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3.0.10",
+        "sha256": "0ef03d06bdb13d3f5be6140e87365ff381bb60aed9a11c6bca201594b43dd875"
+      },
+      {
+        "bytes": 1750104,
+        "copyright": {
+          "bytes": 3067,
+          "path": "/usr/share/doc/libxml2/copyright",
+          "resolvedPath": "/usr/share/doc/libxml2/copyright",
+          "sha256": "ee746b96cfa5be73c3ea3e4cfb1285e9b315d4c9267f99b2ee9c5d911d9fe3f4"
+        },
+        "declaredLicences": [
+          "ISC",
+          "MIT-1"
+        ],
+        "package": "libxml2:amd64",
+        "packageVersion": "2.9.14+dfsg-1.3~deb12u6",
+        "path": "/lib/x86_64-linux-gnu/libxml2.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14",
+        "sha256": "c05750a6f1c9a90c254df313a9dda9b4c958c0a768b0faf4c15e04b3515c7d93"
+      },
+      {
+        "bytes": 121280,
+        "copyright": {
+          "bytes": 2927,
+          "path": "/usr/share/doc/zlib1g/copyright",
+          "resolvedPath": "/usr/share/doc/zlib1g/copyright",
+          "sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6"
+        },
+        "declaredLicences": [
+          "Zlib"
+        ],
+        "package": "zlib1g:amd64",
+        "packageVersion": "1:1.2.13.dfsg-1",
+        "path": "/lib/x86_64-linux-gnu/libz.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libz.so.1.2.13",
+        "sha256": "7e2a72b4c4b38c61e6962de6e3f4a5e9ae692e732c68deead10a7ce2135a7f68"
+      },
+      {
+        "bytes": 763816,
+        "copyright": {
+          "bytes": 5389,
+          "path": "/usr/share/doc/libzstd1/copyright",
+          "resolvedPath": "/usr/share/doc/libzstd1/copyright",
+          "sha256": "35e85e8e9bbb71492c5f5dddf39ed65b68775a02ad8d710c25d097b497f06c49"
+        },
+        "declaredLicences": [
+          "BSD-3-clause",
+          "BSD-3-clause or GPL-2",
+          "Expat",
+          "GPL-2",
+          "zlib"
+        ],
+        "package": "libzstd1:amd64",
+        "packageVersion": "1.5.4+dfsg2-5",
+        "path": "/lib/x86_64-linux-gnu/libzstd.so.1",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.4",
+        "sha256": "37412b7ac11063c25a375bdff6f4fdb340362f926cd9c3a55962e8a9c9bc702e"
+      },
+      {
+        "bytes": 215000,
+        "copyright": {
+          "bytes": 25467,
+          "path": "/usr/share/doc/libc6/copyright",
+          "resolvedPath": "/usr/share/doc/libc6/copyright",
+          "sha256": "40c7e1f2118531f038ca22999bd976901254e1bc5cd1b0f0211bdd064c599987"
+        },
+        "declaredLicences": [],
+        "package": "libc6:amd64",
+        "packageVersion": "2.36-9+deb12u14",
+        "path": "/lib64/ld-linux-x86-64.so.2",
+        "resolvedPath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "02bcda52c1a5dfc236f94d9e5255b4a0e26347d8a372a5223b650e31f291ce3c"
+      },
+      {
+        "bytes": 43344,
+        "copyright": {
+          "bytes": 1231,
+          "path": "/usr/share/doc/tesseract-ocr/copyright",
+          "resolvedPath": "/usr/share/doc/tesseract-ocr/copyright",
+          "sha256": "6970bc4b54eea0b95aa1bdddc713e6c568ccfc527857739d6bb9056faa85ab9c"
+        },
+        "declaredLicences": [
+          "Apache-2.0"
+        ],
+        "package": "tesseract-ocr",
+        "packageVersion": "5.3.0-2",
+        "path": "/usr/bin/tesseract",
+        "resolvedPath": "/usr/bin/tesseract",
+        "sha256": "1e8c7ce7f27d2d1c902fb648efed443483f2a8fc7b60c48a5d3b61d647a2649e"
+      },
+      {
+        "bytes": 4113088,
+        "copyright": {
+          "bytes": 1245,
+          "path": "/usr/share/doc/tesseract-ocr-eng/copyright",
+          "resolvedPath": "/usr/share/doc/tesseract-ocr-eng/copyright",
+          "sha256": "33fb8161898e34fcf5c6b8585d6be97642d7e8f34a922e783c6c5c970d0b09ad"
+        },
+        "declaredLicences": [
+          "Apache-2.0"
+        ],
+        "package": "tesseract-ocr-eng",
+        "packageVersion": "1:4.1.0-2",
+        "path": "/usr/share/tesseract-ocr/5/tessdata/eng.traineddata",
+        "resolvedPath": "/usr/share/tesseract-ocr/5/tessdata/eng.traineddata",
+        "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+      }
+    ],
+    "format": "inveos_tesseract_runtime_inventory_v1",
+    "libraryLoading": "ldd_inside_qualified_isolation",
+    "packages": {
+      "adduser": {
+        "architecture": "all",
+        "version": "3.134"
+      },
+      "apt": {
+        "architecture": "amd64",
+        "version": "2.6.1"
+      },
+      "base-files": {
+        "architecture": "amd64",
+        "version": "12.4+deb12u15"
+      },
+      "base-passwd": {
+        "architecture": "amd64",
+        "version": "3.6.1"
+      },
+      "bash": {
+        "architecture": "amd64",
+        "version": "5.2.15-2+b13"
+      },
+      "bsdutils": {
+        "architecture": "amd64",
+        "version": "1:2.38.1-5+deb12u3"
+      },
+      "ca-certificates": {
+        "architecture": "all",
+        "version": "20250419~deb12u2"
+      },
+      "coreutils": {
+        "architecture": "amd64",
+        "version": "9.1-1"
+      },
+      "dash": {
+        "architecture": "amd64",
+        "version": "0.5.12-2"
+      },
+      "debconf": {
+        "architecture": "all",
+        "version": "1.5.82"
+      },
+      "debian-archive-keyring": {
+        "architecture": "all",
+        "version": "2023.3+deb12u2"
+      },
+      "debianutils": {
+        "architecture": "amd64",
+        "version": "5.7-0.5~deb12u1"
+      },
+      "diffutils": {
+        "architecture": "amd64",
+        "version": "1:3.8-4"
+      },
+      "dpkg": {
+        "architecture": "amd64",
+        "version": "1.21.23"
+      },
+      "e2fsprogs": {
+        "architecture": "amd64",
+        "version": "1.47.0-2+b2"
+      },
+      "findutils": {
+        "architecture": "amd64",
+        "version": "4.9.0-4"
+      },
+      "fontconfig": {
+        "architecture": "amd64",
+        "version": "2.14.1-4"
+      },
+      "fontconfig-config": {
+        "architecture": "amd64",
+        "version": "2.14.1-4"
+      },
+      "fonts-dejavu-core": {
+        "architecture": "all",
+        "version": "2.37-6"
+      },
+      "gcc-12-base:amd64": {
+        "architecture": "amd64",
+        "version": "12.2.0-14+deb12u1"
+      },
+      "gpgv": {
+        "architecture": "amd64",
+        "version": "2.2.40-1.1+deb12u2"
+      },
+      "grep": {
+        "architecture": "amd64",
+        "version": "3.8-5"
+      },
+      "gzip": {
+        "architecture": "amd64",
+        "version": "1.12-1"
+      },
+      "hostname": {
+        "architecture": "amd64",
+        "version": "3.23+nmu1"
+      },
+      "init-system-helpers": {
+        "architecture": "all",
+        "version": "1.65.2+deb12u1"
+      },
+      "libacl1:amd64": {
+        "architecture": "amd64",
+        "version": "2.3.1-3"
+      },
+      "libapt-pkg6.0:amd64": {
+        "architecture": "amd64",
+        "version": "2.6.1"
+      },
+      "libarchive13:amd64": {
+        "architecture": "amd64",
+        "version": "3.6.2-1+deb12u5"
+      },
+      "libattr1:amd64": {
+        "architecture": "amd64",
+        "version": "1:2.5.1-4"
+      },
+      "libaudit-common": {
+        "architecture": "all",
+        "version": "1:3.0.9-1"
+      },
+      "libaudit1:amd64": {
+        "architecture": "amd64",
+        "version": "1:3.0.9-1"
+      },
+      "libblkid1:amd64": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "libbrotli1:amd64": {
+        "architecture": "amd64",
+        "version": "1.0.9-2+deb12u1"
+      },
+      "libbsd0:amd64": {
+        "architecture": "amd64",
+        "version": "0.11.7-2"
+      },
+      "libbz2-1.0:amd64": {
+        "architecture": "amd64",
+        "version": "1.0.8-5+b1"
+      },
+      "libc-bin": {
+        "architecture": "amd64",
+        "version": "2.36-9+deb12u14"
+      },
+      "libc6:amd64": {
+        "architecture": "amd64",
+        "version": "2.36-9+deb12u14"
+      },
+      "libcairo2:amd64": {
+        "architecture": "amd64",
+        "version": "1.16.0-7"
+      },
+      "libcap-ng0:amd64": {
+        "architecture": "amd64",
+        "version": "0.8.3-1+b3"
+      },
+      "libcap2:amd64": {
+        "architecture": "amd64",
+        "version": "1:2.66-4+deb12u3+b1"
+      },
+      "libcom-err2:amd64": {
+        "architecture": "amd64",
+        "version": "1.47.0-2+b2"
+      },
+      "libcrypt1:amd64": {
+        "architecture": "amd64",
+        "version": "1:4.4.33-2"
+      },
+      "libcurl4:amd64": {
+        "architecture": "amd64",
+        "version": "7.88.1-10+deb12u15"
+      },
+      "libdatrie1:amd64": {
+        "architecture": "amd64",
+        "version": "0.2.13-2+b1"
+      },
+      "libdb5.3:amd64": {
+        "architecture": "amd64",
+        "version": "5.3.28+dfsg2-1"
+      },
+      "libdebconfclient0:amd64": {
+        "architecture": "amd64",
+        "version": "0.270"
+      },
+      "libdeflate0:amd64": {
+        "architecture": "amd64",
+        "version": "1.14-1"
+      },
+      "libexpat1:amd64": {
+        "architecture": "amd64",
+        "version": "2.5.0-1+deb12u5"
+      },
+      "libext2fs2:amd64": {
+        "architecture": "amd64",
+        "version": "1.47.0-2+b2"
+      },
+      "libffi8:amd64": {
+        "architecture": "amd64",
+        "version": "3.4.4-1"
+      },
+      "libfontconfig1:amd64": {
+        "architecture": "amd64",
+        "version": "2.14.1-4"
+      },
+      "libfreetype6:amd64": {
+        "architecture": "amd64",
+        "version": "2.12.1+dfsg-5+deb12u4"
+      },
+      "libfribidi0:amd64": {
+        "architecture": "amd64",
+        "version": "1.0.8-2.1"
+      },
+      "libgcc-s1:amd64": {
+        "architecture": "amd64",
+        "version": "12.2.0-14+deb12u1"
+      },
+      "libgcrypt20:amd64": {
+        "architecture": "amd64",
+        "version": "1.10.1-3+deb12u1"
+      },
+      "libgdbm6:amd64": {
+        "architecture": "amd64",
+        "version": "1.23-3"
+      },
+      "libgif7:amd64": {
+        "architecture": "amd64",
+        "version": "5.2.1-2.5+deb12u1"
+      },
+      "libglib2.0-0:amd64": {
+        "architecture": "amd64",
+        "version": "2.74.6-2+deb12u9"
+      },
+      "libgmp10:amd64": {
+        "architecture": "amd64",
+        "version": "2:6.2.1+dfsg1-1.1"
+      },
+      "libgnutls30:amd64": {
+        "architecture": "amd64",
+        "version": "3.7.9-2+deb12u7"
+      },
+      "libgomp1:amd64": {
+        "architecture": "amd64",
+        "version": "12.2.0-14+deb12u1"
+      },
+      "libgpg-error0:amd64": {
+        "architecture": "amd64",
+        "version": "1.46-1"
+      },
+      "libgraphite2-3:amd64": {
+        "architecture": "amd64",
+        "version": "1.3.14-1+deb12u1"
+      },
+      "libgssapi-krb5-2:amd64": {
+        "architecture": "amd64",
+        "version": "1.20.1-2+deb12u5"
+      },
+      "libharfbuzz0b:amd64": {
+        "architecture": "amd64",
+        "version": "6.0.0+dfsg-3"
+      },
+      "libhogweed6:amd64": {
+        "architecture": "amd64",
+        "version": "3.8.1-2"
+      },
+      "libicu72:amd64": {
+        "architecture": "amd64",
+        "version": "72.1-3+deb12u1"
+      },
+      "libidn2-0:amd64": {
+        "architecture": "amd64",
+        "version": "2.3.3-1+b1"
+      },
+      "libjbig0:amd64": {
+        "architecture": "amd64",
+        "version": "2.1-6.1"
+      },
+      "libjpeg62-turbo:amd64": {
+        "architecture": "amd64",
+        "version": "1:2.1.5-2"
+      },
+      "libk5crypto3:amd64": {
+        "architecture": "amd64",
+        "version": "1.20.1-2+deb12u5"
+      },
+      "libkeyutils1:amd64": {
+        "architecture": "amd64",
+        "version": "1.6.3-2"
+      },
+      "libkrb5-3:amd64": {
+        "architecture": "amd64",
+        "version": "1.20.1-2+deb12u5"
+      },
+      "libkrb5support0:amd64": {
+        "architecture": "amd64",
+        "version": "1.20.1-2+deb12u5"
+      },
+      "libldap-2.5-0:amd64": {
+        "architecture": "amd64",
+        "version": "2.5.13+dfsg-5"
+      },
+      "liblept5:amd64": {
+        "architecture": "amd64",
+        "version": "1.82.0-3+b3"
+      },
+      "liblerc4:amd64": {
+        "architecture": "amd64",
+        "version": "4.0.0+ds-2"
+      },
+      "liblz4-1:amd64": {
+        "architecture": "amd64",
+        "version": "1.9.4-1"
+      },
+      "liblzma5:amd64": {
+        "architecture": "amd64",
+        "version": "5.4.1-1+deb12u2"
+      },
+      "libmd0:amd64": {
+        "architecture": "amd64",
+        "version": "1.0.4-2"
+      },
+      "libmount1:amd64": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "libncursesw6:amd64": {
+        "architecture": "amd64",
+        "version": "6.4-4"
+      },
+      "libnettle8:amd64": {
+        "architecture": "amd64",
+        "version": "3.8.1-2"
+      },
+      "libnghttp2-14:amd64": {
+        "architecture": "amd64",
+        "version": "1.52.0-1+deb12u3"
+      },
+      "libnsl2:amd64": {
+        "architecture": "amd64",
+        "version": "1.3.0-2"
+      },
+      "libopenjp2-7:amd64": {
+        "architecture": "amd64",
+        "version": "2.5.0-2+deb12u3"
+      },
+      "libp11-kit0:amd64": {
+        "architecture": "amd64",
+        "version": "0.24.1-2"
+      },
+      "libpam-modules-bin": {
+        "architecture": "amd64",
+        "version": "1.5.2-6+deb12u2"
+      },
+      "libpam-modules:amd64": {
+        "architecture": "amd64",
+        "version": "1.5.2-6+deb12u2"
+      },
+      "libpam-runtime": {
+        "architecture": "all",
+        "version": "1.5.2-6+deb12u2"
+      },
+      "libpam0g:amd64": {
+        "architecture": "amd64",
+        "version": "1.5.2-6+deb12u2"
+      },
+      "libpango-1.0-0:amd64": {
+        "architecture": "amd64",
+        "version": "1.50.12+ds-1"
+      },
+      "libpangocairo-1.0-0:amd64": {
+        "architecture": "amd64",
+        "version": "1.50.12+ds-1"
+      },
+      "libpangoft2-1.0-0:amd64": {
+        "architecture": "amd64",
+        "version": "1.50.12+ds-1"
+      },
+      "libpcre2-8-0:amd64": {
+        "architecture": "amd64",
+        "version": "10.42-1+deb12u2"
+      },
+      "libpixman-1-0:amd64": {
+        "architecture": "amd64",
+        "version": "0.42.2-1"
+      },
+      "libpng16-16:amd64": {
+        "architecture": "amd64",
+        "version": "1.6.39-2+deb12u6"
+      },
+      "libpsl5:amd64": {
+        "architecture": "amd64",
+        "version": "0.21.2-1"
+      },
+      "libreadline8:amd64": {
+        "architecture": "amd64",
+        "version": "8.2-1.3"
+      },
+      "librtmp1:amd64": {
+        "architecture": "amd64",
+        "version": "2.4+20151223.gitfa8646d.1-2+b2"
+      },
+      "libsasl2-2:amd64": {
+        "architecture": "amd64",
+        "version": "2.1.28+dfsg-10"
+      },
+      "libsasl2-modules-db:amd64": {
+        "architecture": "amd64",
+        "version": "2.1.28+dfsg-10"
+      },
+      "libseccomp2:amd64": {
+        "architecture": "amd64",
+        "version": "2.5.4-1+deb12u1"
+      },
+      "libselinux1:amd64": {
+        "architecture": "amd64",
+        "version": "3.4-1+b6"
+      },
+      "libsemanage-common": {
+        "architecture": "all",
+        "version": "3.4-1"
+      },
+      "libsemanage2:amd64": {
+        "architecture": "amd64",
+        "version": "3.4-1+b5"
+      },
+      "libsepol2:amd64": {
+        "architecture": "amd64",
+        "version": "3.4-2.1"
+      },
+      "libsmartcols1:amd64": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "libsqlite3-0:amd64": {
+        "architecture": "amd64",
+        "version": "3.40.1-2+deb12u2"
+      },
+      "libss2:amd64": {
+        "architecture": "amd64",
+        "version": "1.47.0-2+b2"
+      },
+      "libssh2-1:amd64": {
+        "architecture": "amd64",
+        "version": "1.10.0-3+deb12u1"
+      },
+      "libssl3:amd64": {
+        "architecture": "amd64",
+        "version": "3.0.22-1~deb12u2"
+      },
+      "libstdc++6:amd64": {
+        "architecture": "amd64",
+        "version": "12.2.0-14+deb12u1"
+      },
+      "libsystemd0:amd64": {
+        "architecture": "amd64",
+        "version": "252.39-1~deb12u2"
+      },
+      "libtasn1-6:amd64": {
+        "architecture": "amd64",
+        "version": "4.19.0-2+deb12u1"
+      },
+      "libtesseract5:amd64": {
+        "architecture": "amd64",
+        "version": "5.3.0-2"
+      },
+      "libthai-data": {
+        "architecture": "all",
+        "version": "0.1.29-1"
+      },
+      "libthai0:amd64": {
+        "architecture": "amd64",
+        "version": "0.1.29-1"
+      },
+      "libtiff6:amd64": {
+        "architecture": "amd64",
+        "version": "4.5.0-6+deb12u4"
+      },
+      "libtinfo6:amd64": {
+        "architecture": "amd64",
+        "version": "6.4-4"
+      },
+      "libtirpc-common": {
+        "architecture": "all",
+        "version": "1.3.3+ds-1"
+      },
+      "libtirpc3:amd64": {
+        "architecture": "amd64",
+        "version": "1.3.3+ds-1"
+      },
+      "libudev1:amd64": {
+        "architecture": "amd64",
+        "version": "252.39-1~deb12u2"
+      },
+      "libunistring2:amd64": {
+        "architecture": "amd64",
+        "version": "1.0-2"
+      },
+      "libuuid1:amd64": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "libwebp7:amd64": {
+        "architecture": "amd64",
+        "version": "1.2.4-0.2+deb12u1"
+      },
+      "libwebpmux3:amd64": {
+        "architecture": "amd64",
+        "version": "1.2.4-0.2+deb12u1"
+      },
+      "libx11-6:amd64": {
+        "architecture": "amd64",
+        "version": "2:1.8.4-2+deb12u2"
+      },
+      "libx11-data": {
+        "architecture": "all",
+        "version": "2:1.8.4-2+deb12u2"
+      },
+      "libxau6:amd64": {
+        "architecture": "amd64",
+        "version": "1:1.0.9-1"
+      },
+      "libxcb-render0:amd64": {
+        "architecture": "amd64",
+        "version": "1.15-1"
+      },
+      "libxcb-shm0:amd64": {
+        "architecture": "amd64",
+        "version": "1.15-1"
+      },
+      "libxcb1:amd64": {
+        "architecture": "amd64",
+        "version": "1.15-1"
+      },
+      "libxdmcp6:amd64": {
+        "architecture": "amd64",
+        "version": "1:1.1.2-3"
+      },
+      "libxext6:amd64": {
+        "architecture": "amd64",
+        "version": "2:1.3.4-1+b1"
+      },
+      "libxml2:amd64": {
+        "architecture": "amd64",
+        "version": "2.9.14+dfsg-1.3~deb12u6"
+      },
+      "libxrender1:amd64": {
+        "architecture": "amd64",
+        "version": "1:0.9.10-1.1"
+      },
+      "libxxhash0:amd64": {
+        "architecture": "amd64",
+        "version": "0.8.1-1"
+      },
+      "libzstd1:amd64": {
+        "architecture": "amd64",
+        "version": "1.5.4+dfsg2-5"
+      },
+      "login": {
+        "architecture": "amd64",
+        "version": "1:4.13+dfsg1-1+deb12u2"
+      },
+      "logsave": {
+        "architecture": "amd64",
+        "version": "1.47.0-2+b2"
+      },
+      "mawk": {
+        "architecture": "amd64",
+        "version": "1.3.4.20200120-3.1"
+      },
+      "mount": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "ncurses-base": {
+        "architecture": "all",
+        "version": "6.4-4"
+      },
+      "ncurses-bin": {
+        "architecture": "amd64",
+        "version": "6.4-4"
+      },
+      "netbase": {
+        "architecture": "all",
+        "version": "6.4"
+      },
+      "openssl": {
+        "architecture": "amd64",
+        "version": "3.0.22-1~deb12u2"
+      },
+      "passwd": {
+        "architecture": "amd64",
+        "version": "1:4.13+dfsg1-1+deb12u2"
+      },
+      "perl-base": {
+        "architecture": "amd64",
+        "version": "5.36.0-7+deb12u4"
+      },
+      "readline-common": {
+        "architecture": "all",
+        "version": "8.2-1.3"
+      },
+      "sed": {
+        "architecture": "amd64",
+        "version": "4.9-1+deb12u1"
+      },
+      "sysvinit-utils": {
+        "architecture": "amd64",
+        "version": "3.06-4"
+      },
+      "tar": {
+        "architecture": "amd64",
+        "version": "1.34+dfsg-1.2+deb12u1"
+      },
+      "tesseract-ocr": {
+        "architecture": "amd64",
+        "version": "5.3.0-2"
+      },
+      "tesseract-ocr-eng": {
+        "architecture": "all",
+        "version": "1:4.1.0-2"
+      },
+      "tesseract-ocr-osd": {
+        "architecture": "all",
+        "version": "1:4.1.0-2"
+      },
+      "tzdata": {
+        "architecture": "all",
+        "version": "2026e-0+deb12u1"
+      },
+      "usr-is-merged": {
+        "architecture": "all",
+        "version": "37~deb12u1"
+      },
+      "util-linux": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "util-linux-extra": {
+        "architecture": "amd64",
+        "version": "2.38.1-5+deb12u3"
+      },
+      "zlib1g:amd64": {
+        "architecture": "amd64",
+        "version": "1:1.2.13.dfsg-1"
+      }
+    },
+    "parserExecuted": false
+  },
+  "experiment": {
+    "allExpectedTokensRecovered": true,
+    "digitalGeneratorSha256": "d916c985c8b9dbf68d791982df096a051a12ecd29e81cc984b4bf2f142cc71ac",
+    "limitations": "English clean synthetic raster only; no skew/noise/multilingual/table/real scan accuracy, API attachment, human acceptance or product approval",
+    "malformedInputRejected": true,
+    "originalScanSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
+    "originalUnchanged": true,
+    "runs": [
+      [
+        {
+          "cumulativeChildrenPeakRssKiB": 92692,
+          "expectedTokens": 17,
+          "height": 1584,
+          "inputPngSha256": "a866f803b1b65a91ec589ccc70a3b400f0f1b2992538b565a45c4bf2a642cc91",
+          "matchedTokens": 17,
+          "observedTokens": 17,
+          "page": 1,
+          "rawTsvSha256": "19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7",
+          "renderScale": 2,
+          "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
+          "wallSeconds": 0.3045685029999845,
+          "width": 1224,
+          "words": [
+            {
+              "confidence": 93.275597,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                61.5,
+                121,
+                72.5
+              ],
+              "pixelBox": [
+                98,
+                123,
+                242,
+                145
+              ],
+              "text": "FICTIONAL"
+            },
+            {
+              "confidence": 92.467827,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                125.5,
+                61.5,
+                253,
+                72.5
+              ],
+              "pixelBox": [
+                251,
+                123,
+                506,
+                145
+              ],
+              "text": "SYN-SUPPLIER-001"
+            },
+            {
+              "confidence": 96.313828,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                89.5,
+                134.5,
+                100.5
+              ],
+              "pixelBox": [
+                98,
+                179,
+                269,
+                201
+              ],
+              "text": "NORTHSTAR"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                140,
+                89.5,
+                180.5,
+                100.5
+              ],
+              "pixelBox": [
+                280,
+                179,
+                361,
+                201
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                185.5,
+                89.5,
+                253.5,
+                100.5
+              ],
+              "pixelBox": [
+                371,
+                179,
+                507,
+                201
+              ],
+              "text": "SUPPLIER"
+            },
+            {
+              "confidence": 96.154778,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                48.5,
+                117.5,
+                133.5,
+                128.5
+              ],
+              "pixelBox": [
+                97,
+                235,
+                267,
+                257
+              ],
+              "text": "OWNERSHIP"
+            },
+            {
+              "confidence": 96.154778,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                139,
+                117.5,
+                237,
+                128.5
+              ],
+              "pixelBox": [
+                278,
+                235,
+                474,
+                257
+              ],
+              "text": "DECLARATION"
+            },
+            {
+              "confidence": 96.246414,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                242,
+                118,
+                312.5,
+                128.5
+              ],
+              "pixelBox": [
+                484,
+                236,
+                625,
+                257
+              ],
+              "text": "2026-10-25"
+            },
+            {
+              "confidence": 96.682854,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                48,
+                145.5,
+                91.5,
+                156.5
+              ],
+              "pixelBox": [
+                96,
+                291,
+                183,
+                313
+              ],
+              "text": "ATLAS"
+            },
+            {
+              "confidence": 95.084518,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                97,
+                145.5,
+                137.5,
+                156.5
+              ],
+              "pixelBox": [
+                194,
+                291,
+                275,
+                313
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 96.261375,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                143,
+                145.5,
+                214.5,
+                156.5
+              ],
+              "pixelBox": [
+                286,
+                291,
+                429,
+                313
+              ],
+              "text": "HOLDINGS"
+            },
+            {
+              "confidence": 96.110886,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                220.5,
+                146,
+                242,
+                156.5
+              ],
+              "pixelBox": [
+                441,
+                292,
+                484,
+                313
+              ],
+              "text": "100"
+            },
+            {
+              "confidence": 96.110886,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                247.5,
+                145.5,
+                313,
+                156.5
+              ],
+              "pixelBox": [
+                495,
+                291,
+                626,
+                313
+              ],
+              "text": "PERCENT"
+            }
+          ]
+        },
+        {
+          "cumulativeChildrenPeakRssKiB": 92692,
+          "expectedTokens": 22,
+          "height": 1584,
+          "inputPngSha256": "570267430c18ca0b7114d36ded5adb4c0df830f0b2a62da36c7922ed7a44619e",
+          "matchedTokens": 22,
+          "observedTokens": 22,
+          "page": 2,
+          "rawTsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99",
+          "renderScale": 2,
+          "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
+          "wallSeconds": 0.36557445799999755,
+          "width": 1224,
+          "words": [
+            {
+              "confidence": 93.275597,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                61.5,
+                121,
+                72.5
+              ],
+              "pixelBox": [
+                98,
+                123,
+                242,
+                145
+              ],
+              "text": "FICTIONAL"
+            },
+            {
+              "confidence": 92.467827,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                125.5,
+                61.5,
+                253,
+                72.5
+              ],
+              "pixelBox": [
+                251,
+                123,
+                506,
+                145
+              ],
+              "text": "SYN-SUPPLIER-001"
+            },
+            {
+              "confidence": 96.313828,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                89.5,
+                134.5,
+                100.5
+              ],
+              "pixelBox": [
+                98,
+                179,
+                269,
+                201
+              ],
+              "text": "NORTHSTAR"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                140,
+                89.5,
+                180.5,
+                100.5
+              ],
+              "pixelBox": [
+                280,
+                179,
+                361,
+                201
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                185.5,
+                89.5,
+                253.5,
+                100.5
+              ],
+              "pixelBox": [
+                371,
+                179,
+                507,
+                201
+              ],
+              "text": "SUPPLIER"
+            },
+            {
+              "confidence": 96.688118,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                117.5,
+                119,
+                128.5
+              ],
+              "pixelBox": [
+                98,
+                235,
+                238,
+                257
+              ],
+              "text": "REGISTER"
+            },
+            {
+              "confidence": 96.660568,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                124.5,
+                117.5,
+                188.5,
+                128.5
+              ],
+              "pixelBox": [
+                249,
+                235,
+                377,
+                257
+              ],
+              "text": "EXTRACT"
+            },
+            {
+              "confidence": 96.781723,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                193,
+                118,
+                261.5,
+                128.5
+              ],
+              "pixelBox": [
+                386,
+                236,
+                523,
+                257
+              ],
+              "text": "2026-09-01"
+            },
+            {
+              "confidence": 96.648407,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                48,
+                145.5,
+                91.5,
+                156.5
+              ],
+              "pixelBox": [
+                96,
+                291,
+                183,
+                313
+              ],
+              "text": "ATLAS"
+            },
+            {
+              "confidence": 96.238968,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                97,
+                145.5,
+                137.5,
+                156.5
+              ],
+              "pixelBox": [
+                194,
+                291,
+                275,
+                313
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 96.08287,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                143,
+                145.5,
+                214.5,
+                156.5
+              ],
+              "pixelBox": [
+                286,
+                291,
+                429,
+                313
+              ],
+              "text": "HOLDINGS"
+            },
+            {
+              "confidence": 95.962196,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                219.5,
+                146,
+                234,
+                156.5
+              ],
+              "pixelBox": [
+                439,
+                292,
+                468,
+                313
+              ],
+              "text": "60"
+            },
+            {
+              "confidence": 96.470612,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                239.5,
+                145.5,
+                305,
+                156.5
+              ],
+              "pixelBox": [
+                479,
+                291,
+                610,
+                313
+              ],
+              "text": "PERCENT"
+            },
+            {
+              "confidence": 96.395325,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                173.5,
+                90.5,
+                184.5
+              ],
+              "pixelBox": [
+                98,
+                347,
+                181,
+                369
+              ],
+              "text": "BIRCH"
+            },
+            {
+              "confidence": 96.355377,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                96.5,
+                173.5,
+                137,
+                184.5
+              ],
+              "pixelBox": [
+                193,
+                347,
+                274,
+                369
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 96.464485,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                142.5,
+                173.5,
+                213.5,
+                184.5
+              ],
+              "pixelBox": [
+                285,
+                347,
+                427,
+                369
+              ],
+              "text": "HOLDINGS"
+            },
+            {
+              "confidence": 96.588692,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                218.5,
+                174,
+                233.5,
+                184.5
+              ],
+              "pixelBox": [
+                437,
+                348,
+                467,
+                369
+              ],
+              "text": "40"
+            },
+            {
+              "confidence": 96.872131,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                239,
+                173.5,
+                304.5,
+                184.5
+              ],
+              "pixelBox": [
+                478,
+                347,
+                609,
+                369
+              ],
+              "text": "PERCENT"
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "cumulativeChildrenPeakRssKiB": 92692,
+          "expectedTokens": 17,
+          "height": 1584,
+          "inputPngSha256": "a866f803b1b65a91ec589ccc70a3b400f0f1b2992538b565a45c4bf2a642cc91",
+          "matchedTokens": 17,
+          "observedTokens": 17,
+          "page": 1,
+          "rawTsvSha256": "19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7",
+          "renderScale": 2,
+          "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
+          "wallSeconds": 0.3009099550000087,
+          "width": 1224,
+          "words": [
+            {
+              "confidence": 93.275597,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                61.5,
+                121,
+                72.5
+              ],
+              "pixelBox": [
+                98,
+                123,
+                242,
+                145
+              ],
+              "text": "FICTIONAL"
+            },
+            {
+              "confidence": 92.467827,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                125.5,
+                61.5,
+                253,
+                72.5
+              ],
+              "pixelBox": [
+                251,
+                123,
+                506,
+                145
+              ],
+              "text": "SYN-SUPPLIER-001"
+            },
+            {
+              "confidence": 96.313828,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                89.5,
+                134.5,
+                100.5
+              ],
+              "pixelBox": [
+                98,
+                179,
+                269,
+                201
+              ],
+              "text": "NORTHSTAR"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                140,
+                89.5,
+                180.5,
+                100.5
+              ],
+              "pixelBox": [
+                280,
+                179,
+                361,
+                201
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                185.5,
+                89.5,
+                253.5,
+                100.5
+              ],
+              "pixelBox": [
+                371,
+                179,
+                507,
+                201
+              ],
+              "text": "SUPPLIER"
+            },
+            {
+              "confidence": 96.154778,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                48.5,
+                117.5,
+                133.5,
+                128.5
+              ],
+              "pixelBox": [
+                97,
+                235,
+                267,
+                257
+              ],
+              "text": "OWNERSHIP"
+            },
+            {
+              "confidence": 96.154778,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                139,
+                117.5,
+                237,
+                128.5
+              ],
+              "pixelBox": [
+                278,
+                235,
+                474,
+                257
+              ],
+              "text": "DECLARATION"
+            },
+            {
+              "confidence": 96.246414,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                242,
+                118,
+                312.5,
+                128.5
+              ],
+              "pixelBox": [
+                484,
+                236,
+                625,
+                257
+              ],
+              "text": "2026-10-25"
+            },
+            {
+              "confidence": 96.682854,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                48,
+                145.5,
+                91.5,
+                156.5
+              ],
+              "pixelBox": [
+                96,
+                291,
+                183,
+                313
+              ],
+              "text": "ATLAS"
+            },
+            {
+              "confidence": 95.084518,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                97,
+                145.5,
+                137.5,
+                156.5
+              ],
+              "pixelBox": [
+                194,
+                291,
+                275,
+                313
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 96.261375,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                143,
+                145.5,
+                214.5,
+                156.5
+              ],
+              "pixelBox": [
+                286,
+                291,
+                429,
+                313
+              ],
+              "text": "HOLDINGS"
+            },
+            {
+              "confidence": 96.110886,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                220.5,
+                146,
+                242,
+                156.5
+              ],
+              "pixelBox": [
+                441,
+                292,
+                484,
+                313
+              ],
+              "text": "100"
+            },
+            {
+              "confidence": 96.110886,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                247.5,
+                145.5,
+                313,
+                156.5
+              ],
+              "pixelBox": [
+                495,
+                291,
+                626,
+                313
+              ],
+              "text": "PERCENT"
+            }
+          ]
+        },
+        {
+          "cumulativeChildrenPeakRssKiB": 92692,
+          "expectedTokens": 22,
+          "height": 1584,
+          "inputPngSha256": "570267430c18ca0b7114d36ded5adb4c0df830f0b2a62da36c7922ed7a44619e",
+          "matchedTokens": 22,
+          "observedTokens": 22,
+          "page": 2,
+          "rawTsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99",
+          "renderScale": 2,
+          "sourcePdfSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
+          "wallSeconds": 0.30794319099999257,
+          "width": 1224,
+          "words": [
+            {
+              "confidence": 93.275597,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                61.5,
+                121,
+                72.5
+              ],
+              "pixelBox": [
+                98,
+                123,
+                242,
+                145
+              ],
+              "text": "FICTIONAL"
+            },
+            {
+              "confidence": 92.467827,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                125.5,
+                61.5,
+                253,
+                72.5
+              ],
+              "pixelBox": [
+                251,
+                123,
+                506,
+                145
+              ],
+              "text": "SYN-SUPPLIER-001"
+            },
+            {
+              "confidence": 96.313828,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                89.5,
+                134.5,
+                100.5
+              ],
+              "pixelBox": [
+                98,
+                179,
+                269,
+                201
+              ],
+              "text": "NORTHSTAR"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                140,
+                89.5,
+                180.5,
+                100.5
+              ],
+              "pixelBox": [
+                280,
+                179,
+                361,
+                201
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 94.486023,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                185.5,
+                89.5,
+                253.5,
+                100.5
+              ],
+              "pixelBox": [
+                371,
+                179,
+                507,
+                201
+              ],
+              "text": "SUPPLIER"
+            },
+            {
+              "confidence": 96.688118,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                117.5,
+                119,
+                128.5
+              ],
+              "pixelBox": [
+                98,
+                235,
+                238,
+                257
+              ],
+              "text": "REGISTER"
+            },
+            {
+              "confidence": 96.660568,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                124.5,
+                117.5,
+                188.5,
+                128.5
+              ],
+              "pixelBox": [
+                249,
+                235,
+                377,
+                257
+              ],
+              "text": "EXTRACT"
+            },
+            {
+              "confidence": 96.781723,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                193,
+                118,
+                261.5,
+                128.5
+              ],
+              "pixelBox": [
+                386,
+                236,
+                523,
+                257
+              ],
+              "text": "2026-09-01"
+            },
+            {
+              "confidence": 96.648407,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                48,
+                145.5,
+                91.5,
+                156.5
+              ],
+              "pixelBox": [
+                96,
+                291,
+                183,
+                313
+              ],
+              "text": "ATLAS"
+            },
+            {
+              "confidence": 96.238968,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                97,
+                145.5,
+                137.5,
+                156.5
+              ],
+              "pixelBox": [
+                194,
+                291,
+                275,
+                313
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 96.08287,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                143,
+                145.5,
+                214.5,
+                156.5
+              ],
+              "pixelBox": [
+                286,
+                291,
+                429,
+                313
+              ],
+              "text": "HOLDINGS"
+            },
+            {
+              "confidence": 95.962196,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                219.5,
+                146,
+                234,
+                156.5
+              ],
+              "pixelBox": [
+                439,
+                292,
+                468,
+                313
+              ],
+              "text": "60"
+            },
+            {
+              "confidence": 96.470612,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                239.5,
+                145.5,
+                305,
+                156.5
+              ],
+              "pixelBox": [
+                479,
+                291,
+                610,
+                313
+              ],
+              "text": "PERCENT"
+            },
+            {
+              "confidence": 96.395325,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                49,
+                173.5,
+                90.5,
+                184.5
+              ],
+              "pixelBox": [
+                98,
+                347,
+                181,
+                369
+              ],
+              "text": "BIRCH"
+            },
+            {
+              "confidence": 96.355377,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                96.5,
+                173.5,
+                137,
+                184.5
+              ],
+              "pixelBox": [
+                193,
+                347,
+                274,
+                369
+              ],
+              "text": "DEMO"
+            },
+            {
+              "confidence": 96.464485,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                142.5,
+                173.5,
+                213.5,
+                184.5
+              ],
+              "pixelBox": [
+                285,
+                347,
+                427,
+                369
+              ],
+              "text": "HOLDINGS"
+            },
+            {
+              "confidence": 96.588692,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                218.5,
+                174,
+                233.5,
+                184.5
+              ],
+              "pixelBox": [
+                437,
+                348,
+                467,
+                369
+              ],
+              "text": "40"
+            },
+            {
+              "confidence": 96.872131,
+              "origin": "TOPLEFT",
+              "pdfBox": [
+                239,
+                173.5,
+                304.5,
+                184.5
+              ],
+              "pixelBox": [
+                478,
+                347,
+                609,
+                369
+              ],
+              "text": "PERCENT"
+            }
+          ]
+        }
+      ]
+    ],
+    "sourceRevision": "Debian tesseract-ocr 5.3.0-2; not the catalogue source-head pin",
+    "status": "fictional_scanned_supplier_measured"
+  },
+  "approval": "research_only_not_product_or_licence_approval",
+  "remaining": "Pinned-source Tesseract comparison, Tika/OCRmyPDF comparisons, noise/skew/multilingual/table corpus and durable OCR lineage/API acceptance remain open"
+}

@@ -1,6 +1,6 @@
 # Fictional scanned-supplier OCR baseline
 
-29 October 2026. Research-only Tesseract comparison; actual hosted execution pending.
+29 October 2026. Research-only Tesseract comparison; actual clean-scan hosted baseline measured.
 
 ## Why this experiment
 
@@ -31,8 +31,14 @@ python3 tools/experiment_tesseract_supplier.py
 
 It prints a bounded JSON receipt with image identity, isolation checks, package/native/model inventory, per-page coordinates, extraction measurements and explicit limits. Third-party packages, binaries, model data and temporary PDFs remain in ignored cache/container storage. Only original first-party scripts, tests and metadata may be committed.
 
-Local Python compilation, foundation validation and 107 Python tests pass. The new tests validate deterministic digital-versus-raster fixture construction and TSV geometry rejection; they do not execute OCR. Actual hosted results remain pending until their exact receipt is recorded.
+Local Python compilation, foundation validation and 107 Python tests pass. The new tests validate deterministic digital-versus-raster fixture construction and TSV geometry rejection; they do not execute OCR.
+
+Actual [Research #28](https://github.com/BlackStateGroup/inveos/actions/runs/40901923672), job 123546231244, passed at `4a9a92af0051e1533a3daa493bb47e14b87282b4`, tree `08e223e4a9e7684f2814dd63bbde6431b2e912ad`. The [machine-readable receipt](scanned-supplier-ocr-receipt.json) preserves the full package/native/model/notice inventory and word coordinates. Both runs recovered all 17 expected tokens on page one and all 22 on page two, with identical respective TSV digests `19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7` and `c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99`. OCR calls took approximately 0.30–0.37 seconds per page on that disposable host; these are not production capacity estimates. The scan SHA-256 was `9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0`, unchanged after OCR. The scan had no hidden text layer, malformed input failed, all containers were removed and isolation/resource probes passed. The runtime inventory records 161 packages and 58 native/model files with owners and notice hashes. No general accuracy, source-head equivalence or licence/security approval follows from those counts.
+
+The existing pinned Docling/native/raster and actual leased-worker/database failure tests also passed in that research run. [Checks #195](https://github.com/BlackStateGroup/inveos/actions/runs/40901923789), job 123546231507, passed all 234 Node and 107 Python tests with zero failures/skips, plus lint/types/build/reference, actual PostgreSQL/browser and host isolation. A follow-up adds an in-container deadline that survives host-attach loss; its separate hosted verification must be recorded before claiming that changed revision is tested.
 
 ## Reproducibility and remaining approval
 
 Root OCR/data package versions and the base image are fixed. Transitive apt resolution is measured in the resulting inventory, not yet captured in a prior complete package-archive lock; a later apt resolution must not be represented as the same runtime without comparing its actual image/file hashes. Registry publication and application incorporation are not authorised by this experiment. Before choosing a shipping runtime, lock the full package/data closure, retain its required notices, audit vulnerabilities and build/source provenance, review all licence obligations, broaden the corpus and qualify the durable job/OCR citation boundary. Existing production/legal/privacy and real-device gates remain open.
+
+The actual provider notices contain numerous component-specific terms, including copyleft, advertising-clause and unclear `noderivs`/`none`/public-domain labels. These package-wide labels do not establish which terms apply to each loaded binary. File-by-file applicability, source obligations and redistribution clearance remain unresolved; do not promote the packaged research image to an approved application runtime merely because the primary Tesseract/data notices say Apache-2.0.
