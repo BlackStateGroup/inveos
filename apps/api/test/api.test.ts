@@ -4035,3 +4035,13 @@ test('real browser retains work discussion corrections and per-version mentions 
 
  });
 });
+
+test('downgraded client cannot acknowledge an internal mention retained from their investigator role',async()=>{
+ context.demo=await issueTestSession(demoUserId);const kase=await createCase(),work=(await createWork(kase.id)).json(),actor=await createMember(demoTenantId,'investigator','Fictional downgraded colleague');
+ await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,kase.id,actor]);const session=await issueTestSession(actor),base=`/api/cases/${kase.id}/work/${work.id}/comments`,id=randomUUID();
+ const saved=await request('POST',base,context.demo!,{payload:{id,body:'Fictional internal discussion for an investigator.',mentions:[actor],reason:'Fictional role-change acceptance'}});assert.equal(saved.statusCode,200,saved.body);
+ await context.schemaAdminPool!.query("UPDATE memberships SET role='client' WHERE tenant_id=$1 AND user_id=$2",[demoTenantId,actor]);
+ assertError(await request('GET',`/api/cases/${kase.id}/work-mentions`,session),403);
+ assertError(await request('POST',base+'/'+id+'/read',session,{payload:{version:1}}),403);
+ assert.equal((await context.pool!.query('SELECT count(*)::int n FROM work_mention_reads WHERE comment_id=$1 AND user_id=$2',[id,actor])).rows[0].n,0);
+});
