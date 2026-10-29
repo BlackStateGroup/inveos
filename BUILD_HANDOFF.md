@@ -24,7 +24,7 @@ Encryption covers original objects only. Database metadata/derivatives/reports, 
 
 Feature branch `feat/provider-identity-sessions` carries the post-merge custody receipts plus substantive opt-in provider sign-in. Migration 033 maps a verified issuer/subject to an existing membership; no token role or email enrolment. One-use browser-bound state, S256 PKCE, pinned RS256 validation, required assurance claims, profile/epoch/session revocation, administrative binding history and actual web sign-in are implemented. No upstream dependency/artifact incorporated. See docs/83 for configuration, limited-profile decision, licence-file observations and explicit remaining acceptance.
 
-Local HTTP/RSA protocol and protected-configuration tests passed (2 tests covering adverse variants). Hosted PostgreSQL/API/browser tests are written but pending. Do not mark real provider or MFA acceptance complete from the fictional protocol fixture.
+Local HTTP/RSA protocol and protected-configuration tests passed (2 tests covering adverse variants). Initial hosted Checks #221 at `db65c0e9` passed 252/253 Node and 111 Python; the database/session integration passed, but browser return/restoration timed out. Do not treat this as a passing increment. A follow-up adds client-portal sign-in, authenticated profile display, cross-tenant/case/logout/mode tests and browser diagnostics; hosted acceptance pending. Do not mark real provider or MFA acceptance complete from the fictional protocol fixture.
 
 ## Next substantive execution
 

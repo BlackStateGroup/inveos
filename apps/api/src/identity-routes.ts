@@ -35,15 +35,15 @@ export function identityRoutes(app:FastifyInstance,options:{pool:Pool;identity?:
    const subject=await provider.exchange(query.code,query.state,secret),token=randomBytes(32).toString('base64url'),csrf=randomBytes(32).toString('base64url'),id=randomUUID();
    const expires=new Date(Date.now()+options.sessionTtlSeconds*1000);
    const created=await inTransaction(options.pool,async client=>{
-    const binding=await client.query(`SELECT b.id,b.tenant_id,b.user_id FROM identity_bindings b JOIN memberships m ON m.tenant_id=b.tenant_id AND m.user_id=b.user_id WHERE b.issuer=$1 AND b.subject=$2 AND b.revoked_at IS NULL`,[provider.issuer,subject]);const row=binding.rows[0];if(!row)return false;
+    const binding=await client.query(`SELECT b.id,b.tenant_id,b.user_id,m.role FROM identity_bindings b JOIN memberships m ON m.tenant_id=b.tenant_id AND m.user_id=b.user_id WHERE b.issuer=$1 AND b.subject=$2 AND b.revoked_at IS NULL`,[provider.issuer,subject]);const row=binding.rows[0];if(!row)return false;
     await client.query('INSERT INTO sessions (token_hash,id,csrf_hash,tenant_id,user_id,expires_at,epoch,identity_id,identity_profile_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[identityHash(token),id,identityHash(csrf),row.tenant_id,row.user_id,expires,options.epoch,row.id,provider.fingerprint]);
-    await client.query(`INSERT INTO audit_events (id,tenant_id,case_id,actor_user_id,action,entity_type,entity_id,summary) VALUES ($1,$2,NULL,$3,'session.started','session',$4,'Pinned provider sign-in; server membership applied')`,[randomUUID(),row.tenant_id,row.user_id,id]);return true;
+    await client.query(`INSERT INTO audit_events (id,tenant_id,case_id,actor_user_id,action,entity_type,entity_id,summary) VALUES ($1,$2,NULL,$3,'session.started','session',$4,'Pinned provider sign-in; server membership applied')`,[randomUUID(),row.tenant_id,row.user_id,id]);return row.role as string;
    });
    if(!created)return deny();
    // Lax allows the top-level provider redirect to load its first authenticated workspace.
    reply.setCookie('inveos_session',token,{path:'/',httpOnly:true,sameSite:'lax',secure:provider.secure,expires});
    reply.setCookie('inveos_csrf',csrf,{path:'/',httpOnly:false,sameSite:'strict',secure:provider.secure,expires});
-   return reply.redirect(provider.returnUri);
+   return reply.redirect(created==='client'?new URL('/portal',provider.returnUri).href:provider.returnUri);
   }catch{return deny();}
  });
 }

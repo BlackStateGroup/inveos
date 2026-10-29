@@ -703,7 +703,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           [actor.tokenHash],
         );
         if (revoked.rows[0]) {
-          await writeAudit(client, actor, null, 'session.ended', 'session', revoked.rows[0].id, 'Local demo session ended');
+          await writeAudit(client, actor, null, 'session.ended', 'session', revoked.rows[0].id, 'Session ended');
         }
       });
       reply.clearCookie(sessionCookieName, {path: '/', sameSite: 'strict'});
@@ -728,6 +728,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return {revokedCount:revoked.rows.length,moreRemaining:more.rows[0].remaining};
     });
   });
+
+  app.get('/api/session/me',{preHandler:authenticate},async request=>({name:request.actor!.displayName,role:request.actor!.role,mode:options.identity?'provider':'demo'}));
 
   app.get('/api/workspace', {preHandler: authenticate}, async (request, reply) => {
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
