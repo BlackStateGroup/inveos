@@ -2,6 +2,8 @@
 
 **70 public repository candidates** checked on **26 October 2026**, with **22 pinned reference revisions**. This is an initial landscape, not an exhaustive search of GitHub or security certification. GitHub licence metadata is a discovery aid, not an incorporation decision.
 
+27 October follow-up: the catalogue remains 70 candidates; there are now **23 pins**, including Apache Tika. Three document-processing checkouts were acquired locally. See the [document processing decision](document_processing/DECISION.md) and [source audit](document_processing/source-audit.json). No third-party dependency is approved by this change.
+
 ## Top research workstreams
 
 **Core company/document investigation:** OpenAleph, FollowTheMoney, Docling, Tika, OCRmyPDF. Study document import, unique entity identifiers, relationship provenance and exact source spans.

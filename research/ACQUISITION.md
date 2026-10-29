@@ -10,6 +10,10 @@ We have **70 catalogue entries** and **22 revision-pinned references** in this f
 
 This package includes original analysis, URLs, GitHub-reported licence metadata and observed full commit IDs for selected projects. **It does not include third-party source trees, downloaded models, proprietary NOIR/Recon source, or operational datasets.** No dependency security audit or production integration is claimed.
 
+### 27 October document-processing follow-up
+
+Docling, Apache Tika and OCRmyPDF were acquired at exact revisions into the ignored local cache and inspected without executing their code. Tika adds a 23rd pin. The public repository contains only original adapter code, tests, analysis and source-file hashes. See [decision and reproduction instructions](document_processing/DECISION.md). Parser benchmarks remain unrun because namespace isolation is unavailable in the execution environment. The preceding acquisition status describes the original 26 October package.
+
 ## Responsible research flow
 
 1. Search official GitHub repository metadata and upstream docs; verify the repository exists, is maintained and has relevant functionality.
