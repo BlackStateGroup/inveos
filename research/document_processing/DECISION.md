@@ -1,16 +1,21 @@
 # Document processing: bounded research decision
 
-27 October 2026. Based on merged application commit `95b5c35` (PR #1).
-Status: **research spike; no production dependency approval, parser benchmark or live collection**.
+Updated 29 October 2026. The original 27 October source-informed decision below is retained as history. Current status: **bounded, actually tested fictional research integration; no shipping/runtime, legal/licence or production approval**.
 
-## Current follow-up — 29 October 2026
+## Current integrated evidence — 29 October 2026
 
-The 27 October statements below are historical. Exact-source native Docling has since run against fictional PDFs in qualified isolation, with durable research jobs and page/region review; see [native experiment](../runtime_artifacts/NATIVE_EXPERIMENT.md) and [boundary](../runtime_artifacts/NATIVE_BOUNDARY.md). A separately identified packaged Tesseract baseline has now read an actual raster-only fictional supplier PDF twice: all 39 expected tokens were recovered, output fingerprints repeated, original bytes stayed unchanged and malformed input failed. See [measured scan experiment and inventory](../runtime_artifacts/SCANNED_SUPPLIER_OCR.md). This is a clean English fixture, not general OCR accuracy or completion of the supplier/application acceptance scenario.
+Draft [PR #72](https://github.com/BlackStateGroup/inveos/pull/72), implementation `f57a05a082c35a89e6d3d29a55944bed4e0c6a8b`, passed Research #35 / Checks #202: actual isolated OCR jobs and separate digital extraction, immutable PNG/raw TSV/normalised lineage, original-page browser comparison, independent scripted review records, frozen report/exhibits, independent Python replay and approved restricted fictional PDF delivery/acknowledgement/revocation. All 239 Node/108 Python tests passed, zero failures/skips, plus actual worker/raster/isolation acceptance. [Exact receipt](../runtime_artifacts/supplier-case-acceptance.json) and [contract/commands](../../docs/79_SCANNED_DOCUMENT_LINEAGE.md).
+
+Engineering choice: keep Docling for the qualified native digital-text lab; use the separately versioned Tesseract scan lab for the clean supplier experiment. Its Python bundle now contains only two previously audited, hash-locked Pillow/PDFium wheels, with recorded dependency/notice metadata; the worker checks all 161 installed versions and 58 native/model/provider-notice artifacts inside isolation before each OCR run. No root licence label, content lock or process boundary clears provider/source obligations. Complete archive/source locking, legal/licence approvals, the representative corpus, OCRmyPDF and Tika comparisons remain open. Do not ship the broad research image automatically. Structured questions/hypotheses still need typed links to reviewed document findings; scripted role attestations do not prove professional human acceptance.
+
+## Prior measured follow-up — 29 October 2026
+
+The 27 October statements below are historical. Exact-source native Docling has since run against fictional PDFs in qualified isolation, with durable research jobs and page/region review; see [native experiment](../runtime_artifacts/NATIVE_EXPERIMENT.md) and [boundary](../runtime_artifacts/NATIVE_BOUNDARY.md). A separately identified packaged Tesseract baseline has now read an actual raster-only fictional supplier PDF twice: all 39 expected tokens were recovered, output fingerprints repeated, original bytes stayed unchanged and malformed input failed. See [measured scan experiment and inventory](../runtime_artifacts/SCANNED_SUPPLIER_OCR.md). That measurement was a clean English fixture; it did not establish general OCR accuracy or the later integrated case acceptance described above.
 
 | Component | Engineering disposition after the measured experiments |
 |---|---|
 | Pinned native Docling | Continue the isolated digital-PDF research path with its existing precise page/region contract; keep runtime, licence and production approvals separate. |
-| Packaged Tesseract 5.3.0-2 baseline | Useful measured OCR reference, not a shipping selection or source-head equivalent. Its 58 native/model files and broad component notices make the full packaged image unsuitable for automatic adoption. Prefer evaluating a minimal, fully locked isolated OCR runtime and a separately versioned result/lineage adapter before application attachment. |
+| Packaged Tesseract 5.3.0-2 baseline | Useful measured OCR reference, not a shipping selection or source-head equivalent. Its 58 native/model files and broad component notices make the full packaged image unsuitable for automatic adoption. The separately versioned lab adapter and two-wheel bundle are now actually tested above; complete archive/source closure and runtime/licence approvals still precede shipping incorporation. |
 | Pinned OCRmyPDF | Still an isolated comparison candidate for searchable scan derivatives. The direct Tesseract experiment does not validate OCRmyPDF, PDF/A transformation, sidecar completeness or its two-stage provenance. |
 | Pinned Tika | Still a reduced-parser document/metadata comparison candidate. No actual Tika benchmark or precise-region qualification is claimed. |
 

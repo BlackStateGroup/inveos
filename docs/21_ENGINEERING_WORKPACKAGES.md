@@ -2,6 +2,8 @@
 
 Deliver each bounded slice as a separate draft pull request with tests and evidence. Prefer narrowly scoped work, clean integration and no change to production by default. The merged synthetic application partially implements several packages; it does not complete their production exit gates. Use the [delivery plan and capability ledger](24_DELIVERY_PLAN.md) for the complete scope, milestone and evidence states.
 
+The current execution order and verified status are maintained in the [canonical remaining delivery plan](71_REMAINING_DELIVERY_PLAN.md) and [current handoff](../BUILD_HANDOFF.md). The dated reconciled baseline below is historical; use the later exact receipts rather than treating its old draft labels as current.
+
 ## Reconciled baseline — 27 October 2026
 
 PR #1 (`95b5c35`) is merged. PR #2 (`36081f1`) is a separate draft research slice; do not count its contract as a running parser or as merged application code. No deployment or pilot acceptance is claimed.

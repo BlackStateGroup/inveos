@@ -1,0 +1,136 @@
+{
+  "format": "inveos_supplier_case_acceptance_receipt_v1",
+  "verification": {
+    "date": "2026-10-29",
+    "commit": "f57a05a082c35a89e6d3d29a55944bed4e0c6a8b",
+    "tree": "d41ea33e870f2cc5cf9cfd303c1938260d33cc45",
+    "pr": 72,
+    "research": {
+      "run": 40910846123,
+      "number": 35,
+      "job": 123578071521,
+      "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40910846123"
+    },
+    "checks": {
+      "run": 40910846195,
+      "number": 202,
+      "job": 123578072525,
+      "url": "https://github.com/BlackStateGroup/inveos/actions/runs/40910846195"
+    },
+    "pythonTests": 108,
+    "nodeTests": 239,
+    "failures": 0,
+    "skipped": 0,
+    "actualSupplierTests": 1,
+    "actualRasterTests": 1,
+    "actualLeasedWorkerTests": 5
+  },
+  "runtime": {
+    "imageId": "sha256:5b50e335693cb2f97814af3229884dcc9b374b350e91816189f7df5a35dda168",
+    "artifactLock": "bfcdba20feb42105845bbce39b243925dd12133e9358630ab1384125c84e1172",
+    "wheelInventory": "2b796619e4ab39da1d75f6c99d77c5a15d4453fa89bf478764ab7a608e6c7116",
+    "qualification": {
+      "status": "host_probe_passed",
+      "imageId": "sha256:5b50e335693cb2f97814af3229884dcc9b374b350e91816189f7df5a35dda168",
+      "repoDigests": [],
+      "checks": [
+        "boundaries",
+        "timeout",
+        "stdout_limit",
+        "stderr_limit",
+        "memory",
+        "pids",
+        "cpu"
+      ],
+      "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+      "parserExecuted": false,
+      "imageVolumeOverrides": [],
+      "profile": "runtime-1g",
+      "resourceEvidence": {
+        "oomKilled": true,
+        "pids": 2,
+        "cpu": 1387591
+      },
+      "combinedCaptureLimitBytes": 16384,
+      "daemonLogging": false,
+      "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+    },
+    "installedPackageVersions": 161,
+    "selectedNativeModelNoticeArtifacts": 58,
+    "detachedDeadlineVerified": true
+  },
+  "supplier": {
+    "scanSha256": "575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393",
+    "digitalSha256": "7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e",
+    "ocrRawDigest": "b9d3b563a9dc3630e545c8b7c17c402e76b431f7600659d1cea8c54a137803f3",
+    "ocrDerivativeDigest": "aa414e278d379c16e9e3b3a4c8e0f93d57b451e2ccea372aca9a6bcaa2a4fd99",
+    "ocrWords": 18,
+    "documentFindings": 2,
+    "independentPackageVerified": true,
+    "independentPdfVerified": true,
+    "browserOcrReload": true,
+    "browserOriginalPageComparison": true,
+    "restrictedPdfDelivery": true,
+    "acknowledgementAndRevocation": true,
+    "cancelledAttachmentDenied": true,
+    "realProfessionalReview": false
+  },
+  "cleanBenchmark": {
+    "sourceSha256": "9da2e432913806c632f27cb0d017f1315b8f8928f1719cc3422d693de4f15be0",
+    "originalUnchanged": true,
+    "malformedInputRejected": true,
+    "allExpectedTokensRecovered": true,
+    "runs": [
+      [
+        {
+          "page": 1,
+          "inputPngSha256": "a866f803b1b65a91ec589ccc70a3b400f0f1b2992538b565a45c4bf2a642cc91",
+          "rawTsvSha256": "19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7",
+          "expectedTokens": 17,
+          "matchedTokens": 17,
+          "observedTokens": 17,
+          "wallSeconds": 0.4862495419999959,
+          "cumulativeChildrenPeakRssKiB": 93172
+        },
+        {
+          "page": 2,
+          "inputPngSha256": "570267430c18ca0b7114d36ded5adb4c0df830f0b2a62da36c7922ed7a44619e",
+          "rawTsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99",
+          "expectedTokens": 22,
+          "matchedTokens": 22,
+          "observedTokens": 22,
+          "wallSeconds": 0.5026674129999833,
+          "cumulativeChildrenPeakRssKiB": 93172
+        }
+      ],
+      [
+        {
+          "page": 1,
+          "inputPngSha256": "a866f803b1b65a91ec589ccc70a3b400f0f1b2992538b565a45c4bf2a642cc91",
+          "rawTsvSha256": "19c769ce9ec702c6c5615b9beaf03b010f86f6ad64e406b2861467f4ae23feb7",
+          "expectedTokens": 17,
+          "matchedTokens": 17,
+          "observedTokens": 17,
+          "wallSeconds": 0.487046461999995,
+          "cumulativeChildrenPeakRssKiB": 93172
+        },
+        {
+          "page": 2,
+          "inputPngSha256": "570267430c18ca0b7114d36ded5adb4c0df830f0b2a62da36c7922ed7a44619e",
+          "rawTsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99",
+          "expectedTokens": 22,
+          "matchedTokens": 22,
+          "observedTokens": 22,
+          "wallSeconds": 0.5048356940000076,
+          "cumulativeChildrenPeakRssKiB": 93172
+        }
+      ]
+    ]
+  },
+  "limits": [
+    "Fictional automated role attestations, not actual professional human approval",
+    "Clean English synthetic scan, not general OCR accuracy or pixel-fidelity acceptance",
+    "Research-only content lock, not full Debian archive/source closure or licence/legal/privacy approval",
+    "No production deployment, new merge, device/offline acceptance or full product completion"
+  ]
+}
