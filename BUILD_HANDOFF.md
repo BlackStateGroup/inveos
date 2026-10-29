@@ -12,7 +12,7 @@ The OCR bundle selects two previously audited wheels (Pillow 13.0.0 and pypdfium
 
 ## Verification at this checkpoint
 
-Local lint, workspace types/build, foundation validation, 107 Python tests and 32 focused Node tests pass. The new boundary tests use fabricated bytes and are not parser/accuracy evidence. Existing actual OCR receipt at #71 code `077c0904aac021faa362290d411566f876ed2229` remains valid for its unchanged benchmark only. New actual isolated worker/database/browser/supplier report and delivery tests are implemented but pending hosted execution; do not mark them passed until a fresh receipt is recorded.
+Local lint, workspace types/build, foundation validation, 108 Python tests and 32 focused Node tests pass. The new boundary tests use fabricated bytes and are not parser/accuracy evidence. Existing actual OCR receipt at #71 code `077c0904aac021faa362290d411566f876ed2229` remains valid for its unchanged benchmark only. New actual isolated worker/database/browser/supplier report and delivery tests are implemented but pending hosted execution; do not mark them passed until a fresh receipt is recorded.
 
 Use [docs/79_SCANNED_DOCUMENT_LINEAGE.md](docs/79_SCANNED_DOCUMENT_LINEAGE.md) for reproduction, trust limits and rollback. The existing research workflow runs the new actual case acceptance before removing the disposable image. Local Docker remains absent and namespace isolation denied; no parser executes on the host.
 

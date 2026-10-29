@@ -71,7 +71,7 @@ def experiment(case_acceptance=False):
         if case_acceptance:
             require(os.environ.get('INVEOS_TEST_DATABASE_URL','').endswith('/inveos_test'),'Disposable test database required')
             (cache/'tesseract-worker-qualification.json').write_text(json.dumps({**qualification,'checkedAt':datetime.now(timezone.utc).isoformat(),'artifactLock':hashlib.sha256(lock_bytes).hexdigest()}))
-            (cache/'tesseract-supplier-input.json').write_text(json.dumps({'originalScanBase64':results[1]['originalScanBase64']}))
+            (cache/'tesseract-supplier-input.json').write_text(json.dumps(results[1]['supplierSources']))
             checked=run_bounded(['node','--import','tsx','--test','--test-concurrency=1','apps/api/test/ocr-worker.integration.ts'],timeout=300,max_output=1024*1024)
             if checked.returncode:raise ValueError('Actual OCR case acceptance failed: '+checked.stdout.decode()[-20000:]+'\n'+checked.stderr.decode()[-4000:])
             acceptance=checked.stdout.decode()

@@ -34,12 +34,12 @@ The existing `docling-build-research.yml` acquires pinned artifacts as ignored d
 timeout 600s python3 tools/experiment_tesseract_supplier.py --case-acceptance
 ```
 
-The explicit case test requires the workflow's disposable PostgreSQL database, sandboxed host Chrome, built web assets, pinned caches and Docker qualification. It runs digital/native extraction and actual OCR twice; preserves quarantine/originals; exercises browser reload/inspection, independent scripted reviews, both alternative explanations, frozen two-source exhibits, separate Python verifiers, denied premature disclosure, exact PDF review/restricted fictional delivery/acknowledgement/revocation/restart and malformed-input rejection. Its role attestations are fictional automated tests, not actual professional human review.
+The explicit case test requires the workflow's disposable PostgreSQL database, sandboxed host Chrome, built web assets, pinned caches and Docker qualification. It runs a separate one-page digital declaration and one-page scanned register, digital/native extraction and actual OCR twice; preserves quarantine/originals; exercises browser reload/inspection, independent scripted reviews, both alternative explanations, frozen two-source exhibits, separate Python verifiers, denied premature disclosure, exact PDF review/restricted fictional delivery/acknowledgement/revocation/restart and malformed-input rejection. Its role attestations are fictional automated tests, not actual professional human review.
 
 For an explicit single scoped research job, the existing CLI accepts `INVEOS_DEV_LAB=1 INVEOS_RESEARCH_OCR=1` plus the documented local database/storage variables and exactly three tenant/case/job UUIDs. It reads `.research-cache/tesseract-worker-qualification.json`; there is no request-supplied image, command, background collector or new scheduler. The disposable controller removes its image tag afterwards, so requalify a retained research image before a separate manual run.
 
 ## Verification and rollback
 
-At initial publication: local checks above pass (107 Python, 32 focused Node); new hosted supplier/API/browser/worker acceptance is pending. Exact receipts belong in the current handoff after execution. Prior scan benchmark success does not prove this changed integration.
+At initial publication: local checks above pass (108 Python, 32 focused Node); new hosted supplier/API/browser/worker acceptance is pending. Exact receipts belong in the current handoff after execution. Prior scan benchmark success does not prove this changed integration.
 
 Disable lab queueing and the explicit worker to stop new work. Preserve migration 030, immutable rows and raw artifacts. Older servers/verifiers do not understand the new kind/profile and must fail closed, rather than relabelling it native text. No destructive rollback or historical derivative rewrite.
