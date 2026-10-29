@@ -106,7 +106,18 @@ concurrent completion, retry after expiry, scope/context/profile rejection,
 authority/membership/cancellation, SQL immutability, forced storage rollback,
 original/raw/normalised tampering, opt-in/CSRF/queue gates, Unicode and geometry.
 A real Chrome journey checks page-two inspection, reload and corruption denial.
-Hosted evidence will be recorded after the actual run completes.
+Hosted [Checks #131](https://github.com/BlackStateGroup/inveos/actions/runs/40797926451)
+passed at implementation `db7e5e0178aa560c44cfaa6b4ad563f2df03549f`, tree
+`2cd866131a0b52fb0dd01b9fe334631079eff8e2`, job `123198792011`:
+**164 Node tests passed, zero failures/skips**, including seven new PostgreSQL/API
+scenarios, one new actual Chrome journey and nine adapter/client checks. Existing
+browser/restore tests and actual host isolation/resource probes passed; all 98
+Python tests, lint/types/build and reference checks passed. Chrome was
+156.0.8078.47 (revision 1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775), sandbox enabled,
+on Ubuntu 24.04 with Node 22, Python 3.11 and disposable PostgreSQL 15. Local
+lint/types/build, nine adapter/client tests, all Python tests and foundation/
+reference checks also passed. This evidence follow-up changes documentation only;
+it is not a new parser run, device test or production-readiness assessment.
 
 ## Trust, remaining work and rollback
 
