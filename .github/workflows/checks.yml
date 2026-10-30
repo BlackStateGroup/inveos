@@ -76,7 +76,7 @@ jobs:
       - name: Exercise development effect replay in the actual browser
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts' apps/api/test/api.test.ts
       - name: Render and re-save the fictional DOCX in LibreOffice
         run: |
           sudo apt-get update -qq
@@ -298,3 +298,12 @@ jobs:
           name: reviewed-docx-office
           path: output/evals/docx-delivery/office/
           if-no-files-found: ignore
+
+      - name: Retain fictional expanded review attention render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: expanded-review-attention-browser
+          path: output/evals/review-attention-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14

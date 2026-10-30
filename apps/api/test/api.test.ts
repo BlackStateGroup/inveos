@@ -5700,6 +5700,7 @@ test('historical DOCX v1 stays byte-identical and retryable while only new v2 co
   assertError(await request('POST',legacy+'/reviews',f.reviewer,{payload:{...f.review,docxSha256:old.digest}}),409);assertError(await request('POST',legacy+'/disclosures',context.demo!,{payload:{...f.release,docxSha256:old.digest}}),409);
   assert.equal(f.rendition.profile,'inveos_report_docx_v2');assert.notEqual(old.digest,f.rendition.docxSha256);assert.deepEqual((await request('GET',legacy,context.demo!)).rawPayload,old.bytes);
   const saved=(await request('GET',base,context.demo!)).json().items;assert.equal(saved.find((row:{id:string})=>row.id===id).profile,'inveos_report_docx_v1');assert.equal(saved.find((row:{id:string})=>row.id===f.rendition.id).profile,'inveos_report_docx_v2');
+  const reminders=(await reviewAttention(f.reviewer)).items;assert.ok(!reminders.some(row=>row.id===id));assert.ok(reminders.some(row=>row.id===f.rendition.id&&row.kind==='docx_review'));
   const file=join(context.storageRoot!,'fictional-retained-internal-v1.docx');await writeFile(file,old.bytes);await promisify(execFile)('python3',[fileURLToPath(new URL('../../../tools/verify_report_docx.py',import.meta.url)),file,'--expected-docx-sha256',old.digest,'--expected-report-sha256',f.revision.sha256],{timeout:10000});
  }finally{await f.app.close();}
 });
@@ -5750,4 +5751,69 @@ test('DOCX disclosure migration retains legacy attachment choices without rewrit
   await assert.rejects(admin.query('DELETE FROM report_disclosure_attachment_choices'),/append-only/);
   await assert.rejects(admin.query('INSERT INTO report_disclosure_renditions(tenant_id,case_id,revision_id,disclosure_id,rendition_id) VALUES($1,$2,$3,$4,$5)',[demoTenantId,caseId,revisionId,packageGrant,renditionId]),/different deliverable/);
  }finally{await admin.end();await context.adminPool!.query(`DROP SCHEMA "${schema}" CASCADE`);}
+});
+
+async function reviewAttention(session:TestSession){const response=await request('GET','/api/attention?category=reviews&acknowledged=true',session);assert.equal(response.statusCode,200,response.body);return response.json() as import('@inveos/contracts').AttentionPage;}
+test('expanded review attention joins frozen reports and exact copies without turning acknowledgements into approval',async()=>{
+ const f=await docxReleaseFixture();try{
+  const pdfMade=await request('POST',`${f.revisionsUrl}/${f.revision.id}/renditions`,context.demo!,{payload:{idempotencyKey:randomUUID(),redactedFindingIds:[]}});assert.equal(pdfMade.statusCode,200,pdfMade.body);const pdf=pdfMade.json();
+  const items=(await reviewAttention(f.reviewer)).items.filter(i=>i.caseId===f.scope.caseId);assert.deepEqual(items.map(i=>i.kind).sort(),['docx_review','pdf_review','report_review']);assert.ok(items.every(i=>i.contextId===f.revision.id));
+  const docx=items.find(i=>i.kind==='docx_review')!;assert.equal(docx.id,f.rendition.id);assert.equal(docx.revision,f.rendition.docxSha256+':1');
+  assert.equal((await request('POST',`/api/cases/${f.scope.caseId}/attention/acknowledge`,f.reviewer,{payload:{key:docx.key,revision:docx.revision}})).statusCode,200);
+  assert.equal((await request('GET','/api/attention?category=reviews',f.reviewer)).json().items.some((i:{key:string})=>i.key===docx.key),false);assert.equal((await reviewAttention(f.reviewer)).items.find(i=>i.key===docx.key)?.acknowledged,true);
+  assert.equal((await context.pool!.query('SELECT count(*)::int n FROM report_editable_rendition_reviews WHERE rendition_id=$1',[f.rendition.id])).rows[0].n,0);assert.equal((await context.pool!.query('SELECT count(*)::int n FROM report_disclosures WHERE case_id=$1',[f.scope.caseId])).rows[0].n,0);
+  assert.ok(!(await reviewAttention(context.demo!)).items.some(i=>i.id===f.rendition.id||i.id===pdf.id));
+  assert.equal((await request('POST',f.base+'/reviews',f.reviewer,{payload:f.review})).statusCode,200);assert.ok(!(await reviewAttention(f.reviewer)).items.some(i=>i.key===docx.key));
+  const reportDecision={sha256:f.revision.sha256,decision:'request_changes',reason:'Fictional independent report changes requested.'};assert.equal((await request('POST',`${f.revisionsUrl}/${f.revision.id}/reviews`,f.reviewer,{payload:reportDecision})).statusCode,200);
+  assert.ok(!(await reviewAttention(f.reviewer)).items.some(i=>i.caseId===f.scope.caseId));
+  assertError(await request('POST',`/api/cases/${f.scope.caseId}/attention/acknowledge`,f.reviewer,{payload:{key:docx.key,revision:docx.revision}}),404);
+ }finally{await f.app.close();}
+});
+test('expanded review context HTTP denies clients, cross-case and foreign tenants and clears revoked reviewer access',async()=>{
+ const f=await docxReleaseFixture(),outsider=await issueTestSession(await createMember(demoTenantId,'reviewer','Fictional review inbox outsider')),tenant=randomUUID();try{
+  await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional review inbox other tenant']);const foreign=await issueTestSession(await createMember(tenant,'reviewer','Fictional foreign reviewer'),tenant),app=await createAppInstance();try{const address=await app.listen({host:'127.0.0.1',port:0}),url=`${f.revisionsUrl}/${f.revision.id}/receipt`;
+   for(const [actor,status] of [[f.reviewer,200],[f.recipient,403],[outsider,404],[foreign,404]] as const){const response=await fetch(address+url,{headers:{cookie:actor.cookie}});assert.equal(response.status,status);if(status===200){assert.equal(response.headers.get('cache-control'),'no-store');assert.deepEqual(await response.json(),f.revision);}}
+  }finally{await app.close();}
+  const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/report-revisions/${f.revision.id}/receipt`,f.reviewer),404);assert.equal((await reviewAttention(outsider)).items.length,0);assert.equal((await reviewAttention(foreign)).items.length,0);
+  const item=(await reviewAttention(f.reviewer)).items.find(i=>i.id===f.rendition.id)!;await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.scope.caseId,f.reviewerId]);
+  assert.equal((await reviewAttention(f.reviewer)).items.length,0);assertError(await request('GET',`${f.revisionsUrl}/${f.revision.id}/receipt`,f.reviewer),404);assertError(await request('POST',`/api/cases/${f.scope.caseId}/attention/acknowledge`,f.reviewer,{payload:{key:item.key,revision:item.revision}}),404);
+ }finally{await f.app.close();}
+});
+test('expanded transcript review attention excludes authors, correctors, stale versions and withdrawn proposals',async()=>{
+ const f=await transcriptFindingFixture(),reviewerId=await createMember(demoTenantId,'reviewer','Fictional transcript inbox reviewer');await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,f.kase.id,reviewerId]);const reviewer=await issueTestSession(reviewerId);
+ const original=(await reviewAttention(reviewer)).items.find(i=>i.id===f.claim.id)!;assert.equal(original.kind,'transcript_review');assert.equal(original.contextId,f.input.transcriptId);assert.equal(original.revision,f.claim.digest);assert.equal((await request('GET',f.base+'/'+f.claim.id,reviewer)).json().item.claim.id,f.claim.id);
+ assert.equal((await request('POST',f.editUrl,context.demo!,{payload:f.edit})).statusCode,200);assert.ok(!(await reviewAttention(reviewer)).items.some(i=>i.id===f.claim.id));
+ const input={...f.input,id:randomUUID(),expectedVersion:1,quote:f.edit.text,endByte:Buffer.byteLength(f.edit.text)},proposed=await f.propose(input);assert.equal(proposed.statusCode,200,proposed.body);const claim=proposed.json();assert.ok((await reviewAttention(reviewer)).items.some(i=>i.id===claim.id));assert.ok(!(await reviewAttention(context.demo!)).items.some(i=>i.id===claim.id));
+ await context.schemaAdminPool!.query("UPDATE memberships SET role='reviewer' WHERE tenant_id=$1 AND user_id=$2",[demoTenantId,f.author]);assert.ok(!(await reviewAttention(f.session)).items.some(i=>i.id===claim.id));
+ assert.equal((await request('POST',f.base+'/'+claim.id+'/withdraw',reviewer,{payload:{id:randomUUID(),reason:'Fictional pending interpretation withdrawn.'}})).statusCode,200);assert.ok(!(await reviewAttention(reviewer)).items.some(i=>i.id===claim.id));
+ const other=await createCase();assertError(await request('GET',`/api/cases/${other.id}/transcript-claims/${claim.id}`,reviewer),404);const client=await issueTestSession(await createMember(demoTenantId,'client','Fictional transcript queue client'));assertError(await request('GET',f.base+'/'+claim.id,client),403);
+ await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,reviewerId]);assertError(await request('GET',f.base+'/'+claim.id,reviewer),404);
+});
+test('expanded review reminders stop at closure and preserve exact acknowledgement versions after authority changes',async()=>{
+ const f=await docxReleaseFixture();try{
+  const initial=(await reviewAttention(f.reviewer)).items.find(i=>i.id===f.rendition.id)!;const acknowledge=(item:typeof initial)=>request('POST',`/api/cases/${f.scope.caseId}/attention/acknowledge`,f.reviewer,{payload:{key:item.key,revision:item.revision}});assert.equal((await acknowledge(initial)).statusCode,200);
+  assert.equal((await approveAuthority(f.scope.caseId)).statusCode,200);const changed=(await reviewAttention(f.reviewer)).items.find(i=>i.id===f.rendition.id)!;assert.notEqual(changed.revision,initial.revision);assert.equal(changed.acknowledged,false);assertError(await acknowledge(initial),409);
+  const path=`/api/cases/${f.scope.caseId}/lifecycle`,stage=(await request('GET',path,context.demo!)).json();assert.equal((await request('POST',path,context.demo!,{payload:{id:randomUUID(),expectedVersion:stage.version,to:'Closed',reason:'Fictional closure suppresses outstanding independent reviews.'}})).statusCode,200);assert.ok(!(await reviewAttention(f.reviewer)).items.some(i=>i.caseId===f.scope.caseId));assertError(await acknowledge(changed),404);
+ }finally{await f.app.close();}
+});
+test('real browser opens exact report and transcript review contexts beyond their first pages and clears revoked reminders',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await docxReleaseFixture(),ownerSession=context.demo!;try{
+  for(let i=0;i<26;i++)assert.equal((await request('POST',f.revisionsUrl,ownerSession,{payload:{idempotencyKey:randomUUID()}})).statusCode,200);
+  assert.ok(!(await request('GET',f.revisionsUrl,ownerSession)).json().items.some((r:{id:string})=>r.id===f.revision.id));
+  const transcript=await transcriptFindingFixture();await context.schemaAdminPool!.query('INSERT INTO case_memberships VALUES($1,$2,$3)',[demoTenantId,transcript.kase.id,f.reviewerId]);
+  const targetId='ffffffff-ffff-4fff-bfff-fffffffffff0';const target=(await transcript.propose({...transcript.input,id:targetId,text:'Fictional older-page transcript review target.'})).json();
+  for(let i=0;i<51;i++){const id='10000000-0000-4000-8000-'+(i+1).toString(16).padStart(12,'0');assert.equal((await transcript.propose({...transcript.input,id})).statusCode,200);}
+  assert.ok(!(await request('GET',transcript.base,f.reviewer)).json().items.some((r:{claim:{id:string}})=>r.claim.id===targetId));
+  context.demo=f.reviewer;await withBrowserApp(async(b,origin)=>{
+   const ui=await binaryBrowserControls(b,origin,f.scope.caseId),open=async()=>{await b.evaluate(`document.querySelector('[aria-label="View notifications"]').click()`);await eventually(async()=>await b.evaluate<boolean>(`!!document.querySelector('[aria-label="Personal attention queue"]')&&!![...document.querySelectorAll('button')].find(button=>button.textContent==='Refresh attention'&&!button.matches(':disabled'))`),'expanded review queue ready');},queue=()=>b.evaluate<string>(`document.querySelector('[aria-label="Personal attention queue"]')?.innerText||''`);
+   await open();const title='DOCX copy '+f.rendition.id.slice(0,8);await eventually(async()=>(await queue()).includes(title),'pending DOCX review appears');
+   const artifact=fileURLToPath(new URL('../../../output/evals/review-attention-desktop.png',import.meta.url));await mkdir(resolve(artifact,'..'),{recursive:true});await writeFile(artifact,Buffer.from((await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data,'base64'));
+   await ui.click('Open context: '+title);await eventually(async()=>await b.evaluate<boolean>(`document.activeElement?.id==='report-revision-${f.revision.id}'`),'older frozen revision receives keyboard focus');assert.ok((await ui.text()).includes(f.rendition.id));
+   const load='Load saved DOCX '+f.revision.id.slice(0,8);await eventually(async()=>await b.evaluate<boolean>(`[...document.querySelectorAll('button')].some(button=>button.textContent===${JSON.stringify(load)}&&!button.disabled)`),'exact revision DOCX list ready');await b.evaluate(`(()=>{[...document.querySelectorAll('button')].find(button=>button.textContent===${JSON.stringify(load)}).closest('details').open=true;})()`);await ui.click(load);await eventually(async()=>(await ui.text()).includes('Download saved DOCX '+f.rendition.id.slice(0,8)),'exact DOCX copy found in focused report');
+   await open();for(let i=0;i<4&&!(await queue()).includes(target.text);i++){await eventually(async()=>await b.evaluate<boolean>(`[...document.querySelectorAll('button')].some(button=>button.textContent==='Next reminders'&&!button.disabled)`),'next review page ready');await ui.click('Next reminders');await eventually(async()=>await b.evaluate<boolean>(`[...document.querySelectorAll('button')].some(button=>button.textContent==='Refresh attention'&&!button.disabled)`),'next review page loaded');}
+   assert.ok((await queue()).includes(target.text));await ui.click('Open context: '+target.text);await eventually(async()=>await b.evaluate<boolean>(`document.activeElement?.id==='transcript-claim-${targetId}'`),'older transcript proposal receives keyboard focus');await ui.click('Inspect transcript citation: '+targetId.slice(0,8));await eventually(async()=>(await ui.text()).includes('Original bytes and the selected transcript version verified'),'exact proposed transcript context inspected');
+   await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=innerWidth+1'));
+   await open();await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND user_id=$2 AND case_id=ANY($3::uuid[])',[demoTenantId,f.reviewerId,[f.scope.caseId,transcript.kase.id]]);await ui.click('Refresh attention');await eventually(async()=>(await queue()).includes('No current reminders match')&&!(await queue()).includes(title)&&!(await queue()).includes(target.text),'revoked review scope cleared');
+  });
+ }finally{context.demo=ownerSession;await f.app.close();}
 });
