@@ -228,4 +228,6 @@
 
 - [113 — Reviewed editable DOCX delivery](113_REVIEWED_DOCX_DELIVERY.md) — versioned exports, independent decisions, exact recipient files and revocation; acceptance in progress.
 
+- [114 — Connected independent-review attention](114_EXPANDED_REVIEW_ATTENTION.md)
+
 - [115 — Authenticated archive publication indexes](115_AUTHENTICATED_ARCHIVE_INDEXES.md) — pinned signed-index correspondence before OCR research builds; actual acceptance and trust limits recorded separately.

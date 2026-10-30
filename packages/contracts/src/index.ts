@@ -216,7 +216,7 @@ export type CaseBudgetSnapshot={caseId:string;current:CaseBudgetVersion|null;usa
 export type CaseTimeEntry=CaseTimeFields&{id:string;version:number;startedAtUtc:string;status:'active'|'withdrawn';action:'recorded'|'corrected'|'withdrawn';reason:string;authorId:string;author:string;createdAt:string;actorId:string;actorName:string;recordedAt:string;canCorrect:boolean};
 
 export type AttentionPreferences={version:number;deadlines:boolean;failures:boolean;reviews:boolean;recordedAt:string|null};
-export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;acknowledged?:boolean};
+export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'report_review'|'pdf_review'|'docx_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;acknowledged?:boolean};
 export type AttentionPage={items:AttentionEntry[];next:string|null;preferences:AttentionPreferences;asOf:string;interpretation:'personal_attention_not_review'};
 
 export type FieldDevice={id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
