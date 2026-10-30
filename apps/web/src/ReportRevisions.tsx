@@ -23,7 +23,7 @@ async function json<T>(url:string,signal?:AbortSignal,body?:object,csrf?:string)
     headers:body?{'Content-Type':'application/json','X-CSRF-Token':csrf||''}:{},...(body?{body:JSON.stringify(body)}:{})});
   const result=await response.json();if(!response.ok)throw new Error(result.error||'Report request failed.');return result;
 }
-export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
+export function ReportRevisions({caseId,csrf,focusRevisionId,focusCopyId}:{caseId:string;csrf:string;focusRevisionId?:string;focusCopyId?:string}){
   const [rows,setRows]=useState<Receipt[]>([]),[next,setNext]=useState<string|null>(null);
   const [busy,setBusy]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
   const [pending,setPending]=useState(false);
@@ -32,20 +32,21 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   const [verifiedPackages,setVerifiedPackages]=useState<Record<string,string>>({});
   const [pendingReleases,setPendingReleases]=useState<Record<string,boolean>>({});
   const [pendingRenditions,setPendingRenditions]=useState<Record<string,boolean>>({});
-  const inFlight=useRef(false),alive=useRef(true);
+  const inFlight=useRef(false),alive=useRef(true),focusedOnce=useRef('');
   const base=`/api/cases/${caseId}/report-revisions`;
   useEffect(()=>{
     alive.current=true;const controller=new AbortController();
-    void Promise.all([json<Page>(base,controller.signal),reportRecoveryScope(csrf,caseId)]).then(([page,scope])=>{
+    void Promise.all([json<Page>(base,controller.signal),reportRecoveryScope(csrf,caseId),focusRevisionId?json<Receipt>(base+'/'+focusRevisionId+'/receipt',controller.signal):Promise.resolve(null)]).then(([page,scope,focused])=>{
       if(controller.signal.aborted)return;
-      setRows(page.items);setNext(page.nextBefore);setPending(!!pendingReportFreeze(window.sessionStorage,scope));
+      setRows(focused?[focused,...page.items.filter(row=>row.id!==focused.id)]:page.items);setNext(page.nextBefore);setPending(!!pendingReportFreeze(window.sessionStorage,scope));
       setVerifiedPackages(Object.fromEntries(page.items.flatMap(row=>{const saved=readVerifiedDocumentPackage(window.sessionStorage,caseId,row.id,row.sha256);return saved?[[row.id,saved.packageSha256]]:[];})));
       setPendingReleases(Object.fromEntries(page.items.filter(row=>pendingRelease(window.sessionStorage,caseId,row)).map(row=>[row.id,true])));
       setPendingRenditions(Object.fromEntries(page.items.filter(row=>pendingRendition(window.sessionStorage,caseId,row.id)).map(row=>[row.id,true])));
     })
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});
     return()=>{alive.current=false;controller.abort();};
-  },[base,csrf,caseId]);
+  },[base,csrf,caseId,focusRevisionId]);
+  useEffect(()=>{if(focusRevisionId&&focusedOnce.current!==focusRevisionId&&!busy&&rows.some(row=>row.id===focusRevisionId)){focusedOnce.current=focusRevisionId;const target=document.getElementById('report-revision-'+focusRevisionId);target?.focus();target?.scrollIntoView({block:'start'});}},[focusRevisionId,busy,rows]);
   async function act(operation:()=>Promise<void>){
     if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');setMessage('');
     try{await operation();}catch(e){if(alive.current)setError((e as Error).message);}finally{inFlight.current=false;if(alive.current)setBusy(false);}
@@ -122,14 +123,14 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
     await reviews(row);
   }
   return <><DisclosureHistory key={`${caseId}:${csrf}`} caseId={caseId} csrf={csrf}/><Panel title="Saved internal report revisions"><div className="panel-body">
-    <Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
+    {focusRevisionId&&<Notice>Opened review context for revision {focusRevisionId}.{focusCopyId?' Inspect saved copy '+focusCopyId+' under its PDF or DOCX controls.':''} Verify and inspect the exact download before recording a decision.</Notice>}<Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
     <div className="report-export-actions"><button className="primary" disabled={busy} onClick={()=>void act(freeze)}>{pending?'Recover pending freeze':'Freeze current internal draft'}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh revisions</button></div>
     {pending&&<p role="status">A previous freeze has no confirmed receipt. Recover it before starting another revision.</p>}
     <p className="small muted">Retry recovery lasts for this tab and sign-in. After signing out or closing the tab, check saved revisions before freezing again.</p>
     {error&&<p className="form-error" role="alert">{error} Retry the action when ready.</p>}
     <p role="status">{busy?'Loading report revisions…':message||(!rows.length?'No saved revisions yet.':'')}</p>
-    <ul>{rows.map(row=><li key={row.id}>
+    <ul>{rows.map(row=><li key={row.id} id={'report-revision-'+row.id} tabIndex={-1}>
       <p><strong>Internal draft · {new Date(row.createdAt).toLocaleString('en-GB',{timeZone:'UTC'})} UTC</strong></p>
       <label className="form-label">SHA-256 for revision {row.id}<input readOnly value={row.sha256}/></label>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>

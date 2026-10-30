@@ -1,6 +1,6 @@
 # Independently reviewed editable DOCX delivery
 
-This increment adds exact-byte DOCX review and recipient delivery to the existing frozen-report workflow. Implementation is in progress; merge and hosted browser/office acceptance are not yet complete. No production deployment, billing or new dependency.
+This increment adds exact-byte DOCX review and recipient delivery to the existing frozen-report workflow. Merged as PR107; the final reviewed receipt below supersedes earlier pending checkpoints. No production deployment, billing or new dependency.
 
 ## Versioned exports and approval
 
@@ -54,3 +54,7 @@ Initial Checks41020339468 at `9347f36e928fb0c8036939e96d4494a95ad97080` was canc
 At `8168d066305fff166d3ce58b8058b6f2bc7b05c9`, Checks41021696663 / job123950255076 passed **431Node/179Python, zero failures/skips,42 production plus five development browsers** and legacy LibreOffice acceptance. The actual DOCX recipient render was inspected. The overall job **failed** its unchanged worker-host memory probe: exit137 was observed but Docker did not record `OOMKilled=true`. The new disclosure-profile office step therefore did not run. No host success is claimed for that job and no isolation requirement was weakened.
 
 Further source review reproduced a distinct database race: an older REPEATABLE READ snapshot could attach a second file type after the first committed; an advisory lock cannot refresh that snapshot. A shared unique attachment-choice row now guards all three attachment tables. Existing PDF/package choices are backfilled without changing bytes or approval records; a pre-existing hybrid grant fails migration for investigation. Five focused actual PostgreSQL checks passed, including old-snapshot denial, concurrent choices, audit rollback and legacy migration/rerun/immutability. The first two upgrade-fixture runs failed PostgreSQL parameter inference because one UUID was also used as text; explicit UUID/text casts fixed the fixture. Types/lint pass. Final full hosted acceptance remains required on the corrected head.
+
+## Final reviewed merge
+
+Reviewed head `a943e453740be67f1a2ebb62f489b00aacae1b72` passed **Checks41022572647 / job123953057887:433Node/179Python, zero failures/skips,42 production plus five development browsers**, both actual LibreOffice24.2.7.2 profiles, unchanged worker-host probes, lint/types/build. Final recipient and disclosure-profile office renders were inspected; baseline Latin/Greek/Japanese text is visible. Source/privacy review covered exact legacy bytes and retries, independent decisions, current authority/access, atomic audit, migration backfill and older-snapshot attachment exclusion. No outstanding PR feedback. PR107 merged as `ec95a3328d50995c7214bd76936c3682ddc1f535`. Resulting-main Checks41023600297 / job123956406175 passed433Node/179Python,zero failures/skips,42+5browsers,both office profiles,host/lint/types/build. All previous failures and layout/production limitations above remain recorded.

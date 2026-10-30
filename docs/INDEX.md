@@ -227,3 +227,5 @@
 - [112 — Actual Keycloak MFA qualification](112_KEYCLOAK_MFA.md) — pinned provider runtime, real password/OTP and case-boundary acceptance; production gates remain open.
 
 - [113 — Reviewed editable DOCX delivery](113_REVIEWED_DOCX_DELIVERY.md) — versioned exports, independent decisions, exact recipient files and revocation; acceptance in progress.
+
+- [114 — Connected independent-review attention](114_EXPANDED_REVIEW_ATTENTION.md)

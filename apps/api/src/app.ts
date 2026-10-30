@@ -1588,6 +1588,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     });
     return reply.header('Cache-Control','no-store').send(page);
   });
+  app.get('/api/cases/:caseId/report-revisions/:revisionId/receipt',{preHandler:authenticate,schema:{params:{type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}}}},async(request,reply)=>{
+    const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};const row=await reportTransaction(async client=>{await reportAccess(client,actor,caseId);const found=(await client.query('SELECT id,digest,created_at FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];if(!found)notFound();return revisionReceipt(found,caseId);});return reply.header('Cache-Control','no-store').send(row);
+  });
   app.post('/api/cases/:caseId/report-revisions',{preHandler:requireCsrf,schema:{params:caseParamsSchema,
     body:{type:'object',required:['idempotencyKey'],additionalProperties:false,properties:{idempotencyKey:uuidSchema}}}},async request=>{
     const actor=request.actor!,{caseId}=request.params as {caseId:string},{idempotencyKey}=request.body as {idempotencyKey:string};
