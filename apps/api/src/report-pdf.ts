@@ -86,6 +86,14 @@ export function reportLines(report:ReportDraft,redacted:Set<string>,reason:strin
       lines.push(...format('Work item',link.itemId),...format('Relation',link.relation),...format('Reason',link.reason),...format('Transcript finding',link.findingId),...format('Link recorded',link.createdAt),'');
     }
   }
+  if(context?.speechLinks?.length){
+    lines.push('SPEECH REASONING LINKS — WORKING CONTEXT');
+    for(const link of context.speechLinks){
+      if(redacted.has(link.findingId)){lines.push('[SPEECH SOURCE LINK WITHHELD]');continue;}
+      if(!report.speechFindings?.some(f=>f.id===link.findingId))throw new Error('Speech reasoning source is missing.');
+      lines.push(...format('Work item',link.itemId),...format('Relation',link.relation),...format('Reason',link.reason),...format('Speech finding',link.findingId),...format('Link recorded',link.createdAt),'');
+    }
+  }
   if(context?.chronology?.length){
     lines.push('ALLEGED EVENTS — RECORDED ACCOUNTS, NOT FINDINGS','Recorded order does not establish event sequence.');
     for(const event of context.chronology){

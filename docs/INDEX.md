@@ -245,3 +245,5 @@
 - [121 — Controlled OSINT workbench](121_OSINT_WORKBENCH.md) — source policies, scoped collection, preserved responses and actual evidence; live activation remains disabled.
 
 - [122 — Collected-source report lineage](122_COLLECTION_REPORT_LINEAGE.md) — frozen collection permissions, original-linked offline verification and redaction; actual acceptance is recorded separately.
+
+- [123 — Reviewed speech in case reasoning](123_SPEECH_CASE_REASONING.md) — typed work sources, correction-sensitive assessments, search and frozen export lineage; actual acceptance remains explicit.

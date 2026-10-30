@@ -8,7 +8,7 @@ import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
 
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};
-const kinds=['original','claim','document_claim','document_text','text_finding','document_finding','work','chronology','entity','relationship','source_context','transcript','transcript_claim','transcript_finding'];
+const kinds=['original','claim','document_claim','document_text','text_finding','document_finding','work','chronology','entity','relationship','source_context','transcript','transcript_claim','transcript_finding','speech_claim','speech_finding'];
 const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'};
 const filterProperties={query:{type:'string',maxLength:200},kind:{enum:['all',...kinds]},status:{type:'string',maxLength:40}};
 const filterSchema={type:'object',additionalProperties:false,required:Object.keys(filterProperties),properties:filterProperties};
@@ -21,6 +21,17 @@ const records=`
  SELECT 'transcript' kind,t.id,t.title title,t.title||' '||coalesce((SELECT string_agg(coalesce(c.text,g.raw_text),' ' ORDER BY g.ordinal) FROM interview_transcript_segments g LEFT JOIN interview_transcript_corrections c ON c.tenant_id=g.tenant_id AND c.case_id=g.case_id AND c.transcript_id=g.transcript_id AND c.segment_id=g.id AND c.version=g.current_version WHERE g.tenant_id=t.tenant_id AND g.case_id=t.case_id AND g.transcript_id=t.id),'') body,'Supplied transcript' status,t.evidence_id,'Interview' page FROM interview_transcripts t WHERE t.tenant_id=$1 AND t.case_id=$2
  UNION ALL
  SELECT entry.kind,entry.id,left(p.snapshot->>'text',120),(p.snapshot->>'text')||' '||(p.snapshot#>>'{reference,quote}')||' '||(p.snapshot#>>'{reference,speakerLabel}'),CASE WHEN w.claim_id IS NOT NULL THEN 'Withdrawn' WHEN r.accepted=false THEN 'Rejected' WHEN g.current_version<>p.segment_version OR k.authority_version<>(p.snapshot#>>'{source,policy,authorityVersion}')::int OR k.status<>'Active' THEN 'Needs fresh review' WHEN r.accepted THEN 'Recorded independent review' ELSE 'Proposed interpretation' END,t.evidence_id,'Interview' FROM transcript_claims p JOIN interview_transcript_segments g ON g.tenant_id=p.tenant_id AND g.case_id=p.case_id AND g.transcript_id=p.transcript_id AND g.id=p.segment_id JOIN interview_transcripts t ON t.tenant_id=p.tenant_id AND t.case_id=p.case_id AND t.id=p.transcript_id JOIN cases k ON k.tenant_id=p.tenant_id AND k.id=p.case_id LEFT JOIN transcript_claim_reviews r ON r.tenant_id=p.tenant_id AND r.case_id=p.case_id AND r.claim_id=p.id LEFT JOIN transcript_findings f ON f.tenant_id=p.tenant_id AND f.case_id=p.case_id AND f.claim_id=p.id LEFT JOIN transcript_claim_withdrawals w ON w.tenant_id=p.tenant_id AND w.case_id=p.case_id AND w.claim_id=p.id CROSS JOIN LATERAL (VALUES ('transcript_claim',p.id),('transcript_finding',f.id)) entry(kind,id) WHERE entry.id IS NOT NULL AND p.tenant_id=$1 AND p.case_id=$2
+ UNION ALL
+ SELECT entry.kind,entry.id,left(p.snapshot->>'text',120),(p.snapshot->>'text')||' '||(p.snapshot#>>'{reference,quote}')||' '||coalesce(p.snapshot#>>'{reference,account,speakerLabel}',''),
+ CASE WHEN w.claim_id IS NOT NULL THEN 'Withdrawn' WHEN r.accepted=false THEN 'Rejected'
+ WHEN coalesce((SELECT max(x.version) FROM speech_segment_corrections x WHERE x.tenant_id=p.tenant_id AND x.case_id=p.case_id AND x.job_id=p.job_id AND x.segment_index=p.segment_index),0)<>p.segment_version OR k.authority_version<>(p.snapshot#>>'{source,policy,authorityVersion}')::int OR k.status<>'Active' THEN 'Needs fresh review'
+ WHEN r.accepted THEN 'Recorded independent review' ELSE 'Proposed interpretation' END,j.evidence_id,'Interview'
+ FROM speech_claims p JOIN integrity_jobs j ON j.tenant_id=p.tenant_id AND j.case_id=p.case_id AND j.id=p.job_id JOIN cases k ON k.tenant_id=p.tenant_id AND k.id=p.case_id
+ LEFT JOIN speech_claim_reviews r ON r.tenant_id=p.tenant_id AND r.case_id=p.case_id AND r.claim_id=p.id
+ LEFT JOIN speech_findings f ON f.tenant_id=p.tenant_id AND f.case_id=p.case_id AND f.claim_id=p.id
+ LEFT JOIN speech_claim_withdrawals w ON w.tenant_id=p.tenant_id AND w.case_id=p.case_id AND w.claim_id=p.id
+ CROSS JOIN LATERAL (VALUES ('speech_claim',p.id),('speech_finding',f.id)) entry(kind,id)
+ WHERE entry.id IS NOT NULL AND p.tenant_id=$1 AND p.case_id=$2
  UNION ALL
  SELECT 'source_context' kind,h.id,r.snapshot->>'publisher' title,(r.snapshot->>'publisher')||' '||(r.snapshot->>'url')||' '||(r.snapshot->>'annotation') body,CASE WHEN (r.snapshot->>'withdrawn')::boolean THEN 'Withdrawn source context' WHEN v.accepted THEN 'Recorded metadata review' WHEN v.accepted=false THEN 'Rejected source context' ELSE 'Pending metadata review' END status,h.evidence_id,'Research' page FROM manual_sources h JOIN manual_source_revisions r ON r.tenant_id=h.tenant_id AND r.case_id=h.case_id AND r.source_id=h.id AND r.version=h.version LEFT JOIN manual_source_reviews v ON v.tenant_id=r.tenant_id AND v.case_id=r.case_id AND v.source_id=r.source_id AND v.version=r.version WHERE h.tenant_id=$1 AND h.case_id=$2
  UNION ALL
@@ -49,6 +60,7 @@ export function registerCaseSearch(app:FastifyInstance,s:Services){
    SELECT (SELECT coalesce(jsonb_agg(facets ORDER BY kind),'[]'::jsonb) FROM facets) facets,(SELECT coalesce(jsonb_agg(p ORDER BY p.kind,p.id),'[]'::jsonb) FROM page p) items`,[actor.tenantId,caseId,input.query.trim(),input.status,input.kind,input.after?.kind??null,input.after?.id??null]);
   const {facets,items}=found.rows[0],more=items.length>50;if(more)items.pop();const last=items.at(-1);
   for(const id of new Set<string>(items.filter((item:{evidenceId:string|null;kind:string})=>item.evidenceId&&!['original','source_context'].includes(item.kind)).map((item:{evidenceId:string})=>item.evidenceId)))await sourceUseProofs(c,actor.tenantId,caseId,id,'analysis');
+  for(const item of items)if(item.kind==='speech_claim'||item.kind==='speech_finding'){const row=(await c.query('SELECT p.job_id FROM speech_claims p LEFT JOIN speech_findings f ON f.tenant_id=p.tenant_id AND f.case_id=p.case_id AND f.claim_id=p.id WHERE p.tenant_id=$1 AND p.case_id=$2 AND (($3=\'speech_claim\' AND p.id=$4) OR ($3=\'speech_finding\' AND f.id=$4))',[actor.tenantId,caseId,item.kind,item.id])).rows[0];if(!row)throw new ApiError(409,'Speech search source changed.');item.speechJobId=row.job_id;}
   return {items,facets,next:more?{kind:last.kind,id:last.id}:null,interpretation:'stored_records_reverify_sources'} satisfies CaseSearchResult;
  }));
  app.get(views,{preHandler:internal,schema:{params}},async r=>inTransaction(s.pool,async c=>{

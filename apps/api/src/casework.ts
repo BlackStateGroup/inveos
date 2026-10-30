@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
-import { workStatuses, type TaskStatusBatch, type TaskPlanBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskPlanBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding, type SpeechReportFinding } from '@inveos/contracts';
 import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -13,6 +13,7 @@ type Services = {
   findCase: (client: PoolClient, actor: Actor, id: string, lock?: boolean) => Promise<unknown>;
   verifyDocumentFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<DocumentReportFinding>;
   verifyTranscriptFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<TranscriptReportFinding>;
+  verifySpeechFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<SpeechReportFinding>;
   verifyClaim: (client: PoolClient, actor: Actor, caseId: string, claimId: string) => Promise<void>;
   audit: (client: PoolClient, actor: Actor, caseId: string, action: string, entityType: string, id: string, summary: string, metadata?: Record<string, unknown>) => Promise<void>;
 };
@@ -40,7 +41,7 @@ export function displayWork(row: QueryResultRow): WorkItem {
 }
 export function displayWorkLink(row: QueryResultRow): WorkLink {
   const source = row.document_finding_id ? {kind:'document_finding' as const,findingId:row.document_finding_id}
-    : row.transcript_finding_id ? {kind:'transcript_finding' as const,findingId:row.transcript_finding_id} : {claimId:row.claim_id};
+    : row.transcript_finding_id ? {kind:'transcript_finding' as const,findingId:row.transcript_finding_id} : row.speech_finding_id ? {kind:'speech_finding' as const,findingId:row.speech_finding_id} : {claimId:row.claim_id};
   return {id:row.id,caseId:row.case_id,itemId:row.item_id,...source,relation:row.relation,reason:row.reason,createdBy:row.created_by,createdAt:iso(row.created_at),
     ...('kind' in source&&row.withdrawn_at?{withdrawal:{reason:row.withdrawal_reason,createdBy:row.withdrawn_by,createdAt:iso(row.withdrawn_at)}}:{})};
 }
@@ -175,6 +176,7 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
         // Check contrary/context as well as supporting material; no cherry-picked stale sources.
         for (const source of sources) {
           if (source.document_finding_id) await services.verifyDocumentFinding(client, actor, caseId, source.document_finding_id);
+          else if(source.speech_finding_id) await services.verifySpeechFinding(client,actor,caseId,source.speech_finding_id);
           else if(source.transcript_finding_id) await services.verifyTranscriptFinding(client,actor,caseId,source.transcript_finding_id);
           else await services.verifyClaim(client, actor, caseId, source.claim_id);
         }
@@ -259,16 +261,16 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     });
   });
 
-  for(const family of ['document','transcript'] as const){
-    const column=family==='document'?'document_finding_id':'transcript_finding_id';
-    const verify=family==='document'?services.verifyDocumentFinding:services.verifyTranscriptFinding;
+  for(const family of ['document','transcript','speech'] as const){
+    const column=family+'_finding_id';
+    const verify=family==='document'?services.verifyDocumentFinding:family==='transcript'?services.verifyTranscriptFinding:services.verifySpeechFinding;
   app.get(`/api/cases/:caseId/work/${family}-findings`, {
     preHandler: internal, schema: {params: caseParams, querystring: {type:'object',additionalProperties:false,properties:{after:uuid}}},
   }, async request => {
     const actor=request.actor!, {caseId}=request.params as {caseId:string}, {after}=request.query as {after?:string};
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId);
-      const rows=(await client.query(family==='document'?'SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51':`SELECT f.id,p.snapshot->>'text' text FROM transcript_findings f JOIN transcript_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 AND ($3::uuid IS NULL OR f.id>$3) ORDER BY f.id LIMIT 51`,[actor.tenantId,caseId,after??null])).rows;
+      const rows=(await client.query(family==='document'?'SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51':`SELECT f.id,p.snapshot->>'text' text FROM ${family}_findings f JOIN ${family}_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 AND ($3::uuid IS NULL OR f.id>$3) ORDER BY f.id LIMIT 51`,[actor.tenantId,caseId,after??null])).rows;
       return {items:rows.slice(0,50),nextAfter:rows.length>50?rows[49].id:null, status:'historical_candidates_reverification_required'};
     });
   });
