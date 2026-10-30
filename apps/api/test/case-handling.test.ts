@@ -1,4 +1,4 @@
-// Definitions for the combined PostgreSQL acceptance phase; not a run receipt.
+// Restricted PostgreSQL acceptance; execution receipts are recorded in the handoff.
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createApp} from '../src/app.js';
 import {createPool,runMigrations} from '../src/db.js';
-import type {CaseHandling} from '@inveos/contracts';
+import type {AnalysisRunRecord,CaseHandling,WorkItem} from '@inveos/contracts';
 
 const tenant='00000000-0000-4000-8000-000000000001',owner='00000000-0000-4000-8000-000000000002',origin='http://localhost:5173';
 const sha=(v:string|Buffer)=>createHash('sha256').update(v).digest('hex');
@@ -23,8 +23,14 @@ async function fixture(){
  const authority={purpose:'Fictional handling workflow',lawfulBasis:'Synthetic fixture only; no real data processed.',scope:'Supplied fictional material only',retentionDays:30,minimisation:'Use fictional records and retain clear policy history.'};await must(base+'/authority',authority);
  async function member(role:string,assigned=false,tenantId=tenant){const id=randomUUID();await admin.query('INSERT INTO users(id,display_name) VALUES($1,$2)',[id,'Fictional handling account']);await admin.query('INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,$3)',[tenantId,id,role]);if(assigned)await admin.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[tenantId,caseId,id]);return {id,headers:await session(id,tenantId)};}
  const reviewer=await member('reviewer',true),investigator=await member('investigator',true),client=await member('client');
+ async function finding(quote='Fictional supplier invoice amount GBP 100'){
+  const evidence=await must<{id:string}>(base+'/evidence',{filename:'fictional-supplier.txt',text:quote,sourceTime:'2026-10-01T09:00:00+01:00',method:'Fictional supplied receipt for acceptance testing',expectedSha256:sha(quote),idempotencyKey:randomUUID()},investigator.headers);
+  const claim=await must<{id:string}>(base+'/claims',{evidenceId:evidence.id,text:'The fictional supplied document records this literal amount.',quote},investigator.headers);
+  const review=await must<{findingId:string}>(base+'/claims/'+claim.id+'/review',{accepted:true,reason:'Independent comparison of the exact fictional source occurrence.'},reviewer.headers);
+  return {kind:'text_finding' as const,findingId:review.findingId};
+ }
  const input={id:randomUUID(),expectedVersion:0,expectedAuthorityVersion:1,tier:'restricted',sharing:'internal_only',instructions:'Fictional internal handling instructions; no recipient access.',reason:'Fictional explicit reviewer decision to restrict sharing.'};
- return {admin,pool,app,root,caseId,base,maker,reviewer,investigator,client,call,must,member,input,authority,async close(){await app.close();await pool.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(root,{recursive:true,force:true});}};
+ return {admin,pool,app,root,caseId,base,maker,reviewer,investigator,client,call,must,member,finding,input,authority,async close(){await app.close();await pool.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(root,{recursive:true,force:true});}};
 }
 
 test('case handling preserves explicit versions, current reviewer boundaries and concurrent decision history',{timeout:30000},async()=>{
@@ -48,8 +54,9 @@ test('case handling preserves explicit versions, current reviewer boundaries and
 
 test('internal-only handling blocks actual release access and new grants without replacing frozen report bytes',{timeout:30000},async()=>{
  const f=await fixture();try{
+  await f.finding();
   const revision=await f.must<{id:string;sha256:string}>(f.base+'/report-revisions',{idempotencyKey:randomUUID()}),path=f.base+'/report-revisions/'+revision.id;
-  await f.must(path+'/reviews',{sha256:revision.sha256,decision:'accept_internal',reason:'Fictional independent review of the empty scoped draft.'},f.reviewer.headers);
+  await f.must(path+'/reviews',{sha256:revision.sha256,decision:'accept_internal',reason:'Fictional independent review of the exact source-backed draft.'},f.reviewer.headers);
   const disclosureInput={sha256:revision.sha256,recipientId:f.client.id,idempotencyKey:randomUUID(),expiresAt:new Date(Date.now()+3600000).toISOString(),reason:'Fictional explicitly approved recipient disclosure.',confirmFullDisclosure:true};
   const disclosure=await f.must<{id:string}>(path+'/disclosures',disclosureInput),download='/api/portal/disclosures/'+disclosure.id;
   const original=await f.call(download,undefined,f.client.headers);assert.equal(original.statusCode,200,original.body);assert.equal(sha(original.rawPayload),revision.sha256);
@@ -75,5 +82,43 @@ test('handling and verifier-kit audit failures return no partial decision or una
   await f.must(f.base+'/handling',f.input);const kit=await f.call('/api/verification-kit',undefined,f.client.headers);assert.equal(kit.statusCode,200,kit.body);assert.equal(kit.headers['content-type'],'application/zip');assert.equal(sha(kit.rawPayload),kit.headers['x-inveos-verifier-sha256']);
   assert.equal((await f.app.inject({method:'GET',url:'/api/verification-kit'})).statusCode,401);
   const audit=(await f.pool.query("SELECT metadata FROM audit_events WHERE action='verification_kit.downloaded'")).rows;assert.equal(audit.length,1);assert.equal(audit[0].metadata.sha256,sha(kit.rawPayload));assert.equal(JSON.stringify(audit).includes(f.input.instructions),false);
+ }finally{await f.close();}
+});
+
+
+test('cited comparison creates no findings and freezes both contextual links in an explicitly requested question',{timeout:30000},async()=>{
+ const f=await fixture();try{
+  const sources=[await f.finding(),await f.finding('Fictional supplier invoice amount GBP 200')];
+  const input={id:randomUUID(),mode:'comparison',question:'',sources},base=f.base+'/analysis',path=base+'/'+input.id;
+  const saved=await f.must<AnalysisRunRecord>(base,input);assert.equal(saved.run.suggestions.length,1);assert.equal(saved.run.suggestions[0]!.kind,'amount_difference');
+  assert.deepEqual((await f.must<AnalysisRunRecord>(base,input)).run,saved.run);
+  assert.equal((await f.call(base,{...input,question:'Changed fictional retry'})).statusCode,409);
+  assert.equal((await f.pool.query('SELECT count(*)::int n FROM findings WHERE case_id=$1',[f.caseId])).rows[0].n,2);
+  const decision={id:randomUUID(),expectedVersion:0,disposition:'request_check',reason:'Compare the fictional period and tax basis before drawing a conclusion.'},target=path+'/suggestions/0';
+  assert.equal((await f.call(target+'/decisions',decision)).statusCode,403);
+  await f.must(target+'/decisions',decision,f.reviewer.headers);
+  const followup={id:randomUUID(),decisionVersion:1,title:'Clarify the fictional amount basis',body:'Retain both accounts and alternative explanations.',ownerId:f.investigator.id,dueDate:null};
+  const work=await f.must<WorkItem>(target+'/followup',followup);assert.equal(work.kind,'question');assert.equal(work.id,followup.id);assert.equal(work.version,1);
+  const history=(await f.pool.query('SELECT version,snapshot,source_links FROM case_work_revisions WHERE case_id=$1 AND item_id=$2',[f.caseId,work.id])).rows;assert.equal(history.length,1);assert.equal(history[0].source_links.length,2);assert.equal(history[0].snapshot.id,work.id);
+  assert.deepEqual(await f.must<WorkItem>(target+'/followup',followup),work);
+  assert.equal((await f.call(target+'/followup',{...followup,id:randomUUID()})).statusCode,409);
+  assert.equal((await f.pool.query('SELECT count(*)::int n FROM findings WHERE case_id=$1',[f.caseId])).rows[0].n,2);
+  assert.equal((await f.call(path,undefined,f.client.headers)).statusCode,403);
+  const outsider=await f.member('reviewer');assert.equal((await f.call(path,undefined,outsider.headers)).statusCode,404);
+  await f.admin.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[tenant,f.caseId,f.reviewer.id]);assert.equal((await f.call(path,undefined,f.reviewer.headers)).statusCode,404);
+  await f.must(f.base+'/authority',f.authority);assert.equal((await f.call(path)).statusCode,409);
+ }finally{await f.close();}
+});
+
+test('analysis follow-up audit failure rolls back its work, both links, history and retry receipt atomically',{timeout:30000},async()=>{
+ const f=await fixture();try{
+  const sources=[await f.finding(),await f.finding('Fictional supplier invoice amount GBP 200')],id=randomUUID(),path=f.base+'/analysis/'+id+'/suggestions/0';
+  await f.must(f.base+'/analysis',{id,mode:'comparison',question:'',sources});await f.must(path+'/decisions',{id:randomUUID(),expectedVersion:0,disposition:'request_check',reason:'Fictional independent request for further investigation.'},f.reviewer.headers);
+  const input={id:randomUUID(),decisionVersion:1,title:'Fictional rollback check',body:'Compare the two exact source contexts.',ownerId:null,dueDate:null};
+  await f.admin.query("CREATE FUNCTION reject_analysis_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='analysis.followup_created' THEN RAISE EXCEPTION 'fictional analysis audit failure'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_analysis_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION reject_analysis_audit()");
+  try{assert.equal((await f.call(path+'/followup',input)).statusCode,500);
+   for(const [table,key] of [['case_work_items','id'],['case_work_links','item_id'],['case_work_revisions','item_id'],['case_analysis_followups','work_id']])assert.equal((await f.pool.query(`SELECT count(*)::int n FROM ${table} WHERE case_id=$1 AND ${key}=$2`,[f.caseId,input.id])).rows[0].n,0,table);
+  }finally{await f.admin.query('DROP TRIGGER reject_analysis_audit ON audit_events;DROP FUNCTION reject_analysis_audit()');}
+  await f.must(path+'/followup',input);assert.equal((await f.pool.query('SELECT count(*)::int n FROM case_work_links WHERE case_id=$1 AND item_id=$2',[f.caseId,input.id])).rows[0].n,2);
  }finally{await f.close();}
 });
