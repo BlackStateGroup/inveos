@@ -36,6 +36,15 @@ class ReportDocxTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 docx.verify(self.data, *args)
 
+    def test_disclosure_profile_is_distinct_and_still_requires_trusted_approval(self):
+        data = FIXTURE.with_name('fictional-disclosure-report.docx').read_bytes()
+        result = docx.verify(data, docx.digest(data), 'a' * 64)
+        self.assertEqual(result['format'], 'inveos_report_docx_v2')
+        self.assertTrue(result['paragraphsMatched'])
+        self.assertNotEqual(result['docxSha256'], docx.digest(self.data))
+        with self.assertRaises(ValueError):
+            docx.verify(data, docx.digest(self.data), 'a' * 64)
+
     def test_visible_edits_and_coherent_rewrites_need_a_trusted_fingerprint(self):
         self.parts[2] = self.parts[2].replace('Fictional Paperworks', 'Fictional replacement')
         with self.assertRaisesRegex(ValueError, 'Visible document'):

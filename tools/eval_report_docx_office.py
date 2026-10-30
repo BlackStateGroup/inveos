@@ -16,8 +16,9 @@ def run(*command):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--disclosure-profile', action='store_true')
     args = parser.parse_args()
-    source = Path(__file__).resolve().parents[1] / 'tests/fixtures/fictional-editable-report.docx'
+    source = Path(__file__).resolve().parents[1] / ('tests/fixtures/fictional-disclosure-report.docx' if args.disclosure_profile else 'tests/fixtures/fictional-editable-report.docx')
     original = source.read_bytes()
     checked = verify(original, hashlib.sha256(original).hexdigest(), 'a' * 64)
     output = args.output.resolve()
@@ -31,7 +32,8 @@ def main():
         run('libreoffice', profile, '--headless', '--convert-to', 'pdf', '--outdir', str(output), str(copied))
         pdf = output / (source.stem + '.pdf')
         text = run('pdftotext', str(pdf), '-')
-        for phrase in ['EDITABLE INTERNAL COPY', 'NOT A CLIENT RELEASE', 'Fictional Paperworks', 'Ελληνικά', '日本語', 'café', '<&>', 'a' * 64]:
+        notices = ['EDITABLE REPORT COPY', 'VERIFY DISCLOSURE APPROVAL SEPARATELY'] if args.disclosure_profile else ['EDITABLE INTERNAL COPY', 'NOT A CLIENT RELEASE']
+        for phrase in [*notices, 'Fictional Paperworks', 'Ελληνικά', '日本語', 'café', '<&>', 'a' * 64]:
             if phrase not in text:
                 raise ValueError('Rendered text omitted expected fictional content: ' + phrase)
         if copied.read_bytes() != original:
@@ -49,7 +51,7 @@ def main():
         else:
             raise ValueError('Office re-save incorrectly retained the trusted original fingerprint')
         run('pdftoppm', '-f', '1', '-singlefile', '-scale-to', '1300', '-png', str(pdf), str(output / 'fictional-docx-office'))
-        result = {'fixture': source.name, 'originalSha256': checked['docxSha256'], 'renderer': version, 'actualOfficeRender': True, 'renderedTextChecked': True, 'officeResaveChangedFingerprint': True, 'sourceBytesUnchanged': True, 'limitation': 'Text extraction is not glyph validation. Inspect the rendered page. Editor/font-specific layout and all-glyph coverage, Microsoft Word compatibility and client release are not qualified.'}
+        result = {'fixture': source.name, 'profile': checked['format'], 'originalSha256': checked['docxSha256'], 'renderer': version, 'actualOfficeRender': True, 'renderedTextChecked': True, 'officeResaveChangedFingerprint': True, 'sourceBytesUnchanged': True, 'limitation': 'Text extraction is not glyph validation. Inspect the rendered page. Editor/font-specific layout and all-glyph coverage, Microsoft Word compatibility and client release are not qualified.'}
         (output / 'office-receipt.json').write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps(result))
 

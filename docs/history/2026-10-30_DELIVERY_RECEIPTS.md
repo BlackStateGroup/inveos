@@ -157,3 +157,13 @@ PR **#104** merged as `7d1adac23e9cb222e34730597844989a09e778f8`. Reviewed head 
 ## Task planning batch merged and main-verified
 
 PR #105: reviewed `1cdcfb1373bfcd3f3c268bab35f768cb1ad8cf4f`, final Checks41014265720/job123926902331 passed423Node/175Python,0fail/skip,41production+4development browser journeys, office/host probes and lint/types/build. Final render inspected. Merge `8af846cd6da90c2e0d2f382f0fd5b7195611ee94`; main41015516487/job123930847518 passed the same actual acceptance. Initial passing receipt and local skips remain in docs/111.
+
+
+## Actual Keycloak MFA qualification merged
+
+PR **#106** merged as `5b9a9cdccf44004c1496a6ec1ca078d2d4bc4fb8`. Reviewed head `eaab214cacbe824d48b9613843cd3ca3f99ef995` passed **Checks41019350483 / job123943045424: 423 Node/178 Python, zero failures/skips, 41 production plus four development browsers**, actual office/host acceptance, lint/types/build. **Actual Keycloak41019350489 / job123942878250 passed all19 named checks in one complete real provider/browser journey**, plus actual provider boundaries and destructive host probes. Actual OTP/workspace renders inspected; source/privacy review complete, no outstanding feedback. Pinned binary/runtime/notice inventory is research qualification, not production/licence/security approval. Failures and limits remain in docs/112. Resulting-main **Checks41020517564 is pending**.
+
+
+PR106 resulting-main Checks41020517564 / job123946538729 passed at `5b9a9cdccf44004c1496a6ec1ca078d2d4bc4fb8`:423Node/178Python,zero failures/skips,41production+4development browsers,office/host/lint/types/build. PR107 initial41020339468 was cancelled (176Python passed; no complete Node result). Integrated `be280c6` Checks41020748125 / job123947455147 failed429/431Node,179Python passed. Both DOCX browser journeys rejected profile-less saved receipts; the actual PostgreSQL regression reproduced the omitted list-query field. Fix retains exact stored v1/v2 profiles. Development/office steps did not run in that failed job.
+
+PR107 `8168d066305fff166d3ce58b8058b6f2bc7b05c9`, Checks41021696663 / job123950255076:431Node/179Python and42+5browsers passed with zero skips; legacy office passed. Overall **failed** unchanged memory host probe (exit137 without Docker OOM flag), so new-profile office unrun. Actual recipient render inspected. Further actual PostgreSQL review reproduced a REPEATABLE READ attachment race; shared unique choice/backfill fixes it. Five focused checks plus types/lint passed after correcting two UUID/text upgrade-fixture failures. Final corrected-head acceptance pending.

@@ -91,7 +91,10 @@ def verify(data, expected_docx_sha256=None, expected_report_sha256=None):
     model = json.loads(raw, object_pairs_hook=unique_pairs, parse_constant=lambda _: (_ for _ in ()).throw(ValueError('Invalid JSON number')))
     require(isinstance(model, dict) and set(model) == {'format', 'profile', 'profileDigest', 'sourceReportSha256', 'redaction', 'paragraphs'}, 'Model shape')
     require(encoded(model) == raw, 'Non-canonical model bytes')
-    require(model['format'] == 'inveos_report_docx_model_v1' and model['profile'] == PROFILE['format'] and model['profileDigest'] == digest(encoded(PROFILE)), 'Unknown profile')
+    require(model['profile'] in ['inveos_report_docx_v1', 'inveos_report_docx_v2'], 'Unknown profile')
+    profile = {**PROFILE, 'format': model['profile']}
+    notice = 'EDITABLE INTERNAL COPY — NOT A CLIENT RELEASE' if model['profile'] == 'inveos_report_docx_v1' else 'EDITABLE REPORT COPY — VERIFY DISCLOSURE APPROVAL SEPARATELY'
+    require(model['format'] == 'inveos_report_docx_model_v1' and model['profileDigest'] == digest(encoded(profile)), 'Unknown profile')
     source = model['sourceReportSha256']
     require(fingerprint(source) and (expected_report_sha256 is None or source == expected_report_sha256), 'Source report fingerprint mismatch')
     redaction = model['redaction']
@@ -101,16 +104,16 @@ def verify(data, expected_docx_sha256=None, expected_report_sha256=None):
     require(10 <= reason_length <= 500 if redaction['count'] else redaction['reason'] == '', 'Redaction reason')
     paragraphs = model['paragraphs']
     require(isinstance(paragraphs, list) and 3 <= len(paragraphs) <= PROFILE['maxParagraphs'], 'Paragraph limit')
-    require(paragraphs[:3] == ['EDITABLE INTERNAL COPY — NOT A CLIENT RELEASE', 'Editing changes the file fingerprint. No review or release approval transfers to an edited copy.', 'Frozen report SHA-256: ' + source], 'Missing internal-copy notice')
+    require(paragraphs[:3] == [notice, 'Editing changes the file fingerprint. No review or release approval transfers to an edited copy.', 'Frozen report SHA-256: ' + source], 'Missing internal-copy notice')
     document = DECLARATION + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
     for paragraph in paragraphs:
         text = escape(paragraph).replace('\t', '</w:t><w:tab/><w:t xml:space="preserve">')
-        bold = '<w:b/>' if re.match(r'^(INVEOS INTERNAL REPORT|EDITABLE INTERNAL COPY|FINDING \d|DOCUMENT FINDING \d|TRANSCRIPT FINDING \d|WORKING CONTEXT|REPORT LIMITATIONS|ALLEGED EVENTS|TRANSCRIPT REASONING LINKS|DOCUMENT REASONING LINKS)', paragraph) else ''
+        bold = '<w:b/>' if paragraph == notice or re.match(r'^(INVEOS INTERNAL REPORT|EDITABLE INTERNAL COPY|FINDING \d|DOCUMENT FINDING \d|TRANSCRIPT FINDING \d|WORKING CONTEXT|REPORT LIMITATIONS|ALLEGED EVENTS|TRANSCRIPT REASONING LINKS|DOCUMENT REASONING LINKS)', paragraph) else ''
         document += '<w:p><w:pPr><w:spacing w:after="80"/></w:pPr><w:r><w:rPr><w:sz w:val="22"/>' + bold + '</w:rPr><w:t xml:space="preserve">' + text + '</w:t></w:r></w:p>'
     document += '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>'
     require(parts[2] == document, 'Visible document differs from the redacted semantic model')
     require(package(parts) == data, 'Non-canonical ZIP headers, extra bytes or metadata')
-    return {'format': PROFILE['format'], 'docxSha256': actual, 'sourceReportSha256': source, 'contentSha256': digest(raw), 'paragraphsMatched': True, 'paragraphCount': len(paragraphs), 'trustedDocxFingerprintMatched': expected_docx_sha256 is not None, 'limitation': 'Internal consistency only. This does not authenticate the source, current permission, human review, redaction completeness or legal admissibility. Editing invalidates the original fingerprint.'}
+    return {'format': profile['format'], 'docxSha256': actual, 'sourceReportSha256': source, 'contentSha256': digest(raw), 'paragraphsMatched': True, 'paragraphCount': len(paragraphs), 'trustedDocxFingerprintMatched': expected_docx_sha256 is not None, 'limitation': 'Internal consistency only. This does not authenticate the source, current permission, human review, redaction completeness or legal admissibility. Editing invalidates the original fingerprint.'}
 
 
 def main():
