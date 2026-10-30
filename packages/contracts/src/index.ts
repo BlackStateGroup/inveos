@@ -130,6 +130,7 @@ export type DocumentReportFinding = {
 };
 
 export type ReportDraft = {
+  composition?: FrozenReportComposition;
   status: 'draft_not_released';
   documentFindings?: DocumentReportFinding[];
   transcriptFindings?: TranscriptReportFinding[];
@@ -288,3 +289,13 @@ export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-prov
 
 export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,InvoiceLine,InvoiceSnapshot,InvoiceReview,InvoiceRevision,InvoiceSummary,InvoicePage,InvoiceCandidate,InvoiceEligibility,InvoiceExport} from './agency-invoicing.js';
 export type {FeedbackRelease,FeedbackState,FeedbackRequestRevision,FeedbackRequest,FeedbackResponseRevision,FeedbackPublication,FeedbackDetail,FeedbackRequestPage} from './portal-feedback.js';
+
+/** Composition is authored report context and layout, never a new evidential finding. */
+export type CompositionFindingKind='text'|'document'|'transcript'|'speech';
+export type CompositionSelection={kind:CompositionFindingKind;id:string;sha256:string};
+export type ReportOutline={name:string;scope:string;method:string;limitations:string;sections:Array<{id:string;title:string;findings:CompositionSelection[]}>};
+export type CompositionPayload={format:'inveos_report_outline_v1';caseId:string;id:string;version:number;state:'active'|'withdrawn';outline:ReportOutline;reason:string};
+export type CompositionReview={id:string;decision:'accepted'|'changes_requested';reason:string;reviewerId:string;reviewerName:string;recordedAt:string};
+export type CompositionRevision={payload:CompositionPayload;sha256:string;authorId:string;authorName:string;recordedAt:string;review:CompositionReview|null;canReview:boolean};
+export type FrozenReportComposition={format:'inveos_report_composition_v1';payload:CompositionPayload;sha256:string;authorId:string;authorName:string;recordedAt:string;review:CompositionReview};
+export type CompositionChoice=CompositionSelection&{text:string;reviewer:string;reviewedAt:string};

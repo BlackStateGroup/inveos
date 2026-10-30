@@ -1,3 +1,4 @@
+import {verifyFrozenComposition} from './report-composition-model.js';
 /** Deterministic, first-party PDF profile for frozen internal reports.
  *
  * The profile deliberately uses only the PDF standard Helvetica font with
@@ -55,28 +56,50 @@ function wrap(label:string,value:unknown,width=88){
 
 export function reportLines(report:ReportDraft,redacted:Set<string>,reason:string,format=wrap){
   const lines:string[]=['INVEOS INTERNAL REPORT','',...format('Case',`${report.case.ref} — ${report.case.title}`),...format('Client',report.case.client),...format('Jurisdiction',report.case.jurisdiction),...format('Scope',report.case.scope),''];
+  verifyFrozenComposition(report);
   let number=0;
-  for(const finding of report.findings){
-    number++;if(redacted.has(finding.id)){lines.push(`FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+  const textFinding=(finding:ReportDraft['findings'][number])=>{
+    number++;if(redacted.has(finding.id)){lines.push(`FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');return;}
     lines.push(`FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Source',finding.source.filename),...format('Source SHA-256',finding.source.sha256),...format('Citation',`${finding.source.startByte}-${finding.source.endByte}: ${finding.source.quote}`),...format('Authority',`${finding.source.policy.authorityId} v${finding.source.policy.authorityVersion}; ${finding.source.policy.lawfulBasis}`),'');
     const collection=report.sourceUse?.find(p=>p.record.original.id===finding.source.id&&p.collection)?.collection;
     if(collection){const c=collection.payload,r=c.receipt;lines.push(...format('Collection',`${r.captureMode==='fictional_fixture'?'Fictional fixture; provider not contacted':'Provider response'}; ${r.url}`),...format('Collection receipt',`${r.jobId}; SHA-256 ${c.receiptSha256}`),...format('Collection permission',`${r.authorisationId}; case authority v${r.authorityVersion}; source policy v${r.policyVersion}`),...format('Collection time',`response ${r.sourceTime} (not record creation); received ${r.receivedAt}`),'');}
 
   }
-  for(const finding of report.documentFindings??[]){
-    number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+  const documentFinding=(finding:NonNullable<ReportDraft['documentFindings']>[number])=>{
+    number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');return;}
     lines.push(`DOCUMENT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${finding.source.filename}; SHA-256 ${finding.source.sha256}`),...format('Page/region',`page ${finding.reference.page}; ${finding.reference.bbox.origin} [${finding.reference.bbox.l}, ${finding.reference.bbox.t}, ${finding.reference.bbox.r}, ${finding.reference.bbox.b}]`),...format('Reviewed passage',finding.reference.quote),...format('Citation SHA-256',finding.reference.citationDigest),...format('Derivative SHA-256',finding.extraction.derivativeDigest),...format('Finding limitation',finding.limitations),'');
   }
-  for(const finding of report.transcriptFindings??[]){
-    number++;if(redacted.has(finding.id)){lines.push(`TRANSCRIPT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+  const transcriptFinding=(finding:NonNullable<ReportDraft['transcriptFindings']>[number])=>{
+    number++;if(redacted.has(finding.id)){lines.push(`TRANSCRIPT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');return;}
     const c=finding.claim;lines.push(`TRANSCRIPT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...format('Transcript version',`${c.transcript.id} ${c.transcript.sourcePointer} v${c.transcript.version}`),...format('Transcript citation',`${c.reference.startByte}-${c.reference.endByte}: ${c.reference.quote}`),...format('Declared time',`${c.reference.startMs}-${c.reference.endMs} ms; audio alignment unverified`),...format('Declared speaker',`${c.reference.speakerLabel}; ${c.reference.speakerUncertain?'uncertain':'attributed in supplied record'}`),...format('Finding limitation',c.limitations),'');
   }
-  for(const finding of report.speechFindings??[]){
-    number++;if(redacted.has(finding.id)){lines.push(`SPEECH FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+  const speechFinding=(finding:NonNullable<ReportDraft['speechFindings']>[number])=>{
+    number++;if(redacted.has(finding.id)){lines.push(`SPEECH FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');return;}
     const c=finding.claim,r=c.reference,p=c.context.payload;
     lines.push(`SPEECH FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original audio',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...format('Recognition',`${r.jobId}; profile ${p.profileDigest}; raw ${p.rawDigest}`),...format('Speech account',`segment ${r.segmentIndex+1}, correction v${r.version}; correspondence decision ${r.correspondenceDigest}`),...format('Account citation',`${r.startByte}-${r.endByte} UTF-8: ${r.quote}`),...format('Reviewed range',`${r.account.startMs}-${r.account.endMs} ms; declared speaker ${r.account.speakerLabel}; ${r.account.speakerUncertain?'uncertain attribution':'human attribution, identity unverified'}`),...format('Finding limitation',c.limitations),'');
   }
-  const context=report.investigation;
+  if(report.composition){
+    const c=report.composition,p=c.payload,o=p.outline,withheld=redacted.size>0;
+    lines.push('REPORT COMPOSITION v1 — AUTHOR CONTEXT, NOT FINDINGS',...format('Outline version',p.version),...format('Outline SHA-256',c.sha256),...format('Composition review',`${c.review.reviewerName} at ${c.review.recordedAt}`));
+    if(withheld)lines.push('[COMPOSITION NAME, CONTEXT AND SECTION LABELS WITHHELD WITH REDACTION]');
+    else lines.push(...format('Outline name',o.name),...format('Declared report scope — not a finding',o.scope),...format('Declared method — not a finding',o.method),...format('Declared limitations — not findings',o.limitations));
+    lines.push('The layout and context do not change source findings or approve client release.','');
+    for(const [index,section] of o.sections.entries()){
+      lines.push(`SECTION ${index+1} — AUTHOR LABEL, NOT A FINDING`,...format('Section label',withheld?'[WITHHELD]':section.title),'');
+      for(const ref of section.findings){
+        if(ref.kind==='text')textFinding(report.findings.find(f=>f.id===ref.id)!);
+        else if(ref.kind==='document')documentFinding(report.documentFindings!.find(f=>f.id===ref.id)!);
+        else if(ref.kind==='transcript')transcriptFinding(report.transcriptFindings!.find(f=>f.id===ref.id)!);
+        else speechFinding(report.speechFindings!.find(f=>f.id===ref.id)!);
+      }
+    }
+  }else{
+    for(const finding of report.findings)textFinding(finding);
+    for(const finding of report.documentFindings??[])documentFinding(finding);
+    for(const finding of report.transcriptFindings??[])transcriptFinding(finding);
+    for(const finding of report.speechFindings??[])speechFinding(finding);
+  }
+  const context=report.composition?undefined:report.investigation;
   if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...format('-',JSON.stringify(item)));}lines.push('');}
   if(context?.transcriptLinks?.length){
     lines.push('TRANSCRIPT REASONING LINKS — WORKING CONTEXT');

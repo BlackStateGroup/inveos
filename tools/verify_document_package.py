@@ -275,7 +275,7 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         transcripts = report.get('transcriptFindings', [])
         require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) + len(speeches) <= 1000, 'Mixed finding count limit')
         if legacy or transcripts or speeches:
-            original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'sourceUse')}
+            original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'sourceUse', 'composition')}
             # The complete mixed-source chronology is validated below, after both source families.
             original_report['investigation'] = {key: value for key, value in report.get('investigation', {}).items() if key != 'chronology'}
             verify_report(json.dumps(original_report, ensure_ascii=False).encode('utf-8'))
@@ -290,6 +290,14 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
                 require(same(source, sources[source['id']]), 'Conflicting document original metadata')
             sources[source['id']] = source
         source_use_count = verify_source_use(report)
+        if __package__:
+            from .verify_report_composition import verify_composition
+        else:
+            from verify_report_composition import verify_composition
+        try:
+            composition_count = verify_composition(report)
+        except ValueError as exc:
+            raise InvalidReport('Invalid frozen report composition') from exc
         working_links = verify_document_work_links(report)
         transcript_links = verify_transcript_work_links(report)
         speech_links = verify_speech_work_links(report)
@@ -303,7 +311,7 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
     except (KeyError, TypeError, IndexError, AttributeError, UnicodeError, OverflowError, RecursionError, StopIteration) as exc:
         raise InvalidReport('Malformed document package') from exc
     return {'status': 'integrity_checks_passed', 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
-            'caseId': case_id, **({'speechWorkLinksChecked': speech_links} if speech_links else {}), **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}), 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
+            'caseId': case_id, **({'compositionFindingsChecked': composition_count} if composition_count else {}), **({'speechWorkLinksChecked': speech_links} if speech_links else {}), **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}), 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
             **({'transcriptFindingsChecked': len(transcripts), 'transcriptWorkLinksChecked': transcript_links} if transcripts or transcript_links else {}),
             **({'speechFindingsChecked': len(speeches)} if speeches else {}), 'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
             'releaseStatus': 'draft_not_released', 'limitations': 'Consistency only; no parser execution, source truth, reviewer authentication, current server policy, signature or release certification. Trust report and package fingerprints through a separate channel.'}
