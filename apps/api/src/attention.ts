@@ -70,6 +70,28 @@ export const attentionCandidates=`WITH scope AS (
  AND NOT EXISTS(SELECT 1 FROM transcript_claim_reviews r WHERE r.tenant_id=x.tenant_id AND r.case_id=x.case_id AND r.claim_id=x.id)
  AND NOT EXISTS(SELECT 1 FROM transcript_claim_withdrawals w WHERE w.tenant_id=x.tenant_id AND w.case_id=x.case_id AND w.claim_id=x.id)
  UNION ALL
+ SELECT x.case_id,x.id,'speech_review','reviews',left(x.snapshot->>'text',150),NULL,NULL,x.digest::text,'Speech interpretation awaits independent review',d.evidence_id,x.job_id,'',NULL
+ FROM speech_claims x JOIN scope c ON c.tenant_id=x.tenant_id AND c.id=x.case_id
+ JOIN speech_derivatives d ON d.tenant_id=x.tenant_id AND d.case_id=x.case_id AND d.job_id=x.job_id
+ JOIN integrity_jobs j ON j.tenant_id=d.tenant_id AND j.case_id=d.case_id AND j.id=d.job_id
+ WHERE $3='reviewer' AND x.proposed_by<>$2 AND j.requested_by<>$2 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')
+ AND d.authority_version=c.authority_version
+ AND x.segment_version=(SELECT coalesce(max(cr.version),0) FROM speech_segment_corrections cr WHERE cr.tenant_id=x.tenant_id AND cr.case_id=x.case_id AND cr.job_id=x.job_id AND cr.segment_index=x.segment_index)
+ AND NOT EXISTS(SELECT 1 FROM speech_segment_corrections cr WHERE cr.tenant_id=x.tenant_id AND cr.case_id=x.case_id AND cr.job_id=x.job_id AND cr.segment_index=x.segment_index AND cr.actor_id=$2)
+ AND NOT EXISTS(SELECT 1 FROM speech_claim_reviews r WHERE r.tenant_id=x.tenant_id AND r.case_id=x.case_id AND r.claim_id=x.id)
+ AND NOT EXISTS(SELECT 1 FROM speech_claim_withdrawals w WHERE w.tenant_id=x.tenant_id AND w.case_id=x.case_id AND w.claim_id=x.id)
+ UNION ALL
+ SELECT d.case_id,d.job_id,'speech_correspondence_review','reviews',left(e.filename,120)||' · segment '||((seg.value->>'index')::int+1)::text,NULL,NULL,
+ d.output_digest::text||':'||cv.version::text,'Speech correspondence awaits independent review',d.evidence_id,d.job_id,':'||(seg.value->>'index'),NULL
+ FROM speech_derivatives d JOIN scope c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+ JOIN integrity_jobs j ON j.tenant_id=d.tenant_id AND j.case_id=d.case_id AND j.id=d.job_id
+ JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
+ CROSS JOIN LATERAL jsonb_array_elements(convert_from(d.output_bytes,'UTF8')::jsonb->'segments') seg(value)
+ CROSS JOIN LATERAL (SELECT coalesce(max(cr.version),0) version FROM speech_segment_corrections cr WHERE cr.tenant_id=d.tenant_id AND cr.case_id=d.case_id AND cr.job_id=d.job_id AND cr.segment_index=(seg.value->>'index')::int) cv
+ WHERE $3='reviewer' AND j.requested_by<>$2 AND j.status='succeeded' AND c.status='Active' AND c.lifecycle_state IN ('Active','Review') AND d.authority_version=c.authority_version AND e.authority_version=c.authority_version
+ AND NOT EXISTS(SELECT 1 FROM speech_segment_corrections cr WHERE cr.tenant_id=d.tenant_id AND cr.case_id=d.case_id AND cr.job_id=d.job_id AND cr.segment_index=(seg.value->>'index')::int AND cr.actor_id=$2)
+ AND NOT EXISTS(SELECT 1 FROM speech_segment_reviews r WHERE r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.job_id=d.job_id AND r.segment_index=(seg.value->>'index')::int AND r.version=cv.version)
+ UNION ALL
  SELECT r.case_id,r.id,'report_review','reviews','Frozen report '||left(r.id::text,8),NULL,NULL,r.digest::text||':'||c.authority_version::text,'Frozen report awaits independent review',NULL,NULL,'',r.id
  FROM report_revisions r JOIN scope c ON c.tenant_id=r.tenant_id AND c.id=r.case_id
  WHERE $3='reviewer' AND r.created_by<>$2 AND c.status='Active' AND c.authority_version IS NOT NULL AND c.lifecycle_state NOT IN ('Closed','Archived')
@@ -90,7 +112,7 @@ export const attentionCandidates=`WITH scope AS (
  AND NOT EXISTS(SELECT 1 FROM report_revision_reviews v WHERE v.tenant_id=x.tenant_id AND v.case_id=x.case_id AND v.revision_id=x.revision_id AND v.decision='request_changes')
 ), current AS (SELECT e.*,e.kind||':'||e.case_id::text||':'||e.id::text||e.extra item_key,c.ref case_ref,c.title case_title FROM entries e JOIN scope c ON c.id=e.case_id)
 `;
-function display(r:QueryResultRow):AttentionEntry{return {key:r.item_key,revision:r.revision,caseId:r.case_id,caseRef:r.case_ref,caseTitle:r.case_title,id:r.id,kind:r.kind,category:r.category,title:r.title??'Expired upload',status:r.status,dueDate:r.due_date,workKind:r.work_kind,evidenceId:r.evidence_id,jobId:r.job_id,contextId:r.context_id};}
+function display(r:QueryResultRow):AttentionEntry{return {key:r.item_key,revision:r.revision,caseId:r.case_id,caseRef:r.case_ref,caseTitle:r.case_title,id:r.id,kind:r.kind,category:r.category,title:r.title??'Expired upload',status:r.status,dueDate:r.due_date,workKind:r.work_kind,evidenceId:r.evidence_id,jobId:r.job_id,contextId:r.context_id,...(r.kind==='speech_correspondence_review'?{segmentIndex:Number(r.extra.slice(1))}:{})};}
 export function registerAttention(app:FastifyInstance,s:Services){
  const internal=async(r:FastifyRequest)=>{await s.authenticate(r);if(r.actor!.role==='client')throw new ApiError(403,'Internal attention queue only.');};
  const tx=<T>(run:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");await c.query("SET LOCAL lock_timeout='2s'");return run(c);});

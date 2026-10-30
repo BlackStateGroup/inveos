@@ -12,7 +12,7 @@ No new application dependency, external collection, model or parser is introduce
 
 ## Run and verification
 
-Install the existing locked workspaces, apply migration063 through the disposable schema administrator and run the API as the restricted application role. Use the existing fictional speech workflow to preserve a WAV, process it, correct/independently review correspondence, propose an interpretation and obtain its separate independent review.
+Install the existing locked workspaces, apply migrations063–064 through the disposable schema administrator and run the API as the restricted application role. Use the existing fictional speech workflow to preserve a WAV, process it, correct/independently review correspondence, propose an interpretation and obtain its separate independent review.
 
 In Brief or Tasks, open the work record's source details and choose a reviewed speech finding. Inspect the selected source, record a supporting/contrary/context reason, and save. Later corrections require fresh review before a supported/resolved assessment. Withdraw superseded links explicitly to preserve history. Search this case offers separate speech interpretation/finding filters and opens the matching processing record.
 
@@ -28,4 +28,15 @@ Broad regression, populated migration acceptance, actual browser recovery/reload
 
 ## Remaining gates
 
-Speech source joins into alleged chronology, graph and review attention are still outstanding. This does not complete cited AI, long-recording/codecs, omission editing or native offline/device delivery. Preserve the historical model limitations, current source-use/release controls and full remaining plan in [71](71_REMAINING_DELIVERY_PLAN.md).
+Speech source joins into alleged chronology, graph and review attention are now implemented in the parallel build phase; their acceptance checks remain unrun. This does not complete cited AI, long-recording/codecs, omission editing or native offline/device delivery. Preserve the historical model limitations, current source-use/release controls and full remaining plan in [71](71_REMAINING_DELIVERY_PLAN.md).
+
+
+## Parallel implementation phase — 30 October 2026
+
+The delivery instruction now prioritises connected feature implementation across parallel agents before combined acceptance. The earlier reasoning-only checkpoint remains separate: 432 Node checks passed with 50 browser skips out of482;203 Python checks passed, and the later populated-migration check passed separately. These results do not verify the following additions.
+
+Migration064 adds same-case speech references to relationship sources while preserving old fingerprints. Speech findings can supply graph edges, sourced entity attributes and uncertain chronology accounts. Source inspection reverifies the original, derivative, correction and review lineage; later corrections/withdrawals mark relationships as needing review. Frozen chronology and the independent report verifier recognise the new source family.
+
+The personal attention queue now includes exact speech interpretations and per-segment audio correspondence. Correspondence keys bind job plus segment; revisions bind derivative digest plus correction version. Requesters/correction authors are excluded; interpretation authors are also excluded from interpretation review. Assignment and acknowledgement history reuse the exact-version reviewer workflow. Navigation opens the exact job/segment or targeted claim, even outside the first list page. No reminder acknowledges or approves evidence. Current original, authority and source-use checks still occur on inspection and decisions.
+
+Compilation passes for web, contracts and API (`/tmp/inveos-speech-build-feedback.log`). PostgreSQL migration, negative access/review states, standalone export, browser navigation and rendered layout checks for these additions are **not yet run**. They belong to the combined acceptance phase. The new API route returns an individual stored claim; it does not certify source bytes on listing. No new dependencies, external collection or model inference were introduced.

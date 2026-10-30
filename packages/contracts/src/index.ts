@@ -59,7 +59,7 @@ export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkIte
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
 export type AllegedTime = {precision: 'instant' | 'day' | 'month' | 'range' | 'unknown'; start: string | null; end: string | null; timezone: string; note: string};
-export type ChronologySource = {kind: 'text_finding' | 'document_finding' | 'transcript_finding'; findingId: string};
+export type ChronologySource = {kind: 'text_finding' | 'document_finding' | 'transcript_finding' | 'speech_finding'; findingId: string};
 export type ChronologyInput = {id: string; title: string; account: string; time: AllegedTime; source: ChronologySource; status: 'alleged' | 'disputed' | 'withdrawn'};
 export type ChronologyEvent = ChronologyInput & {caseId: string; version: number; createdBy: string; createdAt: string; recordedAt: string; interpretation: 'recorded_account_not_finding'};
 export type ChronologyEdit = Omit<ChronologyInput, 'id'> & {expectedVersion: number; reason: string};
@@ -224,7 +224,7 @@ export type ReviewAssignmentPage={current:ReviewAssignment|null;pending:boolean;
 export type ReviewAssignmentContext=Pick<AttentionEntry,'key'|'revision'|'caseId'|'caseRef'|'caseTitle'|'title'>;
 export type ReviewRegisterCursor={caseId:string;key:string;revision:string};
 export type ReviewRegisterPage={items:(ReviewAssignmentContext&{pending:boolean;assignment:ReviewAssignment})[];next:ReviewRegisterCursor|null};
-export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'report_review'|'pdf_review'|'docx_review'|'correspondence_review'|'source_review'|'expense_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;acknowledged?:boolean;assignment?:ReviewOwnership|null};
+export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'speech_review'|'speech_correspondence_review'|'report_review'|'pdf_review'|'docx_review'|'correspondence_review'|'source_review'|'expense_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;segmentIndex?:number;acknowledged?:boolean;assignment?:ReviewOwnership|null};
 export type AttentionPage={items:AttentionEntry[];next:string|null;preferences:AttentionPreferences;asOf:string;interpretation:'personal_attention_not_review'};
 
 export type FieldDevice={id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
@@ -244,7 +244,7 @@ export type TranscriptClaimReview={id:string;claimId:string;claimDigest:string;a
 export type TranscriptClaimRecord={claim:TranscriptClaim;review:TranscriptClaimReview|null;findingId:string|null;withdrawal:{id:string;actorId:string;reason:string;recordedAt:string}|null;state:'candidate'|'reviewed'|'rejected'|'needs_review'|'withdrawn';canReview:boolean;canWithdraw:boolean};
 export type TranscriptReportFinding={kind:'reviewed_transcript';id:string;text:string;reviewer:string;reviewedAt:string;claim:TranscriptClaim;review:TranscriptClaimReview;originalBase64:string};
 
-export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding;
+export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding | SpeechReportFinding;
 
 export type CaseInvitation={id:string;caseId:string;caseRef:string;caseTitle:string;recipientId:string;recipientName:string;ownerId:string;ownerName:string;reason:string;authorityVersion:number;approvedScope:string;approvedPurpose:string;offeredAt:string;expiresAt:string;response:{id:string;decision:'accept'|'decline';reason:string;actorId:string;recordedAt:string;accessVersion:number|null}|null;cancellation:{id:string;reason:string;actorId:string;recordedAt:string}|null;hasCurrentMembership:boolean;canAccept:boolean;state:'offered'|'accepted'|'declined'|'cancelled'|'expired'|'scope_changed'|'already_assigned'};
 export type CaseInvitationPage={items:CaseInvitation[];next:string|null};

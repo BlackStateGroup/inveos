@@ -1,3 +1,9 @@
+## Active parallel build phase — 30 October 2026
+
+User explicitly requested implementation first, parallel agents, then combined testing. Root branch `feat/speech-casework` now adds speech chronology/graph and exact-version attention/navigation after its earlier reasoning/search implementation. Migration064 is reserved for root; compiler feedback passes, new acceptance checks remain unrun. See docs/123. Do not treat previous reasoning-only counts as verification of these additions. No new PR or merge for this batch yet.
+
+Parallel branches start from `a81ef261`: OSINT expansion owns migrations065–069/docs124; Field device/offline recovery owns070–074/docs125; agency draft invoicing owns075–079/docs126. Root will review/integrate the separate commits, preserve feature-specific receipts, then coordinate combined actual acceptance. They must not modify this central handoff or silently claim external/native/provider gates complete. Current main remains reviewed PR115; draft116 acceptance was already running before this build-first instruction and its final result still needs recording.
+
 # INVEOS current engineering handoff
 
 Updated 30 October 2026. **The product is not complete.** [Remaining plan](docs/71_REMAINING_DELIVERY_PLAN.md), [requirements](docs/02_PRODUCT_REQUIREMENTS.md), [work packages](docs/21_ENGINEERING_WORKPACKAGES.md). Historical receipts: [29 October](docs/history/2026-10-29_DELIVERY_RECEIPTS.md), [30 October](docs/history/2026-10-30_DELIVERY_RECEIPTS.md). Preserve their failed and superseded evidence.
