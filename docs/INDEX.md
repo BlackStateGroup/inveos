@@ -198,3 +198,5 @@
 - [97 — Personal attention and reminder preferences](97_PERSONAL_ATTENTION.md)
 
 - [98 — Versioned larger-input OCR and page rendering](98_EXPANDED_DOCUMENT_PROFILES.md)
+
+- [99 — Locked Debian archives for the OCR research runtime](99_OCR_PACKAGE_ARCHIVES.md)

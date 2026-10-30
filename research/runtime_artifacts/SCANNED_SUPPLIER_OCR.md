@@ -26,6 +26,7 @@ The fixture is a clean, synthetically rasterised English document. It does not q
 The existing `Pinned Docling research build` workflow acquires the established source/runtime bundle, then runs:
 
 ```bash
+python3 tools/ocr_package_archives.py
 python3 tools/experiment_tesseract_supplier.py
 ```
 
@@ -44,3 +45,6 @@ Final implementation verification: [Research #29](https://github.com/BlackStateG
 Root OCR/data package versions and the base image are fixed. Transitive apt resolution is measured in the resulting inventory, not yet captured in a prior complete package-archive lock; a later apt resolution must not be represented as the same runtime without comparing its actual image/file hashes. Registry publication and application incorporation are not authorised by this experiment. Before choosing a shipping runtime, lock the full package/data closure, retain its required notices, audit vulnerabilities and build/source provenance, review all licence obligations, broaden the corpus and qualify the durable job/OCR citation boundary. Existing production/legal/privacy and real-device gates remain open.
 
 The actual provider notices contain numerous component-specific terms, including copyleft, advertising-clause and unclear `noderivs`/`none`/public-domain labels. These package-wide labels do not establish which terms apply to each loaded binary. File-by-file applicability, source obligations and redistribution clearance remain unresolved; do not promote the packaged research image to an approved application runtime merely because the primary Tesseract/data notices say Apache-2.0.
+
+
+30 October update: [archive locking](../../docs/99_OCR_PACKAGE_ARCHIVES.md) now acquires all 161 exact installed Debian archives and audits their control/notice records before a networkless build. The preceding rolling-apt evidence remains historical. The current workflow requires the committed archive lock and still checks the original installed/native/model/notice inventory before execution. Source archives, signed-index evidence, file-specific obligations and approvals remain open. Consult the linked evaluation for actual rebuilt-image verification; static acquisition is not a parser benchmark.

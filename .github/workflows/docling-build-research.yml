@@ -16,6 +16,9 @@ on:
       - 'tools/run_tesseract_supplier.py'
       - 'tools/run_ocr_document.py'
       - 'tools/prepare_ocr_worker.py'
+      - 'tools/ocr_package_archives.py'
+      - 'tests/test_ocr_package_archives.py'
+      - 'research/runtime_artifacts/tesseract-archives.lock.json'
       - 'research/runtime_artifacts/ocr-wheels.json'
       - 'tools/verify_ocr_derivative.py'
       - 'tools/verify_document_package.py'
@@ -142,6 +145,8 @@ jobs:
           from tools.build_docling_research import IMAGE
           Path('.research-cache/worker-qualification.json').write_text(json.dumps({**run_probe(IMAGE,runtime=True),'checkedAt':datetime.now(timezone.utc).isoformat()}))
           PYTHON
+      - name: Acquire and statically audit locked Debian archives without installation
+        run: timeout 300s python3 tools/ocr_package_archives.py
       - name: Measure isolated fictional scanned supplier OCR baseline
         run: |
           npm run build

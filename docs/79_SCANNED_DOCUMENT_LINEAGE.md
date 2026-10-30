@@ -28,9 +28,10 @@ python3 -m unittest discover -s tests -q
 node --import tsx --test apps/api/test/ocr-derivative.test.ts apps/api/test/document-derivative.test.ts apps/api/test/raster-derivative.test.ts apps/api/test/document-package.test.ts
 ```
 
-The existing `docling-build-research.yml` acquires pinned artifacts as ignored data, proves isolation, runs native extraction and qualifies the selected native image. Its OCR step builds only the first-party Dockerfile in a private context, narrows the wheel bundle, measures actual scan OCR and runs:
+The existing `docling-build-research.yml` acquires pinned artifacts as ignored data, proves isolation, runs native extraction and qualifies the selected native image. Its OCR step builds the first-party Dockerfile and verified public Debian archives in a private context without network, narrows the wheel bundle, measures actual scan OCR and runs:
 
 ```sh
+python3 tools/ocr_package_archives.py
 timeout 600s python3 tools/experiment_tesseract_supplier.py --case-acceptance
 ```
 
