@@ -5699,6 +5699,7 @@ test('historical DOCX v1 stays byte-identical and retryable while only new v2 co
   const base=`${f.revisionsUrl}/${f.revision.id}/editable-renditions`,legacy=base+'/'+id,retry=await request('POST',base,context.demo!,{payload:input});assert.equal(retry.statusCode,200,retry.body);assert.equal(retry.json().id,id);assert.equal(retry.json().docxSha256,old.digest);assert.equal(retry.json().profile,'inveos_report_docx_v1');assert.deepEqual((await request('GET',legacy,context.demo!)).rawPayload,old.bytes);
   assertError(await request('POST',legacy+'/reviews',f.reviewer,{payload:{...f.review,docxSha256:old.digest}}),409);assertError(await request('POST',legacy+'/disclosures',context.demo!,{payload:{...f.release,docxSha256:old.digest}}),409);
   assert.equal(f.rendition.profile,'inveos_report_docx_v2');assert.notEqual(old.digest,f.rendition.docxSha256);assert.deepEqual((await request('GET',legacy,context.demo!)).rawPayload,old.bytes);
+  const saved=(await request('GET',base,context.demo!)).json().items;assert.equal(saved.find((row:{id:string})=>row.id===id).profile,'inveos_report_docx_v1');assert.equal(saved.find((row:{id:string})=>row.id===f.rendition.id).profile,'inveos_report_docx_v2');
   const file=join(context.storageRoot!,'fictional-retained-internal-v1.docx');await writeFile(file,old.bytes);await promisify(execFile)('python3',[fileURLToPath(new URL('../../../tools/verify_report_docx.py',import.meta.url)),file,'--expected-docx-sha256',old.digest,'--expected-report-sha256',f.revision.sha256],{timeout:10000});
  }finally{await f.app.close();}
 });

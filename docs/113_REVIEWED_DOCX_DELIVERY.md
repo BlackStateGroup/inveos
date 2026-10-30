@@ -46,3 +46,7 @@ python3 tools/eval_report_docx_office.py --disclosure-profile --output output/ev
 ```
 
 Set `INVEOS_TEST_BROWSER=1` only on a host with working sandboxed Chrome. CI retains the recipient render and office render/receipt as separate artifacts. Original DOCX copies and approved-delivery bytes are separate from editable external copies. Broader report composition, client re-import/correction workflows, professional/legal acceptance and full platform readiness remain outstanding.
+
+## Hosted acceptance correction
+
+Initial Checks41020339468 at `9347f36e928fb0c8036939e96d4494a95ad97080` was cancelled when integrating merged #106;176Python passed, no complete Node/browser acceptance is claimed. Integrated head `be280c6ea882a6ae04ff51b6b8719610eeba42ee` passed179Python locally and in hosted Checks41020748125 / job123947455147, but hosted Node acceptance failed **429/431, two browser failures, zero skips**. Both the old editable-history journey and new delivery journey refused saved downloads because the list query omitted `profile`; creation/recovery returned it correctly. The actual PostgreSQL list regression reproduced `undefined` for the retained v1 profile before the fix. Selecting the stored profile corrects both v1/v2 receipts without weakening browser fingerprint validation. Development and office steps did not run in the failed job. Final rerun remains pending.
