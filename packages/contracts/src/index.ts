@@ -321,3 +321,4 @@ export type CompositionChoice=CompositionSelection&{text:string;reviewer:string;
 export * from './field-sessions.js';
 export type {CollaboratorInstructions,CollaboratorPublication,CollaboratorSubmission,CollaboratorResult,ExternalWork,CollaboratorDraft,InternalCollaboratorWork} from './collaborator-work.js';
 export type {TemplateEntryKind,TaskTemplateEntry,TaskTemplateFields,TaskTemplatePayload,TaskTemplateReview,TaskTemplateSummary,TaskTemplateRevision,TemplateChoice,TaskTemplatePreviewPayload,TaskTemplatePreview,TaskTemplateApplication} from './task-templates.js';
+export * from './field-dispatch.js';
