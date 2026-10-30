@@ -1,6 +1,6 @@
 # Actual Keycloak MFA qualification
 
-This increment connects the existing strict pinned OIDC relying party to actual Keycloak with a mandatory password/OTP flow and fictional enrolled users. It adds no application package or production deployment. Actual execution remains pending at this checkpoint; source acquisition, inventory, type/lint checks are not MFA acceptance.
+This increment connects the existing strict pinned OIDC relying party to actual Keycloak with a mandatory password/OTP flow and fictional enrolled users. It adds no application package or production deployment. Actual execution passed at reviewed head `eaab214cacbe824d48b9613843cd3ca3f99ef995`: all19 named provider/browser checks, actual provider boundaries and destructive host probes passed. PR #106 is merged; exact receipts are below. This is disposable integration qualification, not production approval.
 
 ## Source and runtime provenance
 
@@ -52,3 +52,8 @@ At `369ee2daf82ba1cdd6c84b0f4431d50bd880b063`, **41018315244 / job 123939585740 
 At `6683f2997c9dc05a66b576f3e131cbb17cefdf86`, **41018638990 / job 123940604006** passed fourteen named checks, including actual password+OTP, signed ACR/AMR validation, case creation/reload, API restart, immediate binding withdrawal, denied re-login/unmapped subject and unassigned-case denial. The complete journey still **failed** because its client-case assertion expected 403 while the existing case boundary correctly returned 404. The expectation is corrected to the observed non-disclosing denial; server access policy is unchanged.
 
 At `b990785369a293f9bf80370482b809d5e3ee4c55`, **41018961445 / job 123941627781** failed during the reviewer’s second OTP sign-in: the test reused a previously accepted code in the same time step, and actual Keycloak rejected it. Eleven named checks had passed. The fixture now waits for the next real TOTP step when reusing an account; replay protection remains enabled and no future/stale code is substituted.
+
+## Completed qualification
+
+PR **#106** merged as `5b9a9cdccf44004c1496a6ec1ca078d2d4bc4fb8`. Reviewed head `eaab214cacbe824d48b9613843cd3ca3f99ef995` passed **Checks41019350483 / job123943045424: 423 Node/178 Python, zero failures/skips, 41 production plus four development browsers**, actual office/host acceptance, lint/types/build. **Actual Keycloak41019350489 / job123942878250 passed all19 named checks in one complete real provider/browser journey**, plus actual provider boundaries and destructive host probes. Actual OTP/workspace renders inspected; source/privacy review complete, no outstanding feedback. Pinned binary/runtime/notice inventory is research qualification, not production/licence/security approval. Failures and limits remain in docs/112. Resulting-main **Checks41020517564 is pending**.
+
