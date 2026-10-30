@@ -1,3 +1,7 @@
+## Current root addition: sensitivity and handling
+
+Root implements migration115/docs138: versioned case sensitivity labels, separate internal-only/current sharing controls, case-locked reviewer decisions and immutable audited history. Shared release checks and portal discovery/download/feedback enforce current restrictions. No declaration preserves historical controls and remains labelled unassessed. Web/contracts/API compilation passed (`/tmp/inveos-case-handling-compile.log`); all runtime/migration/API/browser checks remain unrun. Restricted collaborator branch must call the shared helper once integrated; child has been notified. Field sessions, Tika application and collaborator work continue; preserve implementation-first steering before combined acceptance.
+
 ## Integrated report/bulk/research checkpoint
 
 Root branch `feat/platform-build-batch` in `/code/inveos-speech-casework` now integrates bulk246007c6 at534e5bc5, research/GLEIFd56778ee at7f8bb781, and report compositioncfe1d8f6 at96d11cf9. All shared Field/research provenance rows remain inside each visible finding's redaction guard after composition refactoring. Both independent verifiers preserve Field and composition checks. Composition helper imports are optional for legacy reports; mixed document verification strips both added proof/composition fields only from its temporary partial source-family sub-report, then verifies the full package. Source-family rendering now also resolves speech-backed chronology.

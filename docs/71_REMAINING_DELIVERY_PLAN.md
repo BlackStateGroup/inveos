@@ -26,3 +26,5 @@ Build-first parallel batch (not merged/accepted): root speech joins and cited ru
 
 
 Expanded build branch `feat/platform-build-batch` integrates agency, Field recovery, OSINT/RDAP/webpage workflows and release-bound portal feedback; root adds cited source comparisons with explicitly created source-linked follow-up questions, desktop batch intake and separate source/receipt search facets. See docs123–133 and each handoff. Report composition, bulk processing and GLEIF follow-through are in progress. TypeScript feedback passes at the recorded build checkpoints; new database/browser/offline/worker acceptance remains unrun, and this branch is not merged into main. Native delivery and semantic AI remain unimplemented beyond the explicitly bounded browser/rule capabilities; external production/sign-off gates remain open.
+
+Root adds P0 sensitivity/handling decisions (docs138/migration115), including server-enforced internal-only recipient restrictions. Compilation passes; database/API/browser/combined acceptance is unrun. Field sessions100–104, PDF-only Tika application105–109 and restricted collaborator work110–114 remain in active implementation.

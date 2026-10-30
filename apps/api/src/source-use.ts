@@ -1,3 +1,4 @@
+import {assertCaseSharing} from './case-handling.js';
 import {researchProvenance} from './research-provenance.js';
 import {collectionProvenance} from './collection-provenance.js';
 import {createHash} from 'node:crypto';
@@ -28,6 +29,7 @@ export async function sourceUseProofs(c:PoolClient,tenantId:string,caseId:string
  });
 }
 export async function reportSourceUse(c:PoolClient,tenantId:string,caseId:string,report:ReportDraft,use:'analysis'|'release'){
+ if(use==='release')await assertCaseSharing(c,tenantId,caseId);
  const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id),...(report.speechFindings??[]).map(f=>f.source.id)])].sort(),proofs:SourceUseProof[]=[];
  for(const id of ids){const items=await sourceUseProofs(c,tenantId,caseId,id,use),collection=await collectionProvenance(c,tenantId,caseId,id),research=await researchProvenance(c,tenantId,caseId,id);if((collection||research)&&!items.length)throw new ApiError(409,'Collected source requires its registered source-use decisions.');proofs.push(...items.map(proof=>({...proof,...(collection?{collection}:{}),...(research?{research}:{})})));}return proofs.sort((a,b)=>a.record.id.localeCompare(b.record.id));
 }

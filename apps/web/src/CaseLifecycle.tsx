@@ -1,3 +1,4 @@
+import {CaseHandling} from './CaseHandling';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {CaseLifecycle as State,CaseStage} from '@inveos/contracts';
 import {Badge,Panel} from './ui';
@@ -9,7 +10,7 @@ export function CaseLifecycle({caseId,csrf,onSaved,openAuthority}:{caseId:string
  async function load(before?:number){if(working.current)return;working.current=true;setBusy(true);setError('');try{let value=await api(before?'?before='+before:'');if(before&&data?.version!==value.version){value=await api();before=undefined;}if(live.current){if(before&&data?.version===value.version)setData({...value,history:[...data.history,...value.history]});else{setData(value);setTo(value.allowed[0]??'');}}}catch(e){if(live.current){setData(null);setError((e as Error).message);if([401,403,404].includes((e as {status?:number}).status??0)){setReason('');setDisclosure('');pending.current=null;}}}finally{working.current=false;if(live.current)setBusy(false);}}
  useEffect(()=>{live.current=true;void load();return()=>{live.current=false;};},[caseId]);
  async function save(e:FormEvent){e.preventDefault();if(working.current||!data||!to)return;working.current=true;setBusy(true);setError('');pending.current??={id:crypto.randomUUID(),expectedVersion:data.version,to,reason,...(to==='Released'?{disclosureId:disclosure}:{})};try{const value=await api('',pending.current);if(live.current){pending.current=null;setData(value);setTo(value.allowed[0]??'');setReason('');setDisclosure('');}await onSaved();}catch(e){if(live.current){setError((e as Error).message);if([401,403,404].includes((e as {status?:number}).status??0)){setData(null);setReason('');setDisclosure('');pending.current=null;}}}finally{working.current=false;if(live.current)setBusy(false);}}
- return <Panel title="Case stage" meta={<Badge>{data?.state??'Checking stage'}</Badge>}><div className="panel-body">
+ return <><CaseHandling key={caseId+csrf} caseId={caseId} csrf={csrf} onSaved={onSaved}/><Panel title="Case stage" meta={<Badge>{data?.state??'Checking stage'}</Badge>}><div className="panel-body">
  <button className="secondary" disabled={busy} onClick={()=>{pending.current=null;void load().then(onSaved).catch(e=>{if(live.current)setError((e as Error).message);});}}>Refresh case stage</button>{busy&&<p role="status">Checking case stage…</p>}{error&&<p role="alert" className="form-error">{error}</p>}
  {data&&<><p>Stage version {data.version}. {data.collectionOpen?'Collection and processing are open under the approved authority.':'Collection and processing are paused. Retained evidence and history remain accessible.'}</p>
  {data.canManage&&<><p>Closure stops new intake, processing and disclosure grants. Existing recipient grants retain their own expiry and revocation controls. Reopening returns the case to scope review.</p>{!['Closed','Archived'].includes(data.state)&&<button className="secondary" onClick={openAuthority}>Review case authority</button>}
@@ -18,5 +19,5 @@ export function CaseLifecycle({caseId,csrf,onSaved,openAuthority}:{caseId:string
  <p className="small muted">Marking a case Released records an existing approved disclosure. Use Reports to review and authorise a recipient release.</p></>}
  <details><summary>Case stage history ({data.history.length} loaded)</summary>{data.history.map(event=><article className="work-record" key={event.id}><strong>v{event.version} · {event.from?event.from+' → ':''}{event.to}</strong><p className="work-body">{event.reason}</p><p className="small">Recorded {event.recordedAt} · {event.actorId?'actor '+event.actorId:'migration checkpoint; no investigator decision attributed'}{event.authorityVersion?' · authority v'+event.authorityVersion:''}</p>{event.disclosureId&&<p className="small">Approved disclosure {event.disclosureId}</p>}</article>)}{data.nextBefore&&<button className="secondary" disabled={busy} onClick={()=>void load(data.nextBefore!)}>Earlier case stages</button>}</details>
  </>}
- </div></Panel>;
+ </div></Panel></>;
 }

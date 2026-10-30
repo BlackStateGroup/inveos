@@ -265,3 +265,5 @@
 - [Frozen Field report provenance](134_FIELD_REPORT_PROVENANCE.md)
 
 These feature documents distinguish implementation/compiler feedback from unrun acceptance. Current combined branch, child assignments, commit evidence and remaining gates are in BUILD_HANDOFF.md. None of this section implies main merge or production readiness.
+
+- [138 — Case sensitivity and handling](138_CASE_SENSITIVITY_HANDLING.md): versioned labels and current recipient-sharing restrictions; runtime acceptance pending.

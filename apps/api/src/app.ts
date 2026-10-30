@@ -1,3 +1,4 @@
+import {registerCaseHandling,caseSharingEligibility,caseSharingState} from './case-handling.js';
 import {reportFieldProvenance} from './field-provenance.js';
 import {registerCaseAnalysis} from './case-analysis.js';
 import {registerReportCompositions} from './report-compositions.js';
@@ -1937,7 +1938,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     });
   });
   // Shared by discovery and download; discovery is not an integrity or delivery receipt.
-  const disclosureEligibility=`c.status='Active' AND c.authority_version=d.authority_version
+  const disclosureEligibility=`${caseSharingEligibility} AND c.status='Active' AND c.authority_version=d.authority_version
        AND NOT EXISTS(SELECT 1 FROM report_revision_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.revision_id=d.revision_id AND rr.decision='request_changes')
        AND EXISTS(SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=d.tenant_id AND m.user_id=d.created_by AND m.role='reviewer' AND cm.case_id=d.case_id)
        AND NOT EXISTS(SELECT 1 FROM report_disclosure_revocations v WHERE v.tenant_id=d.tenant_id AND v.disclosure_id=d.id)
@@ -1949,6 +1950,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
          EXISTS(SELECT 1 FROM report_editable_rendition_reviews rr JOIN memberships rm ON rm.tenant_id=rr.tenant_id AND rm.user_id=rr.reviewer_id JOIN case_memberships rc ON rc.tenant_id=rr.tenant_id AND rc.user_id=rr.reviewer_id AND rc.case_id=rr.case_id
           WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=ed.rendition_id AND rr.authority_version=d.authority_version AND rr.docx_digest=er.docx_digest AND rr.redaction_digest=er.redaction_digest AND rr.decision='accept_for_disclosure' AND rm.role='reviewer')
          AND NOT EXISTS(SELECT 1 FROM report_editable_rendition_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=ed.rendition_id AND rr.decision='request_changes')))`;
+  registerCaseHandling(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseLifecycle(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,disclosures:async(c,a,caseId,id)=>(await c.query(`SELECT d.id,d.created_at AS "createdAt" FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id ${renditionDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR d.id=$3) AND d.expires_at>clock_timestamp() AND ${disclosureEligibility} AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client') ORDER BY d.created_at DESC,d.id DESC LIMIT 50`,[a.tenantId,caseId,id??null])).rows});
   app.get('/api/cases/:caseId/disclosures',{preHandler:authenticate,schema:{params:caseParamsSchema,querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
@@ -1977,14 +1979,15 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     return reportTransaction(async client=>{
       // An owned historical anchor remains usable after expiry/revocation, but foreign anchors never do.
       if(before){const anchor=await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,before]);if(!anchor.rowCount)notFound();}
-      const rows=await client.query(`SELECT d.id,d.revision_id,d.digest,p.package_digest,dr.rendition_id,pr.pdf_digest,ed.rendition_id AS editable_rendition_id,er.docx_digest,d.created_at,d.expires_at
+      const rows=await client.query(`SELECT d.case_id,d.id,d.revision_id,d.digest,p.package_digest,dr.rendition_id,pr.pdf_digest,ed.rendition_id AS editable_rendition_id,er.docx_digest,d.created_at,d.expires_at
         FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
         LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${renditionDisclosureJoin}
         WHERE d.tenant_id=$1 AND d.recipient_id=$2 AND d.expires_at>clock_timestamp()
         AND ${disclosureEligibility}
         AND ($3::uuid IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3))
         ORDER BY d.created_at DESC,d.id DESC LIMIT $4`,[actor.tenantId,actor.userId,before??null,limit+1]);
-      return {items:rows.rows.slice(0,limit).map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.docx_digest?.trim()??r.pdf_digest?.trim()??r.package_digest?.trim()??r.digest.trim(),reportSha256:r.digest.trim(),deliverable:r.editable_rendition_id?'report_docx':r.rendition_id?'report_pdf':r.package_digest?'document_package':'report_json',createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
+      const visible:QueryResultRow[]=[];for(const row of rows.rows.slice(0,limit)){const handling=await caseSharingState(client,actor.tenantId,row.case_id);if(handling.allowed)visible.push(row);}
+      return {items:visible.map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.docx_digest?.trim()??r.pdf_digest?.trim()??r.package_digest?.trim()??r.digest.trim(),reportSha256:r.digest.trim(),deliverable:r.editable_rendition_id?'report_docx':r.rendition_id?'report_pdf':r.package_digest?'document_package':'report_json',createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
     });
   });
   async function disclosureDelivery(client:PoolClient,row:QueryResultRow){
@@ -2080,6 +2083,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
     if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');
     const row=await inTransaction(options.pool,async client=>{
+      const scope=(await client.query('SELECT case_id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,disclosureId])).rows[0];
+      if(!scope)notFound();await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,scope.case_id]);
+      if(!(await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role='client'",[actor.tenantId,actor.userId])).rowCount)notFound();
       const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes,dr.rendition_id,pr.pdf_digest,ed.rendition_id AS editable_rendition_id,er.docx_digest FROM report_disclosures d JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
        JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${renditionDisclosureJoin}
