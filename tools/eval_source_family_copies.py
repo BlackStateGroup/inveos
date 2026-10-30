@@ -29,17 +29,24 @@ def main():
     with tempfile.TemporaryDirectory(prefix='source-family-office-') as temp:
         profile = '-env:UserInstallation=' + Path(temp).as_uri()
         version = run('libreoffice', '--version').strip()
-        for family in ('rdap_domain_v1', 'supplied_webpage_v1', 'gleif_lei_v1', 'tika'):
+        families = ['rdap_domain_v1', 'supplied_webpage_v1', 'gleif_lei_v1', 'tika']
+        if (root / 'tika_field').is_dir():
+            families.append('tika_field')
+        for family in families:
+            is_tika = family.startswith('tika')
             path = root / family
             report = (json.loads(base64.b64decode(json.loads((path / 'package.json').read_text())['reportBase64']))
-                      if family == 'tika' else json.loads((path / 'report.json').read_text()))
-            finding = report['tikaFindings' if family == 'tika' else 'findings'][0]
-            marker = 'FICTIONAL_TIKA_PRIVATE_INTERPRETATION' if family == 'tika' else 'FICTIONAL_RESEARCH_PRIVATE'
+                      if is_tika else json.loads((path / 'report.json').read_text()))
+            finding = report['tikaFindings' if is_tika else 'findings'][0]
+            marker = 'FICTIONAL_TIKA_PRIVATE_INTERPRETATION' if is_tika else 'FICTIONAL_RESEARCH_PRIVATE'
             secrets = [marker, finding['source']['filename'], finding['source']['sha256']]
-            if family == 'tika':
+            if is_tika:
                 secrets += [finding['reference']['id'], finding['interpretation']['claim']['id'], 'FICTIONAL_TIKA_PRIVATE_OUTLINE']
             else:
                 secrets += [report['sourceUse'][0]['research']['payload']['receipt']['runId']]
+            for proof in report.get('fieldProvenance', []):
+                p = proof['payload']
+                secrets += [proof['sha256'], p['manifestSha256'], p['manifest']['id'], p['manifest']['deviceId'], p['captureGrant']['authority']['grantId']]
             office = path / 'office'
             office.mkdir(exist_ok=True)
             for variant in ('full', 'redacted'):
@@ -48,9 +55,14 @@ def main():
                 run('libreoffice', profile, '--headless', '--convert-to', 'pdf', '--outdir', str(office), str(original))
                 assert sha(original) == before, 'Office changed original DOCX bytes'
                 for source, label in ((path / (variant + '.pdf'), 'pdf'), (office / (variant + '.pdf'), 'docx')):
-                    text = run('pdftotext', str(source), '-')
+                    text = run('pdftotext', '-layout', str(source), '-')
                     compact = ''.join(text.split())
                     assert (marker in compact) == (variant == 'full'), (family, variant, label, 'finding marker')
+                    if family == 'tika_field':
+                        assert ('Fieldcapture' in compact) == (variant == 'full')
+                        for proof in report['fieldProvenance']:
+                            for field_marker in (proof['sha256'], proof['payload']['manifest']['id'], proof['payload']['captureGrant']['authority']['grantId']):
+                                assert (field_marker in compact) == (variant == 'full'), (family, variant, label, 'Field provenance')
                     if variant == 'redacted':
                         assert '[REDACTED]' in text
                         for secret in secrets:

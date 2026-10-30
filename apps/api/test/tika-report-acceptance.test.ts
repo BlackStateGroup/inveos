@@ -8,6 +8,7 @@ import {promisify} from 'node:util';
 import {mkdtemp,writeFile,readFile,cp,rm,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import type {Evidence,FieldContext,FieldCaptureReceipt,FieldManifest} from '@inveos/contracts';
 import {sourceDatabase,sourceScenario,hash,type SourceDatabase} from './support/source-family.js';
 import {syntheticTikaContract,fictionalPassage} from './support/tika-contract.js';
 import {claimIntegrityJob,finishTikaJob} from '../src/integrity-jobs.js';
@@ -15,10 +16,21 @@ import {tikaKind} from '../src/tika-derivative.js';
 import {buildVerificationKit,verificationKitFiles} from '../src/verification-kit.js';
 const exec=promisify(execFile),root=fileURLToPath(new URL('../../../',import.meta.url));let db:SourceDatabase;
 before(async()=>{db=await sourceDatabase();});after(async()=>db?.close());
-async function fixture(t:TestContext){
+async function fixture(t:TestContext,throughField=false){
  const f=await sourceScenario(db);t.after(()=>f.app.close());
  const original=(await exec('python3',['-c','import sys;from tools.synthetic_pdf import digital_pdf;sys.stdout.buffer.write(digital_pdf())'],{cwd:root,encoding:'buffer'})).stdout as Buffer;
- const upload=await f.post(`/api/cases/${f.caseId}/evidence/binary`,{filename:'fictional-tika-contract.pdf',contentBase64:original.toString('base64'),expectedSha256:hash(original),sourceTime:'2026-01-03T12:00:00+01:00',method:'Fictional synthetic contract, not an actual parser result',idempotencyKey:randomUUID()});assert.equal(upload.statusCode,200,upload.body);const evidence=upload.json();
+ let evidence:Evidence,field:FieldCaptureReceipt|undefined;
+ if(throughField){
+  const deviceId=randomUUID(),registered=await f.post('/api/field/devices',{id:deviceId,label:'Fictional Tika source Field device'});assert.equal(registered.statusCode,200,registered.body);
+  const prepared=await f.post(`/api/cases/${f.caseId}/field-grants/prepare`,{deviceId});assert.equal(prepared.statusCode,200,prepared.body);
+  const response=await f.get(`/api/cases/${f.caseId}/field-context/${deviceId}`);assert.equal(response.statusCode,200,response.body);const context=response.json<FieldContext>(),grant=context.grant;assert.ok(grant);
+  const manifest:FieldManifest={id:randomUUID(),deviceId,authorityId:context.authority.id,authorityVersion:context.authority.version,filename:'fictional-field-supplied-tika.pdf',sourceTime:'2026-01-03T12:00:00+01:00',capturedAt:'2026-01-04T14:00:00Z',clockUncertaintySeconds:7,method:'Fictional PDF supplied manually through Field; parser output remains a synthetic contract',expectedSha256:hash(original),byteLength:original.length,kind:'supplied_file',scopeConfirmed:true,sync:{deviceId,deviceVersion:grant.deviceVersion,grantId:grant.id,grantVersion:grant.version,authorityId:grant.authorityId,authorityVersion:grant.authorityVersion,caseAccessVersion:grant.caseAccessVersion}};
+  const input={manifest,contentBase64:original.toString('base64')},capture=await f.post(`/api/cases/${f.caseId}/field-captures`,input);assert.equal(capture.statusCode,200,capture.body);field=capture.json<FieldCaptureReceipt>();evidence=field.evidence;
+  assert.deepEqual((await f.post(`/api/cases/${f.caseId}/field-captures`,input)).json(),field);assert.deepEqual(field.acceptance?.authority,manifest.sync);assert.notEqual(field.capture.receivedAt,manifest.capturedAt);
+  const preserved=await f.get(`/api/cases/${f.caseId}/evidence/${evidence.id}/original`);assert.equal(preserved.statusCode,200,preserved.body);assert.deepEqual(preserved.rawPayload,original);
+ }else{
+  const upload=await f.post(`/api/cases/${f.caseId}/evidence/binary`,{filename:'fictional-tika-contract.pdf',contentBase64:original.toString('base64'),expectedSha256:hash(original),sourceTime:'2026-01-03T12:00:00+01:00',method:'Fictional synthetic contract, not an actual parser result',idempotencyKey:randomUUID()});assert.equal(upload.statusCode,200,upload.body);evidence=upload.json<Evidence>();
+ }
  const jobs=`/api/cases/${f.caseId}/integrity-jobs`,queued=await f.post(jobs,{evidenceId:evidence.id,idempotencyKey:randomUUID(),kind:tikaKind});assert.equal(queued.statusCode,200,queued.body);const jobId=queued.json().id,scope={tenantId:f.tenantId,caseId:f.caseId,jobId},lease=await claimIntegrityJob(db.pool,scope);assert.ok(lease);
  const context={...scope,evidenceId:evidence.id,sourceDigest:hash(original),authorityVersion:1},contract=syntheticTikaContract(original,context);
  assert.equal((await finishTikaJob(db.pool,db.storage,scope,lease.token,contract))?.status,'succeeded');assert.equal(await finishTikaJob(db.pool,db.storage,scope,lease.token,contract),null);
@@ -33,7 +45,7 @@ async function fixture(t:TestContext){
  const outline=await f.post(`/api/cases/${f.caseId}/report-compositions`,{id:randomUUID(),outline:{name:'Fictional source report',scope:'FICTIONAL_TIKA_PRIVATE_OUTLINE context',method:'Review synthetic contract material only',limitations:'No parser run or production qualification',sections:[{id:randomUUID(),title:'Fictional selected interpretation',findings:[{kind:choice.kind,id:choice.id,sha256:choice.sha256}]}]},reason:'Explicit fictional interpretation selection'});assert.equal(outline.statusCode,200,outline.body);const o=outline.json();
  const review=await f.post(`/api/cases/${f.caseId}/report-compositions/${o.payload.id}/reviews`,{id:randomUUID(),expectedVersion:1,expectedReviewSequence:0,sha256:o.sha256,decision:'accepted',reason:'Independent fictional outline acceptance',confirmContextNotFindings:true},f.reviewer);assert.equal(review.statusCode,200,review.body);
  const freeze=await f.post(`/api/cases/${f.caseId}/report-revisions`,{idempotencyKey:randomUUID(),composition:{id:o.payload.id,version:1,sha256:o.sha256,reviewId:review.json().review.id}});assert.equal(freeze.statusCode,200,freeze.body);const revision=freeze.json(),reportBase=`/api/cases/${f.caseId}/report-revisions/${revision.id}`;
- return {...f,original,base,jobId,scope,contract,evidence,citation,correspondence:corr.json(),claim,decision:dec.json(),revision,reportBase};
+ return {...f,original,field,base,jobId,scope,contract,evidence,citation,correspondence:corr.json(),claim,decision:dec.json(),revision,reportBase};
 }
 
 test('synthetic Tika contract reaches explicit report/package/copies and copied offline verifiers; rehashed tampering fails',async t=>{
@@ -88,4 +100,24 @@ test('Tika respects later source registration, independent metadata/use review a
  const permission={id:randomUUID(),expectedSequence:0,sourceVersion:1,sourceDigest:source.digest,permission:'analysis',validForHours:1,reason:'Fictional internal analysis permission only'};assert.equal((await f.post(url+'/use-decisions',permission,f.reviewer)).statusCode,200);assert.equal((await f.get(f.base)).statusCode,200);
  const stale=await f.post(f.reportBase+'/verify-sources',{sha256:f.revision.sha256});assert.equal(stale.statusCode,409,stale.body);assert.match(stale.json().error,/source-use/);
  const blocked=await f.post(url+'/use-decisions',{...permission,id:randomUUID(),expectedSequence:1,permission:'blocked',validForHours:0},f.reviewer);assert.equal(blocked.statusCode,200,blocked.body);assert.equal((await f.get(f.base)).statusCode,409);assert.equal((await f.get(f.reportBase+'/document-package')).statusCode,409);
+});
+
+test('actual Field supplied-PDF capture and grant freeze into reviewed synthetic Tika composition, package and redacted copies',async t=>{
+ const f=await fixture(t,true),response=await f.get(f.reportBase+'/document-package');assert.equal(response.statusCode,200,response.body);assert.ok(f.field);
+ const pack=response.json(),report=JSON.parse(Buffer.from(pack.reportBase64,'base64').toString()),proof=report.fieldProvenance[0];assert.equal(report.fieldProvenance.length,1);assert.equal(report.findings.length,0);assert.equal(report.tikaFindings.length,1);
+ assert.equal(proof.payload.evidenceId,f.evidence.id);assert.equal(proof.payload.manifest.id,f.field.capture.id);assert.equal(proof.payload.manifest.kind,'supplied_file');assert.equal(proof.payload.manifestSha256,f.field.capture.manifestSha256);assert.deepEqual(proof.payload.acceptance,f.field.acceptance);assert.deepEqual(proof.payload.captureGrant.authority,proof.payload.acceptanceGrant.authority);assert.equal(proof.payload.manifest.sourceTime,'2026-01-03T12:00:00+01:00');assert.equal(proof.payload.manifest.capturedAt,'2026-01-04T14:00:00Z');assert.equal(proof.payload.manifest.clockUncertaintySeconds,7);assert.equal(proof.payload.recovery,null);
+ assert.deepEqual(Buffer.from(pack.tikaExhibits[0].originalBase64,'base64'),f.original);assert.equal(report.tikaFindings[0].source.id,f.evidence.id);
+ const dir=await mkdtemp('/tmp/inveos-tika-field-offline-');try{
+  for(const name of verificationKitFiles)await cp(join(root,'tools',name),join(dir,name));await writeFile(join(dir,'package.json'),response.body);
+  const verifier=await exec('python3',['verify_document_package.py','package.json','--expected-report-sha256',f.revision.sha256,'--expected-package-sha256',hash(response.body)],{cwd:dir,env:{...process.env,PYTHONPATH:''}});const receipt=JSON.parse(verifier.stdout);assert.equal(receipt.tikaFindingsChecked,1);assert.equal(receipt.fieldCapturesChecked,1);
+  const direct="import json,base64\nfrom pathlib import Path\nfrom verify_field_provenance import verify\np=json.loads(Path('package.json').read_text())\nr=json.loads(base64.b64decode(p['reportBase64']))\nlengths={f['source']['id']:len(base64.b64decode(e['originalBase64'])) for f,e in zip(r['tikaFindings'],p['tikaExhibits'])}\nassert verify(r,lengths)==1\nprint('Copied Field helper checked supplied original length and historical grant')";await exec('python3',['-c',direct],{cwd:dir,env:{...process.env,PYTHONPATH:''}});
+  const forged="import json,base64,hashlib\nfrom pathlib import Path\nfrom verify_field_provenance import digest\np=json.loads(Path('package.json').read_text())\nr=json.loads(base64.b64decode(p['reportBase64']))\nf=r['fieldProvenance'][0]\nf['payload']['acceptanceGrant']['expiresAt']='2000-01-01T00:00:00Z'\nf['sha256']=digest(f['payload'])\nb=json.dumps(r,separators=(',',':')).encode()\np['reportBase64']=base64.b64encode(b).decode();p['reportSha256']=hashlib.sha256(b).hexdigest()\nPath('forged-field.json').write_text(json.dumps(p))";await exec('python3',['-c',forged],{cwd:dir});await assert.rejects(exec('python3',['verify_document_package.py','forged-field.json'],{cwd:dir}));
+  for(const redacted of [false,true])for(const kind of ['pdf','docx']){
+   const suffix=kind==='pdf'?'renditions':'editable-renditions',created=await f.post(f.reportBase+'/'+suffix,{idempotencyKey:randomUUID(),redactedFindingIds:redacted?[f.decision.id]:[],...(redacted?{reason:'Withheld whole fictional Field Tika interpretation and source provenance'}:{})},f.reviewer);assert.equal(created.statusCode,200,created.body);const download=await f.get(f.reportBase+'/'+suffix+'/'+created.json().id,f.reviewer);assert.equal(download.statusCode,200,download.body);const filename=(redacted?'redacted':'full')+'.'+kind;await writeFile(join(dir,filename),download.rawPayload);
+   await exec('python3',['verify_report_'+kind+'.py',filename,'--expected-'+kind+'-sha256',hash(download.rawPayload),'--expected-report-sha256',f.revision.sha256],{cwd:dir,env:{...process.env,PYTHONPATH:''}});
+   if(kind==='pdf'){const text=(await exec('pdftotext',['-layout',filename,'-'],{cwd:dir})).stdout.replace(/\s/g,'');for(const marker of [f.field.capture.id,f.field.capture.deviceId,f.field.capture.manifestSha256,proof.sha256,proof.payload.captureGrant.authority.grantId])assert.equal(text.includes(marker),!redacted,marker);assert.equal(text.includes('Fieldcapture'),!redacted);}
+  }
+  if(process.env.INVEOS_ACCEPTANCE_ARTIFACTS){await mkdir(process.env.INVEOS_ACCEPTANCE_ARTIFACTS,{recursive:true});await cp(dir,join(process.env.INVEOS_ACCEPTANCE_ARTIFACTS,'tika_field'),{recursive:true});}
+ }finally{await rm(dir,{recursive:true,force:true});}
+ const changed=await f.post(`/api/cases/${f.caseId}/authority`,f.authorityInput,f.owner);assert.equal(changed.statusCode,200,changed.body);assert.equal((await f.get(f.reportBase+'/document-package')).statusCode,409);assert.equal((await f.post(f.reportBase+'/verify-sources',{sha256:f.revision.sha256})).statusCode,409);
 });
