@@ -53,29 +53,29 @@ function wrap(label:string,value:unknown,width=88){
   return lines;
 }
 
-function reportLines(report:ReportDraft,redacted:Set<string>,reason:string){
-  const lines:string[]=['INVEOS INTERNAL REPORT','',...wrap('Case',`${report.case.ref} — ${report.case.title}`),...wrap('Client',report.case.client),...wrap('Jurisdiction',report.case.jurisdiction),...wrap('Scope',report.case.scope),''];
+export function reportLines(report:ReportDraft,redacted:Set<string>,reason:string,format=wrap){
+  const lines:string[]=['INVEOS INTERNAL REPORT','',...format('Case',`${report.case.ref} — ${report.case.title}`),...format('Client',report.case.client),...format('Jurisdiction',report.case.jurisdiction),...format('Scope',report.case.scope),''];
   let number=0;
   for(const finding of report.findings){
-    number++;if(redacted.has(finding.id)){lines.push(`FINDING ${number}: [REDACTED]`,...wrap('Redaction reason',reason),'');continue;}
-    lines.push(`FINDING ${number}`,...wrap('Finding',finding.text),...wrap('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...wrap('Source',finding.source.filename),...wrap('Source SHA-256',finding.source.sha256),...wrap('Citation',`${finding.source.startByte}-${finding.source.endByte}: ${finding.source.quote}`),...wrap('Authority',`${finding.source.policy.authorityId} v${finding.source.policy.authorityVersion}; ${finding.source.policy.lawfulBasis}`),'');
+    number++;if(redacted.has(finding.id)){lines.push(`FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+    lines.push(`FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Source',finding.source.filename),...format('Source SHA-256',finding.source.sha256),...format('Citation',`${finding.source.startByte}-${finding.source.endByte}: ${finding.source.quote}`),...format('Authority',`${finding.source.policy.authorityId} v${finding.source.policy.authorityVersion}; ${finding.source.policy.lawfulBasis}`),'');
   }
   for(const finding of report.documentFindings??[]){
-    number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...wrap('Redaction reason',reason),'');continue;}
-    lines.push(`DOCUMENT FINDING ${number}`,...wrap('Finding',finding.text),...wrap('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...wrap('Original',`${finding.source.filename}; SHA-256 ${finding.source.sha256}`),...wrap('Page/region',`page ${finding.reference.page}; ${finding.reference.bbox.origin} [${finding.reference.bbox.l}, ${finding.reference.bbox.t}, ${finding.reference.bbox.r}, ${finding.reference.bbox.b}]`),...wrap('Reviewed passage',finding.reference.quote),...wrap('Citation SHA-256',finding.reference.citationDigest),...wrap('Derivative SHA-256',finding.extraction.derivativeDigest),...wrap('Finding limitation',finding.limitations),'');
+    number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+    lines.push(`DOCUMENT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${finding.source.filename}; SHA-256 ${finding.source.sha256}`),...format('Page/region',`page ${finding.reference.page}; ${finding.reference.bbox.origin} [${finding.reference.bbox.l}, ${finding.reference.bbox.t}, ${finding.reference.bbox.r}, ${finding.reference.bbox.b}]`),...format('Reviewed passage',finding.reference.quote),...format('Citation SHA-256',finding.reference.citationDigest),...format('Derivative SHA-256',finding.extraction.derivativeDigest),...format('Finding limitation',finding.limitations),'');
   }
   for(const finding of report.transcriptFindings??[]){
-    number++;if(redacted.has(finding.id)){lines.push(`TRANSCRIPT FINDING ${number}: [REDACTED]`,...wrap('Redaction reason',reason),'');continue;}
-    const c=finding.claim;lines.push(`TRANSCRIPT FINDING ${number}`,...wrap('Finding',finding.text),...wrap('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...wrap('Original',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...wrap('Transcript version',`${c.transcript.id} ${c.transcript.sourcePointer} v${c.transcript.version}`),...wrap('Transcript citation',`${c.reference.startByte}-${c.reference.endByte}: ${c.reference.quote}`),...wrap('Declared time',`${c.reference.startMs}-${c.reference.endMs} ms; audio alignment unverified`),...wrap('Declared speaker',`${c.reference.speakerLabel}; ${c.reference.speakerUncertain?'uncertain':'attributed in supplied record'}`),...wrap('Finding limitation',c.limitations),'');
+    number++;if(redacted.has(finding.id)){lines.push(`TRANSCRIPT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
+    const c=finding.claim;lines.push(`TRANSCRIPT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...format('Transcript version',`${c.transcript.id} ${c.transcript.sourcePointer} v${c.transcript.version}`),...format('Transcript citation',`${c.reference.startByte}-${c.reference.endByte}: ${c.reference.quote}`),...format('Declared time',`${c.reference.startMs}-${c.reference.endMs} ms; audio alignment unverified`),...format('Declared speaker',`${c.reference.speakerLabel}; ${c.reference.speakerUncertain?'uncertain':'attributed in supplied record'}`),...format('Finding limitation',c.limitations),'');
   }
   const context=report.investigation;
-  if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...wrap('-',JSON.stringify(item)));}lines.push('');}
+  if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...format('-',JSON.stringify(item)));}lines.push('');}
   if(context?.transcriptLinks?.length){
     lines.push('TRANSCRIPT REASONING LINKS — WORKING CONTEXT');
     for(const link of context.transcriptLinks){
       if(redacted.has(link.findingId)){lines.push('[TRANSCRIPT SOURCE LINK WITHHELD]');continue;}
       if(!report.transcriptFindings?.some(f=>f.id===link.findingId))throw new Error('Transcript reasoning source is missing.');
-      lines.push(...wrap('Work item',link.itemId),...wrap('Relation',link.relation),...wrap('Reason',link.reason),...wrap('Transcript finding',link.findingId),...wrap('Link recorded',link.createdAt),'');
+      lines.push(...format('Work item',link.itemId),...format('Relation',link.relation),...format('Reason',link.reason),...format('Transcript finding',link.findingId),...format('Link recorded',link.createdAt),'');
     }
   }
   if(context?.chronology?.length){
@@ -85,10 +85,10 @@ function reportLines(report:ReportDraft,redacted:Set<string>,reason:string){
       const finding=event.source.kind==='text_finding'?report.findings.find(f=>f.id===event.source.findingId):event.source.kind==='document_finding'?report.documentFindings?.find(f=>f.id===event.source.findingId):report.transcriptFindings?.find(f=>f.id===event.source.findingId);
       if(!finding)throw new Error('Chronology source is missing.');
       const original='kind' in finding&&finding.kind==='reviewed_transcript'?finding.claim.source:finding.source;
-      lines.push(...wrap('Account',event.title),...wrap('Status',event.status),...wrap('Alleged date',`${event.time.precision}: ${event.time.start??'unknown'}${event.time.end?' to '+event.time.end:''}`),...wrap('Stated timezone',event.time.timezone||'Not specified'),...wrap('Uncertainty',event.time.note),...wrap('Account detail',event.account),...wrap('Source finding',event.source.findingId),...wrap('Source-recorded time',original.sourceTime),...wrap('Received time',original.receivedTime),...wrap('Account recorded',`${event.recordedAt}; version ${event.version}`),'');
+      lines.push(...format('Account',event.title),...format('Status',event.status),...format('Alleged date',`${event.time.precision}: ${event.time.start??'unknown'}${event.time.end?' to '+event.time.end:''}`),...format('Stated timezone',event.time.timezone||'Not specified'),...format('Uncertainty',event.time.note),...format('Account detail',event.account),...format('Source finding',event.source.findingId),...format('Source-recorded time',original.sourceTime),...format('Received time',original.receivedTime),...format('Account recorded',`${event.recordedAt}; version ${event.version}`),'');
     }
   }
-  lines.push('REPORT LIMITATIONS',...wrap('',report.limitations));
+  lines.push('REPORT LIMITATIONS',...format('',report.limitations));
   return lines;
 }
 
@@ -96,13 +96,7 @@ function pdfHex(value:string){return winAnsi(value).toString('hex').toUpperCase(
 function object(body:Buffer|string){return Buffer.concat([Buffer.from(typeof body==='string'?body:''),typeof body==='string'?Buffer.alloc(0):body]);}
 
 export function buildReportPdf(report:ReportDraft,sourceReportSha256:string,input:{findingIds?:string[];reason?:string}){
-  if(!digestPattern.test(sourceReportSha256))throw new Error('A valid source report fingerprint is required.');
-  const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[])],findingIds=input.findingIds??[];
-  if(findingIds.length>all.length||findingIds.some(id=>!uuid.test(id))||new Set(findingIds).size!==findingIds.length)throw new Error('The redaction finding list is invalid.');
-  const known=new Set(all.map(f=>f.id));if(findingIds.some(id=>!known.has(id)))throw new Error('The redaction plan references a finding outside the frozen report.');
-  const reason=clean(input.reason??'').trim();if(findingIds.length&&(reason.length<10||reason.length>500))throw new Error('A redaction reason between 10 and 500 characters is required.');
-  if(!findingIds.length&&reason)throw new Error('An unredacted rendition cannot carry a redaction reason.');
-  const plan:ReportRedactionPlan={format:'inveos_report_redaction_v1',findingIds:[...findingIds].sort(),reason},redactionDigest=sha256(JSON.stringify(plan));
+  const {plan,redactionDigest}=reportRedaction(report,sourceReportSha256,input),findingIds=plan.findingIds,reason=plan.reason;
   const visibleLines=reportLines(report,new Set(findingIds),reason);if(visibleLines.length>reportPdfProfile.maxVisibleLines)throw new Error('The report exceeds the PDF profile line limit.');
   for(const line of visibleLines)winAnsi(line);
   const pages:string[][]=[];for(let i=0;i<visibleLines.length;i+=58)pages.push(visibleLines.slice(i,i+58));if(!pages.length)pages.push([]);
@@ -122,4 +116,15 @@ export function buildReportPdf(report:ReportDraft,sourceReportSha256:string,inpu
   objects.forEach((body,index)=>{offsets.push(length);const chunk=Buffer.concat([Buffer.from(`${index+1} 0 obj\n`),object(body),Buffer.from('\nendobj\n')]);chunks.push(chunk);length+=chunk.length;});
   const xref=length;chunks.push(Buffer.from(`xref\n0 ${objects.length+1}\n0000000000 65535 f \n${offsets.map(offset=>`${String(offset).padStart(10,'0')} 00000 n \n`).join('')}trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`));
   const bytes=Buffer.concat(chunks);return {bytes,digest:sha256(bytes),model,modelBytes,contentDigest,plan,redactionDigest,profileDigest:reportPdfProfileDigest};
+}
+
+export function reportRedaction(report:ReportDraft,sourceReportSha256:string,input:{findingIds?:string[];reason?:string}){
+  if(!digestPattern.test(sourceReportSha256))throw new Error('A valid source report fingerprint is required.');
+  const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[])],findingIds=input.findingIds??[];
+  if(findingIds.length>all.length||findingIds.some(id=>!uuid.test(id))||new Set(findingIds).size!==findingIds.length)throw new Error('The redaction finding list is invalid.');
+  const known=new Set(all.map(f=>f.id));if(findingIds.some(id=>!known.has(id)))throw new Error('The redaction plan references a finding outside the frozen report.');
+  const reason=clean(input.reason??'').trim();if(findingIds.length&&(reason.length<10||reason.length>500))throw new Error('A redaction reason between 10 and 500 characters is required.');
+  if(!findingIds.length&&reason)throw new Error('An unredacted rendition cannot carry a redaction reason.');
+  const plan:ReportRedactionPlan={format:'inveos_report_redaction_v1',findingIds:[...findingIds].sort(),reason},redactionDigest=sha256(JSON.stringify(plan));
+  return {plan,redactionDigest};
 }

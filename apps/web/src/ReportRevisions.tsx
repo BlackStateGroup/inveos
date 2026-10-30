@@ -1,3 +1,4 @@
+import {EditableReports} from './EditableReports';
 import {useEffect, useRef, useState} from 'react';
 import {verifyRevisionDownload} from './reportDownload';
 import {readDocumentPackageBytes,readVerifiedDocumentPackage,saveVerifiedDocumentPackage,verifyDocumentPackageDownload} from './documentPackageDownload';
@@ -132,6 +133,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Create unredacted PDF {row.id.slice(0,8)}</button>
+      <EditableReports key={`docx:${caseId}:${row.id}:${csrf}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256} csrf={csrf}/>
       <ReportRenditionHistory key={`${caseId}:${row.id}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256} csrf={csrf}/>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
