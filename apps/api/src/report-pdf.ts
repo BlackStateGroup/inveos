@@ -64,6 +64,10 @@ function reportLines(report:ReportDraft,redacted:Set<string>,reason:string){
     number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...wrap('Redaction reason',reason),'');continue;}
     lines.push(`DOCUMENT FINDING ${number}`,...wrap('Finding',finding.text),...wrap('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...wrap('Original',`${finding.source.filename}; SHA-256 ${finding.source.sha256}`),...wrap('Page/region',`page ${finding.reference.page}; ${finding.reference.bbox.origin} [${finding.reference.bbox.l}, ${finding.reference.bbox.t}, ${finding.reference.bbox.r}, ${finding.reference.bbox.b}]`),...wrap('Reviewed passage',finding.reference.quote),...wrap('Citation SHA-256',finding.reference.citationDigest),...wrap('Derivative SHA-256',finding.extraction.derivativeDigest),...wrap('Finding limitation',finding.limitations),'');
   }
+  for(const finding of report.transcriptFindings??[]){
+    number++;if(redacted.has(finding.id)){lines.push(`TRANSCRIPT FINDING ${number}: [REDACTED]`,...wrap('Redaction reason',reason),'');continue;}
+    const c=finding.claim;lines.push(`TRANSCRIPT FINDING ${number}`,...wrap('Finding',finding.text),...wrap('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...wrap('Original',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...wrap('Transcript version',`${c.transcript.id} ${c.transcript.sourcePointer} v${c.transcript.version}`),...wrap('Transcript citation',`${c.reference.startByte}-${c.reference.endByte}: ${c.reference.quote}`),...wrap('Declared time',`${c.reference.startMs}-${c.reference.endMs} ms; audio alignment unverified`),...wrap('Declared speaker',`${c.reference.speakerLabel}; ${c.reference.speakerUncertain?'uncertain':'attributed in supplied record'}`),...wrap('Finding limitation',c.limitations),'');
+  }
   const context=report.investigation;
   if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...wrap('-',JSON.stringify(item)));}lines.push('');}
   if(context?.chronology?.length){
@@ -84,7 +88,7 @@ function object(body:Buffer|string){return Buffer.concat([Buffer.from(typeof bod
 
 export function buildReportPdf(report:ReportDraft,sourceReportSha256:string,input:{findingIds?:string[];reason?:string}){
   if(!digestPattern.test(sourceReportSha256))throw new Error('A valid source report fingerprint is required.');
-  const all=[...report.findings,...(report.documentFindings??[])],findingIds=input.findingIds??[];
+  const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[])],findingIds=input.findingIds??[];
   if(findingIds.length>all.length||findingIds.some(id=>!uuid.test(id))||new Set(findingIds).size!==findingIds.length)throw new Error('The redaction finding list is invalid.');
   const known=new Set(all.map(f=>f.id));if(findingIds.some(id=>!known.has(id)))throw new Error('The redaction plan references a finding outside the frozen report.');
   const reason=clean(input.reason??'').trim();if(findingIds.length&&(reason.length<10||reason.length>500))throw new Error('A redaction reason between 10 and 500 characters is required.');

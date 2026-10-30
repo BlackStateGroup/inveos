@@ -131,6 +131,7 @@ export type DocumentReportFinding = {
 export type ReportDraft = {
   status: 'draft_not_released';
   documentFindings?: DocumentReportFinding[];
+  transcriptFindings?: TranscriptReportFinding[];
   case: Pick<Case, 'id' | 'ref' | 'title' | 'client' | 'scope' | 'jurisdiction'>;
   findings: Array<{
     id: string;
@@ -219,3 +220,15 @@ export type FieldDevice={id:string;label:string;createdAt:string;revokedAt:strin
 export type FieldContext={tenantId:string;userId:string;caseId:string;device:FieldDevice;authority:AuthorityRecord;checkedAt:string;maxOriginalBytes:number};
 export type FieldManifest={id:string;deviceId:string;authorityId:string;authorityVersion:number;filename:string;sourceTime:string;capturedAt:string;clockUncertaintySeconds:number|null;method:string;expectedSha256:string;byteLength:number;kind:'supplied_file'|'field_note';scopeConfirmed:true};
 export type FieldCaptureReceipt={capture:{id:string;caseId:string;deviceId:string;authorityId:string;authorityVersion:number;manifestSha256:string;receivedAt:string};evidence:Evidence};
+
+export type TranscriptClaimInput={id:string;transcriptId:string;segmentId:string;expectedVersion:number;text:string;startByte:number;endByte:number;quote:string};
+export type TranscriptClaim={
+ id:string;caseId:string;text:string;proposedBy:string;proposedAt:string;digest:string;
+ source:{id:string;filename:string;sha256:string;sourceTime:string;receivedTime:string;policy:SourcePolicyReference};
+ transcript:{id:string;title:string;registeredBy:string;registeredAt:string;segmentId:string;sourcePointer:string;version:number;raw:SuppliedTranscriptSegment;corrections:TranscriptCorrection[]};
+ reference:{offsetBasis:'selected_transcript_utf8_not_original_media';startByte:number;endByte:number;quote:string;startMs:number;endMs:number;speakerLabel:string;speakerUncertain:boolean};
+ limitations:string;
+};
+export type TranscriptClaimReview={id:string;claimId:string;claimDigest:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string};
+export type TranscriptClaimRecord={claim:TranscriptClaim;review:TranscriptClaimReview|null;findingId:string|null;withdrawal:{id:string;actorId:string;reason:string;recordedAt:string}|null;state:'candidate'|'reviewed'|'rejected'|'needs_review'|'withdrawn';canReview:boolean;canWithdraw:boolean};
+export type TranscriptReportFinding={kind:'reviewed_transcript';id:string;text:string;reviewer:string;reviewedAt:string;claim:TranscriptClaim;review:TranscriptClaimReview;originalBase64:string};

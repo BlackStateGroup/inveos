@@ -124,6 +124,92 @@ def verify_chronology(report):
     return len(rows)
 
 
+def verify_transcript_findings(report, finding_ids, evidence):
+    """Verify selected transcript lineage independently, without media-alignment claims."""
+    def fields(value, names):
+        require(type(value) is dict and set(value) == set(names.split()), 'Transcript field set differs')
+    def identifier(value):
+        require(type(value) is str and re.fullmatch(r'[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}', value), 'Transcript identifier')
+    def string(value, maximum, minimum=1):
+        require(type(value) is str and len(value.strip()) >= minimum and len(value.encode('utf-16-le')) // 2 <= maximum and not re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', value), 'Transcript text bound')
+    def stamp(value, utc=False):
+        require(type(value) is str and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})', value), 'Transcript timestamp')
+        require(not utc or value.endswith('Z'), 'Transcript server time must retain UTC')
+        datetime.fromisoformat(value.replace('Z', '+00:00'))
+    def segment(value, corrected=False, supplied=False):
+        fields(value, 'id startMs endMs speakerLabel speakerUncertain text' + (' version reason actorId actorName recordedAt' if corrected else ''))
+        identifier(value['id'])
+        integral = lambda n: type(n) is int or (supplied and type(n) is float and n.is_integer())
+        require(integral(value['startMs']) and integral(value['endMs']) and 0 <= value['startMs'] < value['endMs'] <= 86400000, 'Declared transcript range')
+        string(value['speakerLabel'], 120); string(value['text'], 10000)
+        require(type(value['speakerUncertain']) is bool, 'Explicit speaker uncertainty required')
+        if corrected:
+            require(type(value['version']) is int and 1 <= value['version'] <= 100, 'Correction version')
+            identifier(value['actorId']); string(value['actorName'], 500); string(value['reason'], 3000, 10); stamp(value['recordedAt'], True)
+    values = report.get('transcriptFindings', [])
+    require(type(values) is list and len(values) <= 200, 'Transcript finding count limit')
+    for finding in values:
+        fields(finding, 'kind id text reviewer reviewedAt claim review originalBase64')
+        require(finding['kind'] == 'reviewed_transcript', 'Unsupported transcript finding')
+        identifier(finding['id']); require(finding['id'] not in finding_ids, 'Duplicate finding identity'); finding_ids.add(finding['id'])
+        claim, decision = finding['claim'], finding['review']
+        fields(claim, 'id caseId text proposedBy proposedAt digest source transcript reference limitations')
+        identifier(claim['id']); identifier(claim['proposedBy']); stamp(claim['proposedAt'], True)
+        require(claim['caseId'] == report['case']['id'], 'Cross-case transcript claim')
+        string(claim['text'], 2000, 10)
+        require(claim['limitations'] == 'Reviewed interpretation of a supplied transcript, not proof of speech or source truth. Timecodes and speaker labels are declared; audio alignment and identity are unverified.', 'Transcript limitations changed')
+        canonical = json.dumps({k: v for k, v in claim.items() if k != 'digest'}, sort_keys=True, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+        require(hashlib.sha256(canonical).hexdigest() == claim['digest'], 'Transcript proposal fingerprint differs')
+        source, transcript, reference = claim['source'], claim['transcript'], claim['reference']
+        fields(source, 'id filename sha256 sourceTime receivedTime policy'); identifier(source['id']); string(source['filename'], 128)
+        stamp(source['sourceTime']); stamp(source['receivedTime'], True)
+        fields(source['policy'], 'authorityId authorityVersion purpose lawfulBasis scope retentionDays minimisation')
+        identifier(source['policy']['authorityId'])
+        for key in ('authorityVersion', 'retentionDays'):
+            require(type(source['policy'][key]) is int and source['policy'][key] > 0, 'Transcript authority declaration')
+        for key in ('purpose', 'lawfulBasis', 'scope', 'minimisation'):
+            text_field(source['policy'], key)
+        encoded = finding['originalBase64']; require(type(encoded) is str and len(encoded) <= 349528, 'Transcript original bound')
+        original = base64.b64decode(encoded, validate=True)
+        require(0 < len(original) <= 262144 and base64.b64encode(original).decode() == encoded and hashlib.sha256(original).hexdigest() == source['sha256'], 'Transcript original identity differs')
+        supplied = json.loads(original.decode('utf-8-sig'), object_pairs_hook=unique_object, parse_constant=reject_constant)
+        fields(supplied, 'format segments'); require(supplied['format'] == 'inveos.supplied_transcript.v1', 'Unsupported supplied transcript')
+        require(type(supplied['segments']) is list and 1 <= len(supplied['segments']) <= 100, 'Supplied segment bound')
+        raw_ids = set()
+        for value in supplied['segments']:
+            segment(value, supplied=True); require(value['id'] not in raw_ids, 'Duplicate raw segment'); raw_ids.add(value['id'])
+        fields(transcript, 'id title registeredBy registeredAt segmentId sourcePointer version raw corrections')
+        for key in ('id', 'registeredBy', 'segmentId'):
+            identifier(transcript[key])
+        string(transcript['title'], 240, 3); stamp(transcript['registeredAt'], True)
+        require(type(transcript['version']) is int and 0 <= transcript['version'] <= 100, 'Selected transcript version')
+        pointer = re.fullmatch(r'/segments/(0|[1-9][0-9]?)', transcript['sourcePointer'])
+        require(pointer is not None and int(pointer[1]) < len(supplied['segments']), 'Transcript source pointer')
+        segment(transcript['raw'])
+        require(transcript['raw'] == supplied['segments'][int(pointer[1])] and transcript['raw']['id'] == transcript['segmentId'], 'Raw transcript differs from original')
+        corrections = transcript['corrections']; require(type(corrections) is list and len(corrections) == transcript['version'], 'Correction history length')
+        correction_ids, authors = set(), {claim['proposedBy']}
+        for version, value in enumerate(corrections, 1):
+            segment(value, True); require(value['version'] == version and value['id'] not in correction_ids, 'Correction history ordering/identity')
+            correction_ids.add(value['id']); authors.add(value['actorId'])
+        selected = corrections[-1] if corrections else transcript['raw']
+        fields(reference, 'offsetBasis startByte endByte quote startMs endMs speakerLabel speakerUncertain')
+        require(reference['offsetBasis'] == 'selected_transcript_utf8_not_original_media', 'Transcript offset meaning changed')
+        for key in ('startMs', 'endMs', 'speakerLabel', 'speakerUncertain'):
+            require(type(reference[key]) is type(selected[key]) and reference[key] == selected[key], 'Declared transcript context differs')
+        start, end = reference['startByte'], reference['endByte']; content = selected['text'].encode('utf-8'); string(reference['quote'], 10000)
+        require(type(start) is int and type(end) is int and 0 <= start < end <= len(content) and content[start:end] == reference['quote'].encode('utf-8'), 'Transcript quote byte span differs')
+        fields(decision, 'id claimId claimDigest accepted reason reviewerId reviewerName recordedAt')
+        identifier(decision['id']); identifier(decision['reviewerId']); string(decision['reviewerName'], 500); string(decision['reason'], 3000, 10); stamp(decision['recordedAt'], True)
+        require(decision['accepted'] is True and decision['claimId'] == claim['id'] and decision['claimDigest'] == claim['digest'] and decision['reviewerId'] not in authors, 'Independent accepted transcript decision required')
+        require(finding['text'] == claim['text'] and finding['reviewer'] == decision['reviewerName'] and finding['reviewedAt'] == decision['recordedAt'], 'Finding does not match its decision')
+        identity = {k: source[k] for k in ('sha256', 'filename', 'sourceTime', 'receivedTime', 'policy')}; identity['contentBase64'] = encoded
+        if source['id'] in evidence:
+            require(identity == evidence[source['id']], 'Conflicting transcript original identity')
+        evidence[source['id']] = identity
+    return len(values)
+
+
 def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
     require(0 < len(raw) <= MAX_REPORT_BYTES, 'Report size limit')
     actual = hashlib.sha256(raw).hexdigest()
@@ -147,7 +233,7 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         require(case_id == expected_case_id, 'Case identity mismatch')
     text_field(report, 'limitations')
     findings = report.get('findings')
-    require(isinstance(findings, list) and 0 < len(findings) <= MAX_FINDINGS, 'Finding count limit')
+    require(isinstance(findings, list) and len(findings) <= MAX_FINDINGS, 'Finding count limit')
     finding_ids, evidence = set(), {}
     for finding in findings:
         require(isinstance(finding, dict), 'Invalid finding')
@@ -190,12 +276,14 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
             require(identity == evidence[evidence_id], 'Conflicting evidence identity')
         evidence[evidence_id] = identity
     try:
+        transcript_count = verify_transcript_findings(report, finding_ids, evidence)
+        require(0 < len(findings) + transcript_count <= MAX_FINDINGS, 'Finding count limit')
         chronology_count = verify_chronology(report)
-    except (ValueError, TypeError, KeyError, UnicodeError) as exc:
-        raise InvalidReport('Invalid frozen chronology') from exc
+    except (ValueError, TypeError, KeyError, UnicodeError, IndexError, AttributeError, binascii.Error) as exc:
+        raise InvalidReport('Invalid frozen chronology or transcript lineage') from exc
     return {'status': 'integrity_checks_passed', 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
             'trustedReportDigestMatched': expected_sha256 is not None,
-            'caseId': case_id, 'findingsChecked': len(findings),
+            'caseId': case_id, 'findingsChecked': len(findings) + transcript_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
             'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',
             'limitations': 'No signature, reviewer authentication, lawful-authority validation, custody-chain verification or factual truth check. An unanchored result establishes internal consistency only.'}
 

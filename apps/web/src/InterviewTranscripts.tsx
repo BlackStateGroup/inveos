@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {Evidence,InterviewTranscript,SuppliedTranscriptSegment,TranscriptCorrection} from '@inveos/contracts';
+import {TranscriptFindings} from './TranscriptFindings';
 import {Badge,Notice,Panel,SectionTitle} from './ui';
 import template from '../../../examples/fictional-supplied-transcript.txt?raw';
 import './interviews.css';
@@ -37,5 +38,5 @@ export function InterviewTranscripts({caseId,csrf,evidence,inspect}:{caseId:stri
  {history&&historyId===segment.id&&<section className="work-history" aria-label="Transcript correction history"><h4>Retained correction history</h4><p className="small">Historical records; original bytes are not rechecked by this history view.</p>{!history.items.length&&<p>No corrections recorded.</p>}{history.items.map(v=><details key={v.version}><summary>Version {v.version} · {v.actorName} · {v.recordedAt}</summary><Segment value={v}/><p className="work-body">{v.reason}</p></details>)}<div className="work-record-actions"><button className="text-button" disabled={busy} onClick={()=>void act(()=>showHistory(segment.id))}>Latest corrections</button>{history.next&&<button className="text-button" disabled={busy} onClick={()=>void act(()=>showHistory(segment.id,history.next!))}>Earlier corrections</button>}</div></section>}
  </section>)}
  </article>}
- </div></Panel></>;
+ </div></Panel>{!denied&&<TranscriptFindings caseId={caseId} csrf={csrf} transcript={record} inspect={inspect}/>}</>;
 }

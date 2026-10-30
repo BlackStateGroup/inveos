@@ -68,4 +68,5 @@ export function registerInterviews(app:FastifyInstance,s:Services){
    const bytes=Buffer.from(JSON.stringify({format:'inveos.transcript_export.v1',payload,sha256:hash(payload)}));if(bytes.length>2097152)throw new ApiError(409,'Transcript export exceeds two MiB.');await s.audit(c,a,caseId,'interview.exported','interview_transcript',transcriptId,'Internal raw and corrected transcript context exported');return bytes;
   });return reply.type('application/json').header('Content-Disposition',`attachment; filename="internal-transcript-${transcriptId}.json"`).send(result);
  });
+ return {load};
 }
