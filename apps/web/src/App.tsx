@@ -67,7 +67,7 @@ export default function App(){
   function go(name:string){setSearchedDocument(null);setPage(name==='Report'?'Reports':name);setSurface('Command');setModal('');}
   function selectCase(id:string){setCaseId(id);go('Brief');}
   function inspect(id:string){setSelectedEvidence(id);go('Evidence');}
-  async function api<T>(path:string,body?:unknown):Promise<T>{const res=await fetch(`/api${path}`,{method:body===undefined?'GET':'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const result=await res.json().catch(()=>{throw new Error('The local API is unavailable. Start the lab API and try again.');});if(!res.ok)throw new Error(result.error||'Request could not be completed.');return result as T;}
+  async function api<T>(path:string,body?:unknown):Promise<T>{const res=await fetch(`/api${path}`,{method:body===undefined?'GET':'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const result=await res.json().catch(()=>{throw new Error('The local API is unavailable. Start the lab API and try again.');});if(!res.ok)throw Object.assign(new Error(result.error||'Request could not be completed.'),{statusCode:res.status});return result as T;}
   async function disconnect(){setBusy(true);try{await api('/session/end',{});setFoundation(false);setCsrf('');setExportDigest(null);history.replaceState(null,'',location.pathname+location.search);setData(initialWorkspace);setCaseId('northstar');go('Overview');}catch(e){setToast((e as Error).message);}finally{setBusy(false);}}
   async function refresh(){const next=await api<Workspace>('/workspace');setData(next);return next;}
   function activity(text:string,id=active?.id){return {id:uid(),caseId:id,text,actor:'Demo reviewer',at:'This session (simulation)'};}
@@ -123,6 +123,7 @@ export default function App(){
   }
   const p:ViewProps={data,active,go,selectCase,open,notify:setToast,inspect,work:{
     enabled:foundation,
+    batchStatus:input=>api(`/cases/${active.id}/work/task-status-batches`,input),
     discussion:(path,body)=>api(`/cases/${active.id}${path}`,body),
     create:async input=>{await api(`/cases/${active.id}/work`,input);await refresh();setToast('Case record saved.');},
     revise:async(id,input)=>{await api(`/cases/${active.id}/work/${id}/revise`,input);await refresh();setToast('Revision saved. Previous versions remain in history.');},

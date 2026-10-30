@@ -177,6 +177,14 @@ jobs:
           path: output/evals/case-budget-desktop.png
           if-no-files-found: ignore
           retention-days: 14
+      - name: Retain fictional task batch browser render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: task-batch-browser-render
+          path: output/evals/task-batch-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Check tracked sources remain unchanged
         run: git diff --exit-code
       - name: Retain fictional document search browser render

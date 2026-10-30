@@ -2,12 +2,13 @@ import {WorkDiscussion,WorkMentions} from './WorkDiscussion';
 import {DocumentWorkSources} from './DocumentWorkSources';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, History, Link2, Plus, Search, X } from 'lucide-react';
-import { workStatuses, type WorkEdit, type WorkInput, type WorkItem, type WorkKind, type WorkLinkInput, type DocumentWorkLinkInput, type WorkRevision } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskStatusBatchResult, type WorkEdit, type WorkInput, type WorkItem, type WorkKind, type WorkLinkInput, type DocumentWorkLinkInput, type WorkRevision } from '@inveos/contracts';
 import { Badge, Empty, Notice, Panel } from './ui';
 import type { ViewProps } from './CaseViews';
 
 export type WorkActions = {
   enabled: boolean;
+  batchStatus: (input:TaskStatusBatch)=>Promise<TaskStatusBatchResult>;
   discussion: <T>(path:string,body?:object)=>Promise<T>;
   create: (input: WorkInput) => Promise<void>;
   revise: (id: string, input: WorkEdit) => Promise<void>;
@@ -114,7 +115,7 @@ function SourceLinks({p, item}: {p: ViewProps; item: WorkItem}) {
   </div>;
 }
 
-function WorkRecord({p, item}: {p: ViewProps; item: WorkItem}) {
+function WorkRecord({p, item, selection}: {p: ViewProps; item: WorkItem; selection?:{checked:boolean;disabled:boolean;toggle:()=>void}}) {
   const [editing, setEditing] = useState(false);
   const [revisions, setRevisions] = useState<WorkRevision[] | null>(null);
   const [error, setError] = useState('');
@@ -128,6 +129,7 @@ function WorkRecord({p, item}: {p: ViewProps; item: WorkItem}) {
     try { setRevisions(await p.work.history(item.id)); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }
   return <article id={`work-${item.id}`} className={`work-record ${item.status === 'Blocked' ? 'work-blocked' : ''}`}>
+    {selection&&<label className="checkbox-row task-selection"><input type="checkbox" checked={selection.checked} disabled={selection.disabled} onChange={selection.toggle} aria-label={`Select task: ${item.title}`}/><span>Select for status change</span></label>}
     <div className="work-record-top"><h3>{item.title}</h3><Badge tone={done.has(item.status) ? 'teal' : item.status === 'Blocked' ? 'amber' : 'neutral'}>{item.status}</Badge></div>
     {parent && <p className="small muted work-parent">For: {parent.title}</p>}
     {item.body && <p className="work-body">{item.body}</p>}
@@ -184,18 +186,50 @@ export function CaseWorkDashboard({p}: {p: ViewProps}) {
 }
 
 export function CaseTaskboard(p: ViewProps) {
-  const [adding, setAdding] = useState(false);
-  const [query, setQuery] = useState('');
-  if (!p.work.enabled) return <WorkSection p={p} kind="task" title="Case tasks" description="Save assignments, deadlines, blockers and completion decisions with the case."/>;
-  const tasks = p.data.workItems.filter(w => w.caseId === p.active.id && w.kind === 'task' && `${w.title} ${w.body}`.toLowerCase().includes(query.toLowerCase()));
+  const [adding,setAdding]=useState(false),[query,setQuery]=useState('');
+  const [selected,setSelected]=useState<WorkItem[]>([]),[status,setStatus]=useState<TaskStatusBatch['status']>('In progress'),[reason,setReason]=useState('');
+  const [pending,setPending]=useState<TaskStatusBatch|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[denied,setDenied]=useState(false);
+  const working=useRef(false);
+  function clear(){setSelected([]);setPending(null);setReason('');}
+  async function act(run:()=>Promise<void>){if(working.current)return;working.current=true;setBusy(true);setError('');
+    try{await run();}catch(e){const failure=e as Error&{statusCode?:number};setError(failure.message);
+      if([401,403,404].includes(failure.statusCode??0)){clear();setDenied(true);void p.work.refresh().catch(()=>{});}
+    }finally{working.current=false;setBusy(false);}
+  }
+  async function refresh(){clear();setNotice('');setDenied(true);await p.work.refresh();setDenied(false);}
+  async function save(event?:FormEvent){event?.preventDefault();await act(async()=>{
+    const input=pending??{id:crypto.randomUUID(),items:selected.map(item=>({id:item.id,expectedVersion:item.version})),status,reason};
+    setPending(input);const result=await p.work.batchStatus(input);clear();setNotice(`Recorded status changes for ${result.applied.length} tasks. Individual histories retain the decision.`);
+    await p.work.refresh();
+  });}
+  if(!p.work.enabled)return <WorkSection p={p} kind="task" title="Case tasks" description="Save assignments, deadlines, blockers and completion decisions with the case."/>;
+  const tasks=p.data.workItems.filter(w=>w.caseId===p.active.id&&w.kind==='task'&&`${w.title} ${w.body}`.toLowerCase().includes(query.toLowerCase()));
+  const frozen=busy||!!pending;
   return <>
-    <div className="toolbar"><label className="search-input"><Search size={16}/><input aria-label="Filter case tasks" value={query} onChange={e => setQuery(e.target.value)} placeholder="Find a task…"/></label>
-      <button className="primary" onClick={() => setAdding(!adding)}><Plus size={15}/>{adding ? 'Cancel task' : 'Add task'}</button></div>
-    {adding && <WorkForm p={p} kind="task" onClose={() => setAdding(false)}/>}
-    <div className="kanban work-kanban">{['To do', 'In progress', 'Blocked', 'Complete'].map(status => <section key={status}>
-      <div className="kanban-heading"><h2>{status}</h2><Badge>{tasks.filter(t => t.status === status).length}</Badge></div>
-      {tasks.filter(t => t.status === status).map(item => <WorkRecord key={item.id} p={p} item={item}/>)}
-      {!tasks.some(t => t.status === status) && <p className="work-column-empty">{query ? 'No matching tasks' : 'No tasks'}</p>}
-    </section>)}</div>
+    <div className="toolbar"><label className="search-input"><Search size={16}/><input aria-label="Filter case tasks" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Find a task…"/></label>
+      <button className="secondary" disabled={busy} onClick={()=>void act(refresh)}>Refresh tasks</button><button className="primary" disabled={denied||frozen} onClick={()=>setAdding(!adding)}><Plus size={15}/>{adding?'Cancel task':'Add task'}</button></div>
+    {error&&<p role="alert" className="form-error">{error} {pending?'Retry the unchanged batch, or refresh and select current tasks.':'Refresh to load current case work.'}</p>}
+    {notice&&<p role="status">{notice}</p>}
+    {denied?<Notice>Current tasks are unavailable. Refresh to check access and load them again.</Notice>:<>
+      {adding&&<WorkForm p={p} kind="task" onClose={()=>setAdding(false)}/>}
+      <Panel title="Change selected task statuses" meta={<Badge>{selected.length} / 50 selected</Badge>}>
+        <div className="panel-body"><p className="body-copy">Select tasks below, choose their new status and record one reason. Every selected version must still be current. The whole batch is saved together with each task’s history.</p>
+          {!!selected.length&&<><ul aria-label="Selected task versions">{selected.map(item=><li key={item.id}>{item.title} · v{item.version} · {item.status}</li>)}</ul>
+            <form aria-label="Task status batch" className="work-form" onSubmit={e=>void save(e)}><fieldset disabled={frozen}>
+              <label className="form-label">New task status<select name="status" value={status} onChange={e=>setStatus(e.target.value as TaskStatusBatch['status'])}>{workStatuses.task.map(value=><option key={value}>{value}</option>)}</select></label>
+              <label className="form-label">Reason for these status changes<textarea name="reason" required minLength={10} maxLength={3000} value={reason} onChange={e=>setReason(e.target.value)}/></label>
+              <button className="primary">Save selected task statuses</button>
+            </fieldset></form>
+            {pending&&<button className="primary" disabled={busy} onClick={()=>void save()}>Retry unchanged task batch</button>}
+            <button className="text-button" disabled={busy} onClick={()=>void act(refresh)}>Discard selection and refresh tasks</button>
+          </>}
+        </div>
+      </Panel>
+      <div className="kanban work-kanban">{workStatuses.task.map(column=><section key={column}>
+        <div className="kanban-heading"><h2>{column}</h2><Badge>{tasks.filter(t=>t.status===column).length}</Badge></div>
+        {tasks.filter(t=>t.status===column).map(item=>{const checked=selected.some(s=>s.id===item.id);return <WorkRecord key={item.id} p={p} item={item} selection={{checked,disabled:frozen||(!checked&&selected.length>=50),toggle:()=>{setNotice('');setError('');setSelected(old=>checked?old.filter(s=>s.id!==item.id):[...old,item]);}}}/>;})}
+        {!tasks.some(t=>t.status===column)&&<p className="work-column-empty">{query?'No matching tasks':'No tasks'}</p>}
+      </section>)}</div>
+    </>}
   </>;
 }

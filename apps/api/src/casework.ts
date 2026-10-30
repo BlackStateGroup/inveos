@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
-import { workStatuses, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding } from '@inveos/contracts';
 import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -185,6 +185,54 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
       await recordRevision(client, actor, item, input.reason);
       await services.audit(client, actor, caseId, 'work.revised', 'case_work', itemId, `${item.kind} updated: ${item.title}`, {version: item.version, reason: input.reason});
       return item;
+    });
+  });
+
+  app.post('/api/cases/:caseId/work/task-status-batches', {
+    preHandler: services.requireCsrf,
+    preValidation: async request => {
+      const body=request.body as TaskStatusBatch|null;
+      if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.id!=='string'||typeof body.status!=='string'||typeof body.reason!=='string'||
+         !Array.isArray(body.items)||body.items.some(item=>!item||typeof item!=='object'||Array.isArray(item)||typeof item.id!=='string'||typeof item.expectedVersion!=='number'))
+        throw new ApiError(422,'Choose explicit task identities, numeric versions, a status and a reason.');
+    },
+    schema:{params:caseParams,body:{type:'object',additionalProperties:false,required:['id','items','status','reason'],properties:{
+      id:uuid,status:{type:'string',enum:workStatuses.task},reason:{type:'string',minLength:10,maxLength:3000},
+      items:{type:'array',minItems:1,maxItems:50,items:{type:'object',additionalProperties:false,required:['id','expectedVersion'],properties:{id:uuid,expectedVersion:{type:'integer',minimum:1,maximum:2147483646}}}},
+    }}},
+  },async request=>{
+    const actor=request.actor!,{caseId}=request.params as {caseId:string},input=request.body as TaskStatusBatch;
+    const reason=input.reason.trim(),id=input.id.toLowerCase(),items=input.items.map(item=>({id:item.id.toLowerCase(),expectedVersion:item.expectedVersion})).sort((a,b)=>a.id.localeCompare(b.id));
+    validateText({title:'Task status batch',body:'',dueDate:null},reason);
+    if(reason.length<10||new Set(items.map(item=>item.id)).size!==items.length)throw new ApiError(422,'Choose distinct tasks and give a clear reason.');
+    const hash=createHash('sha256').update(JSON.stringify({items,status:input.status,reason})).digest('hex');
+    return inTransaction(services.pool,async client=>{
+      await client.query("SET LOCAL lock_timeout='2s'");await client.query("SET LOCAL statement_timeout='5s'");
+      await services.findCase(client,actor,caseId,true);
+      const previous=(await client.query('SELECT * FROM task_status_batches WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,id])).rows[0];
+      if(previous&&(previous.actor_id!==actor.userId||previous.request_hash!==hash))throw new ApiError(409,'This batch identity was used for a different decision.');
+      const current:WorkItem[]=[];
+      // Resolve the complete selection inside this case before changing anything.
+      for(const selected of items){const item=displayWork(await findWork(client,actor,caseId,selected.id));
+        if(item.kind!=='task')throw new ApiError(422,'Batch status changes apply only to tasks.');
+        current.push(item);
+      }
+      if(previous)return {id,applied:previous.applied,items:current} satisfies TaskStatusBatchResult;
+      if(current.some((item,i)=>item.version!==items[i]!.expectedVersion))throw new ApiError(409,'A selected task changed. Refresh and select its current version; no tasks were changed.');
+      if(current.some(item=>item.status===input.status))throw new ApiError(422,'Every selected task must change status; no tasks were changed.');
+      const count=(await client.query('SELECT count(*)::int n FROM task_status_batches WHERE tenant_id=$1 AND case_id=$2',[actor.tenantId,caseId])).rows[0].n;
+      if(count>=1000)throw new ApiError(409,'This case has reached its batch limit. Individual task revisions remain available.');
+      const updated:WorkItem[]=[];
+      for(const item of current){
+        const row=(await client.query(`UPDATE case_work_items SET status=$4,version=version+1,updated_at=clock_timestamp()
+          WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *,due_date::text AS due_date`,[actor.tenantId,caseId,item.id,input.status])).rows[0];
+        const next=displayWork(row);await recordRevision(client,actor,next,reason);
+        await services.audit(client,actor,caseId,'work.revised','case_work',next.id,'Task status changed in a recorded batch',{version:next.version,reason,batchId:id});updated.push(next);
+      }
+      const applied=updated.map(item=>({id:item.id,version:item.version}));
+      await client.query('INSERT INTO task_status_batches(tenant_id,case_id,id,request_hash,actor_id,applied) VALUES($1,$2,$3,$4,$5,$6::jsonb)',[actor.tenantId,caseId,id,hash,actor.userId,JSON.stringify(applied)]);
+      await services.audit(client,actor,caseId,'work.task_batch','task_status_batch',id,'Task status batch recorded',{count:applied.length,status:input.status});
+      return {id,applied,items:updated} satisfies TaskStatusBatchResult;
     });
   });
 
