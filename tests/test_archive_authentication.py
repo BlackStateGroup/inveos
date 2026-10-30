@@ -2,6 +2,9 @@
 import hashlib
 from datetime import datetime, timezone
 import lzma
+import io
+import urllib.error
+from unittest.mock import Mock
 from pathlib import Path
 import tempfile
 import unittest
@@ -46,6 +49,27 @@ class ArchiveAuthenticationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, 'fingerprint'):
                 auth.keyring(self.public, 'F' * 40, Path(directory), 1)
+
+    def test_public_key_transport_retry_stays_bounded_and_does_not_retry_bad_content(self):
+        data = b'Fictional public metadata.'
+        opener = Mock()
+        opener.open.side_effect = [urllib.error.URLError('fictional timeout'), io.BytesIO(data)]
+        with patch.object(auth.urllib.request, 'build_opener', return_value=opener), patch.object(auth.time, 'sleep') as sleep:
+            self.assertEqual(auth.fetch_public_key('https://ftp-master.debian.org/keys/fictional.asc', len(data)), data)
+            self.assertEqual(opener.open.call_count, 2)
+            sleep.assert_called_once_with(1)
+        opener.open.reset_mock(side_effect=True)
+        opener.open.side_effect = urllib.error.URLError('fictional persistent timeout')
+        with patch.object(auth.urllib.request, 'build_opener', return_value=opener), patch.object(auth.time, 'sleep'):
+            with self.assertRaises(urllib.error.URLError):
+                auth.fetch_public_key('https://ftp-master.debian.org/keys/fictional.asc', len(data))
+            self.assertEqual(opener.open.call_count, 3)
+        opener.open.reset_mock(side_effect=True)
+        opener.open.return_value = io.BytesIO(data + b'overflow')
+        with patch.object(auth.urllib.request, 'build_opener', return_value=opener):
+            with self.assertRaisesRegex(ValueError, 'byte limit'):
+                auth.fetch_public_key('https://ftp-master.debian.org/keys/fictional.asc', len(data))
+            self.assertEqual(opener.open.call_count, 1)
 
     def test_publication_scope_and_validity_are_bound_to_retained_snapshot(self):
         snapshot = datetime(2026, 10, 28, tzinfo=timezone.utc)

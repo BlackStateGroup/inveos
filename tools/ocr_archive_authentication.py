@@ -15,6 +15,7 @@ import re
 import tempfile
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 
 if __package__:
@@ -62,22 +63,7 @@ def artifact(record, *, offline=True, cache=CACHE, key=False):
         else:
             name = record.get('name')
             require(name in KEYS and record.get('url') == 'https://ftp-master.debian.org/keys/' + name + '.asc', 'Unexpected public key URL')
-            deadline = time.monotonic() + 30
-            # This fixed key URL must not redirect to another origin.
-            class FixedKeyOrigin(urllib.request.HTTPRedirectHandler):
-                def redirect_request(self, request, fp, code, message, headers, newurl):
-                    require(urllib.parse.urlsplit(newurl)[:2] == ('https', 'ftp-master.debian.org'), 'Unexpected public key redirect')
-                    return super().redirect_request(request, fp, code, message, headers, newurl)
-            with urllib.request.build_opener(FixedKeyOrigin()).open(record['url'], timeout=10) as response:
-                output = bytearray()
-                while True:
-                    require(time.monotonic() < deadline, 'Public key download deadline')
-                    chunk = response.read1(min(16384, record['bytes'] + 1 - len(output)))
-                    if not chunk:
-                        break
-                    output.extend(chunk)
-                    require(len(output) <= record['bytes'], 'Public key byte limit')
-                data = bytes(output)
+            data = fetch_public_key(record['url'], record['bytes'])
         require(len(data) == record['bytes'] and sha(data) == record['sha256'], 'Authentication artifact fingerprint mismatch')
         safe_cache(path)
         binary.save_cache(path, data)
@@ -85,6 +71,34 @@ def artifact(record, *, offline=True, cache=CACHE, key=False):
     if not key:
         require(hashlib.sha1(data).hexdigest() == record['snapshotSha1'], 'Snapshot artifact identity mismatch')
     return data
+
+
+def fetch_public_key(url, length):
+    # Retry only transport failures, inside the same overall acquisition bound.
+    class FixedKeyOrigin(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, request, fp, code, message, headers, newurl):
+            require(urllib.parse.urlsplit(newurl)[:2] == ('https', 'ftp-master.debian.org'), 'Unexpected public key redirect')
+            return super().redirect_request(request, fp, code, message, headers, newurl)
+    opener = urllib.request.build_opener(FixedKeyOrigin())
+    deadline = time.monotonic() + 30
+    for attempt in range(3):
+        require(time.monotonic() < deadline, 'Public key download deadline')
+        try:
+            with opener.open(url, timeout=min(10, deadline - time.monotonic())) as response:
+                output = bytearray()
+                while True:
+                    require(time.monotonic() < deadline, 'Public key download deadline')
+                    chunk = response.read1(min(16384, length + 1 - len(output)))
+                    if not chunk:
+                        return bytes(output)
+                    output.extend(chunk)
+                    require(len(output) <= length, 'Public key byte limit')
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == 2:
+                raise
+            require(time.monotonic() + attempt + 1 < deadline, 'Public key download deadline')
+            time.sleep(attempt + 1)
+    raise ValueError('Public key acquisition failed')
 
 
 def command(args):
