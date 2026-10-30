@@ -70,13 +70,22 @@ function reportLines(report:ReportDraft,redacted:Set<string>,reason:string){
   }
   const context=report.investigation;
   if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...wrap('-',JSON.stringify(item)));}lines.push('');}
+  if(context?.transcriptLinks?.length){
+    lines.push('TRANSCRIPT REASONING LINKS — WORKING CONTEXT');
+    for(const link of context.transcriptLinks){
+      if(redacted.has(link.findingId)){lines.push('[TRANSCRIPT SOURCE LINK WITHHELD]');continue;}
+      if(!report.transcriptFindings?.some(f=>f.id===link.findingId))throw new Error('Transcript reasoning source is missing.');
+      lines.push(...wrap('Work item',link.itemId),...wrap('Relation',link.relation),...wrap('Reason',link.reason),...wrap('Transcript finding',link.findingId),...wrap('Link recorded',link.createdAt),'');
+    }
+  }
   if(context?.chronology?.length){
     lines.push('ALLEGED EVENTS — RECORDED ACCOUNTS, NOT FINDINGS','Recorded order does not establish event sequence.');
     for(const event of context.chronology){
       if(redacted.has(event.source.findingId)){lines.push('[CHRONOLOGY ENTRY WITHHELD]');continue;}
-      const finding=event.source.kind==='text_finding'?report.findings.find(f=>f.id===event.source.findingId):report.documentFindings?.find(f=>f.id===event.source.findingId);
+      const finding=event.source.kind==='text_finding'?report.findings.find(f=>f.id===event.source.findingId):event.source.kind==='document_finding'?report.documentFindings?.find(f=>f.id===event.source.findingId):report.transcriptFindings?.find(f=>f.id===event.source.findingId);
       if(!finding)throw new Error('Chronology source is missing.');
-      lines.push(...wrap('Account',event.title),...wrap('Status',event.status),...wrap('Alleged date',`${event.time.precision}: ${event.time.start??'unknown'}${event.time.end?' to '+event.time.end:''}`),...wrap('Stated timezone',event.time.timezone||'Not specified'),...wrap('Uncertainty',event.time.note),...wrap('Account detail',event.account),...wrap('Source finding',event.source.findingId),...wrap('Source-recorded time',finding.source.sourceTime),...wrap('Received time',finding.source.receivedTime),...wrap('Account recorded',`${event.recordedAt}; version ${event.version}`),'');
+      const original='kind' in finding&&finding.kind==='reviewed_transcript'?finding.claim.source:finding.source;
+      lines.push(...wrap('Account',event.title),...wrap('Status',event.status),...wrap('Alleged date',`${event.time.precision}: ${event.time.start??'unknown'}${event.time.end?' to '+event.time.end:''}`),...wrap('Stated timezone',event.time.timezone||'Not specified'),...wrap('Uncertainty',event.time.note),...wrap('Account detail',event.account),...wrap('Source finding',event.source.findingId),...wrap('Source-recorded time',original.sourceTime),...wrap('Received time',original.receivedTime),...wrap('Account recorded',`${event.recordedAt}; version ${event.version}`),'');
     }
   }
   lines.push('REPORT LIMITATIONS',...wrap('',report.limitations));

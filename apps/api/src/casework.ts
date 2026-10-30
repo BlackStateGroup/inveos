@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
-import { workStatuses, type TaskStatusBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding } from '@inveos/contracts';
 import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -12,6 +12,7 @@ type Services = {
   requireCsrf: (request: FastifyRequest) => Promise<void>;
   findCase: (client: PoolClient, actor: Actor, id: string, lock?: boolean) => Promise<unknown>;
   verifyDocumentFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<DocumentReportFinding>;
+  verifyTranscriptFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<TranscriptReportFinding>;
   verifyClaim: (client: PoolClient, actor: Actor, caseId: string, claimId: string) => Promise<void>;
   audit: (client: PoolClient, actor: Actor, caseId: string, action: string, entityType: string, id: string, summary: string, metadata?: Record<string, unknown>) => Promise<void>;
 };
@@ -38,8 +39,10 @@ export function displayWork(row: QueryResultRow): WorkItem {
   };
 }
 export function displayWorkLink(row: QueryResultRow): WorkLink {
-  return {id: row.id, caseId: row.case_id, itemId: row.item_id, ...(row.document_finding_id ? {kind: 'document_finding' as const, findingId: row.document_finding_id, ...(row.withdrawn_at ? {withdrawal:{reason:row.withdrawal_reason,createdBy:row.withdrawn_by,createdAt:iso(row.withdrawn_at)}} : {})} : {claimId: row.claim_id}), relation: row.relation,
-    reason: row.reason, createdBy: row.created_by, createdAt: iso(row.created_at)};
+  const source = row.document_finding_id ? {kind:'document_finding' as const,findingId:row.document_finding_id}
+    : row.transcript_finding_id ? {kind:'transcript_finding' as const,findingId:row.transcript_finding_id} : {claimId:row.claim_id};
+  return {id:row.id,caseId:row.case_id,itemId:row.item_id,...source,relation:row.relation,reason:row.reason,createdBy:row.created_by,createdAt:iso(row.created_at),
+    ...('kind' in source&&row.withdrawn_at?{withdrawal:{reason:row.withdrawal_reason,createdBy:row.withdrawn_by,createdAt:iso(row.withdrawn_at)}}:{})};
 }
 
 function validateText(input: Pick<WorkInput, 'title' | 'body' | 'dueDate'>, reason?: string): void {
@@ -172,6 +175,7 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
         // Check contrary/context as well as supporting material; no cherry-picked stale sources.
         for (const source of sources) {
           if (source.document_finding_id) await services.verifyDocumentFinding(client, actor, caseId, source.document_finding_id);
+          else if(source.transcript_finding_id) await services.verifyTranscriptFinding(client,actor,caseId,source.transcript_finding_id);
           else await services.verifyClaim(client, actor, caseId, source.claim_id);
         }
       }
@@ -247,29 +251,32 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     });
   });
 
-  app.get('/api/cases/:caseId/work/document-findings', {
+  for(const family of ['document','transcript'] as const){
+    const column=family==='document'?'document_finding_id':'transcript_finding_id';
+    const verify=family==='document'?services.verifyDocumentFinding:services.verifyTranscriptFinding;
+  app.get(`/api/cases/:caseId/work/${family}-findings`, {
     preHandler: internal, schema: {params: caseParams, querystring: {type:'object',additionalProperties:false,properties:{after:uuid}}},
   }, async request => {
     const actor=request.actor!, {caseId}=request.params as {caseId:string}, {after}=request.query as {after?:string};
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId);
-      const rows=(await client.query('SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51',[actor.tenantId,caseId,after??null])).rows;
+      const rows=(await client.query(family==='document'?'SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51':`SELECT f.id,p.snapshot->>'text' text FROM transcript_findings f JOIN transcript_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 AND ($3::uuid IS NULL OR f.id>$3) ORDER BY f.id LIMIT 51`,[actor.tenantId,caseId,after??null])).rows;
       return {items:rows.slice(0,50),nextAfter:rows.length>50?rows[49].id:null, status:'historical_candidates_reverification_required'};
     });
   });
-  app.get('/api/cases/:caseId/work/document-findings/:findingId', {
+  app.get(`/api/cases/:caseId/work/${family}-findings/:findingId`, {
     preHandler:internal,schema:{params:{type:'object',additionalProperties:false,required:['caseId','findingId'],properties:{caseId:uuid,findingId:uuid}}},
   }, async (request,reply)=>{
     reply.header('Cache-Control','no-store');
     const actor=request.actor!,{caseId,findingId}=request.params as {caseId:string;findingId:string};
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId,true);
-      const finding=await services.verifyDocumentFinding(client,actor,caseId,findingId);
-      await services.audit(client,actor,caseId,'work.document_source_read','document_finding',findingId,'Reverified document source for investigation reasoning');
+      const finding=await verify(client,actor,caseId,findingId);
+      await services.audit(client,actor,caseId,`work.${family}_source_read`,`${family}_finding`,findingId,`Reverified ${family} source for investigation reasoning`);
       return finding;
     });
   });
-  app.post('/api/cases/:caseId/work/:itemId/document-links/:linkId/withdraw', {
+  app.post(`/api/cases/:caseId/work/:itemId/${family}-links/:linkId/withdraw`, {
     preHandler:[services.requireCsrf,internal],schema:{params:{...params,required:['caseId','itemId','linkId'],properties:{...params.properties,linkId:uuid}},
       body:{type:'object',additionalProperties:false,required:['reason'],properties:{reason:{type:'string',minLength:1,maxLength:3000}}}},
   }, async request=>{
@@ -277,36 +284,38 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     validateText({title:'Withdrawal',body:'',dueDate:null},reason);
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId,true);await findWork(client,actor,caseId,itemId);
-      const link=(await client.query('SELECT * FROM case_work_links WHERE tenant_id=$1 AND case_id=$2 AND item_id=$3 AND id=$4 AND document_finding_id IS NOT NULL',[actor.tenantId,caseId,itemId,linkId])).rows[0];if(!link)notFound();
+      const link=(await client.query(`SELECT * FROM case_work_links WHERE tenant_id=$1 AND case_id=$2 AND item_id=$3 AND id=$4 AND ${column} IS NOT NULL`,[actor.tenantId,caseId,itemId,linkId])).rows[0];if(!link)notFound();
       const old=(await client.query('SELECT * FROM case_work_link_withdrawals WHERE tenant_id=$1 AND case_id=$2 AND link_id=$3',[actor.tenantId,caseId,linkId])).rows[0];
       if(old){if(old.reason!==reason||old.created_by!==actor.userId)throw new ApiError(409,'A different withdrawal is already recorded.');return {reason:old.reason,createdBy:old.created_by,createdAt:iso(old.created_at)};}
       const saved=(await client.query('INSERT INTO case_work_link_withdrawals(tenant_id,case_id,link_id,reason,created_by) VALUES($1,$2,$3,$4,$5) RETURNING *',[actor.tenantId,caseId,linkId,reason,actor.userId])).rows[0];
-      await services.audit(client,actor,caseId,'work.document_source_withdrawn','case_work',itemId,'Historical link retained; source withdrawn from current reasoning',{linkId,reason});
+      await services.audit(client,actor,caseId,`work.${family}_source_withdrawn`,'case_work',itemId,'Historical link retained; source withdrawn from current reasoning',{linkId,reason});
       return {reason,createdBy:actor.userId,createdAt:iso(saved.created_at)};
     });
   });
-  app.post('/api/cases/:caseId/work/:itemId/document-links', {
+  app.post(`/api/cases/:caseId/work/:itemId/${family}-links`, {
     preHandler:[services.requireCsrf,internal],
     schema:{params,body:{type:'object',additionalProperties:false,required:['id','findingId','relation','reason'],properties:{id:uuid,findingId:uuid,relation:{enum:['supports','contradicts','context']},reason:{type:'string',minLength:1,maxLength:3000}}}},
   }, async request=>{
     const actor=request.actor!,{caseId,itemId}=request.params as {caseId:string;itemId:string},input=request.body as DocumentWorkLinkInput;
-    validateText({title:'Document source',body:'',dueDate:null},input.reason);
+    validateText({title:'Reviewed source',body:'',dueDate:null},input.reason);
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId,true);await findWork(client,actor,caseId,itemId);
-      await services.verifyDocumentFinding(client,actor,caseId,input.findingId);
+      await verify(client,actor,caseId,input.findingId);
       const old=(await client.query(`SELECT l.*,w.reason AS withdrawal_reason,w.created_by AS withdrawn_by,w.created_at AS withdrawn_at
         FROM case_work_links l LEFT JOIN case_work_link_withdrawals w ON w.tenant_id=l.tenant_id AND w.case_id=l.case_id AND w.link_id=l.id
-        WHERE l.tenant_id=$1 AND l.case_id=$2 AND (l.id=$3 OR (l.item_id=$4 AND l.document_finding_id=$5 AND l.relation=$6))`,[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation])).rows[0];
+        WHERE l.tenant_id=$1 AND l.case_id=$2 AND (l.id=$3 OR (l.item_id=$4 AND l.${column}=$5 AND l.relation=$6))`,[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation])).rows[0];
       if(old){
-        if(old.item_id!==itemId||old.document_finding_id!==input.findingId||old.relation!==input.relation||old.reason!==input.reason||old.created_by!==actor.userId)throw new ApiError(409,'A different source link already exists.');
+        if(old.item_id!==itemId||old[column]!==input.findingId||old.relation!==input.relation||old.reason!==input.reason||old.created_by!==actor.userId)throw new ApiError(409,'A different source link already exists.');
         return displayWorkLink(old);
       }
-      const row=(await client.query('INSERT INTO case_work_links(tenant_id,case_id,id,item_id,document_finding_id,relation,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation,input.reason,actor.userId])).rows[0];
-      await services.audit(client,actor,caseId,'work.document_source_linked','case_work',itemId,'Reviewed document finding linked to working investigation context',{findingId:input.findingId,relation:input.relation});
+      const row=(await client.query(`INSERT INTO case_work_links(tenant_id,case_id,id,item_id,${column},relation,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,[actor.tenantId,caseId,input.id,itemId,input.findingId,input.relation,input.reason,actor.userId])).rows[0];
+      await services.audit(client,actor,caseId,`work.${family}_source_linked`,'case_work',itemId,`Reviewed ${family} finding linked to working investigation context`,{findingId:input.findingId,relation:input.relation});
       return displayWorkLink(row);
     });
   });
 
+
+  }
 
   app.get('/api/work/queue', {preHandler: internal, schema:{querystring:{type:'object',additionalProperties:false,properties:{
     kind:{enum:kinds},status:{enum:allStatuses},afterId:uuid,afterDue:{type:'string',pattern:'^(none|[1-9][0-9]{3}-[0-9]{2}-[0-9]{2})$'},

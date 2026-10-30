@@ -83,7 +83,8 @@ def verify_chronology(report):
     rows = context['chronology']
     require(isinstance(rows, list) and len(rows) <= 1000, 'event limit')
     sources = {'text_finding': {f['id'] for f in report.get('findings', [])},
-               'document_finding': {f['id'] for f in report.get('documentFindings', [])}}
+               'document_finding': {f['id'] for f in report.get('documentFindings', [])},
+               'transcript_finding': {f['id'] for f in report.get('transcriptFindings', [])}}
     seen = set()
     for event in rows:
         fields(event, 'id caseId title account status time source version createdBy createdAt recordedAt interpretation')
@@ -210,6 +211,46 @@ def verify_transcript_findings(report, finding_ids, evidence):
     return len(values)
 
 
+def verify_transcript_work_links(report):
+    """Check frozen typed joins; linked working assessments remain interpretations."""
+    context = report.get('investigation')
+    if not isinstance(context, dict) or 'transcriptLinks' not in context:
+        return 0
+    require(context.get('status') == 'working_context_not_findings', 'Working context must remain separate')
+    links = context['transcriptLinks']
+    require(isinstance(links, list) and len(links) <= 1000, 'Transcript working link limit')
+    def identifier(value):
+        require(isinstance(value, str) and re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', value), 'Invalid working identity')
+    items = set()
+    for name in ('objectives', 'questions', 'hypotheses', 'blockers'):
+        rows = context.get(name)
+        require(isinstance(rows, list) and len(rows) <= 1000, 'Invalid working context')
+        for item in rows:
+            identifier(item['id'])
+            require(item['caseId'] == report['case']['id'] and item['id'] not in items, 'Working context scope or duplicate')
+            items.add(item['id'])
+    findings = {f['id'] for f in report.get('transcriptFindings', [])}
+    seen, relations = set(), set()
+    for link in links:
+        require(isinstance(link, dict) and set(link) == set('id caseId itemId kind findingId relation reason createdBy createdAt'.split()), 'Unexpected transcript link fields')
+        for key in ('id', 'caseId', 'itemId', 'findingId', 'createdBy'):
+            identifier(link[key])
+        require(link['caseId'] == report['case']['id'] and link['itemId'] in items, 'Transcript link scope mismatch')
+        require(link['kind'] == 'transcript_finding' and link['findingId'] in findings, 'Missing or mistyped transcript source')
+        require(link['relation'] in ('supports', 'contradicts', 'context'), 'Invalid transcript relation')
+        reason = link['reason']
+        require(isinstance(reason, str) and reason.strip() and len(reason) <= 3000 and not re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', reason), 'Invalid transcript relevance reason')
+        reason.encode('utf-8', errors='strict')
+        instant = link['createdAt']
+        require(isinstance(instant, str) and re.fullmatch(r'[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z', instant), 'Invalid link receipt time')
+        datetime.fromisoformat(instant.replace('Z', '+00:00'))
+        key = (link['itemId'], link['findingId'], link['relation'])
+        require(link['id'] not in seen and key not in relations, 'Duplicate transcript working source')
+        seen.add(link['id'])
+        relations.add(key)
+    return len(links)
+
+
 def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
     require(0 < len(raw) <= MAX_REPORT_BYTES, 'Report size limit')
     actual = hashlib.sha256(raw).hexdigest()
@@ -279,12 +320,13 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         transcript_count = verify_transcript_findings(report, finding_ids, evidence)
         require(0 < len(findings) + transcript_count <= MAX_FINDINGS, 'Finding count limit')
         chronology_count = verify_chronology(report)
+        transcript_links = verify_transcript_work_links(report)
     except (ValueError, TypeError, KeyError, UnicodeError, IndexError, AttributeError, binascii.Error) as exc:
         raise InvalidReport('Invalid frozen chronology or transcript lineage') from exc
     return {'status': 'integrity_checks_passed', 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
             'trustedReportDigestMatched': expected_sha256 is not None,
             'caseId': case_id, 'findingsChecked': len(findings) + transcript_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
-            'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',
+            **({'transcriptWorkLinksChecked': transcript_links} if transcript_links else {}), 'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',
             'limitations': 'No signature, reviewer authentication, lawful-authority validation, custody-chain verification or factual truth check. An unanchored result establishes internal consistency only.'}
 
 

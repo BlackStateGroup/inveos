@@ -53,12 +53,12 @@ export type WorkLinkInput = {
   reason: string;
 };
 export type DocumentWorkLinkInput = {id: string; findingId: string; relation: WorkLinkInput['relation']; reason: string};
-export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & {kind: 'document_finding'; withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
+export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & ({kind: 'document_finding'} | {kind: 'transcript_finding'}) & {withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
 export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkItem; actor: string; reason: string; at: string};
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
 export type AllegedTime = {precision: 'instant' | 'day' | 'month' | 'range' | 'unknown'; start: string | null; end: string | null; timezone: string; note: string};
-export type ChronologySource = {kind: 'text_finding' | 'document_finding'; findingId: string};
+export type ChronologySource = {kind: 'text_finding' | 'document_finding' | 'transcript_finding'; findingId: string};
 export type ChronologyInput = {id: string; title: string; account: string; time: AllegedTime; source: ChronologySource; status: 'alleged' | 'disputed' | 'withdrawn'};
 export type ChronologyEvent = ChronologyInput & {caseId: string; version: number; createdBy: string; createdAt: string; recordedAt: string; interpretation: 'recorded_account_not_finding'};
 export type ChronologyEdit = Omit<ChronologyInput, 'id'> & {expectedVersion: number; reason: string};
@@ -159,11 +159,12 @@ export type ReportDraft = {
     hypotheses: WorkItem[];
     blockers: WorkItem[];
     documentLinks?: Array<Extract<WorkLink, {kind: 'document_finding'}>>;
+    transcriptLinks?: Array<Extract<WorkLink, {kind: 'transcript_finding'}>>;
   };
   limitations: string;
 };
 
-export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context';
+export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context'|'transcript'|'transcript_claim'|'transcript_finding';
 export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
 export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
@@ -232,3 +233,5 @@ export type TranscriptClaim={
 export type TranscriptClaimReview={id:string;claimId:string;claimDigest:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string};
 export type TranscriptClaimRecord={claim:TranscriptClaim;review:TranscriptClaimReview|null;findingId:string|null;withdrawal:{id:string;actorId:string;reason:string;recordedAt:string}|null;state:'candidate'|'reviewed'|'rejected'|'needs_review'|'withdrawn';canReview:boolean;canWithdraw:boolean};
 export type TranscriptReportFinding={kind:'reviewed_transcript';id:string;text:string;reviewer:string;reviewedAt:string;claim:TranscriptClaim;review:TranscriptClaimReview;originalBase64:string};
+
+export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding;

@@ -1,3 +1,4 @@
+import {TranscriptWorkSources} from './TranscriptWorkSources';
 import {WorkDiscussion,WorkMentions} from './WorkDiscussion';
 import {DocumentWorkSources} from './DocumentWorkSources';
 import { useRef, useState, type FormEvent } from 'react';
@@ -14,6 +15,8 @@ export type WorkActions = {
   revise: (id: string, input: WorkEdit) => Promise<void>;
   link: (id: string, input: WorkLinkInput) => Promise<void>;
   documentLink: (id: string, input: DocumentWorkLinkInput) => Promise<void>;
+  transcriptLink: (id:string,input:DocumentWorkLinkInput)=>Promise<void>;
+  withdrawTranscriptLink: (itemId:string,linkId:string,reason:string)=>Promise<void>;
   withdrawDocumentLink: (itemId:string,linkId:string,reason:string)=>Promise<void>;
   history: (id: string) => Promise<WorkRevision[]>;
   refresh: () => Promise<unknown>;
@@ -102,7 +105,8 @@ function SourceLinks({p, item}: {p: ViewProps; item: WorkItem}) {
         {source && <button className="text-button" onClick={() => p.inspect(source.id)}>{source.filename}<ArrowUpRight size={14}/></button>}
       </div>;
     })}
-    <DocumentWorkSources key={item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link)} save={p.work.documentLink} withdraw={p.work.withdrawDocumentLink} inspect={p.inspect}/>
+    <DocumentWorkSources key={item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link&&link.kind==='document_finding')} save={p.work.documentLink} withdraw={p.work.withdrawDocumentLink} inspect={p.inspect}/>
+    <TranscriptWorkSources key={'transcript:'+item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link&&link.kind==='transcript_finding')} save={p.work.transcriptLink} withdraw={p.work.withdrawTranscriptLink} inspect={p.inspect}/>
     {adding && (claims.length ? <form className="work-link-form" onSubmit={event => void submit(event)}>
       {error && <div className="form-error" role="alert">{error}</div>}
       <fieldset disabled={busy}>
@@ -143,7 +147,7 @@ function WorkRecord({p, item, selection}: {p: ViewProps; item: WorkItem; selecti
     <details className="work-detail"><summary>Team discussion</summary><WorkDiscussion key={item.caseId+':'+item.id} itemId={item.id} members={p.data.members.filter(m=>m.caseId===item.caseId)} api={p.work.discussion}/></details>
     {editing && <WorkForm p={p} kind={item.kind} item={item} onClose={() => {setEditing(false); setRevisions(null);}}/>}
     {revisions && <div className="work-history" aria-label={`History for ${item.title}`}>
-      {revisions.map(revision => <details key={revision.version}><summary>Version {revision.version} · {revision.reason}</summary>{revision.sources&&<ul aria-label="Sources at this revision">{revision.sources.map(link=><li key={link.id}>{link.relation}: {'kind' in link ? `Document finding ${link.findingId}` : `Text claim ${link.claimId}`} — {link.reason}</li>)}</ul>}
+      {revisions.map(revision => <details key={revision.version}><summary>Version {revision.version} · {revision.reason}</summary>{revision.sources&&<ul aria-label="Sources at this revision">{revision.sources.map(link=><li key={link.id}>{link.relation}: {'kind' in link ? `${link.kind==='document_finding'?'Document':'Transcript'} finding ${link.findingId}` : `Text claim ${link.claimId}`} — {link.reason}</li>)}</ul>}
         <p className="small muted">{revision.actor} · {atLabel(revision.at)}</p><strong>{revision.item.title}</strong>
         <p className="work-body">{revision.item.body || 'No details recorded.'}</p><Badge>{revision.item.status}</Badge>
       </details>)}
