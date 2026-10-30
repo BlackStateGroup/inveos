@@ -134,7 +134,7 @@ function WorkRecord({p, item, selection}: {p: ViewProps; item: WorkItem; selecti
     try { setRevisions(await p.work.history(item.id)); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }
   return <article id={`work-${item.id}`} className={`work-record ${item.status === 'Blocked' ? 'work-blocked' : ''}`}>
-    {selection&&<label className="checkbox-row task-selection"><input type="checkbox" checked={selection.checked} disabled={selection.disabled} onChange={selection.toggle} aria-label={`Select task: ${item.title}`}/><span>Select for status change</span></label>}
+    {selection&&<label className="checkbox-row task-selection"><input type="checkbox" checked={selection.checked} disabled={selection.disabled} onChange={selection.toggle} aria-label={`Select task: ${item.title}`}/><span>Select for batch change</span></label>}
     <div className="work-record-top"><h3>{item.title}</h3><Badge tone={done.has(item.status) ? 'teal' : item.status === 'Blocked' ? 'amber' : 'neutral'}>{item.status}</Badge></div>
     {parent && <p className="small muted work-parent">For: {parent.title}</p>}
     {item.body && <p className="work-body">{item.body}</p>}
@@ -221,7 +221,7 @@ export function CaseTaskboard(p: ViewProps) {
       {adding&&<WorkForm p={p} kind="task" onClose={()=>setAdding(false)}/>}
       <Panel title={mode==='status'?"Change selected task statuses":"Plan selected tasks"} meta={<Badge>{selected.length} / 50 selected</Badge>}>
         <div className="panel-body"><p className="body-copy">Select tasks below, choose status or assignment/deadline changes and record one reason. Every selected version must still be current. The whole batch is saved together with each task’s history.</p>
-          {!!selected.length&&<><ul aria-label="Selected task versions">{selected.map(item=><li key={item.id}>{item.title} · v{item.version} · {item.status}</li>)}</ul>
+          {!!selected.length&&<><ul aria-label="Selected task versions">{selected.map(item=><li key={item.id}>{item.title} · v{item.version} · {item.status}{mode==='plan'&&<span className="small"> · {p.data.members.find(m=>m.caseId===p.active.id&&m.userId===item.ownerId)?.name??(item.ownerId?'Former case member':'Unassigned')} · {item.dueDate?'Due '+dateLabel(item.dueDate):'No deadline'}</span>}</li>)}</ul>
             <form aria-label={mode==='status'?'Task status batch':'Task planning batch'} className="work-form" onSubmit={e=>void save(e)}><fieldset disabled={frozen}>
               <label className="form-label">Batch change<select name="mode" value={mode} onChange={e=>setMode(e.target.value as 'status'|'plan')}><option value="status">Status</option><option value="plan">Owner and deadline</option></select></label>
               {mode==='status'?

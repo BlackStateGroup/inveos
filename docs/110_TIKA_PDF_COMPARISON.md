@@ -1,6 +1,6 @@
 # Reduced pinned Tika PDF comparison
 
-This is an isolated research increment for work package WP-05. No Tika code, JAR, font or JDK is added to the application runtime. Initial and expanded actual parser acceptance passed; final application acceptance remains under verification. Static checks and generated output fixtures are not parser benchmarks.
+This is an isolated research increment for work package WP-05. No Tika code, JAR, font or JDK is added to the application runtime. Initial, expanded and final actual parser and application acceptance passed; exact merge/main receipts are in the handoff. Static checks and generated output fixtures are not parser benchmarks.
 
 ## Inputs and reuse decision
 
