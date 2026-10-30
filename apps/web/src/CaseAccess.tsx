@@ -1,3 +1,4 @@
+import {CaseInvitations} from './CaseInvitations';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {CaseAccessAction,CaseAccessEvent,CaseAccessMember,CaseAccessState} from '@inveos/contracts';
 import {Badge,Panel} from './ui';
@@ -26,8 +27,9 @@ export function CaseAccess({caseId,csrf,onSaved}:{caseId:string;csrf:string;onSa
  {action==='member_added'&&<div className="work-record-actions"><button type="button" className="secondary" onClick={()=>void act(()=>eligible())}>Find eligible colleagues</button>{candidates?.next&&<button type="button" className="secondary" onClick={()=>void act(()=>eligible(candidates.next!))}>Next colleagues page</button>}</div>}{action==='member_added'&&candidates&&<p className="small" role="status" aria-label="Eligible colleagues page">{candidates.items.length?`${candidates.items.length} eligible colleagues on this page.`:'No eligible colleagues on this page.'}</p>}
  <label className="form-label">Colleague<select required value={subject} onChange={e=>{setSubject(e.target.value);pending.current=null;}}><option value="">Choose from this page</option>{choices.map(m=><option key={m.id} value={m.id}>{m.name} · {m.role} · {m.id.slice(0,8)}</option>)}</select></label>
  <label className="form-label">Access decision reason<textarea required minLength={10} maxLength={2000} value={reason} onChange={e=>{setReason(e.target.value);pending.current=null;}} placeholder="Record the responsibility, agreed scope and reason for this change."/></label><button className="primary" disabled={!subject}>Record access decision</button></fieldset></form>
- <p className="small muted">This assigns existing internal accounts only. It sends no invitation or external message. Ownership transfer keeps your current membership until it is explicitly removed.</p></>:<p>Only the current internal case owner can change collaborators or ownership.</p>}
+ <p className="small muted">This assigns existing internal accounts only. It grants access immediately. Use the invitation below when the colleague must accept first. Ownership transfer keeps your current membership until it is explicitly removed.</p></>:<p>Only the current internal case owner can change collaborators or ownership.</p>}
  {history&&<section className="work-history" aria-label="Case access history"><h4>Retained access decisions</h4>{history.items.map(event=><article className="work-record" key={event.id}><strong>v{event.version} · {labels[event.action]}{event.subjectName?' · '+event.subjectName:''}</strong><p className="work-body">{event.reason}</p><p className="small">{event.actorName??'No historical decision attributed'} · {event.recordedAt}</p></article>)}{history.next&&<button className="secondary" disabled={busy} onClick={()=>void act(async()=>{setHistory(await api<History>('/history?before='+history.next));})}>Earlier access decisions</button>}</section>}
+ {data.canManage&&<CaseInvitations csrf={csrf} owner={{caseId,accessVersion:data.version}} onChanged={onSaved}/>}
  </>}
  </div></Panel>;
 }

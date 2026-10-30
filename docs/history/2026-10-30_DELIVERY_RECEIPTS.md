@@ -114,3 +114,13 @@ PR **#96** merged as `ca6dcf432ef415f15a5fa4524166b2bf6c26fa23`. Final reviewed 
 #96 implements encrypted browser Field originals/context/queue, atomic public-shell offline launch, scoped device registration/revocation, immutable authority-bound receipts/retry, reviewer workload/drill-down and source-linked entity attributes. Actual browser acceptance includes offline reload, incomplete shell-update recovery, wrong passphrase, lost receipt without duplicate originals and revoked-device denial. It is not native iOS/Android acceptance. Narrow pinned MIT adaptations from WatermelonDB and FollowTheMoney retain licences, manifests/source hashes and distributed notices. No new dependency. See docs/102.
 
 Preserve failed #95 main 40987937559 (history interaction before refreshed records) and initial #96 40989019794 (366/367, Field disabled-form timing). #96 implementation 5365c28 also passed 40989781041 before the final visual fix. #94 main 40984928414 attempt 1 failed Chrome startup, attempt 2 passed. Older #93 archive/supplier/daemon evidence remains in docs/99 and history.
+
+## Retained PR97 verification checkpoint
+
+## Latest merge and verification
+
+PR **#97** merged as `6eb912abe86aba18cfe8063d35cc13ca82e781b3`. Reviewed head `5171eb2d2aab0db87f43d400321da423374bcf5a` passed **Checks 40993430848**, job **123860961271**: **376 Node/143 Python, zero failures/skips, 35 actual browser journeys**. The actual transcript render was inspected. **Research 40993430810**, job **123860960579**, passed exact source/runtime/archive qualification, actual native/OCR supplier regressions/corpora, raster and five actual daemon/failure/isolation checks. Resulting-main **40994164252**, job **123863290032**, passed **376 Node/143 Python, zero failures/skips**, including all 35 browser journeys.
+
+#97 adds independent transcript interpretation review/withdrawal, frozen source/version/correction lineage, standalone report/exhibit verification and PDF/redaction with approved recipient delivery. It does not verify speech, audio alignment or source truth. Source/privacy review is recorded in PR97. Preserve failed **40992635268** at `6bbabe8`: 375/376 Node, zero skips, new browser account switch kept the same document. The fixture now explicitly reloads the document; the final run passes. Research at that earlier head passed independently.
+
+#96 remains merged and main-verified at `ca6dcf4`: 369 Node/136 Python, zero skips, 34 browsers. Encrypted browser Field, team workload and source-linked entity attributes include pinned MIT WatermelonDB/FollowTheMoney adaptations and distributed notices. No native-device or production approval claimed. Full preceding receipts, including #95/#96 failures, are in docs/history and docs/102.

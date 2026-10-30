@@ -209,3 +209,5 @@
 - [Reviewed transcript findings and report lineage](103_TRANSCRIPT_FINDINGS.md) — merged review/export/delivery batch; exact acceptance status recorded separately.
 
 - [Transcript casework and search](104_TRANSCRIPT_CASEWORK_SEARCH.md) — connected typed reasoning/history/frozen export and case discovery.
+
+- [Existing-account case invitations](105_CASE_INVITATIONS.md) — explicit owner offers, recipient decisions, expiry and retained access history; acceptance recorded separately.

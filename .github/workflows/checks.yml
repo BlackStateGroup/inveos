@@ -70,7 +70,7 @@ jobs:
         # the root test:api command requires a developer's private .env file.
         # The two added browser journeys bring the measured suite close to 180s.
         # Individual worker/browser deadlines remain unchanged.
-        run: timeout 240s npm test --workspace @inveos/api
+        run: timeout 360s npm test --workspace @inveos/api
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
@@ -222,5 +222,13 @@ jobs:
           path: |
             output/evals/transcript-reasoning-desktop.png
             output/evals/transcript-graph-desktop.png
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Retain fictional invitation browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: case-invitations-browser
+          path: output/evals/case-invitations-*.png
           if-no-files-found: ignore
           retention-days: 7
