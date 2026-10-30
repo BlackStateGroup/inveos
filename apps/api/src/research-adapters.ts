@@ -1,3 +1,4 @@
+import {gleifEndpoint,gleifRecordUrl,inspectGleifRecord} from './gleif-adapter.js';
 /**
  * RDAP field-selection / source-event policy adaptation informed by pinned
  * OpenOSINT and SpiderFoot. MIT notices and exact revisions: third_party/osint/.
@@ -15,12 +16,14 @@ export function declaredHttps(value:string):URL{
 }
 export function researchEndpoint(id:ResearchAdapterId,value:string):string{
  const u=declaredHttps(value);
+ if(id==='gleif_lei_v1'&&value!==gleifEndpoint)throw new ApiError(422,'GLEIF policy requires the exact registered single-record endpoint.');
  if(id==='rdap_domain_v1'&&!u.pathname.endsWith('/domain/'))throw new ApiError(422,'RDAP scope must be the exact approved HTTPS path ending /domain/.');
  if(id==='supplied_webpage_v1'&&u.pathname!=='/')throw new ApiError(422,'Webpage scope must be one exact HTTPS origin ending /.');
  return value;
 }
 export function researchTarget(id:ResearchAdapterId,target:string,endpoint:string):string{
  researchEndpoint(id,endpoint);
+ if(id==='gleif_lei_v1')return gleifRecordUrl(target,endpoint);
  if(id==='rdap_domain_v1'){
   if(target.length>253||!target.includes('.')||isIP(target)||!target.split('.').every(s=>/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s))||target.endsWith('.localhost')||target.endsWith('.local'))throw new ApiError(422,'Use one exact lowercase ASCII domain, without paths, wildcards or contact identifiers.');
   return endpoint+target;
@@ -48,9 +51,10 @@ export function inspectResearchCapture(id:ResearchAdapterId,target:string,q:Rese
   if(q.captureMode!=='supplied_webpage'||q.sourceTimeBasis!=='declared_page_time'||!['text/html','text/plain'].includes(q.mediaType))throw new ApiError(422,'Use supplied-webpage mode and a declared page time for HTML or text.');
   return {bytes,fields:[]}; // Deliberately no DOM, browser, sanitizer, linked resource or inferred page time.
  }
- if(!['fictional_fixture','controlled_response'].includes(q.captureMode)||q.sourceTimeBasis!=='declared_response_date'||!['application/rdap+json','application/json'].includes(q.mediaType))throw new ApiError(422,'Use explicitly supplied RDAP response mode and a declared response timestamp.');
- if(bytes.subarray(0,3).equals(Buffer.from([0xef,0xbb,0xbf])))throw new ApiError(422,'RDAP JSON profile does not accept a byte-order mark.');
- let parsed:unknown;try{parsed=parseDocumentRaw(bytes);}catch{throw new ApiError(422,'RDAP must be bounded JSON without duplicate keys.');}
+ if(!['fictional_fixture','controlled_response'].includes(q.captureMode)||q.sourceTimeBasis!=='declared_response_date'||!(id==='gleif_lei_v1'?['application/vnd.api+json','application/json']:['application/rdap+json','application/json']).includes(q.mediaType))throw new ApiError(422,'Use explicitly supplied registry response mode and a declared response timestamp.');
+ if(bytes.subarray(0,3).equals(Buffer.from([0xef,0xbb,0xbf])))throw new ApiError(422,'Registry JSON profiles do not accept a byte-order mark.');
+ let parsed:unknown;try{parsed=parseDocumentRaw(bytes);}catch{throw new ApiError(422,'Registry response must be bounded JSON without duplicate keys.');}
+ if(id==='gleif_lei_v1')return {bytes,fields:inspectGleifRecord(parsed,target)};
  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new ApiError(422,'RDAP response must be an object.');
  const v=parsed as Record<string,unknown>;
  if(v.objectClassName!=='domain'||typeof v.ldhName!=='string'||v.ldhName.toLowerCase()!==target)throw new ApiError(422,'RDAP object class or domain identity differs from the authorised request.');

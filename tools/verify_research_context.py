@@ -16,6 +16,7 @@ from urllib.parse import urlsplit
 
 PROFILES = {
     'rdap_domain_v1': '25b70948af4174fe0da2f2af2fb9f44ce49683d2e7237ae7888326d154d9cc18',
+    'gleif_lei_v1': '421eae6fcad6722302efd1fb6c36bd2278f7478e83ec014035f895493eae178c',
     'supplied_webpage_v1': '166adc21d0982926d764b9eeb89faaa327b041b5e293853b354608f5d5062be8',
 }
 CONTROL = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
@@ -73,6 +74,11 @@ def https(value):
 
 def target_url(adapter, target, endpoint):
     scope = https(endpoint)
+    if adapter == 'gleif_lei_v1':
+        require(endpoint == 'https://api.gleif.org/api/v1/lei-records/', 'LEI endpoint differs')
+        require(isinstance(target, str) and re.fullmatch('[A-Z0-9]{18}[0-9]{2}', target) is not None, 'Invalid LEI shape')
+        require(int(''.join(c if c.isdigit() else str(ord(c) - 55) for c in target)) % 97 == 1, 'LEI check digits differ')
+        return endpoint + target
     if adapter == 'rdap_domain_v1':
         require(scope.path.endswith('/domain/'), 'RDAP endpoint path differs')
         require(isinstance(target, str) and len(target) <= 253 and '.' in target and all(re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', x) for x in target.split('.')), 'Invalid domain')
@@ -112,6 +118,31 @@ def fields_for(raw, target):
     return fields
 
 
+def lei_fields_for(raw, target):
+    v = decode(raw)
+    require(isinstance(v, dict) and 'errors' not in v and isinstance(v.get('data'), dict), 'Single LEI record required')
+    d = v['data']
+    a = d.get('attributes')
+    require(isinstance(a, dict) and d.get('type') == 'lei-records' and d.get('id') == target and a.get('lei') == target, 'LEI identity differs')
+    entity, registration = a.get('entity'), a.get('registration')
+    require(isinstance(entity, dict) and isinstance(registration, dict) and isinstance(entity.get('legalName'), dict), 'LEI record shape differs')
+    name = entity['legalName']
+    fields = []
+    def add(pointer, value):
+        fields.append({'pointer': pointer, 'value': text(value, 1000)})
+    add('/data/type', d['type']); add('/data/id', d['id']); add('/data/attributes/lei', a['lei'])
+    add('/data/attributes/entity/legalName/name', name.get('name'))
+    if 'language' in name:
+        add('/data/attributes/entity/legalName/language', name['language'])
+    for key in ('jurisdiction', 'category', 'status', 'registeredAs'):
+        if key in entity:
+            add('/data/attributes/entity/' + key, entity[key])
+    for key in ('status', 'initialRegistrationDate', 'lastUpdateDate', 'nextRenewalDate'):
+        if key in registration:
+            add('/data/attributes/registration/' + key, registration[key])
+    return fields
+
+
 def verify(data, expected=None):
     require(0 < len(data) <= 600000, 'Context bound')
     envelope = decode(data)
@@ -139,14 +170,16 @@ def verify(data, expected=None):
     text(r['filename'], 200); text(r['publisher'], 300)
     require(not re.search(r'[/\\]', r['filename']), 'Filename contains path')
     require(type(r['networkRequests']) is int, 'Network request count must be explicit')
-    if adapter == 'rdap_domain_v1':
-        require(r['mediaType'] in ('application/rdap+json', 'application/json') and r['fields'] == fields_for(raw, q['target']), 'RDAP media or extracted fields differ')
-        require(r['captureMode'] in ('fictional_fixture', 'controlled_response', 'fictional_transport'), 'RDAP capture mode differs')
+    if adapter in ('rdap_domain_v1', 'gleif_lei_v1'):
+        media = ('application/vnd.api+json', 'application/json') if adapter == 'gleif_lei_v1' else ('application/rdap+json', 'application/json')
+        fields = lei_fields_for(raw, q['target']) if adapter == 'gleif_lei_v1' else fields_for(raw, q['target'])
+        require(r['mediaType'] in media and r['fields'] == fields, 'Registry media or extracted fields differ')
+        require(r['captureMode'] in ('fictional_fixture', 'controlled_response', 'fictional_transport'), 'Registry capture mode differs')
         if r['captureMode'] == 'fictional_transport':
             require(r['networkRequests'] == 1 and r['sourceTimeBasis'] == 'http_response_date_not_record_creation', 'Fixture transport context differs')
             response = r['response']
             require(response['transport'] == 'loopback_http_fixture' and type(response['status']) is int and response['status'] == 200, 'Transport response differs')
-            require(q['target'] == 'example.test' and q['endpointScope'] == 'https://rdap.example.test/domain/', 'Unexpected fictional transport destination')
+            require((q['target'] == '000000FICTIONAL00040' and q['endpointScope'] == 'https://api.gleif.org/api/v1/lei-records/') if adapter == 'gleif_lei_v1' else (q['target'] == 'example.test' and q['endpointScope'] == 'https://rdap.example.test/domain/'), 'Unexpected fictional transport destination')
             from email.utils import parsedate_to_datetime
             require(parsedate_to_datetime(response['date']) == instant(r['sourceTime']), 'HTTP response time differs')
         else:

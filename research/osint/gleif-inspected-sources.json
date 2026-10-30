@@ -1,0 +1,73 @@
+{
+  "inspectionDate": "2026-10-30",
+  "status": "documentation_inspected_provider_not_qualified",
+  "liveDataRequests": 0,
+  "runtime": "First-party Node HTTP/HTTPS and standard APIs; no GLEIF SDK or dependency installed/executed",
+  "documents": [
+    {
+      "id": "api-page",
+      "url": "https://www.gleif.org/en/lei-data/gleif-api",
+      "resolvedUrl": "https://www.gleif.org/en/lei-data/gleif-api",
+      "sha256": "fab4d3d320f43db49e956489c471b8a6f60554d5c85cc5f011ac6b02ee921b1d",
+      "bytes": 208655,
+      "fetchedAt": "2026-10-30T13:38:50.574301+00:00",
+      "localCopy": ".research-cache/gleif/api-page.html"
+    },
+    {
+      "id": "data-terms",
+      "url": "https://www.gleif.org/en/meta/lei-data-terms-of-use",
+      "resolvedUrl": "https://www.gleif.org/en/meta/lei-data-terms-of-use",
+      "sha256": "0845906fb9f49e2bce38024c35c2b392dda2da2be4eb46ff21facc78b057c154",
+      "bytes": 198022,
+      "fetchedAt": "2026-10-30T13:38:52.222779+00:00",
+      "localCopy": ".research-cache/gleif/data-terms.html"
+    },
+    {
+      "id": "open-data",
+      "url": "https://www.gleif.org/en/about/open-data",
+      "resolvedUrl": "https://www.gleif.org/en/about/open-data",
+      "sha256": "7efe0ba34dbd61e90128a374d9ac8d0900b8d6fcca9aa62fd566a093115832f7",
+      "bytes": 200587,
+      "fetchedAt": "2026-10-30T13:38:53.453429+00:00",
+      "localCopy": ".research-cache/gleif/open-data.html"
+    },
+    {
+      "id": "api-docs",
+      "url": "https://api.gleif.org/docs",
+      "resolvedUrl": "https://documenter.getpostman.com/view/7679680/SVYrrxuU?version=latest",
+      "sha256": "3dc4d4d95b3fc413c7baed0cc04864661bc386b34096d8944bf253783acd3809",
+      "bytes": 62175,
+      "fetchedAt": "2026-10-30T13:38:53.908547+00:00",
+      "localCopy": ".research-cache/gleif/api-docs.html"
+    },
+    {
+      "id": "cc0",
+      "url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+      "resolvedUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+      "sha256": "b43732f4c1463b087cf10d4daf8d8766514b2bf8f21bc5ef50905f95be227726",
+      "bytes": 32223,
+      "fetchedAt": "2026-10-30T13:38:53.980583+00:00",
+      "localCopy": ".research-cache/gleif/cc0.html"
+    },
+    {
+      "id": "api-collection",
+      "url": "https://documenter.gw.postman.com/api/collections/7679680/SVYrrxuU?segregateAuth=true&versionTag=latest",
+      "resolvedUrl": "https://documenter.gw.postman.com/api/collections/7679680/SVYrrxuU?segregateAuth=true&versionTag=latest",
+      "sha256": "ce01671ff004d4e993930f6cc8adf3bea8013326d45c4ed5755b7ffe40d12474",
+      "bytes": 820781,
+      "fetchedAt": "2026-10-30T13:39:56.547221+00:00",
+      "localCopy": ".research-cache/gleif/api-collection.json"
+    }
+  ],
+  "additionalFormatReference": {
+    "url": "https://committee.iso.org/sites/tc68/home/articles/content-left-area/articles/what-is-lei.html",
+    "inspection": "Official ISO format page inspected through web source; direct archive request returned HTTP 403, no local copy or digest claimed.",
+    "archiveAttemptDate": "2026-10-30"
+  },
+  "retainedLicence": {
+    "path": "third_party/osint/CC0-1.0.txt",
+    "sha256": "b5ecb3fbc492e2216c18ca65079208f54219f3d2b27079d378055e8beadda742",
+    "sourceDocumentId": "cc0",
+    "transformation": "Text within official legal-code-body; whitespace normalized, ordered list markers retained; wording unchanged. HTML originals remain ignored."
+  }
+}
