@@ -13,3 +13,10 @@ Initial draft `1f5be613951efb62832929d457a5d58dadf67ac0` passed application Chec
 
 
 Diagnostic Research 40981338216 at `5c484c6` reproduced APT’s local-archive staging failure: `Pathname to install is not absolute`. No parser acceptance ran. The build now supplies empty repository sources/indexes and allows APT to stage the already verified local archives into its cache. Docker `--network=none`, the complete archive lock, no-removal setting and pre-OCR runtime inventory checks remain unchanged. A fresh hosted rebuild is required.
+
+
+The corrected networkless build at `4e23629` passed **Checks 40981869336**, job 123823593042: **343 Node/134 Python, zero failures/skips, 30 sandboxed browsers**. **Research 40981869416**, job 123823593426, passed actual archive acquisition, networkless image build/qualification, unchanged installed/native/model/notice inventory, both complete supplier profiles/corpora, repeated raster and five daemon failure/isolation tests. The retained machine receipt records archive-lock/image/build-log identities and supplier TAP. Both corpora's exact TSV bytes/metrics match the earlier locked-runtime results and independently replay.
+
+Final acquisition review reproduced a slow-response deadline gap using a real local HTTP server: a buffered read kept filling while small chunks arrived (0.784 seconds with a 0.1-second test deadline). Switching to one underlying read per loop restores deadline checks. All **136 Python tests**, including eleven archive regressions, and complete offline archive replay pass. Build staging also rereads bounded bytes and rechecks SHA-256 immediately before writing the isolated build context; a cache mutation regression proves changed bytes cannot enter it. This acquisition change and retained evidence require final hosted verification before merge. No network or isolation restriction was weakened.
+
+[Machine receipt](ocr-package-archives-receipt.json) retains exact execution identities and acceptance output.

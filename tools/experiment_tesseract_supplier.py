@@ -15,7 +15,7 @@ import os
 from datetime import datetime,timezone
 from bounded_process import run_bounded
 from prepare_ocr_worker import prepare_ocr_bundle
-from ocr_package_archives import acquire as acquire_ocr_archives, BASE as OCR_BASE
+from ocr_package_archives import acquire as acquire_ocr_archives, stage_archives, BASE as OCR_BASE
 from probe_worker_isolation import command,container_args,check_configuration,require,run_probe
 
 ROOT=Path(__file__).resolve().parent.parent
@@ -53,7 +53,7 @@ def experiment(case_acceptance=False,include_corpus=False):
         build=Path(directory);dockerfile=ROOT/'research/runtime_artifacts/tesseract-baseline.Dockerfile'
         require(('FROM '+OCR_BASE+'\n') in dockerfile.read_text(),'OCR base image drift')
         shutil.copyfile(dockerfile,build/'Dockerfile');(build/'packages').mkdir()
-        for archive in archives['paths']:shutil.copyfile(archive,build/'packages'/archive.name)
+        stage_archives(archives['paths'],build/'packages')
         built=command('build','--pull=false','--network=none','--tag',tag,str(build),timeout=240,check=False)
         # Public archive-only context: preserve bounded diagnostics without
         # exposing case data or enabling a networked retry.

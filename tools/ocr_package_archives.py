@@ -27,6 +27,7 @@ ORIGIN = 'https://snapshot.debian.org'
 MAX_ARCHIVE = 64 * 1024 * 1024
 MAX_TAR = 128 * 1024 * 1024
 MAX_TOTAL = 512 * 1024 * 1024
+DOWNLOAD_SECONDS = 90
 BASE = 'python@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487'
 
 
@@ -49,11 +50,13 @@ def download(path, limit):
     require(path.startswith('/') and not path.startswith('//'), 'Archive path required')
     started = time.monotonic()
     request = urllib.request.Request(ORIGIN + path, headers={'User-Agent': 'INVEOS-research-archive-audit/1'})
-    with urllib.request.build_opener(SameOriginRedirect()).open(request, timeout=30) as response:
+    with urllib.request.build_opener(SameOriginRedirect()).open(request, timeout=min(30, DOWNLOAD_SECONDS)) as response:
         result = bytearray()
         while True:
-            require(time.monotonic() - started < 90, 'Archive download deadline')
-            chunk = response.read(min(65536, limit + 1 - len(result)))
+            require(time.monotonic() - started < DOWNLOAD_SECONDS, 'Archive download deadline')
+            # One underlying read returns available bytes, so a trickling body
+            # cannot keep read(n) filling its buffer past every deadline check.
+            chunk = response.read1(min(65536, limit + 1 - len(result)))
             if not chunk:
                 return bytes(result)
             result.extend(chunk)
@@ -228,6 +231,14 @@ def save_cache(path, data):
             temporary.replace(path)
         finally:
             temporary.unlink(missing_ok=True)
+
+
+def stage_archives(paths, directory):
+    for path in paths:
+        data = cached_bytes(path, MAX_ARCHIVE)
+        require(sha(data) == path.stem, 'Archive changed before build staging')
+        with (directory / path.name).open('xb') as stream:
+            stream.write(data)
 
 
 def discover():

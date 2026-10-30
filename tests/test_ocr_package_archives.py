@@ -1,4 +1,5 @@
 import gzip
+from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 import hashlib
 import io
 import json
@@ -7,6 +8,8 @@ from pathlib import Path
 import sys
 import tarfile
 import tempfile
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -45,6 +48,53 @@ def deb(control=None, files=None, extra=False):
 
 
 class PackageArchiveTests(unittest.TestCase):
+    def test_changed_cached_bytes_cannot_enter_the_build_context(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = deb()
+            cached = root / (archives.sha(data) + '.deb')
+            destination = root / 'build'
+            destination.mkdir()
+            cached.write_bytes(data[:-1] + b'!')
+            with self.assertRaisesRegex(ValueError, 'changed before build staging'):
+                archives.stage_archives([cached], destination)
+            self.assertEqual(list(destination.iterdir()), [])
+            cached.write_bytes(data)
+            archives.stage_archives([cached], destination)
+            self.assertEqual((destination / cached.name).read_bytes(), data)
+
+    def test_actual_slow_http_body_cannot_hide_the_download_deadline(self):
+        stop = threading.Event()
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header('Content-Length', '40')
+                self.end_headers()
+                try:
+                    for _ in range(40):
+                        self.wfile.write(b'x')
+                        self.wfile.flush()
+                        if stop.wait(0.02):
+                            break
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            def log_message(self, *_):
+                pass
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with patch.object(archives, 'ORIGIN', 'http://127.0.0.1:' + str(server.server_port)), patch.object(archives, 'DOWNLOAD_SECONDS', 0.1):
+                started = time.monotonic()
+                with self.assertRaisesRegex(ValueError, 'download deadline'):
+                    archives.download('/fictional-slow-body', 100)
+                self.assertLess(time.monotonic() - started, 0.6, 'A buffered read waited for the entire slow body')
+        finally:
+            stop.set()
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
     def test_static_identity_notices_and_links_without_installation(self):
         result = archives.audit(deb(files=[('usr/share/doc/fictional/copyright', b'Fictional notice\nLicense: MIT\n'),
                                          ('usr/share/doc/alias/copyright', '/do-not-read-host')]))
