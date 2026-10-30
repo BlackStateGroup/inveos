@@ -4870,7 +4870,9 @@ test('case budget stable retries, concurrent edits, withdrawal and new allocatio
 test('case budget validates zero allocations, numeric bounds, reasons and missing active decisions',async()=>{
  const f=await budgetFixture();assert.equal((await f.get()).json().remainingMinutes,null);
  assertError(await request('POST',f.base+'/withdraw',context.demo!,{payload:{id:randomUUID(),expectedVersion:0,reason:'Fictional withdrawal without an existing allocation.'}}),409);
- for(const minutes of [-1,0.5,14400001])assertError(await f.save({...f.input,minutes}),422);
+ for(const minutes of [null,false,true,"0",[0],-1,0.5,14400001])assertError(await f.save({...f.input,minutes}),422);
+ for(const expectedVersion of [null,false,true,"0",[0]]){assertError(await f.save({...f.input,expectedVersion}),422);assertError(await request('POST',f.base+'/withdraw',context.demo!,{payload:{id:randomUUID(),expectedVersion,reason:f.input.reason}}),422);}
+ assertError(await f.save({...f.input,reason:1234567890}),422);assertError(await f.save({...f.input,id:[f.input.id]}),422);
  assertError(await f.save({...f.input,reason:'          '}),422);assertError(await f.save({...f.input,reason:'Fictional reason\u0001has a control character.'}),422);assertError(await f.save({...f.input,reason:'Fictional invalid Unicode \ud800 reason.'}),422);
  const zero=await f.save({...f.input,minutes:0});assert.equal(zero.statusCode,200,zero.body);assert.equal(zero.json().remainingMinutes,-45);
  assert.equal((await f.save({...f.input,id:randomUUID(),expectedVersion:1,minutes:14400000})).statusCode,200);

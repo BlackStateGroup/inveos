@@ -39,6 +39,14 @@ export function registerCaseBudgets(app:FastifyInstance,s:Services){
   const a=r.actor!,{caseId}=r.params as {caseId:string};return transaction(async c=>{await s.findCase(c,a,caseId,true);return snapshot(c,a,caseId);});
  });
  for(const action of ['allocate','withdraw'] as const)app.post(base+(action==='withdraw'?'/withdraw':''),{
+  // Preserve the submitted decision: generic AJV coercion must not turn null,
+  // booleans, numeric strings or singleton arrays into a budget/version.
+  preValidation:async r=>{
+   const input=r.body as Record<string,unknown>|null;
+   if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.id!=='string'||typeof input.reason!=='string'||
+      typeof input.expectedVersion!=='number'||(action==='allocate'&&typeof input.minutes!=='number'))
+    throw new ApiError(422,'Budget decisions require text identities/reasons and numeric versions/minutes.');
+  },
   preHandler:r=>reviewer(r,true),schema:{params,body:{type:'object',additionalProperties:false,
    required:['id','expectedVersion','reason',...(action==='allocate'?['minutes']:[])],
    properties:{id:uuid,expectedVersion:{type:'integer',minimum:0,maximum:999},reason:{type:'string',minLength:10,maxLength:2000},

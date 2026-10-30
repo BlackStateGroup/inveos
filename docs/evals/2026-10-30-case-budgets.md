@@ -10,3 +10,8 @@ Local lint/type/build checks pass. The full local API suite passed: **320 Node t
 
 
 Initial hosted Checks 40982283254 at `8f59725e090aa090a5f6755fca79609473440428` passed 350/351 Node tests (zero skips); the new browser completed lost-response/conflict/reload/history/outage/retry/withdrawal and then timed out at its final revocation assertion. That assertion incorrectly required all budget snapshots to disappear, although the workspace falls back to another accessible case. The snapshot now exposes its actual case identity for scoped verification, and the test checks that the revoked case’s snapshot, private withdrawal reason and unsent editor are absent while permitting another accessible case’s panel. The correction still requires hosted verification; no passing browser receipt is claimed yet.
+
+
+Corrected browser head `6363ac24648fe42a2d4cf1ab04b80f69d7ef192c` passed **Checks 40983303544**, job 123828284953: **351 Node/125 Python, zero failures/skips and 31 actual sandboxed browser journeys**. The full new journey passed, including scoped revoked-data clearing. Its actual desktop render was inspected and is retained with its artifact identity in the machine receipt.
+
+Final input review reproduced an API defect against PostgreSQL: the generic validator converted JSON `null` into a valid zero-minute allocation and persisted it (HTTP 200). The new route checks submitted scalar types before coercion, preserving explicit numeric minutes/versions and text identities/reasons. Nulls, booleans, numeric strings and singleton arrays are denied for allocation and withdrawal. All ten focused budget/migration checks, lint and type checking pass after the fix. This final fix still requires combined hosted validation after integrating #93.
