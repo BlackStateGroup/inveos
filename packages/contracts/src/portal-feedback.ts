@@ -1,0 +1,8 @@
+export type FeedbackRelease={disclosureId:string;revisionId:string;sha256:string;reportSha256:string;deliverable:'report_json'|'document_package'|'report_pdf'|'report_docx';renditionId:string|null;expiresAt:string};
+export type FeedbackState='unresolved'|'resolved'|'withdrawn';
+export type FeedbackRequestRevision={version:number;contentVersion:number;action:'requested'|'corrected'|'withdrawn'|'resolved'|'reopened';state:FeedbackState;kind:'clarification'|'change';subject:string;body:string;reason:string;recordedAt:string;by:'recipient'|'agency';responsePublicationId:string|null};
+export type FeedbackRequest=FeedbackRequestRevision&{id:string;release:FeedbackRelease;createdAt:string;latestResponse:{version:number;publishedAt:string;requestContentVersion:number;body:string;reason:string;publicationId:string;sha256:string}|null};
+export type FeedbackResponseRevision={version:number;requestContentVersion:number;action:'drafted'|'corrected'|'withdrawn';body:string;reason:string;sha256:string;recordedAt:string;authorName:string;canPublish:boolean;canWithdraw:boolean};
+export type FeedbackPublication={id:string;sequence:number;action:'published'|'withdrawn';responseVersion:number;requestContentVersion:number;body:string;correctionReason:string;sha256:string;recordedAt:string;withdrawalReason:string|null};
+export type FeedbackDetail={request:FeedbackRequest;responseDraft:FeedbackResponseRevision|null;canRespond:boolean;canManageState:boolean;canWithdrawPublished:boolean;publicationSequence:number};
+export type FeedbackRequestPage={release:FeedbackRelease;items:FeedbackRequest[];next:string|null};

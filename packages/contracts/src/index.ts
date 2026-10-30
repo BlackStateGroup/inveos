@@ -287,3 +287,4 @@ export type CollectionReceipt={schemaVersion:'inveos.collection.v1';captureMode:
 export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-provenance.v1';receipt:CollectionReceipt;receiptSha256:string;authorisation:Record<string,unknown>;caseAuthority:Record<string,unknown>;sourcePolicy:Record<string,unknown>;policyReview:Record<string,unknown>};sha256:string};
 
 export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,InvoiceLine,InvoiceSnapshot,InvoiceReview,InvoiceRevision,InvoiceSummary,InvoicePage,InvoiceCandidate,InvoiceEligibility,InvoiceExport} from './agency-invoicing.js';
+export type {FeedbackRelease,FeedbackState,FeedbackRequestRevision,FeedbackRequest,FeedbackResponseRevision,FeedbackPublication,FeedbackDetail,FeedbackRequestPage} from './portal-feedback.js';

@@ -1,3 +1,4 @@
+import {CasePortalFeedback} from './PortalFeedback';
 import {ReportRedactionChoices} from './ReportRedactionChoices';
 import {EditableReports} from './EditableReports';
 import {useEffect, useRef, useState} from 'react';
@@ -122,7 +123,7 @@ export function ReportRevisions({caseId,csrf,focusRevisionId,focusCopyId}:{caseI
     if(alive.current)setMessage('Internal review recorded. This does not authorise client release.');
     await reviews(row);
   }
-  return <><DisclosureHistory key={`${caseId}:${csrf}`} caseId={caseId} csrf={csrf}/><Panel title="Saved internal report revisions"><div className="panel-body">
+  return <><DisclosureHistory key={`${caseId}:${csrf}`} caseId={caseId} csrf={csrf}/><CasePortalFeedback key={`${caseId}:feedback:${csrf}`} caseId={caseId} csrf={csrf}/><Panel title="Saved internal report revisions"><div className="panel-body">
     {focusRevisionId&&<Notice>Opened review context for revision {focusRevisionId}.{focusCopyId?' Inspect saved copy '+focusCopyId+' under its PDF or DOCX controls.':''} Verify and inspect the exact download before recording a decision.</Notice>}<Notice>Freeze reviewed findings and working context at a point in time. Saved revisions do not change with the case and are not client releases.</Notice>
     <div className="report-export-actions"><button className="primary" disabled={busy} onClick={()=>void act(freeze)}>{pending?'Recover pending freeze':'Freeze current internal draft'}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh revisions</button></div>
