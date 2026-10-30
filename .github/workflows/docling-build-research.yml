@@ -18,6 +18,9 @@ on:
       - 'tools/prepare_ocr_worker.py'
       - 'tools/ocr_package_archives.py'
       - 'tests/test_ocr_package_archives.py'
+      - 'tools/ocr_archive_authentication.py'
+      - 'tests/test_archive_authentication.py'
+      - 'research/runtime_artifacts/tesseract-authentication.lock.json'
       - 'tools/ocr_source_archives.py'
       - 'tests/test_ocr_source_archives.py'
       - 'research/runtime_artifacts/tesseract-sources.lock.json'
@@ -148,6 +151,11 @@ jobs:
           from tools.build_docling_research import IMAGE
           Path('.research-cache/worker-qualification.json').write_text(json.dumps({**run_probe(IMAGE,runtime=True),'checkedAt':datetime.now(timezone.utc).isoformat()}))
           PYTHON
+      - name: Authenticate locked binary and source identities against signed archive indexes
+        run: |
+          timeout 120s python3 tools/ocr_archive_authentication.py --fetch > .research-cache/ocr-authentication-receipt.json
+          timeout 120s python3 tools/ocr_archive_authentication.py > .research-cache/ocr-authentication-offline.json
+          cmp .research-cache/ocr-authentication-receipt.json .research-cache/ocr-authentication-offline.json
       - name: Acquire and statically audit locked Debian archives without installation
         run: timeout 300s python3 tools/ocr_package_archives.py
       - name: Acquire locked corresponding Debian sources without extraction or execution
@@ -184,6 +192,8 @@ jobs:
           name: ocr-adversity-results
           path: |
             .research-cache/ocr-source-receipt.json
+            .research-cache/ocr-authentication-receipt.json
+            .research-cache/ocr-authentication-offline.json
             .research-cache/ocr-research-output.json
             .research-cache/ocr-build.log
             .research-cache/ocr-adversity-measurement.json
