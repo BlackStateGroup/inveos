@@ -26,7 +26,7 @@
  */
 import {createHash} from 'node:crypto';
 export type CollectionEffect='local_only'|'third_party_lookup'|'contacts_subject'|'unverified';
-export type ConnectorDefinition={id:string;title:string;effect:CollectionEffect;recipient:string;note:string;operation:'company_profile';maxResponseBytes:number;deadlineMs:number;serviceWindowSeconds:number;serviceWindowRequests:number};
+export type ConnectorDefinition={id:string;title:string;effect:CollectionEffect;recipient:string;note:string;operation:'company_profile'|'rdap_domain'|'supplied_webpage';maxResponseBytes:number;deadlineMs:number;serviceWindowSeconds:number;serviceWindowRequests:number};
 export const companyProfileConnector:Readonly<ConnectorDefinition>=Object.freeze({
  id:'companies_house_profile_v1',title:'Companies House company profile',effect:'third_party_lookup',recipient:'api.company-information.service.gov.uk',
  note:'The company number is sent to Companies House. The request does not contact the company, but the provider can log it. Public availability does not establish permitted use.',
@@ -34,8 +34,23 @@ export const companyProfileConnector:Readonly<ConnectorDefinition>=Object.freeze
 });
 export const connectorProfile=JSON.stringify(companyProfileConnector);
 export const connectorProfileDigest=createHash('sha256').update(connectorProfile).digest('hex');
-export function findConnector(id:string):Readonly<ConnectorDefinition>|null{return id===companyProfileConnector.id?companyProfileConnector:null;}
+export function findConnector(id:string):Readonly<ConnectorDefinition>|null{return connectorDefinitions.find(p=>p.id===id)??null;}
 export function companyIdentifier(value:unknown):string{
  if(typeof value!=='string'||!/^[A-Z0-9]{8}$/.test(value))throw new Error('Use the exact eight-character uppercase company identifier.');return value;
 }
 export function companyProfileUrl(identifier:unknown):string{return 'https://'+companyProfileConnector.recipient+'/company/'+companyIdentifier(identifier);}
+
+// No live transport is registered for these profiles. The recipient is a policy
+// constraint, not a URL to fetch. Keep the original company profile bytes stable.
+export const rdapDomainConnector:Readonly<ConnectorDefinition>=Object.freeze({
+ id:'rdap_domain_v1',title:'RDAP domain registration',effect:'third_party_lookup',recipient:'explicit policy endpoint only',
+ note:'Bounded supplied responses and fictional fixed-endpoint transport. No live registry, bootstrap, entity, contact or linked URL requests. Provider activation requires separate approval and transport qualification.',
+ operation:'rdap_domain',maxResponseBytes:262144,deadlineMs:10000,serviceWindowSeconds:300,serviceWindowRequests:30,
+});
+export const suppliedWebpageConnector:Readonly<ConnectorDefinition>=Object.freeze({
+ id:'supplied_webpage_v1',title:'Supplied webpage — preserved original',effect:'local_only',recipient:'none',
+ note:'Preserves supplied UTF-8 HTML or text with a declared URL and timestamps. HTML is displayed as escaped source text only; scripts, links and subresources are never executed or fetched.',
+ operation:'supplied_webpage',maxResponseBytes:262144,deadlineMs:10000,serviceWindowSeconds:300,serviceWindowRequests:30,
+});
+export const connectorDefinitions=[companyProfileConnector,rdapDomainConnector,suppliedWebpageConnector] as const;
+export function profileDigestFor(id:string):string|null{const p=findConnector(id);return p?createHash('sha256').update(JSON.stringify(p)).digest('hex'):null;}
