@@ -48,3 +48,7 @@ test('encrypted mode rejects plaintext substitution and oversized inputs without
   const plain=await writeOriginal(root,...ids(),Buffer.from('FICTIONAL legacy'));await assert.rejects(readOriginalBounded(store,plain.objectPath,262144),/mode mismatch/);await assert.rejects(readOriginalBounded(store,original.objectPath,Number.MAX_SAFE_INTEGER),/size limit/);
  }finally{await rm(root,{recursive:true,force:true});key.fill(0);}
 });
+test('Tika 2 MiB read budget reads existing bounded encrypted originals without expanding intake or bypassing smaller limits',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'inveos-tika-read-')),key=randomBytes(32),store=encryptedOriginalStore(root,'fictional',{fictional:key});
+ try{const bytes=Buffer.from('%PDF-1.4\nFICTIONAL supplied bytes'),saved=await writeOriginal(store,...ids(),bytes,'bin');assert.deepEqual(await readOriginalBounded(store,saved.objectPath,2097152),bytes);await assert.rejects(readOriginalBounded(store,saved.objectPath,bytes.length-1));await assert.rejects(readOriginalBounded(store,saved.objectPath,2097153));await assert.rejects(writeOriginal(store,...ids(),Buffer.alloc(262145),'bin'));}finally{await rm(root,{recursive:true,force:true});key.fill(0);}
+});
