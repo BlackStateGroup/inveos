@@ -74,7 +74,7 @@ jobs:
       - name: Exercise development effect replay in the actual browser
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses' apps/api/test/api.test.ts
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
@@ -244,3 +244,12 @@ jobs:
           path: output/evals/source-use-desktop.png
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Retain fictional expense browser render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: case-expenses-browser
+          path: output/evals/case-expenses-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14

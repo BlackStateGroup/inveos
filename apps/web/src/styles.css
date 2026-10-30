@@ -18,3 +18,5 @@
 .manual-source-panel .metadata dt{margin:0;align-self:start;padding-top:2px}
 
 .attention-preferences{border:1px solid var(--border);border-radius:8px;padding:16px;margin:16px 0}.attention-preferences legend{padding:0 6px;font-weight:600}.attention-preferences .checkbox-row{margin:8px 0}
+
+.source-digest{overflow-wrap:anywhere;word-break:break-word}
