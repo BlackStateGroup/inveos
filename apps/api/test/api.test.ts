@@ -1,4 +1,5 @@
 import {forwardBrowserApi} from './support/browser-proxy.js';
+import type {CaseBudgetSnapshot} from '@inveos/contracts';
 import {createServer} from 'node:http';
 import {launchBrowser,eventually} from './support/browser.js';
 import {uploadBinaryChunks} from '../../web/src/chunkUpload.js';
@@ -1294,7 +1295,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql', '034_saved_case_views.sql', '035_work_discussions.sql', '036_case_graph.sql', '037_manual_sources.sql', '038_assigned_work_queue_index.sql', '039_case_lifecycle.sql', '040_interview_transcripts.sql', '041_case_access.sql', '042_case_time_ledger.sql', '043_preservation_holds.sql', '044_attention_queue.sql', '045_expanded_document_profiles.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql', '034_saved_case_views.sql', '035_work_discussions.sql', '036_case_graph.sql', '037_manual_sources.sql', '038_assigned_work_queue_index.sql', '039_case_lifecycle.sql', '040_interview_transcripts.sql', '041_case_access.sql', '042_case_time_ledger.sql', '043_preservation_holds.sql', '044_attention_queue.sql', '045_expanded_document_profiles.sql', '046_case_time_budgets.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -4834,4 +4835,110 @@ test('expanded OCR and raster profiles persist separately, fence attachment and 
   assert.equal((await context.pool!.query('SELECT status FROM evidence WHERE id=$1',[source.id])).rows[0].status,'Quarantined');const search=await request('POST',`/api/cases/${f.scope.caseId}/search`,context.demo!,{payload:{query:'ATLAS',kind:'document_text',status:''}});assert.equal(search.statusCode,200,search.body);assert.equal(search.json().items.length,1);assert.equal(search.json().items[0].status,'Unreviewed OCR text');const jobId=search.json().items[0].id;
   const stored=(await context.pool!.query('SELECT object_path FROM evidence WHERE id=$1',[source.id])).rows[0];await writeFile(join(context.storageRoot!,stored.object_path),Buffer.from('%PDF-fictional-corruption'));assertError(await request('GET',base+'/'+jobId+'/document-derivative',context.demo!),409);await writeFile(join(context.storageRoot!,stored.object_path),original);assert.equal((await request('GET',base+'/'+jobId+'/document-derivative',context.demo!)).statusCode,200);
  }finally{await f.app.close();}
+});
+
+async function budgetFixture(){
+ const time=await timeFixture();assert.equal((await time.create()).statusCode,200);
+ const base=`/api/cases/${time.kase.id}/time-budget`,input={id:randomUUID(),expectedVersion:0,minutes:90,reason:'Fictional reviewer allocates time for the agreed supplied-record comparison.'};
+ return {...time,timeBase:time.base,base,input,save:(body:object=input,session=context.demo!)=>request('POST',base,session,{payload:body}),get:()=>request('GET',base,context.demo!)};
+}
+
+test('case budget whole-ledger totals include all current entries and reflect corrections and withdrawal',async()=>{
+ const f=await budgetFixture();for(let i=0;i<51;i++)assert.equal((await request('POST',f.timeBase,context.demo!,{payload:{id:randomUUID(),startedAt:'2026-10-24T10:00:00Z',minutes:1,description:'Fictional additional declared work.',billable:i%2===0}})).statusCode,200);
+ const other=await createCase();assert.equal((await request('POST',`/api/cases/${other.id}/time-entries`,context.demo!,{payload:{id:randomUUID(),startedAt:'2026-10-24T10:00:00Z',minutes:1000,description:'Fictional unrelated case work.',billable:true}})).statusCode,200);
+ assert.equal((await request('GET',f.timeBase,context.demo!)).json().items.length,50);
+ const response=await f.save();assert.equal(response.statusCode,200,response.body);const first=response.json<CaseBudgetSnapshot>();assert.deepEqual(first.usage,{entries:52,minutes:96,markedChargeableMinutes:26});assert.equal(first.remainingMinutes,-6);assert.ok(Date.parse(first.observedAt)>=Date.parse(first.current!.recordedAt));
+ const entries=(await request('GET',f.timeBase,context.demo!)).json().items as {id:string;minutes:number}[];
+ let initial=entries.find(x=>x.minutes===45);if(!initial)initial=(await request('GET',f.timeBase+'?after='+entries[49]!.id,context.demo!)).json().items.find((x:{minutes:number})=>x.minutes===45);assert.ok(initial);
+ const path=f.timeBase+'/'+initial.id,correction={id:randomUUID(),expectedVersion:1,startedAt:'2026-10-24T09:30:00+01:00',minutes:50,description:'Fictional corrected work duration.',billable:true,reason:'Fictional correction retains the original declared duration.'};assert.equal((await request('POST',path+'/corrections',context.demo!,{payload:correction})).statusCode,200);
+ const revised=(await f.get()).json();assert.deepEqual(revised.usage,{entries:52,minutes:101,markedChargeableMinutes:76});assert.equal(revised.remainingMinutes,-11);
+ assert.equal((await request('POST',path+'/withdraw',context.demo!,{payload:{id:randomUUID(),expectedVersion:2,reason:'Fictional duplicate work note withdrawn while retaining its history.'}})).statusCode,200);const final=(await f.get()).json();assert.deepEqual(final.usage,{entries:51,minutes:51,markedChargeableMinutes:26});assert.equal(final.remainingMinutes,39);assert.equal(final.current.version,1);
+});
+
+test('case budget stable retries, concurrent edits, withdrawal and new allocation preserve immutable history',async()=>{
+ const f=await budgetFixture();assert.equal((await f.save()).statusCode,200);const {id,expectedVersion,minutes,reason}=f.input;assert.equal((await f.save({reason,minutes,expectedVersion,id})).json().appliedVersion,1);
+ assertError(await f.save({...f.input,minutes:100}),409);
+ const revision={id:randomUUID(),expectedVersion:1,minutes:120,reason:'Fictional reviewer revises the planned time after checking scope.'};
+ const race=await Promise.all([f.save(revision),f.save({...revision,id:randomUUID(),minutes:130})]);assert.deepEqual(race.map(r=>r.statusCode).sort(),[200,409]);const oldRetry=await f.save();assert.equal(oldRetry.json().current.version,2);assert.equal(oldRetry.json().appliedVersion,1);
+ const withdrawal={id:randomUUID(),expectedVersion:2,reason:'Fictional reviewer explicitly withdraws the old planning allocation.'};assert.equal((await request('POST',f.base+'/withdraw',context.demo!,{payload:withdrawal})).statusCode,200);await context.app!.close();context.app=await createAppInstance();const retry=await request('POST',f.base+'/withdraw',context.demo!,{payload:withdrawal});assert.equal(retry.json().current.action,'withdrawn');assert.equal(retry.json().remainingMinutes,null);assert.equal(retry.json().usage.minutes,45);
+ assert.equal((await f.save({...revision,id:randomUUID(),expectedVersion:3,minutes:80})).json().current.action,'allocated');assert.equal((await request('POST',f.base+'/withdraw',context.demo!,{payload:withdrawal})).json().current.version,4);
+ const history=(await request('GET',f.base+'/history',context.demo!)).json();assert.deepEqual(history.items.map((x:{version:number})=>x.version),[4,3,2,1]);assert.equal(history.items[3].minutes,90);
+ await assert.rejects(context.schemaAdminPool!.query('UPDATE case_time_budgets SET minutes=1 WHERE case_id=$1',[f.kase.id]),/append-only/);await assert.rejects(context.schemaAdminPool!.query('DELETE FROM case_time_budgets WHERE case_id=$1',[f.kase.id]),/append-only/);
+ await assert.rejects(context.pool!.query(`INSERT INTO case_time_budgets(tenant_id,case_id,version,id,request_hash,action,minutes,reason,actor_id,actor_name) VALUES($1,$2,9,$3,$4,'revised',1,'Fictional invalid sequence test.',$5,'Fictional reviewer')`,[demoTenantId,f.kase.id,randomUUID(),'a'.repeat(64),demoUserId]),/sequential/);
+});
+
+test('case budget validates zero allocations, numeric bounds, reasons and missing active decisions',async()=>{
+ const f=await budgetFixture();assert.equal((await f.get()).json().remainingMinutes,null);
+ assertError(await request('POST',f.base+'/withdraw',context.demo!,{payload:{id:randomUUID(),expectedVersion:0,reason:'Fictional withdrawal without an existing allocation.'}}),409);
+ for(const minutes of [-1,0.5,14400001])assertError(await f.save({...f.input,minutes}),422);
+ assertError(await f.save({...f.input,reason:'          '}),422);assertError(await f.save({...f.input,reason:'Fictional reason\u0001has a control character.'}),422);assertError(await f.save({...f.input,reason:'Fictional invalid Unicode \ud800 reason.'}),422);
+ const zero=await f.save({...f.input,minutes:0});assert.equal(zero.statusCode,200,zero.body);assert.equal(zero.json().remainingMinutes,-45);
+ assert.equal((await f.save({...f.input,id:randomUUID(),expectedVersion:1,minutes:14400000})).statusCode,200);
+ assertError(await f.save({...f.input,id:randomUUID(),expectedVersion:0}),409);assertError(await f.save({...f.input,id:randomUUID(),expectedVersion:2,rate:20}),422);
+});
+
+test('case budget actual HTTP denies other roles, tenants, cases and revoked reviewers',async()=>{
+ const f=await budgetFixture();assert.equal((await f.save()).statusCode,200);
+ const investigatorId=await createMember(demoTenantId,'investigator','Fictional budget investigator'),clientId=await createMember(demoTenantId,'client','Fictional excluded budget client'),reviewerId=await createMember(demoTenantId,'reviewer','Fictional independent budget reviewer');
+ for(const userId of [investigatorId,clientId,reviewerId])await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,f.kase.id,userId]);
+ const investigator=await issueTestSession(investigatorId),client=await issueTestSession(clientId),reviewer=await issueTestSession(reviewerId),outside=await issueTestSession(await createMember(demoTenantId,'reviewer','Fictional unassigned budget reviewer')),tenant=randomUUID();
+ await context.schemaAdminPool!.query('INSERT INTO tenants(id,name) VALUES($1,$2)',[tenant,'Fictional outside budget tenant']);await context.schemaAdminPool!.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'reviewer')",[tenant,demoUserId]);const foreign=await issueTestSession(demoUserId,tenant);
+ const app=await createAppInstance(),origin=await app.listen({host:'127.0.0.1',port:0});try{
+  const http=async(path:string,session?:TestSession,body?:object,csrf=true)=>{const r=await fetch(origin+path,{method:body?'POST':'GET',headers:{...(session?{cookie:session.cookie}:{}),...(body?{'content-type':'application/json',origin:localOrigin,...(csrf&&session?{'x-csrf-token':session.csrf}:{})}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,body:await r.json()};};
+  assert.equal((await http(f.base)).status,401);
+  for(const [session,status] of [[investigator,403],[client,403],[outside,404],[foreign,404]] as const){assert.equal((await http(f.base,session)).status,status);assert.equal((await http(f.base+'/history',session)).status,status);assert.equal((await http(f.base,session,{...f.input,id:randomUUID(),expectedVersion:1})).status,status);}
+  assert.equal((await http(f.base,reviewer)).status,200);assert.equal((await http(f.base,reviewer,f.input)).status,409);assert.equal((await http(f.base,context.demo!,{...f.input,id:randomUUID(),expectedVersion:1},false)).status,403);
+  const own=await request('POST',f.timeBase,investigator,{payload:{id:randomUUID(),startedAt:'2026-10-24T11:00:00Z',minutes:10,description:'Fictional retained former-colleague work.',billable:false}});assert.equal(own.statusCode,200);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,investigatorId]);assert.equal(((await http(f.base,reviewer)).body as CaseBudgetSnapshot).usage.minutes,55);
+  await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,reviewerId]);assert.equal((await http(f.base,reviewer)).status,404);assert.equal((await http(f.base+'/history',reviewer)).status,404);
+ }finally{await app.close();}
+});
+
+test('case budget audit failures roll back every decision with stable retry recovery',async()=>{
+ const f=await budgetFixture();await context.schemaAdminPool!.query("CREATE FUNCTION deny_budget_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action LIKE 'budget.%' THEN RAISE EXCEPTION 'fictional budget audit failure'; END IF; RETURN NEW; END $$");
+ const enable=()=>context.schemaAdminPool!.query('CREATE TRIGGER deny_budget_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION deny_budget_audit()'),disable=()=>context.schemaAdminPool!.query('DROP TRIGGER deny_budget_audit ON audit_events');
+ await enable();try{assertError(await f.save(),500);assert.equal((await f.get()).json().current,null);}finally{await disable();}assert.equal((await f.save()).statusCode,200);
+ const change={...f.input,id:randomUUID(),expectedVersion:1,minutes:100},withdraw={id:randomUUID(),expectedVersion:1,reason:'Fictional withdrawal must roll back with its failed audit.'};
+ await enable();try{assertError(await f.save(change),500);assertError(await request('POST',f.base+'/withdraw',context.demo!,{payload:withdraw}),500);assert.equal((await f.get()).json().current.version,1);}finally{await disable();}assert.equal((await f.save(change)).statusCode,200);
+ assert.equal((await context.pool!.query("SELECT count(*)::int n FROM audit_events WHERE case_id=$1 AND action LIKE 'budget.%'",[f.kase.id])).rows[0].n,2);
+});
+
+test('case budget pages retain every version and reserve the final decision for withdrawal',async()=>{
+ const f=await budgetFixture();assert.equal((await f.save()).statusCode,200);
+ await context.pool!.query(`INSERT INTO case_time_budgets(tenant_id,case_id,version,id,request_hash,action,minutes,reason,actor_id,actor_name)
+ SELECT $1,$2,n,gen_random_uuid(),$3,'revised',n,'Fictional retained historical planning decision.',$4,'Fictional reviewer' FROM generate_series(2,999) n ORDER BY n`,[demoTenantId,f.kase.id,'a'.repeat(64),demoUserId]);
+ assertError(await f.save({...f.input,id:randomUUID(),expectedVersion:999}),409);
+ const withdrawal={id:randomUUID(),expectedVersion:999,reason:'Fictional final decision withdraws without erasing any allocation.'};const final=await request('POST',f.base+'/withdraw',context.demo!,{payload:withdrawal});assert.equal(final.statusCode,200,final.body);assert.equal(final.json().current.version,1000);assert.equal(final.json().current.minutes,999);
+ const versions:number[]=[];let before:number|null=null;do{const response=await request('GET',f.base+'/history'+(before?'?before='+before:''),context.demo!);assert.equal(response.statusCode,200,response.body);const page=response.json();assert.ok(page.items.length<=25);versions.push(...page.items.map((r:{version:number})=>r.version));before=page.next;}while(before);assert.deepEqual(versions,Array.from({length:1000},(_,i)=>1000-i));
+});
+
+test('case budget rechecks membership and reviewer role after waiting for the case lock',async()=>{
+ const f=await budgetFixture();for(const change of ['membership','role']){
+  const userId=await createMember(demoTenantId,'reviewer','Fictional waiting budget reviewer');await context.schemaAdminPool!.query('INSERT INTO case_memberships(tenant_id,case_id,user_id) VALUES($1,$2,$3)',[demoTenantId,f.kase.id,userId]);const session=await issueTestSession(userId),lock=await context.schemaAdminPool!.connect();let pending:ReturnType<typeof request>|undefined;
+  try{await lock.query('BEGIN');await lock.query('SELECT 1 FROM cases WHERE id=$1 FOR UPDATE',[f.kase.id]);pending=f.save({...f.input,id:randomUUID()},session);await eventually(async()=>(await context.adminPool!.query("SELECT 1 FROM pg_stat_activity WHERE usename='inveos_app' AND wait_event_type='Lock' AND query LIKE '%FOR UPDATE OF c%' ")).rowCount!>0,'budget write waits for case lock',1000);
+   if(change==='membership')await lock.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,userId]);else await lock.query("UPDATE memberships SET role='investigator' WHERE tenant_id=$1 AND user_id=$2",[demoTenantId,userId]);
+   await lock.query('COMMIT');assertError(await pending,404);assert.equal((await context.pool!.query('SELECT count(*)::int n FROM case_time_budgets WHERE case_id=$1',[f.kase.id])).rows[0].n,0);
+  }finally{await lock.query('ROLLBACK');lock.release();if(pending)await pending;}
+ }
+});
+
+test('real browser plans case time, recovers a committed budget, handles conflicts and clears revoked totals',{skip:process.env.INVEOS_TEST_BROWSER!=='1',timeout:90000},async()=>{
+ const f=await budgetFixture();let drop=false,dropped=0;
+ await withBrowserApp(async(b,origin)=>{
+  const ui=await binaryBrowserControls(b,origin,f.kase.id),text=()=>b.evaluate<string>(`document.querySelector('[aria-label="Case time budget"]')?.innerText||''`),click=ui.click;
+  const fill=async(values:Record<string,string>)=>{await b.evaluate(`(()=>{const form=document.querySelector('form[aria-label="Case budget decision"]');for(const [name,value] of Object.entries(${JSON.stringify(values)})){const field=form.elements.namedItem(name);Object.getOwnPropertyDescriptor(field instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}));}})()`);};
+  await click('Brief');await eventually(async()=>await b.evaluate<boolean>(`!![...document.querySelectorAll('[aria-label="Case time budget"] button')].find(x=>x.textContent==='Set time budget'&&!x.matches(':disabled'))`),'current budget snapshot loaded');assert.ok((await text()).includes('45 minutes across 1 entry'));
+  await click('Set time budget');await fill({minutes:'60',reason:'Fictional browser allocation for the supplied-record comparison.'});
+  await b.evaluate(`(()=>{const original=window.fetch;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).endsWith('/time-budget')&&args[1]?.method==='POST'&&response.ok){window.fetch=original;throw new Error('Fictional lost budget response');}return response;};})()`);
+  await click('Save time budget');await eventually(async()=>(await text()).includes('Fictional lost budget response'),'committed budget response interrupted');await click('Save time budget');await eventually(async()=>(await text()).includes('Budget version 1')&&(await text()).includes('15 minutes remaining'),'same budget request recovered');assert.equal((await context.pool!.query('SELECT count(*)::int n FROM case_time_budgets WHERE case_id=$1',[f.kase.id])).rows[0].n,1);
+  await click('Revise time budget');await fill({minutes:'40',reason:'Fictional reviewer reduces the planning allocation after checking scope.'});await click('Save time budget');await eventually(async()=>(await text()).includes('Budget version 2')&&(await text()).includes('5 minutes over allocation'),'over-allocation shown without altering time');
+  const previous=await b.evaluate<number>('performance.timeOrigin');await b.send('Page.reload');await eventually(async()=>await b.evaluate<number>('performance.timeOrigin')!==previous&&(await text()).includes('Budget version 2'),'saved budget reload');
+  await click('Revise time budget');await fill({minutes:'80',reason:'Fictional stale browser allocation must not replace the saved decision.'});assert.equal((await f.save({...f.input,id:randomUUID(),expectedVersion:2,minutes:100})).statusCode,200);await click('Save time budget');await eventually(async()=>(await text()).includes('Budget changed.'),'stale edit rejected');assert.equal((await f.get()).json().current.minutes,100);
+  await click('Refresh case budget');await eventually(async()=>(await text()).includes('Budget version 3')&&(await text()).includes('55 minutes remaining'),'conflict refresh shows current allocation');await click('Budget decision history');await eventually(async()=>(await text()).includes('Retained budget decisions'),'budget history');await b.evaluate(`document.querySelector('[aria-label="Budget decision history"] details:last-of-type summary').click()`);assert.ok((await text()).includes('Fictional browser allocation for the supplied-record comparison.'));
+  const artifact=fileURLToPath(new URL('../../../output/evals/case-budget-desktop.png',import.meta.url));await mkdir(resolve(artifact,'..'),{recursive:true});await b.evaluate(`document.querySelector('[aria-label="Case time budget"]').scrollIntoView({block:'start'})`);const shot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(artifact,Buffer.from(shot.data,'base64'));
+  drop=true;await click('Refresh case budget');await eventually(async()=>await b.evaluate<boolean>(`!!document.querySelector('[aria-label="Case time budget"] [role="alert"]')&&!document.querySelector('[aria-label="Budget and declared usage"]')`),'budget outage hides stale totals');assert.ok(dropped>0);drop=false;await click('Refresh case budget');await eventually(async()=>(await text()).includes('Budget version 3'),'budget outage recovery');
+  await b.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});assert.ok(await b.evaluate<boolean>('document.documentElement.scrollWidth<=window.innerWidth+1'));
+  await click('Withdraw time budget');await fill({reason:'Fictional reviewer withdraws the planning allocation without deleting time.'});await click('Record budget withdrawal');await eventually(async()=>(await text()).includes('No active time budget')&&(await text()).includes('Budget version 4')&&(await text()).includes('45 minutes across 1 entry'),'withdrawal preserves declared usage');
+  await click('Set time budget');await fill({reason:'Fictional unsaved private allocation text.'});await context.schemaAdminPool!.query('DELETE FROM case_memberships WHERE tenant_id=$1 AND case_id=$2 AND user_id=$3',[demoTenantId,f.kase.id,demoUserId]);await click('Refresh case budget');await eventually(async()=>await b.evaluate<boolean>(`![...document.querySelectorAll('[aria-label="Active case"] option')].some(o=>o.value===${JSON.stringify(f.kase.id)})&&!document.querySelector('form[aria-label="Case budget decision"]')&&!document.querySelector('[aria-label="Budget and declared usage"]')`)&&!(await ui.text()).includes('Fictional unsaved private allocation text.'),'revoked budget and unsent editor cleared');
+ },{response:(path,status)=>{if(drop&&status===200&&path===f.base){dropped++;return 'drop';}}});
 });

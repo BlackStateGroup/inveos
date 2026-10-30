@@ -43,6 +43,7 @@ import { readOriginalBounded, writeOriginal, type StoredOriginal } from './stora
 import { displayWork, displayWorkLink, registerCaseWork } from './casework.js';
 import { registerInterviews } from './interviews.js';
 import { registerTimeLedger } from './time-ledger.js';
+import { registerCaseBudgets } from './case-budgets.js';
 import {buildReportPdf,reportPdfProfileDigest} from './report-pdf.js';
 
 type Role = 'reviewer' | 'investigator' | 'client';
@@ -671,6 +672,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   registerAttention(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerTimeLedger(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerCaseBudgets(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
 
   app.post(
     '/api/session/start',
