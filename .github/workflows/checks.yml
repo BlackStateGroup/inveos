@@ -76,12 +76,13 @@ jobs:
       - name: Exercise development effect replay in the actual browser
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio' apps/api/test/api.test.ts
       - name: Render and re-save the fictional DOCX in LibreOffice
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk poppler-utils
           timeout 120s python3 tools/eval_report_docx_office.py --output output/evals/docx-office
+          timeout 120s python3 tools/eval_speech_docx_office.py
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
@@ -339,5 +340,20 @@ jobs:
         with:
           name: osint-workbench-browser
           path: output/evals/osint-workbench-*.png
+
+      - name: Retain fictional speech workflow browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fictional-speech-workflow
+          path: output/evals/speech-findings-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Retain actual fictional speech DOCX office rendering
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: speech-docx-office
+          path: output/evals/speech-office/
           if-no-files-found: ignore
           retention-days: 14

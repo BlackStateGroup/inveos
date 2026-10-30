@@ -8,6 +8,7 @@ const app = await createApp({
   pool,
   identity: config.identity,
   documentLab: config.documentLab,
+  speechLab: config.speechLab,
   storageRoot: config.storageRoot,
   allowedOrigins: config.allowedOrigins,
   demoTenantId: config.demoTenantId,

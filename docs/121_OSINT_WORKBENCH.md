@@ -1,6 +1,6 @@
 # Controlled OSINT collection workbench
 
-WP09 is required and remains incomplete. This connected increment is in development on `feat/osint-workbench`, based on main113 `bbef17122056fa574bf9288963d3d70e815a3e4a`. It has not been merged, browser accepted or approved for live provider collection. Do not present the old PR6 preview as this implementation.
+WP09 is required and remains incomplete. This connected increment is in development on `feat/osint-workbench`, based on main113 `bbef17122056fa574bf9288963d3d70e815a3e4a`. Draft PR115 is open and incorporates validated media/main114. OSINT has not been merged, browser accepted or approved for live provider collection. Do not present the old PR6 preview as this implementation.
 
 ## Implemented behaviour
 
@@ -59,3 +59,7 @@ The second broad run passed414,failed1,skipped47 (462total),but was invalidated 
 Frozen-source local regression now passes418Node,zero failures,47explicit browser skips/465total (`/tmp/inveos-osint-full-api3.log`);197Python passed; types/lint/build/foundation/actionlint pass. The seven collection API tests include actual separately spawned fixture CLI/loopback HTTP, and the additional transport classification test is a unit check only. No live-provider or native-device result is claimed. The new browser journey and development-effect replay are written but await hosted execution and render inspection.
 
 Media PR114 currenthead `e8cc130bdbbd7981f2363e4e8552c92ad588bf94`: first Checks41052551875/job124051932410 failed one sandboxed Chrome startup before its assignment-test page opened (464/465Node); unmodified attempt2 is running with the same sandbox flags/deadlines. Its Docling research41052551835 passed; speech research41052561561 remains pending at this checkpoint. Earlier8c85917 passed all465Node/203Python and actual speech research41051211230,including3 real worker tests. Do not relabel the failed first attempt.
+
+Initial hosted headc04e1e1 failed463/465Node,zero skips: an existing upload helper timing race and actual revoked-case data retained in the adjacent source panel. The helper now waits and clicks when enabled within the same deadline; OSINT denial refreshes the parent workspace so all revoked-case panels unmount. The browser assertion now identifies the revoked case and job, since another permitted case may legitimately have the same fictional company number. First desktop/mobile renders12976686384 inspected. No passed browser acceptance is claimed for that run. See `/tmp/inveos-osint-host-first.log`.
+
+Combined main114 integration passes426Node,zero failures,48explicit browser skips/474total (`/tmp/inveos-osint-combined-api.log`),type/lint/build. Both branches' features, migrations059–062, test inventories and verification history are preserved. Independent collection verification now covers19 rehashed semantic mutations, including provider quota bounds and malformed terms digests. Corrected hosted/browser acceptance remains pending.

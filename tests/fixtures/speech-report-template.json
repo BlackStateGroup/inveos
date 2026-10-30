@@ -1,0 +1,234 @@
+{
+  "status": "draft_not_released",
+  "case": {
+    "id": "00000000-0000-4000-8000-000000000006",
+    "ref": "INV-2026-6143BB1C",
+    "title": "Fictional review f8e66d96",
+    "client": "Northstar Paperworks Ltd (fictional)",
+    "scope": "Review only the fictional dispatch note supplied for this test.",
+    "jurisdiction": "England and Wales"
+  },
+  "findings": [],
+  "investigation": {
+    "status": "working_context_not_findings",
+    "objectives": [],
+    "questions": [],
+    "hypotheses": [],
+    "blockers": []
+  },
+  "limitations": "Internal synthetic-lab JSON draft only. Working questions and hypotheses are not findings. Verify cited bytes/spans offline with tools/verify_report.py; authenticate the whole draft using a separately trusted fingerprint. Not a signed custody certificate, production PDF, or client release.",
+  "speechFindings": [
+    {
+      "kind": "reviewed_speech",
+      "id": "00000000-0000-4000-8000-00000000000c",
+      "text": "The fictional speaker account expressly retains uncertainty.",
+      "reviewer": "Synthetic reviewer",
+      "reviewedAt": "2026-01-01T00:00:00.000Z",
+      "source": {
+        "id": "00000000-0000-4000-8000-000000000004",
+        "policy": {
+          "scope": "Review only the fictional dispatch note supplied for this test.",
+          "purpose": "Review fictional supplier dispatch records",
+          "authorityId": "00000000-0000-4000-8000-000000000008",
+          "lawfulBasis": "Synthetic demonstration only; no real data is processed.",
+          "minimisation": "Use only the quoted synthetic dispatch detail needed for this test.",
+          "retentionDays": 365,
+          "authorityVersion": 1
+        },
+        "sha256": "48bd8f791be211744f604f60f274b76648963a0fbf93c6240d7877e094f5700c",
+        "filename": "fictional-supplier-audio.wav",
+        "sourceTime": "2026-01-01T00:00:00Z",
+        "receivedTime": "2026-01-01T00:00:00.000Z"
+      },
+      "claim": {
+        "id": "00000000-0000-4000-8000-000000000005",
+        "text": "The fictional speaker account expressly retains uncertainty.",
+        "caseId": "00000000-0000-4000-8000-000000000006",
+        "digest": "72784448fd4d3e0e13dcbe008429c6a8cc91d8e0f6bd1d62d835d22c9f8eca49",
+        "source": {
+          "id": "00000000-0000-4000-8000-000000000004",
+          "policy": {
+            "scope": "Review only the fictional dispatch note supplied for this test.",
+            "purpose": "Review fictional supplier dispatch records",
+            "authorityId": "00000000-0000-4000-8000-000000000008",
+            "lawfulBasis": "Synthetic demonstration only; no real data is processed.",
+            "minimisation": "Use only the quoted synthetic dispatch detail needed for this test.",
+            "retentionDays": 365,
+            "authorityVersion": 1
+          },
+          "sha256": "48bd8f791be211744f604f60f274b76648963a0fbf93c6240d7877e094f5700c",
+          "filename": "fictional-supplier-audio.wav",
+          "sourceTime": "2026-01-01T00:00:00Z",
+          "receivedTime": "2026-01-01T00:00:00.000Z"
+        },
+        "context": {
+          "format": "inveos.speech_context.v1",
+          "sha256": "d226e8c534ea62298890869d7b8924aa8c4d0080df6b3a4ce9cfaedf01be7b63",
+          "payload": {
+            "jobId": "00000000-0000-4000-8000-000000000003",
+            "caseId": "00000000-0000-4000-8000-000000000006",
+            "source": {
+              "digest": "48bd8f791be211744f604f60f274b76648963a0fbf93c6240d7877e094f5700c",
+              "filename": "fictional-supplier-audio.wav",
+              "evidenceId": "00000000-0000-4000-8000-000000000004",
+              "sourceTime": "2026-01-01T00:00:00Z",
+              "authorityId": "00000000-0000-4000-8000-000000000008",
+              "receivedTime": "2026-01-01T00:00:00.000Z",
+              "originalBase64": null,
+              "authorityVersion": 1
+            },
+            "profile": "{\"tool\":\"whisper.cpp\",\"revision\":\"231638a0717b7822784297e5980965ffcec05810\",\"inputLock\":\"de2d4a6e22f19a1110e6f3a5e99df30e3748ef298b545cae17e2489eb17784c0\",\"binarySha256\":\"e372f264c6fda90c64c88f858f023a31fd1bcc00af77b20ae1d4da94bbcb66fe\",\"modelSha256\":\"921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f\",\"runtimeLock\":\"57081e0f0976be1e82bfb8f32494b1c6d31d9bce560742798b012c47efb3325d\",\"modelBytes\":77704715,\"model\":\"ggml-tiny.en\",\"language\":\"en\",\"threads\":1,\"greedy\":true,\"temperature\":0,\"sampleRate\":16000,\"maxOriginalBytes\":262144,\"maxRawBytes\":131072,\"maxSegments\":128,\"maxSegmentBytes\":16384,\"containerSeconds\":100,\"network\":false,\"corrections\":\"separate_human_records\"}",
+            "segments": [
+              {
+                "raw": {
+                  "text": " Fictional supplier account.",
+                  "endMs": 3000,
+                  "index": 0,
+                  "endByte": 28,
+                  "ordered": true,
+                  "startMs": 0,
+                  "startByte": 0,
+                  "sourcePointer": "/segments/0",
+                  "rangeWithinOriginal": true
+                },
+                "reviews": [
+                  {
+                    "context": {
+                      "jobId": "00000000-0000-4000-8000-000000000003",
+                      "caseId": "00000000-0000-4000-8000-000000000006",
+                      "format": "inveos.speech_review_context.v1",
+                      "account": {
+                        "text": "Fictional café account remains uncertain.",
+                        "endMs": 3000,
+                        "startMs": 0,
+                        "hasSpeech": true,
+                        "speakerLabel": "Fictional speaker A",
+                        "speakerUncertain": true
+                      },
+                      "version": 1,
+                      "segmentIndex": 0,
+                      "sourceDigest": "48bd8f791be211744f604f60f274b76648963a0fbf93c6240d7877e094f5700c",
+                      "authorityVersion": 1,
+                      "derivativeDigest": "de30739ed8df3c849aa72b8ffb280531dd319d8e1e3d8dce9af725f7e3db75c8"
+                    },
+                    "decision": {
+                      "id": "00000000-0000-4000-8000-000000000007",
+                      "digest": "bb44b44b1ad4c7d2aa7c5a13386a15dccc53ec74e38f213ef896a556c573b599",
+                      "reason": "Fictional independent audio correspondence assessment, not a truth finding.",
+                      "version": 1,
+                      "accepted": true,
+                      "recordedAt": "2026-01-01T00:00:00.000Z",
+                      "reviewerId": "00000000-0000-4000-8000-000000000002",
+                      "reviewerName": "Synthetic reviewer",
+                      "segmentIndex": 0
+                    }
+                  }
+                ],
+                "corrections": [
+                  {
+                    "id": "00000000-0000-4000-8000-00000000000b",
+                    "text": "Fictional café account remains uncertain.",
+                    "endMs": 3000,
+                    "reason": "Fictional comparison retains uncertainty and original recognition.",
+                    "actorId": "00000000-0000-4000-8000-000000000009",
+                    "startMs": 0,
+                    "version": 1,
+                    "actorName": "Fictional speech recorder",
+                    "hasSpeech": true,
+                    "recordedAt": "2026-01-01T00:00:00.000Z",
+                    "segmentIndex": 0,
+                    "speakerLabel": "Fictional speaker A",
+                    "speakerUncertain": true
+                  }
+                ]
+              }
+            ],
+            "rawBase64": "eyJmb3JtYXQiOiJpbnZlb3Mud2hpc3Blcl9yZXNlYXJjaC52MSIsInNhbXBsZVJhdGUiOjE2MDAwLCJzYW1wbGVzIjo3NDkwNiwic2VnbWVudHMiOlt7InN0YXJ0TXMiOjAsImVuZE1zIjozMDAwLCJ0ZXh0IjoiIEZpY3Rpb25hbCBzdXBwbGllciBhY2NvdW50LiJ9XX0=",
+            "rawDigest": "47b07865dd19bf2bd48572bf5819d0dce7e7259162e8b2b02804609afa79cba7",
+            "sourceUse": [],
+            "derivative": {
+              "text": " Fictional supplier account.",
+              "audio": {
+                "samples": 74906,
+                "channels": 1,
+                "byteLength": 149856,
+                "dataOffset": 44,
+                "durationMs": 4681.625,
+                "sampleBits": 16,
+                "sampleRate": 16000
+              },
+              "format": "inveos_speech_derivative_v1",
+              "context": {
+                "jobId": "00000000-0000-4000-8000-000000000003",
+                "caseId": "00000000-0000-4000-8000-000000000006",
+                "tenantId": "00000000-0000-4000-8000-000000000001",
+                "evidenceId": "00000000-0000-4000-8000-000000000004",
+                "sourceDigest": "48bd8f791be211744f604f60f274b76648963a0fbf93c6240d7877e094f5700c",
+                "authorityVersion": 1
+              },
+              "coverage": {
+                "alignmentVerified": false,
+                "reportedRangesValid": true,
+                "speechAccuracyVerified": false
+              },
+              "segments": [
+                {
+                  "text": " Fictional supplier account.",
+                  "endMs": 3000,
+                  "index": 0,
+                  "endByte": 28,
+                  "ordered": true,
+                  "startMs": 0,
+                  "startByte": 0,
+                  "sourcePointer": "/segments/0",
+                  "rangeWithinOriginal": true
+                }
+              ],
+              "rawDigest": "47b07865dd19bf2bd48572bf5819d0dce7e7259162e8b2b02804609afa79cba7",
+              "offsetBasis": "recognised_utf8_not_original_audio",
+              "reviewState": "unreviewed",
+              "profileDigest": "65c401acf789f238f77cec0c79605b40fb24efdae81f8b4dc11586c23920aeb9"
+            },
+            "exportedAt": "2026-01-01T00:00:00.000Z",
+            "processedAt": "2026-01-01T00:00:00.000Z",
+            "requestedBy": "00000000-0000-4000-8000-000000000009",
+            "profileDigest": "65c401acf789f238f77cec0c79605b40fb24efdae81f8b4dc11586c23920aeb9",
+            "interpretation": "internal_speech_context_not_findings",
+            "derivativeDigest": "de30739ed8df3c849aa72b8ffb280531dd319d8e1e3d8dce9af725f7e3db75c8"
+          }
+        },
+        "reference": {
+          "jobId": "00000000-0000-4000-8000-000000000003",
+          "quote": "Fictional café account remains uncertain.",
+          "account": {
+            "text": "Fictional café account remains uncertain.",
+            "endMs": 3000,
+            "startMs": 0,
+            "hasSpeech": true,
+            "speakerLabel": "Fictional speaker A",
+            "speakerUncertain": true
+          },
+          "endByte": 42,
+          "version": 1,
+          "startByte": 0,
+          "offsetBasis": "selected_speech_utf8_not_original_audio",
+          "segmentIndex": 0,
+          "correspondenceDigest": "bb44b44b1ad4c7d2aa7c5a13386a15dccc53ec74e38f213ef896a556c573b599"
+        },
+        "proposedAt": "2026-01-01T00:00:00.000Z",
+        "proposedBy": "00000000-0000-4000-8000-000000000009",
+        "limitations": "Interpretation of a human-reviewed speech account. Recognition, corrected words, speaker labels and time ranges remain attributed accounts, not proof of identity, factual truth or complete recording coverage."
+      },
+      "review": {
+        "id": "00000000-0000-4000-8000-00000000000a",
+        "claimId": "00000000-0000-4000-8000-000000000005",
+        "claimDigest": "72784448fd4d3e0e13dcbe008429c6a8cc91d8e0f6bd1d62d835d22c9f8eca49",
+        "accepted": true,
+        "reason": "Fictional independent interpretation assessment retains the limited scope.",
+        "reviewerId": "00000000-0000-4000-8000-000000000002",
+        "reviewerName": "Synthetic reviewer",
+        "recordedAt": "2026-01-01T00:00:00.000Z"
+      }
+    }
+  ]
+}

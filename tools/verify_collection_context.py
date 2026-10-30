@@ -84,6 +84,8 @@ def verify(data, expected=None):
     require(type(r['authorityVersion']) is int and r['authorityVersion'] == a['authority_version'], 'Case authority version differs')
     require(a['adapter_id'] == s['adapter_id'] == review['adapter_id'] == 'companies_house_profile_v1', 'Adapter differs')
     require(type(r['policyVersion']) is int and r['policyVersion'] == a['policy_version'] == s['version'] == review['version'], 'Policy version differs')
+    require(type(s['requests_per_window']) is int and 1 <= s['requests_per_window'] <= 600, 'Source policy exceeds the fixed provider request bound')
+    require(re.fullmatch('[a-f0-9]{64}', s['terms_sha256'].strip()) is not None, 'Invalid inspected-terms digest')
     require(s['profile_digest'].strip() == PROFILE and review['accepted'] is True and review['reviewer_id'] != s['proposed_by'], 'Independent policy approval missing')
     require(instant(s['proposed_at']) <= instant(review['recorded_at']) <= instant(a['recorded_at']) <= received < instant(a['valid_until']) <= instant(s['valid_until']), 'Approval chronology or expiry differs')
     require(0 < (instant(a['valid_until']) - instant(a['recorded_at'])).total_seconds() <= 86400, 'Collection permission exceeds one day')

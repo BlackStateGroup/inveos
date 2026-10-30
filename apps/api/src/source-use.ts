@@ -26,7 +26,7 @@ export async function sourceUseProofs(c:PoolClient,tenantId:string,caseId:string
  });
 }
 export async function reportSourceUse(c:PoolClient,tenantId:string,caseId:string,report:ReportDraft,use:'analysis'|'release'){
- const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id)])].sort(),proofs:SourceUseProof[]=[];
+ const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id),...(report.speechFindings??[]).map(f=>f.source.id)])].sort(),proofs:SourceUseProof[]=[];
  for(const id of ids)proofs.push(...await sourceUseProofs(c,tenantId,caseId,id,use));return proofs.sort((a,b)=>a.record.id.localeCompare(b.record.id));
 }
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;entry:(c:PoolClient,a:Actor,caseId:string,id:string)=>Promise<ManualSourceEntry>;verify:(c:PoolClient,a:Actor,caseId:string,entry:ManualSourceEntry)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};

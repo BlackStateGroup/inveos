@@ -133,6 +133,7 @@ export type ReportDraft = {
   status: 'draft_not_released';
   documentFindings?: DocumentReportFinding[];
   transcriptFindings?: TranscriptReportFinding[];
+  speechFindings?: SpeechReportFinding[];
   sourceUse?: SourceUseProof[];
   case: Pick<Case, 'id' | 'ref' | 'title' | 'client' | 'scope' | 'jurisdiction'>;
   findings: Array<{
@@ -257,6 +258,22 @@ export type CaseExpenseReview={id:string;accepted:boolean;reason:string;actorId:
 export type CaseExpense=CaseExpenseFields&{id:string;version:number;action:'recorded'|'corrected'|'withdrawn';reason:string;authorId:string;authorName:string;createdAt:string;actorId:string;actorName:string;recordedAt:string;receipt:ManualSourceOriginal|null;review:CaseExpenseReview|null;canCorrect:boolean;canReview:boolean};
 export type SpendingBudget={id:string;currency:CaseCurrency;version:number;action:'allocated'|'revised'|'withdrawn';amountMinor:number;reason:string;actorId:string;actorName:string;recordedAt:string};
 export type CaseSpending={caseId:string;observedAt:string;currencies:{currency:CaseCurrency;current:SpendingBudget|null;entries:number;declaredMinor:number;acceptedMinor:number;pendingMinor:number;rejectedMinor:number;remainingDeclaredMinor:number|null}[];interpretation:'declared_expenses_and_recorded_reviews_only'};
+export {inspectPcm,type PcmSource} from './pcm.js';
+
+export type SpeechSegment={index:number;sourcePointer:string;startMs:number;endMs:number;text:string;startByte:number;endByte:number;rangeWithinOriginal:boolean;ordered:boolean};
+export type SpeechDerivative={format:'inveos_speech_derivative_v1';context:{tenantId:string;caseId:string;jobId:string;evidenceId:string;sourceDigest:string;authorityVersion:number};profileDigest:string;rawDigest:string;reviewState:'unreviewed';offsetBasis:'recognised_utf8_not_original_audio';audio:import('./pcm.js').PcmSource;text:string;segments:SpeechSegment[];coverage:{reportedRangesValid:boolean;alignmentVerified:false;speechAccuracyVerified:false}};
+export type SpeechCorrection={id:string;segmentIndex:number;version:number;startMs:number;endMs:number;hasSpeech:boolean;text:string;speakerLabel:string;speakerUncertain:boolean;reason:string;actorId:string;actorName:string;recordedAt:string};
+export type SpeechSegmentReview={id:string;segmentIndex:number;version:number;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string;digest:string};
+export type SpeechTranscript={caseId:string;jobId:string;source:{evidenceId:string;digest:string;filename:string;sourceTime:string;receivedTime:string;authorityId:string;authorityVersion:number};profile:Record<string,unknown>;profileDigest:string;rawDigest:string;derivativeDigest:string;processedAt:string;requestedBy:string;derivative:SpeechDerivative;segments:{raw:SpeechSegment;current:SpeechCorrection|null;currentVersion:number;review:SpeechSegmentReview|null;canReview:boolean;canAccept:boolean}[];interpretation:'raw_and_corrected_speech_not_findings'};
+
+export type SpeechAccount=Pick<SpeechCorrection,'startMs'|'endMs'|'hasSpeech'|'text'|'speakerLabel'|'speakerUncertain'>;
+export type SpeechReviewContext={format:'inveos.speech_review_context.v1';caseId:string;jobId:string;sourceDigest:string;derivativeDigest:string;authorityVersion:number;segmentIndex:number;version:number;account:SpeechAccount};
+export type SpeechContextPackage={format:'inveos.speech_context.v1';sha256:string;payload:{caseId:string;jobId:string;source:SpeechTranscript['source']&{originalBase64:string};profile:string;profileDigest:string;rawBase64:string;rawDigest:string;derivative:SpeechDerivative;derivativeDigest:string;processedAt:string;requestedBy:string;segments:{raw:SpeechSegment;corrections:SpeechCorrection[];reviews:{context:SpeechReviewContext;decision:SpeechSegmentReview}[]}[];sourceUse:SourceUseProof[];exportedAt:string;interpretation:'internal_speech_context_not_findings'}};
+export type SpeechClaimInput={id:string;jobId:string;segmentIndex:number;expectedVersion:number;correspondenceDigest:string;text:string;startByte:number;endByte:number;quote:string};
+export type SpeechClaim={id:string;caseId:string;text:string;proposedBy:string;proposedAt:string;digest:string;source:TranscriptClaim['source'];context:SpeechContextPackage;reference:{jobId:string;segmentIndex:number;version:number;correspondenceDigest:string;offsetBasis:'selected_speech_utf8_not_original_audio';startByte:number;endByte:number;quote:string;account:SpeechAccount};limitations:string};
+export type SpeechClaimRecord={claim:SpeechClaim;review:TranscriptClaimReview|null;findingId:string|null;withdrawal:TranscriptClaimRecord['withdrawal'];state:TranscriptClaimRecord['state'];canReview:boolean;canWithdraw:boolean};
+export type SpeechReportFinding={kind:'reviewed_speech';id:string;text:string;reviewer:string;reviewedAt:string;source:TranscriptClaim['source'];claim:SpeechClaim;review:TranscriptClaimReview};
+
 
 export type ConnectorPolicyProposal={id:string;adapterId:'companies_house_profile_v1';expectedVersion:number;profileDigest:string;purpose:string;lawfulBasis:string;termsReference:string;termsSha256:string;minimisation:string;retentionDays:number;requestsPerWindow:number;validUntil:string;reason:string};
 export type ConnectorPolicyVersion=Omit<ConnectorPolicyProposal,'expectedVersion'>&{version:number;proposedBy:string;proposedByName:string;proposedAt:string;review:{id:string;accepted:boolean;reason:string;legalApprovalReference:string;reviewerId:string;reviewerName:string;recordedAt:string}|null;withdrawal:{id:string;actorId:string;actorName:string;reason:string;recordedAt:string}|null;state:'candidate'|'approved'|'rejected'|'withdrawn'|'expired'|'superseded';canReview:boolean};

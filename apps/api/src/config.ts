@@ -16,6 +16,7 @@ export type RuntimeConfig = {
   sessionTtlSeconds: number;
   sessionEpoch: string;
   documentLab: boolean;
+  speechLab: boolean;
 };
 
 const defaultOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
@@ -88,6 +89,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
   return {
     identity,
     documentLab: env.INVEOS_DOCUMENT_LAB === '1',
+    speechLab: env.INVEOS_SPEECH_LAB === '1' && env.INVEOS_DEV_LAB === '1' && env.NODE_ENV !== 'production',
     host,
     port,
     databaseUrl,

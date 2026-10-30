@@ -1,0 +1,54 @@
+{
+  "format": "inveos.speech_runtime_lock.v1",
+  "baseImage": "python@sha256:77c90594edb5d6a43ed73de1c73b5f9d795bc94fa76d438fba4cc00036100014",
+  "baseConfig": "sha256:a09cf88e765a0752a769b1eaf5b3d47034ff846e32da48258646f80c63e120fb",
+  "sourceRevision": "231638a0717b7822784297e5980965ffcec05810",
+  "files": [
+    {
+      "path": "/opt/inveos/inveos-whisper",
+      "bytes": 2111080,
+      "sha256": "e372f264c6fda90c64c88f858f023a31fd1bcc00af77b20ae1d4da94bbcb66fe"
+    },
+    {
+      "path": "/lib/x86_64-linux-gnu/libc.so.6",
+      "bytes": 1926232,
+      "sha256": "6b4a45352fd0c540a9c7c718f35ce8c8e46a4e482f9d3885a910c32d1a0e1421"
+    },
+    {
+      "path": "/usr/share/doc/libc6/copyright",
+      "bytes": 25467,
+      "sha256": "40c7e1f2118531f038ca22999bd976901254e1bc5cd1b0f0211bdd064c599987"
+    },
+    {
+      "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "bytes": 125312,
+      "sha256": "2bd1552c47799ef67e701e81d4383061fd76059868e446e63560f0dd0d5ec14e"
+    },
+    {
+      "path": "/usr/share/doc/libgcc-s1/copyright",
+      "bytes": 68194,
+      "sha256": "da8191658b3452ce9caf31638ba61dab31a38c619fa39df119812e050f592fd3"
+    },
+    {
+      "path": "/lib/x86_64-linux-gnu/libm.so.6",
+      "bytes": 911904,
+      "sha256": "7f2ca87f652f56b094462474b076749e90e689d0ecb9cb63c7679820b271b4e7"
+    },
+    {
+      "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+      "bytes": 2190440,
+      "sha256": "e7848e32af4932840ba775169041759a2a8dd5a008af360e5c55bce506eebcf4"
+    },
+    {
+      "path": "/usr/share/doc/libstdc++6/copyright",
+      "bytes": 68194,
+      "sha256": "da8191658b3452ce9caf31638ba61dab31a38c619fa39df119812e050f592fd3"
+    },
+    {
+      "path": "/lib64/ld-linux-x86-64.so.2",
+      "bytes": 215000,
+      "sha256": "02bcda52c1a5dfc236f94d9e5255b4a0e26347d8a372a5223b650e31f291ce3c"
+    }
+  ],
+  "limitation": "Exact measured research runtime files only; not complete image/source/licence/security closure."
+}

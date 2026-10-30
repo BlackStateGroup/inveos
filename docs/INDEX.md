@@ -240,4 +240,6 @@
 
 - [119 — Retained review assignment register](119_REVIEW_ASSIGNMENT_REGISTER.md) — current-access discovery of exact completed/superseded assignment histories.
 
+- [120 — Connected speech workflow](120_SPEECH_WORKFLOW.md) — preserved audio, independent correspondence/interpretation decisions, frozen reports and offline verification; acceptance status is explicit.
+
 - [121 — Controlled OSINT workbench](121_OSINT_WORKBENCH.md) — source policies, scoped collection, preserved responses and actual evidence; live activation remains disabled.
