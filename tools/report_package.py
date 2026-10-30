@@ -28,6 +28,7 @@ else:
 
 SCHEMA = 'inveos.internal-exhibit-package.v1'
 TRANSCRIPT_SCHEMA = 'inveos.internal-exhibit-package.v2'
+SPEECH_SCHEMA = 'inveos.internal-exhibit-package.v3'
 MAX_PACKAGE_BYTES = 64 * 1024 * 1024
 MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 MAX_ENTRIES = 1002  # report, manifest and up to 1,000 distinct cited originals
@@ -82,6 +83,11 @@ def package_payloads(report_raw, exported_at):
     for finding in transcripts:
         source = {**finding['claim']['source'], 'contentBase64': finding['originalBase64']}
         sources[source['id']] = source
+    speeches = report.get('speechFindings', [])
+    audio_ids = set()
+    for finding in speeches:
+        source = {**finding['source'], 'contentBase64': finding['claim']['context']['payload']['source']['originalBase64']}
+        sources[source['id']] = source; audio_ids.add(source['id'])
     payloads = {REPORT_PATH: report_raw}
     exhibits, exhibit_ids = [], {}
     for number, evidence_id in enumerate(sorted(sources), 1):
@@ -93,7 +99,7 @@ def package_payloads(report_raw, exported_at):
         exhibit_ids[evidence_id] = exhibit_id
         exhibits.append({
             'exhibitId': exhibit_id, 'evidenceId': evidence_id, 'path': path,
-            'representation': 'original_utf8', 'byteLength': len(original),
+            'representation': 'original_pcm_audio' if evidence_id in audio_ids else 'original_utf8', 'byteLength': len(original),
             **{key: source[key] for key in ('filename', 'sha256', 'sourceTime', 'receivedTime', 'policy')},
         })
     citations = [{
@@ -108,11 +114,12 @@ def package_payloads(report_raw, exported_at):
                       'version': finding['claim']['transcript']['version'],
                       **{key: finding['claim']['reference'][key] for key in ('startByte', 'endByte', 'quote', 'startMs', 'endMs', 'speakerLabel', 'speakerUncertain')}}
                      for finding in transcripts)
+    citations.extend({'findingId': f['id'], 'exhibitId': exhibit_ids[f['source']['id']], 'kind': 'selected_speech_utf8_not_original_audio', **f['claim']['reference']} for f in speeches)
     manifest = {
-        'schemaVersion': TRANSCRIPT_SCHEMA if transcripts else SCHEMA, 'digestAlgorithm': 'sha256',
+        'schemaVersion': SPEECH_SCHEMA if speeches else TRANSCRIPT_SCHEMA if transcripts else SCHEMA, 'digestAlgorithm': 'sha256',
         'status': 'draft_not_released', 'caseId': checked['caseId'],
         'exportedAt': exported_at, 'reportPath': REPORT_PATH,
-        'reportFormat': 'inveos.internal-report.transcript-v1' if transcripts else 'inveos.internal-report.legacy-utf8',
+        'reportFormat': 'inveos.internal-report.speech-v1' if speeches else 'inveos.internal-report.transcript-v1' if transcripts else 'inveos.internal-report.legacy-utf8',
         'exhibits': exhibits, 'citations': citations,
         'files': [{'path': path, 'byteLength': len(raw), 'sha256': sha256(raw)}
                   for path, raw in sorted(payloads.items())],
@@ -213,7 +220,7 @@ def verify_package(raw, expected_manifest_sha256=None, expected_case_id=None):
                 and re.fullmatch('[0-9a-f]{64}', expected_manifest_sha256), 'Invalid trusted manifest digest')
         require(actual == expected_manifest_sha256, 'Manifest digest mismatch')
     manifest = load_json(manifest_raw)
-    require(isinstance(manifest, dict) and manifest.get('schemaVersion') in (SCHEMA, TRANSCRIPT_SCHEMA),
+    require(isinstance(manifest, dict) and manifest.get('schemaVersion') in (SCHEMA, TRANSCRIPT_SCHEMA, SPEECH_SCHEMA),
             'Unsupported manifest schema')
     checked = verify_report(members[REPORT_PATH], expected_case_id=expected_case_id)
     expected = package_payloads(members[REPORT_PATH], manifest.get('exportedAt'))

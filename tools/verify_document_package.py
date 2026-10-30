@@ -270,17 +270,19 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         legacy, findings, exhibits = report['findings'], report['documentFindings'], package['exhibits']
         require(isinstance(legacy, list) and isinstance(findings, list) and isinstance(exhibits, list)
                 and 1 <= len(findings) == len(exhibits) and len(legacy) + len(findings) <= 1000, 'Finding count limit')
+        speeches = report.get('speechFindings', [])
+        require(isinstance(speeches, list), 'Invalid speech finding array')
         transcripts = report.get('transcriptFindings', [])
-        require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) <= 1000, 'Mixed finding count limit')
-        if legacy or transcripts:
+        require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) + len(speeches) <= 1000, 'Mixed finding count limit')
+        if legacy or transcripts or speeches:
             original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'sourceUse')}
             # The complete mixed-source chronology is validated below, after both source families.
             original_report['investigation'] = {key: value for key, value in report.get('investigation', {}).items() if key != 'chronology'}
             verify_report(json.dumps(original_report, ensure_ascii=False).encode('utf-8'))
-        ids = [f['id'] for f in legacy + findings + transcripts]
+        ids = [f['id'] for f in legacy + findings + transcripts + speeches]
         require(len(set(ids)) == len(ids), 'Duplicate finding identity')
         sources = {}
-        original_ids = {f['source']['id'] for f in legacy} | {f['claim']['source']['id'] for f in transcripts}
+        original_ids = {f['source']['id'] for f in legacy} | {f['claim']['source']['id'] for f in transcripts} | {f['source']['id'] for f in speeches}
         for finding in findings:
             source = finding['source']
             require(source['id'] not in original_ids, 'Conflicting original representation')
@@ -295,13 +297,14 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         except (ValueError, TypeError, KeyError, UnicodeError) as exc:
             raise InvalidReport('Invalid frozen chronology') from exc
         tenants = {verify_exhibit(f, e, case_id) for f, e in zip(findings, exhibits)}
+        tenants.update(f['claim']['context']['payload']['derivative']['context']['tenantId'] for f in speeches)
         require(len(tenants) == 1, 'Mixed tenant lineage')
     except (KeyError, TypeError, IndexError, AttributeError, UnicodeError, OverflowError, RecursionError, StopIteration) as exc:
         raise InvalidReport('Malformed document package') from exc
     return {'status': 'integrity_checks_passed', 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
             'caseId': case_id, **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}), 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
             **({'transcriptFindingsChecked': len(transcripts), 'transcriptWorkLinksChecked': transcript_links} if transcripts or transcript_links else {}),
-            'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
+            **({'speechFindingsChecked': len(speeches)} if speeches else {}), 'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
             'releaseStatus': 'draft_not_released', 'limitations': 'Consistency only; no parser execution, source truth, reviewer authentication, current server policy, signature or release certification. Trust report and package fingerprints through a separate channel.'}
 
 

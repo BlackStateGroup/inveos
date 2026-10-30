@@ -257,6 +257,7 @@ def verify_source_use(report):
     require(isinstance(proofs, list) and len(proofs) <= 200, 'Source-use proof limit')
     sources = {f['source']['id']: f['source'] for f in report.get('findings', []) + report.get('documentFindings', [])}
     sources.update({f['claim']['source']['id']: f['claim']['source'] for f in report.get('transcriptFindings', [])})
+    sources.update({f['source']['id']: f['source'] for f in report.get('speechFindings', [])})
     seen_sources, seen_decisions = set(), set()
 
     def identifier(value):
@@ -373,7 +374,14 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         evidence[evidence_id] = identity
     try:
         transcript_count = verify_transcript_findings(report, finding_ids, evidence)
-        require(0 < len(findings) + transcript_count <= MAX_FINDINGS, 'Finding count limit')
+        speech_count = 0
+        if 'speechFindings' in report:
+            if __package__:
+                from .verify_speech_findings import verify_findings as verify_speech_findings
+            else:
+                from verify_speech_findings import verify_findings as verify_speech_findings
+            speech_count = verify_speech_findings(report, finding_ids, evidence)
+        require(0 < len(findings) + transcript_count + speech_count <= MAX_FINDINGS, 'Finding count limit')
         chronology_count = verify_chronology(report)
         transcript_links = verify_transcript_work_links(report)
         source_use_count = verify_source_use(report)
@@ -381,7 +389,7 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         raise InvalidReport('Invalid frozen chronology or transcript lineage') from exc
     return {'status': 'integrity_checks_passed', 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
             'trustedReportDigestMatched': expected_sha256 is not None, **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}),
-            'caseId': case_id, 'findingsChecked': len(findings) + transcript_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
+            **({'speechFindingsChecked': speech_count} if speech_count else {}), 'caseId': case_id, 'findingsChecked': len(findings) + transcript_count + speech_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
             **({'transcriptWorkLinksChecked': transcript_links} if transcript_links else {}), 'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',
             'limitations': 'No signature, reviewer authentication, lawful-authority validation, custody-chain verification or factual truth check. An unanchored result establishes internal consistency only.'}
 
