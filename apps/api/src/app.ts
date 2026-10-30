@@ -2131,6 +2131,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       // Match recipient before locking, then serialise with case authority and grant revocation.
       const scope=await client.query('SELECT case_id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,disclosureId]);
       if(!scope.rows[0])notFound();await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,scope.rows[0].case_id]);
+      await assertCurrentSession(client,actor);
       const found=await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes,dr.rendition_id,pr.pdf_digest,ed.rendition_id AS editable_rendition_id,er.docx_digest FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
         JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
         LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${renditionDisclosureJoin}
@@ -2140,6 +2141,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const inserted=await client.query(`INSERT INTO report_disclosure_acknowledgements(tenant_id,disclosure_id,recipient_id,digest) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING acknowledged_at`,[actor.tenantId,disclosureId,actor.userId,expected]);
       if(inserted.rowCount)await writeAudit(client,actor,grant.case_id,'report.disclosure_acknowledged','report_disclosure',disclosureId,'Recipient explicitly acknowledged receipt',{digest:expected});
       const receipt=inserted.rows[0]??(await client.query('SELECT acknowledged_at FROM report_disclosure_acknowledgements WHERE tenant_id=$1 AND disclosure_id=$2',[actor.tenantId,disclosureId])).rows[0];
+      await assertCurrentSession(client,actor);
       return {disclosureId,sha256:expected,acknowledgedAt:iso(receipt.acknowledged_at),status:'recipient_acknowledged_receipt'};
     });
   });
