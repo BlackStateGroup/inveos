@@ -5,11 +5,12 @@ import io
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 import warnings
 import zipfile
 
-from tools.experiment_tika_pdf import analyse, PHRASE
+from tools.experiment_tika_pdf import analyse, PHRASE, rejection, repeated_pages
 from tools.tika_runtime_artifacts import MODULES, ORIGIN, PIN, inspect_jar, records, relative, sha, verify, xml
 
 
@@ -87,10 +88,23 @@ class TikaResearchTests(unittest.TestCase):
         for entries in [[('../outside', '')], [('native.so', '')], [('a', ''), ('a', '')], [('/absolute', '')]]:
             with self.subTest(entries=entries), self.assertRaises(ValueError): inspect_jar(jar(entries))
 
+    def test_crash_or_wrong_failure_does_not_count_as_rejection(self):
+        good = SimpleNamespace(returncode=2, stdout='', stderr='INVEOS_RESEARCH_REJECTED={"class":"java.lang.IllegalArgumentException","message":"Input byte bound"}\n')
+        self.assertEqual(rejection(good, 'oversize')['message'], 'Input byte bound')
+        for result in [SimpleNamespace(returncode=137, stdout='', stderr=''), SimpleNamespace(returncode=2, stdout='', stderr='missing dependency'), SimpleNamespace(returncode=2, stdout='partial derivative', stderr=good.stderr)]:
+            with self.assertRaises(ValueError): rejection(result, 'oversize')
+        with self.assertRaises(ValueError): rejection(good, 'signature')
+
+    def test_page_limit_fixture_is_bounded_and_repeatable(self):
+        self.assertEqual(repeated_pages(16), repeated_pages(16))
+        self.assertIn(b'/Count 17', repeated_pages(17))
+        for count in [0, 18, True]:
+            with self.assertRaises(ValueError): repeated_pages(count)
+
     def probe(self, page_texts):
         original = b'FICTIONAL source bytes'
         xhtml = ('<html xmlns="http://www.w3.org/1999/xhtml"><body>' + ''.join('<div class="page"><p>' + p + '</p></div>' for p in page_texts) + '</body></html>').encode()
-        report = {'format': 'inveos_tika_research_probe_v1', 'state': 'unreviewed_research_derivative', 'sourceSha256': sha(original), 'xhtmlSha256': sha(xhtml), 'xhtmlBase64': base64.b64encode(xhtml).decode(), 'metadata': {}, 'parseNanos': 1, 'processCpuNanos': 1, 'peakRssKiB': 1}
+        report = {'format': 'inveos_tika_research_probe_v1', 'state': 'unreviewed_research_derivative', 'sourceSha256': sha(original), 'xhtmlSha256': sha(xhtml), 'xhtmlBase64': base64.b64encode(xhtml).decode(), 'metadata': {'xmpTPg:NPages': [str(len(page_texts))], 'pdf:ocr-page-count': ['0'], 'pdf:encrypted': ['false'], 'access-permission:extract-content': ['true']}, 'parseNanos': 1, 'processCpuNanos': 1, 'peakRssKiB': 1}
         return original, report
 
     def test_empty_page_is_visible_and_repeat_has_distinct_page_reference(self):

@@ -12,6 +12,7 @@ on:
       - 'tools/probe_worker_isolation.py'
       - 'tools/bounded_process.py'
       - 'tools/synthetic_pdf.py'
+      - 'tools/supplier_scan_fixture.py'
       - 'tests/test_tika_research.py'
   workflow_dispatch:
 

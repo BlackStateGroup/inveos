@@ -1,7 +1,12 @@
 package inveos.research;
 
 // First-party bounded research wrapper. Upstream parser code remains in the ignored source cache.
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -33,7 +38,35 @@ public final class TikaPdfProbe {
         }
         return out.append('"').toString();
     }
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        try { run(args); }
+        catch (Exception error) {
+            String message = String.valueOf(error.getMessage());
+            System.err.println("INVEOS_RESEARCH_REJECTED={\"class\":" + quoted(error.getClass().getName()) + ",\"message\":" + quoted(message.substring(0, Math.min(1024, message.length()))) + "}");
+            System.exit(2);
+        }
+    }
+    private static void run(String[] args) throws Exception {
+        if (args.length == 1 && args[0].equals("--fictional-protected-fixtures")) {
+            StringBuilder fixtures = new StringBuilder("{");
+            for (boolean passwordRequired : new boolean[]{false, true}) {
+                try (PDDocument document = new PDDocument(); ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+                    document.addPage(new PDPage());
+                    document.getDocumentInformation().setTitle("FICTIONAL INVEOS protected input fixture");
+                    AccessPermission permission = new AccessPermission();
+                    permission.setCanExtractContent(false);
+                    permission.setCanExtractForAccessibility(false);
+                    StandardProtectionPolicy policy = new StandardProtectionPolicy("fictional-owner-only", passwordRequired ? "fictional-reader-only" : "", permission);
+                    policy.setEncryptionKeyLength(128);
+                    document.protect(policy);
+                    document.save(bytes);
+                    if (fixtures.length() > 1) fixtures.append(',');
+                    fixtures.append(quoted(passwordRequired ? "password_locked" : "permissions_locked")).append(':').append(quoted(Base64.getEncoder().encodeToString(bytes.toByteArray())));
+                }
+            }
+            System.out.println(fixtures.append('}'));
+            return;
+        }
         if (args.length != 1) throw new IllegalArgumentException("One fictional input path required");
         Path path = Path.of(args[0]);
         long size = Files.size(path);
@@ -50,6 +83,7 @@ public final class TikaPdfProbe {
         config.setExtractActions(false);
         config.setMaxMainMemoryBytes(33554432);
         config.setMaxPages(16);
+        config.setAccessCheckMode(PDFParserConfig.AccessCheckMode.IGNORE_ACCESSIBILITY_ALLOWANCE);
         ParseContext context = new ParseContext();
         context.set(PDFParserConfig.class, config);
         context.set(EmbeddedDocumentExtractor.class, new EmbeddedDocumentExtractor() {
@@ -65,6 +99,9 @@ public final class TikaPdfProbe {
         try (TikaInputStream input = TikaInputStream.get(path, metadata)) {
             new PDFParser().parse(input, new WriteOutContentHandler(xml, 262144), metadata, context);
         }
+        int pageCount = Integer.parseInt(metadata.get("xmpTPg:NPages"));
+        if (pageCount < 1 || pageCount > 16) throw new IllegalStateException("Page count bound");
+        if ("true".equals(metadata.get("pdf:encrypted"))) throw new IllegalStateException("Encrypted input refused");
         long elapsed = System.nanoTime() - started;
         long cpuElapsed = ProcessHandle.current().info().totalCpuDuration().orElseThrow().toNanos() - cpuStarted;
         long peakRssKiB = 0;
