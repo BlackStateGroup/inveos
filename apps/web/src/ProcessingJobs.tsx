@@ -57,17 +57,17 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
   async function inspect(job:Job){
     const result=await get<unknown>(`${base}/${job.id}/derivative`);
     const checked=await inspectTextDerivative(result,job);
-    if(alive.current){setInspection(checked);setHistory(null);}
+    if(alive.current){setSource(job.evidenceId);onSource?.(job.evidenceId);setInspection(checked);setHistory(null);}
   }
   async function inspectDocument(job:Job){
     const checked=await inspectDocumentDerivative(await get<unknown>(`${base}/${job.id}/document-derivative`),job);
-    if(alive.current){setDocument(checked);setHistory(null);}
+    if(alive.current){setSource(job.evidenceId);onSource?.(job.evidenceId);setDocument(checked);setHistory(null);}
   }
-  async function inspectImage(job:Job){const checked=await inspectRaster(await get<unknown>(`${base}/${job.id}/raster-derivative`),job);if(alive.current){setRaster(checked);setHistory(null);}}
+  async function inspectImage(job:Job){const checked=await inspectRaster(await get<unknown>(`${base}/${job.id}/raster-derivative`),job);if(alive.current){setSource(job.evidenceId);onSource?.(job.evidenceId);setRaster(checked);setHistory(null);}}
   async function compareImage(job:Job,extraction:Job){
     const [image,passages]=await Promise.all([get<unknown>(`${base}/${job.id}/raster-derivative`).then(r=>inspectRaster(r,job)),get<unknown>(`${base}/${extraction.id}/document-derivative`).then(r=>inspectDocumentDerivative(r,extraction))]);
     pairRasterDocument(image,passages);
-    if(alive.current){setRaster(image);setDocument(passages);setHistory(null);}
+    if(alive.current){setSource(job.evidenceId);onSource?.(job.evidenceId);setRaster(image);setDocument(passages);setHistory(null);}
   }
   async function cancel(job:Job){const r=await fetch(`${base}/${job.id}/cancel`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:'{}'});
     const value=await r.json();if(!r.ok)throw new Error(value.error||'Cancellation failed.');if(!alive.current)return;

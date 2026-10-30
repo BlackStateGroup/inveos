@@ -38,7 +38,7 @@ async function fixture(){
  return {pool,owner,storage,store,caseId,demo,request,ok,member,queue,get app(){return app;},restart:async(extraOrigin?:string)=>{await app.close();browserOrigin=extraOrigin;app=await make();await app.ready();},close:async()=>{await app.close();await pool.end();await owner.end();await admin.query(`DROP SCHEMA "${schema}" CASCADE`);await admin.end();await rm(storage,{recursive:true,force:true});key.fill(0);}};
 }
 
-async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:string,rasterJobId:string,profileVersion:number){
+async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:string,rasterJobId:string,profileVersion:number,sourceId:string){
  const dist=join(root,'apps/web/dist');let api='';const upstreams=new Set<ReturnType<typeof forwardBrowserApi>>();
  const server=createServer((req,res)=>{void(async()=>{const path=new URL(req.url!,'http://localhost').pathname;
   if(path.startsWith('/api/')){const upstream=forwardBrowserApi(req,res,api+req.url);upstreams.add(upstream);upstream.once('close',()=>upstreams.delete(upstream));return;}
@@ -58,8 +58,14 @@ async function inspectInBrowser(f:Awaited<ReturnType<typeof fixture>>,jobId:stri
   await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(compare)});if(!button||button.disabled)throw new Error('OCR comparison unavailable');button.click();})()`);
   await eventually(async()=>await browser.evaluate<boolean>(`(()=>{const img=document.querySelector('img[alt="Unreviewed rendered page 1"]');return !!img&&img.complete&&img.naturalWidth===612&&img.naturalHeight===792;})()`),'actual original-page raster decoded beside OCR');
   assert.ok(await b.evaluate<number>(`document.querySelectorAll('svg[aria-label="Passage overlay for page 1"] rect').length`)>0);
-  if(profileVersion===2){await mkdir(join(root,'output/evals'),{recursive:true});const shot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(root,'output/evals/ocr-expanded-comparison.png'),Buffer.from(shot.data,'base64'));}
   await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Compare page 1 passage 1');if(!button)throw new Error('OCR region unavailable');button.click();})()`);await eventually(async()=>(await text()).includes('Selected #/texts/0'),'OCR region comparison selection');
+  assert.ok(await b.evaluate<boolean>(`document.querySelector('.evidence-inspector .panel-heading')?.textContent.includes(${JSON.stringify(sourceId)})===true`),'vault selection agrees with the verified extraction original');
+  if(profileVersion===2){
+   await b.evaluate(`document.querySelector('[aria-label="Verified unreviewed raster pages"]').scrollIntoView({block:'start'})`);
+   const clip=await b.evaluate<{x:number;y:number;width:number;height:number;scale:number}>(`(()=>{const r=document.querySelector('[aria-label="Verified unreviewed raster pages"]').getBoundingClientRect();return {x:r.left+scrollX,y:r.top+scrollY,width:r.width,height:r.height,scale:1};})()`);
+   assert.ok(clip.width>0&&clip.height>0&&clip.height<4000);
+   await mkdir(join(root,'output/evals'),{recursive:true});const shot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip});await writeFile(join(root,'output/evals/ocr-expanded-comparison.png'),Buffer.from(shot.data,'base64'));
+  }
   await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Brief'&&b.getClientRects().length);button.click();})()`);
   await eventually(async()=>await browser.evaluate<boolean>(`!!document.querySelector('input[name="caseQuery"]')`),'supplier case search');
   await b.evaluate(`(()=>{const input=document.querySelector('input[name="caseQuery"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'60');input.dispatchEvent(new Event('input',{bubbles:true}));const select=document.querySelector('select[name="caseKind"]');select.value='document_text';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
@@ -123,7 +129,7 @@ for(const profileVersion of [1,2])test('actual isolated supplier profile '+profi
   await f.ok('POST',`${workBase}/${question.id}/revise`,closure);
   const history=await f.ok('GET',`${workBase}/${question.id}/history`);assert.equal(history[0].sources.length,6);assert.deepEqual(history[1].sources,[]);
   const candidate=await f.ok('GET',workBase+'/document-findings/'+reviewedFindingIds[0]);assert.equal(candidate.reference.offsetBasis,'ocr_utf8_not_original_pdf');
-  await inspectInBrowser(f,ocr.job.id,rasterJob.id,profileVersion);await f.restart();
+  await inspectInBrowser(f,ocr.job.id,rasterJob.id,profileVersion,ocr.evidence.id);await f.restart();
   const base=`/api/cases/${f.caseId}/report-revisions`,freeze={idempotencyKey:randomUUID()},revision=await f.ok('POST',base,freeze);assert.deepEqual(await f.ok('POST',base,freeze),revision);
   const exported=await f.request('GET',`${base}/${revision.id}/document-package`);assert.equal(exported.statusCode,200,exported.body);const packagePath=join(f.storage,'fictional-supplier-package.json');await writeFile(packagePath,exported.rawPayload);
   const verify=spawnSync('python3',[join(root,'tools/verify_document_package.py'),packagePath,'--expected-report-sha256',revision.sha256,'--expected-package-sha256',sha256(exported.rawPayload)],{encoding:'utf8',timeout:10000});assert.equal(verify.status,0,verify.stderr);assert.equal(JSON.parse(verify.stdout).documentFindingsChecked,2);assert.equal(JSON.parse(verify.stdout).documentWorkLinksChecked,6);

@@ -23,4 +23,13 @@ The qualified **Pinned Docling research build** workflow runs each controlled ad
 
 The actual supplier acceptance runs the complete encrypted-original → OCR/native → original-page comparison → cited independent review → frozen package/PDF → restricted approved fictional delivery workflow for each version. The v2 scan is the same first-party scanned fixture with explicitly labelled PDF comment padding inserted before its xref table and a corrected startxref offset, placing it above 65,536 bytes without altering page content. This is a real larger parsed PDF, not representative scan complexity. V1 rejection of that source is checked. The actual adversity corpus supplies the separate degraded-input experiment. Both suites must pass before merge; [evaluation](evals/2026-10-30-expanded-document-profiles.md) and the handoff record exact evidence.
 
-Use the existing explicit single-job OCR worker command and qualified receipts; it selects v1/v2 from the already-enqueued scoped job. No automatic worker discovery or production activation is added. Roll back application code without dropping profile rows or rewriting migrations; historical v1 records remain readable with prior code, while v2 records require this implementation and verifier. Do not silently down-convert them.
+Reproduce qualification with [the scanned-document runtime procedure](79_SCANNED_DOCUMENT_LINEAGE.md) and [the leased native worker procedure](60_LEASED_NATIVE_RESEARCH_WORKER.md). Start the disposable API with `INVEOS_DOCUMENT_LAB=1`, then enqueue the scoped job with `kind: "tesseract_scan_lab_v2"`. A trusted operator runs the existing explicit single-job OCR command against the qualified image/receipt:
+
+```sh
+INVEOS_DEV_LAB=1 INVEOS_RESEARCH_OCR=1 node --env-file=.env --import tsx \
+  apps/api/src/run-native-document-job.ts TENANT_UUID CASE_UUID JOB_UUID
+```
+
+The receipt is `.research-cache/tesseract-worker-qualification.json`. The experiment removes its disposable image afterwards; requalify an available image before a later manual job. Image/command selection is not accepted from the request. Matching raster execution is covered by the same bounded worker functions and actual integration acceptance; no raster CLI is introduced.
+
+Use the explicit single-job OCR worker command and qualified receipts; it selects v1/v2 from the already-enqueued scoped job. No automatic worker discovery or production activation is added. Roll back application code without dropping profile rows or rewriting migrations; historical v1 records remain readable with prior code, while v2 records require this implementation and verifier. Do not silently down-convert them.
