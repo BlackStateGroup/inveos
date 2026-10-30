@@ -14,6 +14,22 @@ on:
       - 'tools/synthetic_pdf.py'
       - 'tools/supplier_scan_fixture.py'
       - 'tests/test_tika_research.py'
+      - 'apps/api/src/tika*.ts'
+      - 'apps/api/src/run-tika-job.ts'
+      - 'apps/api/src/integrity-jobs.ts'
+      - 'apps/api/src/leased-worker.ts'
+      - 'apps/api/src/storage.ts'
+      - 'apps/api/src/original-encryption.ts'
+      - 'apps/api/test/tika-worker.integration.ts'
+      - 'apps/api/test/support/source-family.ts'
+      - 'tools/qualify_tika_worker.py'
+      - 'tools/prepare_tika_worker.py'
+      - 'apps/api/src/container-worker.ts'
+      - 'apps/api/migrations/**'
+      - 'packages/contracts/src/tika.ts'
+      - 'package-lock.json'
+      - 'tools/verify_tika*.py'
+      - 'research/runtime_artifacts/tika-runtime.lock.json'
   workflow_dispatch:
 
 permissions:
@@ -22,7 +38,24 @@ permissions:
 jobs:
   isolated-tika-pdf:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -30,6 +63,17 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked application and prepare disposable restricted PostgreSQL
+        run: |
+          npm ci --no-audit --no-fund
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
       - name: Check disk and acquire pinned source without executing it
         run: |
           df -h .
@@ -44,6 +88,13 @@ jobs:
         run: python3 tools/build_tika_research.py --source .research-cache/sources/apache/tika
       - name: Run actual bounded Tika parser twice per fictional fixture
         run: python3 tools/experiment_tika_pdf.py --source .research-cache/sources/apache/tika
+      - name: Freshly qualify the locked application Tika runtime
+        run: python3 tools/qualify_tika_worker.py
+      - name: Exercise actual Tika application dispatch, cancellation and original integrity
+        env:
+          INVEOS_DEV_LAB: "1"
+          INVEOS_RESEARCH_TIKA: "1"
+        run: timeout 720s node --import tsx --test --test-concurrency=1 apps/api/test/tika-worker.integration.ts
       - name: Keep research receipts and fictional output, excluding third-party binaries
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -52,6 +103,8 @@ jobs:
           path: |
             .research-cache/tika-built/build-receipt.json
             output/evals/tika-pdf/
+            .research-cache/tika-worker-qualification.json
+            output/evals/tika-application/
           include-hidden-files: true
           if-no-files-found: ignore
       - name: Verify tracked sources unchanged

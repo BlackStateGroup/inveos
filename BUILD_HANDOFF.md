@@ -14,6 +14,14 @@ This section is authoritative; older checkpoints below are retained historical r
 
 Next: integrate narrow reproduced fixes, execute actual restore and focused new-feature acceptance, add missing browser/worker/offline/renderer cases, open draft combined PR and run hosted acceptance, review/fix, then merge only validated work and verify resulting main. Keep remaining product scope explicit: browser Field is not native iOS/Android; cited rules are not semantic AI; live OSINT providers remain disabled; runtime/source/licence and production provider/KMS/WORM/recovery/independent approval gates remain unmet.
 
+## Latest acceptance follow-through
+
+At `8d58c956`, the second complete local Node run executed **544 definitions: 490 passed, 2 failed, 52 browser checks explicitly skipped**, zero cancellations (236s; `/tmp/inveos-platform-api-second.log`). The copied invoice verifier used the process working directory rather than the test module location; root now resolves its source with `import.meta.url`. The PDF role fixture lacked case membership, so the new scoped preflight correctly returned404; root now tests both unassigned404 and assigned-investigator403. Both focused regressions pass. These are not counted as a passing combined run.
+
+Source-family acceptance `040439ea` is integrated at `382b8dd5`: bounded Tika read budgets preserve the256KiB encrypted intake cap, actual research/API/Field provenance and independent verifier/render receipts are in docs146. Its actual application-worker definition is wired into the existing qualified Tika job with real restricted PostgreSQL, Node22, locked runtime acquisition and fresh isolation qualification. Native execution remains pending; synthetic Tika contracts are not parser benchmarks.
+
+Hosted Checks41080560270 at4216ad12 exposed budget/task-batch lock-wait assertions, Field vault creation failure and the360-second aggregate deadline. Root extends only the aggregate to600seconds (job20minutes), preserving individual deadlines; the growing serial suite was still progressing when terminated. Independent review is active: @thread:thr_2fsytqdbkm reviews agency/portal/composition and the race failures (docs150); @thread:thr_gzfv5czq7n reviews Field/quarantine/root controls (docs149); @thread:thr_d5kgavmfyc reviews Field browser/vault integration (docs151). Root owns actual hosted runs and CI fixes. No main merge or production readiness claim forPR117.
+
 ## Earlier checkpoints — historical only
 
 ## Current build checkpoint — dispatch integrated; acceptance definitions unrun

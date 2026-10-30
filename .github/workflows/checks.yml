@@ -16,7 +16,7 @@ concurrency:
 jobs:
   synthetic-application:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:15
@@ -72,7 +72,7 @@ jobs:
         # the root test:api command requires a developer's private .env file.
         # The growing serial suite includes actual database and browser journeys.
         # Individual worker/browser deadlines remain unchanged.
-        run: timeout 360s npm test --workspace @inveos/api
+        run: timeout 600s npm test --workspace @inveos/api
       - name: Exercise actual recipient evidence upload and privacy in the browser
         run: timeout 180s node --import tsx --test apps/api/test/workflow-browser.integration.ts
       - name: Exercise development effect replay in the actual browser

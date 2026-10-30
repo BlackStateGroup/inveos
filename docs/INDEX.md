@@ -282,3 +282,6 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 - [143 — Recipient evidence requests](143_PORTAL_EVIDENCE_REQUESTS.md): independently published requests and quarantined original intake, integrated with mandatory case handling.
 - [144 — Tika frozen report lineage](144_TIKA_REPORT_LINEAGE.md): explicit typed findings, provenance packages, redaction and copied verification; acceptance in progress.
 - [145 — Restored-case quarantine](145_RESTORED_CASE_QUARANTINE.md): scoped non-production recovery, bounded retirement and fresh-authority/handling gates; actual restore acceptance pending.
+
+- [146 — Source-family acceptance and exact rendering evidence](146_SOURCE_FAMILY_ACCEPTANCE.md)
+- [147 — Workflow acceptance and remaining browser gates](147_WORKFLOW_ACCEPTANCE.md)
