@@ -200,3 +200,4 @@
 - [98 — Versioned larger-input OCR and page rendering](98_EXPANDED_DOCUMENT_PROFILES.md)
 
 - [99 — Locked Debian archives for the OCR research runtime](99_OCR_PACKAGE_ARCHIVES.md)
+- [100 — Versioned case time budgets](100_CASE_TIME_BUDGETS.md)

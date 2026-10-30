@@ -1,0 +1,22 @@
+{
+  "format": "inveos.case_budget_evaluation.v1",
+  "fixture": "fictional_only",
+  "head": "6363ac24648fe42a2d4cf1ab04b80f69d7ef192c",
+  "checks": {
+    "run": 40983303544,
+    "job": 123828284953,
+    "node": 351,
+    "python": 125,
+    "failures": 0,
+    "skips": 0,
+    "browserJourneys": 31
+  },
+  "render": {
+    "path": "assets/case-budget-desktop.png",
+    "sha256": "385fa0aab221fde8e54caea63e2473664ae98eca1b697ff2e18d06154f0b6c52",
+    "artifact": 12945517823,
+    "artifactZipSha256": "432bbd2449a276510761d5aaf9b80000652bf6a56113bbf3f7e9fd128549d064",
+    "reviewed": true
+  },
+  "remaining": "Final strict input fix and integration with validated #93 require fresh hosted checks. Native devices, financial approval and production qualification are not claimed."
+}

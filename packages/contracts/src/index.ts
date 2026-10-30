@@ -199,6 +199,8 @@ export type CaseAccessEvent={id:string;version:number;action:CaseAccessAction|'c
 export type PreservationHoldFields={label:string;authorityReference:string;purpose:string;reason:string};
 export type PreservationHold=PreservationHoldFields&{id:string;version:number;status:'active'|'released';action:'declared'|'amended'|'released';source:{id:string;sha256:string;filename:string;authorityVersion:number}|null;createdBy:string;createdAt:string;actorId:string;actorName:string;recordedAt:string};
 export type CaseTimeFields={startedAt:string;minutes:number;description:string;billable:boolean};
+export type CaseBudgetVersion={id:string;version:number;action:'allocated'|'revised'|'withdrawn';minutes:number;reason:string;actorId:string;actorName:string;recordedAt:string};
+export type CaseBudgetSnapshot={caseId:string;current:CaseBudgetVersion|null;usage:{entries:number;minutes:number;markedChargeableMinutes:number};remainingMinutes:number|null;observedAt:string;interpretation:'declared_time_planning_only'};
 export type CaseTimeEntry=CaseTimeFields&{id:string;version:number;startedAtUtc:string;status:'active'|'withdrawn';action:'recorded'|'corrected'|'withdrawn';reason:string;authorId:string;author:string;createdAt:string;actorId:string;actorName:string;recordedAt:string;canCorrect:boolean};
 
 export type AttentionPreferences={version:number;deadlines:boolean;failures:boolean;reviews:boolean;recordedAt:string|null};
