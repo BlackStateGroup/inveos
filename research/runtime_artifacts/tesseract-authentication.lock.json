@@ -1,0 +1,129 @@
+{
+  "format": "inveos.ocr_archive_authentication.v1",
+  "binaryArchiveLockSha256": "6d834f36b61e7adbb37961403b2b6de0bde2de3c844b7db6be145fa3e0e50197",
+  "sourceArchiveLockSha256": "3626ab89c4f33e2b4100b84a5739bc8959b8ae1a78d3a98294d411245539c8d0",
+  "snapshot": "20261028T000000Z",
+  "trustBasis": "Public keys and fingerprints pinned from Debian FTP publication over HTTPS; independent operational trust and distribution approval remain open.",
+  "approval": "research_only_no_distribution_or_licence_approval",
+  "keys": [
+    {
+      "name": "archive-key-11-security",
+      "url": "https://ftp-master.debian.org/keys/archive-key-11-security.asc",
+      "primaryFingerprint": "AC530D520F2F3269F5E98313A48449044AAD5C5D",
+      "bytes": 11873,
+      "sha256": "716e79393c724d14ecba8be46e99ecbe1b689f67ceff3cb3cab28f6e69e8b8b8"
+    },
+    {
+      "name": "archive-key-12",
+      "url": "https://ftp-master.debian.org/keys/archive-key-12.asc",
+      "primaryFingerprint": "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8",
+      "bytes": 11861,
+      "sha256": "c2a9a16fde95e037bafd0fa6b7e31f41b4ff1e85851de5558f19a2a2f0e955e2"
+    },
+    {
+      "name": "archive-key-12-security",
+      "url": "https://ftp-master.debian.org/keys/archive-key-12-security.asc",
+      "primaryFingerprint": "05AB90340C0C5E797F44A8C8254CF3B5AEC0A8F0",
+      "bytes": 11873,
+      "sha256": "74f81645b4e3156d1e9a88c8dd9259271b89c7099d64af89a2a6996b592faa1f"
+    },
+    {
+      "name": "archive-key-13",
+      "url": "https://ftp-master.debian.org/keys/archive-key-13.asc",
+      "primaryFingerprint": "04B54C3CDCA79751B16BC6B5225629DF75B188BD",
+      "bytes": 11861,
+      "sha256": "6f1d277429dd7ffedcc6f8688a7ad9a458859b1139ffa026d1eeaadcbffb0da7"
+    },
+    {
+      "name": "release-12",
+      "url": "https://ftp-master.debian.org/keys/release-12.asc",
+      "primaryFingerprint": "4D64FEC119C2029067D6E791F8D2585B8783D481",
+      "bytes": 461,
+      "sha256": "521e9f6a9f9b92ee8d5ce74345e8cfd04028dae9db6f571259d584b293549824"
+    }
+  ],
+  "releases": [
+    {
+      "suite": "bookworm",
+      "archive": "debian",
+      "inRelease": {
+        "snapshotSha1": "736a99b8b096598d48c438eb356bd074fecfbf23",
+        "bytes": 151075,
+        "sha256": "77737fa4b34f2693e982cc9ee35736816c35a7778fc2d326cc1bbf5b301fe1aa"
+      },
+      "primarySigners": [
+        "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8",
+        "04B54C3CDCA79751B16BC6B5225629DF75B188BD",
+        "4D64FEC119C2029067D6E791F8D2585B8783D481"
+      ],
+      "indexes": [
+        {
+          "path": "main/binary-amd64/Packages.xz",
+          "snapshotSha1": "efe5b90ec48b9c017922c5aa4996807d0f044064",
+          "bytes": 8790396,
+          "sha256": "9e0b5aabb2465b3d2e7a7fe27f9913846277833f7a2826e7767acccff5b588c5"
+        },
+        {
+          "path": "main/source/Sources.xz",
+          "snapshotSha1": "b5d2189a5f7dd344fab97d8e372bbb852c7644b9",
+          "bytes": 9491888,
+          "sha256": "92d11a035571df011f06f28c61cb9825130ef1d92abb2f2e0525e8674dc44af8"
+        }
+      ]
+    },
+    {
+      "suite": "bookworm-updates",
+      "archive": "debian",
+      "inRelease": {
+        "snapshotSha1": "df0ac14320b27b9bf4bdbc4c60ee5b24977e2c96",
+        "bytes": 55403,
+        "sha256": "0cba94cecd653bd3bbb910e593d3e6991553fbab00ae3ac5a8b7356c567b6613"
+      },
+      "primarySigners": [
+        "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8",
+        "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+      ],
+      "indexes": [
+        {
+          "path": "main/binary-amd64/Packages.xz",
+          "snapshotSha1": "c6196a06b4270d1020fdf3d05f3c2ceba459d75d",
+          "bytes": 6924,
+          "sha256": "87e7e94047fb7fb6f4ceecc7022d4bee55b66031cc2a7666d3196f3e0aabb846"
+        },
+        {
+          "path": "main/source/Sources.xz",
+          "snapshotSha1": "9cf6e6d0b069070874c4cfc0e6c93d1ffcffcc62",
+          "bytes": 3288,
+          "sha256": "45fcd5257b7ad716ef3b674305dd678ad2d6e6198a0dd7a8f45bb0e8d3f3a7f3"
+        }
+      ]
+    },
+    {
+      "suite": "bookworm-security",
+      "archive": "debian-security",
+      "inRelease": {
+        "snapshotSha1": "2027b2861001320c2de185b0315f23c292d7ac3f",
+        "bytes": 34770,
+        "sha256": "6ca56d4ff02224bc5c7dd1dadae095f5519eed31962f1efbba763f201dc3edba"
+      },
+      "primarySigners": [
+        "AC530D520F2F3269F5E98313A48449044AAD5C5D",
+        "05AB90340C0C5E797F44A8C8254CF3B5AEC0A8F0"
+      ],
+      "indexes": [
+        {
+          "path": "main/binary-amd64/Packages.xz",
+          "snapshotSha1": "0eb616238dc1dd72822a54216b166f27a263bdb5",
+          "bytes": 358064,
+          "sha256": "2ecb90691d36e5c8e3314c99f10432eacf63ef4b8f97d6a0be4a54448b5bc320"
+        },
+        {
+          "path": "main/source/Sources.xz",
+          "snapshotSha1": "a8ca6af872906c30b63b9c5b76a9f99a4c64192e",
+          "bytes": 279760,
+          "sha256": "658603e83a855fa8ae82f479e8ff0d7fb8fd5dd5edd30d2bdeb87c599532086d"
+        }
+      ]
+    }
+  ]
+}
