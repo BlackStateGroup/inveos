@@ -1,0 +1,62 @@
+name: Pinned Whisper speech research
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/whisper-research.yml'
+      - 'research/whisper/**'
+      - 'research/runtime_artifacts/whisper-research-inputs.json'
+      - 'tools/whisper_research_inputs.py'
+      - 'tools/build_whisper_research.py'
+      - 'tools/experiment_whisper.py'
+      - 'tools/speech_fixture.py'
+      - 'tools/probe_worker_isolation.py'
+      - 'tools/bounded_process.py'
+      - 'tests/test_whisper_research.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-whisper:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Acquire exact catalogue source without executing it
+        run: |
+          df -h .
+          python3 tools/mine_sources.py --fetch ggml-org/whisper.cpp
+      - name: Acquire model compiler and terms using exact byte locks
+        run: python3 -m tools.whisper_research_inputs --fetch --output .research-cache/whisper-inputs/cold-receipt.json
+      - name: Verify the same input receipt offline and check fictional audio
+        run: |
+          python3 -m tools.whisper_research_inputs --output .research-cache/whisper-inputs/offline-receipt.json
+          cmp .research-cache/whisper-inputs/cold-receipt.json .research-cache/whisper-inputs/offline-receipt.json
+          python3 -m tools.speech_fixture
+      - name: Pull exact amd64 research compiler base
+        run: docker pull python@sha256:77c90594edb5d6a43ed73de1c73b5f9d795bc94fa76d438fba4cc00036100014
+      - name: Qualify isolation and compile twice without network or executable scratch
+        run: python3 -m tools.build_whisper_research
+      - name: Run actual CPU inference repetitions and malformed-input cancellation checks
+        run: python3 -m tools.experiment_whisper
+      - name: Keep receipts and fictional recognised output without model or upstream binaries
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: whisper-speech-research
+          path: |
+            .research-cache/whisper-inputs/*receipt.json
+            .research-cache/whisper-built/build-receipt.json
+            output/evals/whisper/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Verify tracked sources unchanged
+        run: git diff --exit-code
