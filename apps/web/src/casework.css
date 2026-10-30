@@ -78,3 +78,6 @@
 .work-discussion ol { padding-left: 24px; }
 .work-discussion li { margin-block: 14px; }
 .work-discussion form > fieldset > button { margin: 8px 8px 0 0; }
+
+.task-selection { margin: 0 0 12px; font-size: 12px; }
+.task-selection input { width: 16px; height: 16px; accent-color: var(--accent); }

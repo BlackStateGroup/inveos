@@ -201,3 +201,5 @@
 
 - [99 — Locked Debian archives for the OCR research runtime](99_OCR_PACKAGE_ARCHIVES.md)
 - [100 — Versioned case time budgets](100_CASE_TIME_BUDGETS.md)
+
+- [101 — Case-scoped bulk task status changes](101_BULK_TASK_STATUS.md)

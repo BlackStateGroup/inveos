@@ -18,5 +18,17 @@
     "artifactZipSha256": "432bbd2449a276510761d5aaf9b80000652bf6a56113bbf3f7e9fd128549d064",
     "reviewed": true
   },
-  "remaining": "Final strict input fix and integration with validated #93 require fresh hosted checks. Native devices, financial approval and production qualification are not claimed."
+  "remaining": "Native devices, financial approval and production identity/storage qualification remain open. Resulting main run 40984928414 is pending.",
+  "finalVerification": {
+    "head": "7ed0ad9245aa9b38fdb323b184c383fd0581b456",
+    "merge": "476c883bff82ac172393554631512d4778624882",
+    "checks": 40984269475,
+    "job": 123831617712,
+    "node": 351,
+    "python": 136,
+    "failures": 0,
+    "skips": 0,
+    "browsers": 31,
+    "strictTypesAndMerged93": true
+  }
 }
