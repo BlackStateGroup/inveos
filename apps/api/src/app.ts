@@ -2,6 +2,7 @@ import {registerVerificationKit} from './verification-kit.js';
 import {registerCaseHandling,caseSharingEligibility,caseSharingState,assertCaseSharing} from './case-handling.js';
 import {reportFieldProvenance} from './field-provenance.js';
 import {registerCaseAnalysis} from './case-analysis.js';
+import {registerPortalEvidenceRequests,type RestrictedIntakePermit} from './portal-evidence-requests.js';
 import {registerTaskTemplates} from './task-templates.js';
 import {registerRestrictedWork} from './restricted-work.js';
 import {registerReportCompositions} from './report-compositions.js';
@@ -1054,8 +1055,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string,field?:FieldManifest,recoveryId?:string) {
-        rejectClientRole(actor);
+  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string,field?:FieldManifest,recoveryId?:string,restricted?:RestrictedIntakePermit) {
+        if(restricted){if(actor.role!=='client'||!binary||!uploadId||field||recoveryId)throw new ApiError(403,'Invalid restricted original intake.');}else rejectClientRole(actor);
         const originalKind = binary ? 'opaque_binary' : 'original_utf8';
         if (!validFilename(input.filename, binary)) {
           throw new ApiError(422, binary ? 'Evidence filename must be safe.' : 'Evidence filename must be a safe .txt filename.');
@@ -1086,7 +1087,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
               [`${actor.tenantId}:${caseId}:${actor.userId}:${input.idempotencyKey}`],
             );
-            const kase = await findCase(client, actor, caseId, true);
+            const kase = restricted?await restricted.authorize(client):await findCase(client, actor, caseId, true);
             const prior = await client.query<EvidenceRow>(
               `SELECT * FROM evidence
                 WHERE tenant_id = $1 AND case_id = $2 AND created_by = $3 AND idempotency_key = $4`,
@@ -1103,6 +1104,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               if(field&&(!capture||capture.manifest_sha256.trim()!==fieldManifestHash(field)))throw new ApiError(409,'Frozen field receipt does not match this original.');
               const accepted=field?(await client.query('SELECT acceptance FROM field_sync_receipts WHERE tenant_id=$1 AND case_id=$2 AND capture_id=$3',[actor.tenantId,caseId,field.id])).rows[0]?.acceptance:undefined;
               if(field){if((accepted?.recoveryId??null)!==(recoveryId??null))throw new ApiError(409,'Recover the existing receipt for this capture instead of changing its acceptance.');await activeDevice(client,actor,accepted?.authority?.deviceId??field.deviceId,accepted?.authority?.deviceVersion??field.sync?.deviceVersion??1);}
+              if(restricted)await restricted.record(client,prior.rows[0].id);
               return {row: prior.rows[0], bytes: existingBytes,capture,accepted};
             }
             if(uploadId){
@@ -1173,6 +1175,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               await client.query('DELETE FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3',keys);
               await writeAudit(client,actor,caseId,'upload.completed','upload',uploadId,'Upload verified and attached as quarantined original');
             }
+            if(restricted)await restricted.record(client,row.id);
             let capture:QueryResultRow|undefined;
             if(field){
               capture=(await client.query('INSERT INTO field_captures(tenant_id,case_id,id,user_id,device_id,evidence_id,authority_id,authority_version,manifest,manifest_sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *',[actor.tenantId,caseId,field.id,actor.userId,field.deviceId,evidenceId,field.authorityId,field.authorityVersion,JSON.stringify(field),fieldManifestHash(field)])).rows[0];
@@ -1206,6 +1209,12 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const acceptance=(await client.query('SELECT acceptance FROM field_sync_receipts WHERE tenant_id=$1 AND case_id=$2 AND capture_id=$3',[actor.tenantId,caseId,captureId])).rows[0]?.acceptance;
       return {capture:fieldReceipt(capture),evidence,...(acceptance?{acceptance}:{})};
     }});
+  registerPortalEvidenceRequests(app,{pool:options.pool,authenticate,csrf:requireSessionCsrf,findCase,assertSession:assertCurrentSession,
+    assertSharing:assertCaseSharing,
+    audit:writeAudit,validFilename,validSourceTime,
+    receive:async(actor,caseId,input,uploadId,permit)=>{await receiveEvidence(actor,caseId,input,true,uploadId,undefined,undefined,permit);},
+    verifyOriginal:async(c,tenantId,caseId,id)=>{const row=(await c.query<EvidenceRow>('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[tenantId,caseId,id])).rows[0];if(!row)notFound();await verifiedBytes(options.storageRoot,row);},
+  });
   registerUploads(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validFilename,validSourceTime,
     receive:async(actor,caseId,input,uploadId)=>await receiveEvidence(actor,caseId,input,true,uploadId) as Evidence,
     receipt:(actor,caseId,id)=>inTransaction(options.pool,async c=>{const row=await findEvidence(c,actor,caseId,id);return evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));})});

@@ -324,3 +324,4 @@ export * from './field-sessions.js';
 export type {CollaboratorInstructions,CollaboratorPublication,CollaboratorSubmission,CollaboratorResult,ExternalWork,CollaboratorDraft,InternalCollaboratorWork} from './collaborator-work.js';
 export type {TemplateEntryKind,TaskTemplateEntry,TaskTemplateFields,TaskTemplatePayload,TaskTemplateReview,TaskTemplateSummary,TaskTemplateRevision,TemplateChoice,TaskTemplatePreviewPayload,TaskTemplatePreview,TaskTemplateApplication} from './task-templates.js';
 export * from './field-dispatch.js';
+export type {EvidenceRequestContent,EvidenceRequestPublication,EvidenceRequestResponse,SuppliedFileDeclaration,SuppliedFileReceipt,PortalEvidenceRequest,PortalUpload,EvidenceRequestDraft,InternalEvidenceRequest,EvidenceRequestSummary} from './portal-evidence-requests.js';

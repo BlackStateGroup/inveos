@@ -17,6 +17,16 @@ const uuid={type:'string',pattern:'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-8][a-fA-F0-
 const caseParams={type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}};
 const params={type:'object',required:['caseId','uploadId'],additionalProperties:false,properties:{caseId:uuid,uploadId:uuid}};
 const empty={type:'object',additionalProperties:false,maxProperties:0};
+// Shared exact-range/canonical encoding primitives; callers retain their own access fences.
+export function decodeUploadChunk(byteLength:number,ordinal:number,encoded:string){
+ const bytes=Buffer.from(encoded,'base64'),length=Math.min(32768,byteLength-ordinal*32768);
+ if(!Number.isInteger(ordinal)||ordinal<0||ordinal>7||length<1||bytes.length!==length||bytes.toString('base64')!==encoded)throw new ApiError(422,'Chunk must match its exact reserved range and canonical encoding.');
+ return bytes;
+}
+export function assembleUploadChunks(byteLength:number,rows:Array<{ordinal:number;bytes:Buffer}>){
+ if(rows.length!==Math.ceil(byteLength/32768)||rows.some((r,i)=>r.ordinal!==i||r.bytes.length!==Math.min(32768,byteLength-i*32768)))throw new ApiError(409,'Upload has missing chunks.');
+ return Buffer.concat(rows.map(r=>r.bytes)).toString('base64');
+}
 export function registerUploads(app:FastifyInstance,s:Services){
  registerDesktopIntake(app,s);
  const base='/api/cases/:caseId/uploads';
@@ -135,17 +145,14 @@ export function registerUploads(app:FastifyInstance,s:Services){
     if(row.status!=='open'||!row.live||!collectionOpen(kase)||kase.authority_version!==row.authority_version)throw new ApiError(409,'Upload is closed, expired or authority changed.');
    }
    if(action==='chunk'){
-    const input=request.body as {ordinal:number;contentBase64:string},bytes=Buffer.from(input.contentBase64,'base64');
-    const length=Math.min(32768,row.byte_length-input.ordinal*32768);
-    if(length<1||bytes.length!==length||bytes.toString('base64')!==input.contentBase64)throw new ApiError(422,'Chunk must match its exact reserved range and canonical encoding.');
+    const input=request.body as {ordinal:number;contentBase64:string},bytes=decodeUploadChunk(row.byte_length,input.ordinal,input.contentBase64);
     const old=await c.query('SELECT bytes FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3 AND ordinal=$4',[...keys,input.ordinal]);
     if(old.rows[0]&&!old.rows[0].bytes.equals(bytes))throw new ApiError(409,'Chunk already received with different bytes.');
     if(!old.rows[0]){await c.query('INSERT INTO upload_chunks VALUES($1,$2,$3,$4,$5)',[...keys,input.ordinal,bytes]);await s.audit(c,actor,caseId,'upload.chunk_received','upload',uploadId,`Chunk ${input.ordinal} received`);}
    }
    const chunks=await c.query('SELECT ordinal,bytes FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3 ORDER BY ordinal',keys);
    if(action==='complete'&&row.status!=='completed'){
-    if(chunks.rows.length!==Math.ceil(row.byte_length/32768)||chunks.rows.some((r,i)=>r.ordinal!==i))throw new ApiError(409,'Upload has missing chunks.');
-    return {input:{...row.metadata,idempotencyKey:row.id,contentBase64:Buffer.concat(chunks.rows.map(r=>r.bytes)).toString('base64')} as BinaryEvidenceInput};
+    return {input:{...row.metadata,idempotencyKey:row.id,contentBase64:assembleUploadChunks(row.byte_length,chunks.rows as Array<{ordinal:number;bytes:Buffer}>)} as BinaryEvidenceInput};
    }
    return {receipt:dto(row),evidenceId:row.evidence_id as string|null,received:chunks.rows.map(r=>r.ordinal as number)};
   });
