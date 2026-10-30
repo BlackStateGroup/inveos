@@ -1,3 +1,4 @@
+import type {TikaReportFinding} from './tika.js';
 export * from './case-handling.js';
 export * from './processing-batches.js';
 import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance,FieldProvenance} from './field-sync.js';
@@ -142,6 +143,7 @@ export type ReportDraft = {
   status: 'draft_not_released';
   fieldProvenance?:FieldProvenance[];
   documentFindings?: DocumentReportFinding[];
+  tikaFindings?: TikaReportFinding[];
   transcriptFindings?: TranscriptReportFinding[];
   speechFindings?: SpeechReportFinding[];
   sourceUse?: SourceUseProof[];
@@ -310,7 +312,7 @@ export type DesktopIntakeBatch={id:string;caseId:string;createdAt:string;authori
 export type {FeedbackRelease,FeedbackState,FeedbackRequestRevision,FeedbackRequest,FeedbackResponseRevision,FeedbackPublication,FeedbackDetail,FeedbackRequestPage} from './portal-feedback.js';
 
 /** Composition is authored report context and layout, never a new evidential finding. */
-export type CompositionFindingKind='text'|'document'|'transcript'|'speech';
+export type CompositionFindingKind='text'|'document'|'transcript'|'speech'|'tika';
 export type CompositionSelection={kind:CompositionFindingKind;id:string;sha256:string};
 export type ReportOutline={name:string;scope:string;method:string;limitations:string;sections:Array<{id:string;title:string;findings:CompositionSelection[]}>};
 export type CompositionPayload={format:'inveos_report_outline_v1';caseId:string;id:string;version:number;state:'active'|'withdrawn';outline:ReportOutline;reason:string};

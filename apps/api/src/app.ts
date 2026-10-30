@@ -652,7 +652,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
 
-  const {reportDocumentFindings,documentReportExhibits}=registerIntegrityJobs(app, {documentLab: options.documentLab, speechLab: options.speechLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
+  const {reportDocumentFindings,documentReportExhibits,reportTikaFindings,tikaReportExhibits}=registerIntegrityJobs(app, {documentLab: options.documentLab, speechLab: options.speechLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
@@ -1442,7 +1442,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     await client.query(`CLOSE ${name}`);
   }
 
-  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[],selectedTranscripts?:string[],selectedSpeech?:string[],omitContext=false): Promise<ReportDraft> {
+  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[],selectedTranscripts?:string[],selectedSpeech?:string[],omitContext=false,selectedTika:string[]|'available'=[]): Promise<ReportDraft> {
       await findCase(client,actor,caseId);
       const caseResult = await client.query<CaseRow>(
         `SELECT c.*, u.display_name AS owner_name
@@ -1567,7 +1567,12 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         if(report.findings.length+(report.documentFindings?.length??0)+(report.transcriptFindings?.length??0)+report.speechFindings.length>=REPORT_MAX_ITEMS)throw new ApiError(422,'Report finding limit exceeded.');
         budget.add(finding,0,report.speechFindings.length>0);report.speechFindings.push(finding);
       }
-      if (!report.findings.length&&!report.documentFindings?.length&&!report.transcriptFindings?.length&&!report.speechFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
+      for await(const finding of reportTikaFindings(client,actor,caseId,selectedTika)){
+        if(!report.tikaFindings){budget.add({tikaFindings:[]},0,true);report.tikaFindings=[];const note=' Tika page-text findings require the exact document report package and tools/verify_document_package.py (with verify_tika_report.py and verify_tika_context.py). Page-text offsets are not PDF byte offsets or geometry.';budget.add(note);report.limitations+=note;}
+        if(report.findings.length+(report.documentFindings?.length??0)+(report.transcriptFindings?.length??0)+(report.speechFindings?.length??0)+report.tikaFindings.length>=REPORT_MAX_ITEMS)throw new ApiError(422,'Report finding limit exceeded.');
+        budget.add(finding,0,report.tikaFindings.length>0);report.tikaFindings.push(finding);
+      }
+      if (!report.findings.length&&!report.documentFindings?.length&&!report.transcriptFindings?.length&&!report.speechFindings?.length&&!report.tikaFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
       const sourceUse=await reportSourceUse(client,actor.tenantId,caseId,report,'analysis');if(sourceUse.length){budget.add({sourceUse},0,true);report.sourceUse=sourceUse;}
       const fieldProvenance=await reportFieldProvenance(client,actor.tenantId,caseId,report);if(fieldProvenance.length){budget.add({fieldProvenance},0,true);report.fieldProvenance=fieldProvenance;}
       if(selectedFindings||omitContext)return report; // Verification inspects only the frozen finding set, not later working context.
@@ -1684,7 +1689,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const inserted=await client.query(`INSERT INTO report_revisions (tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest)
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);
       if(!inserted.rows[0]) throw Object.assign(new Error('Concurrent revision retry'),{code:'40001'});
-      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,...(report.composition?{compositionId:report.composition.payload.id,compositionVersion:report.composition.payload.version,compositionSha256:report.composition.sha256,compositionReviewId:report.composition.review.id}:{}),findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[],transcriptFindingIds:report.transcriptFindings?.map(f=>f.id)??[],speechFindingIds:report.speechFindings?.map(f=>f.id)??[]});
+      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,...(report.composition?{compositionId:report.composition.payload.id,compositionVersion:report.composition.payload.version,compositionSha256:report.composition.sha256,compositionReviewId:report.composition.review.id}:{}),findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[],transcriptFindingIds:report.transcriptFindings?.map(f=>f.id)??[],speechFindingIds:report.speechFindings?.map(f=>f.id)??[],tikaFindingIds:report.tikaFindings?.map(f=>f.id)??[]});
       return revisionReceipt(inserted.rows[0],caseId);
     });
   });
@@ -1701,16 +1706,17 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(expected!==revision.digest.trim())throw new ApiError(409,'Verification fingerprint does not match the frozen revision.');
       let frozen:ReportDraft;
       try{frozen=JSON.parse(revision.report_bytes.toString('utf8'));}catch{throw new ApiError(409,'Frozen report structure is invalid.');}
-      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||frozen.documentFindings!==undefined&&!Array.isArray(frozen.documentFindings)||frozen.transcriptFindings!==undefined&&!Array.isArray(frozen.transcriptFindings)||frozen.speechFindings!==undefined&&!Array.isArray(frozen.speechFindings))throw new ApiError(409,'Frozen report structure is invalid.');
+      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||frozen.documentFindings!==undefined&&!Array.isArray(frozen.documentFindings)||frozen.transcriptFindings!==undefined&&!Array.isArray(frozen.transcriptFindings)||frozen.speechFindings!==undefined&&!Array.isArray(frozen.speechFindings)||frozen.tikaFindings!==undefined&&!Array.isArray(frozen.tikaFindings))throw new ApiError(409,'Frozen report structure is invalid.');
       const ids=frozen.findings.map(f=>f?.id);
-      const documentIds=frozen.documentFindings?.map(f=>f?.id)??[],transcriptIds=frozen.transcriptFindings?.map(f=>f?.id)??[],speechIds=frozen.speechFindings?.map(f=>f?.id)??[],allIds=[...ids,...documentIds,...transcriptIds,...speechIds];
+      const documentIds=frozen.documentFindings?.map(f=>f?.id)??[],transcriptIds=frozen.transcriptFindings?.map(f=>f?.id)??[],speechIds=frozen.speechFindings?.map(f=>f?.id)??[],tikaIds=frozen.tikaFindings?.map(f=>f?.id)??[],allIds=[...ids,...documentIds,...transcriptIds,...speechIds,...tikaIds];
       if(!allIds.length||allIds.length>1000||allIds.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))||new Set(allIds).size!==allIds.length)throw new ApiError(409,'Frozen finding identities are invalid.');
-      const current=await buildReport(client,actor,caseId,ids,documentIds,transcriptIds,speechIds);
+      const current=await buildReport(client,actor,caseId,ids,documentIds,transcriptIds,speechIds,false,tikaIds);
       // Preserve the exact frozen claim/review/source/policy representation, including byte spans and embedded originals.
       if(JSON.stringify(current.findings)!==JSON.stringify(frozen.findings))throw new ApiError(409,'Frozen findings no longer match their current source records.');
       if(JSON.stringify(current.transcriptFindings??[])!==JSON.stringify(frozen.transcriptFindings??[]))throw new ApiError(409,'Frozen transcript findings no longer match their reviewed versions.');
       if(JSON.stringify(current.documentFindings??[])!==JSON.stringify(frozen.documentFindings??[]))throw new ApiError(409,'Frozen document findings no longer match their current source records.');
       if(JSON.stringify(current.speechFindings??[])!==JSON.stringify(frozen.speechFindings??[]))throw new ApiError(409,'Frozen speech findings no longer match their reviewed versions.');
+      if(JSON.stringify(current.tikaFindings??[])!==JSON.stringify(frozen.tikaFindings??[]))throw new ApiError(409,'Frozen Tika findings no longer match their current accepted interpretations.');
       if(frozen.fieldProvenance!==undefined&&JSON.stringify(current.fieldProvenance??[])!==JSON.stringify(frozen.fieldProvenance))throw new ApiError(409,'Frozen Field capture provenance no longer matches its recorded acceptance.');
       const permissions=use==='release'?await reportSourceUse(client,actor.tenantId,caseId,current,'release'):current.sourceUse??[];
       if(JSON.stringify(permissions)!==JSON.stringify(frozen.sourceUse??[]))throw new ApiError(409,'Frozen source-use decisions require a new report revision.');
@@ -1722,12 +1728,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const reportDigest=row.digest.trim();
       const {revision}=await verifyFrozenSources(client,actor,caseId,revisionId,expectedReportDigest??reportDigest);
       const report=JSON.parse(revision.report_bytes.toString('utf8')) as ReportDraft;
-      if(!report.documentFindings?.length)throw new ApiError(422,'A document package requires document-backed findings.');
-      const result={format:'inveos_document_report_package_v1',reportSha256:reportDigest,reportBase64:'',exhibits:[] as unknown[]};
+      if(!report.documentFindings?.length&&!report.tikaFindings?.length)throw new ApiError(422,'A document package requires document or Tika page-text findings.');
+      const result={format:report.tikaFindings?.length?'inveos_document_report_package_v2':'inveos_document_report_package_v1',reportSha256:reportDigest,reportBase64:'',exhibits:[] as unknown[],...(report.tikaFindings?.length?{tikaExhibits:[] as unknown[]}:{})};
       const budget=new ReportBudget(64*1024*1024);budget.add(result,4*Math.ceil(revision.report_bytes.length/3));result.reportBase64=revision.report_bytes.toString('base64');
-      for await(const exhibit of documentReportExhibits(client,actor,caseId,report.documentFindings)){budget.add(exhibit,0,result.exhibits.length>0);result.exhibits.push(exhibit);}
+      for await(const exhibit of documentReportExhibits(client,actor,caseId,report.documentFindings??[])){budget.add(exhibit,0,result.exhibits.length>0);result.exhibits.push(exhibit);}
+      if(result.tikaExhibits)for await(const exhibit of tikaReportExhibits(client,actor,caseId,report.tikaFindings??[])){budget.add(exhibit,0,result.tikaExhibits.length>0);result.tikaExhibits.push(exhibit);}
       const encoded=Buffer.from(JSON.stringify(result));if(encoded.length>64*1024*1024)throw new ApiError(422,'Document package byte limit exceeded.');
-      return {bytes:encoded,reportDigest,packageDigest:createHash('sha256').update(encoded).digest('hex'),documentFindings:result.exhibits.length};
+      return {bytes:encoded,reportDigest,packageDigest:createHash('sha256').update(encoded).digest('hex'),documentFindings:result.exhibits.length+(result.tikaExhibits?.length??0)};
   }
   app.get('/api/cases/:caseId/report-revisions/:revisionId/document-package',{preHandler:authenticate,schema:{params:reviewParams}},async(request,reply)=>{
     const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};
@@ -1786,8 +1793,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   app.get('/api/cases/:caseId/report-revisions/:revisionId/redaction-candidates',{preHandler:authenticate,schema:{params:reviewParams,querystring:{type:'object',additionalProperties:false,properties:{offset:{type:'integer',minimum:0,maximum:1000,default:0}}}}},async(request,reply)=>{
     const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string},{offset=0}=request.query as {offset?:number};
     const page=await editableTransaction(actor,caseId,async client=>{const row=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];if(!row)notFound();checkRevision(row);const report=JSON.parse(row.report_bytes.toString('utf8')) as ReportDraft;await reportSourceUse(client,actor.tenantId,caseId,report,'analysis');
-      const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[]),...(report.speechFindings??[])];if(all.length>1000)throw new ApiError(422,'Frozen finding limit exceeded.');
-      const items=all.slice(offset,offset+25).map((finding,index)=>{const transcript='kind' in finding&&finding.kind==='reviewed_transcript',source='kind' in finding&&finding.kind==='reviewed_transcript'?finding.claim.source:finding.source;return {id:finding.id,number:offset+index+1,kind:'kind' in finding&&finding.kind==='reviewed_speech'?'speech':transcript?'transcript':'kind' in finding&&finding.kind==='derived_document'?'document':'text',text:finding.text,source:{id:source.id,filename:source.filename,sha256:source.sha256},reviewerId:finding.reviewer,reviewedAt:finding.reviewedAt};});
+      const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[]),...(report.speechFindings??[]),...(report.tikaFindings??[])];if(all.length>1000)throw new ApiError(422,'Frozen finding limit exceeded.');
+      const items=all.slice(offset,offset+25).map((finding,index)=>{const transcript='kind' in finding&&finding.kind==='reviewed_transcript',source='kind' in finding&&finding.kind==='reviewed_transcript'?finding.claim.source:finding.source;return {id:finding.id,number:offset+index+1,kind:'kind' in finding&&finding.kind==='reviewed_tika_page_text'?'tika':'kind' in finding&&finding.kind==='reviewed_speech'?'speech':transcript?'transcript':'kind' in finding&&finding.kind==='derived_document'?'document':'text',text:finding.text,source:{id:source.id,filename:source.filename,sha256:source.sha256},reviewerId:finding.reviewer,reviewedAt:finding.reviewedAt};});
       await writeAudit(client,actor,caseId,'report.redaction_candidates_inspected','report_revision',revisionId,'Frozen finding identities inspected for whole-finding omission',{sourceReportDigest:row.digest.trim(),offset,count:items.length});return {caseId,revisionId,sourceReportSha256:row.digest.trim(),total:all.length,items,nextOffset:offset+25<all.length?offset+25:null};
     });return reply.header('Cache-Control','no-store').send(page);
   });
@@ -1932,7 +1939,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const rejected=await client.query("SELECT 1 FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND decision='request_changes' LIMIT 1",[actor.tenantId,caseId,revisionId]);
       if(rejected.rowCount||!reviews.rows.some(r=>r.decision==='accept_internal'))throw new ApiError(409,'Current independent acceptance and no change requests required.');
       const verified=await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256,'release');
-      const documentFindings=(JSON.parse(verified.revision.report_bytes.toString('utf8')) as ReportDraft).documentFindings;
+      const packageReport=JSON.parse(verified.revision.report_bytes.toString('utf8')) as ReportDraft;
+      const documentFindings=[...(packageReport.documentFindings??[]),...(packageReport.tikaFindings??[])];
       let documentPackage:Awaited<ReturnType<typeof buildDocumentPackage>>|undefined;
       if(documentFindings?.length){
         if(!input.documentPackageSha256||input.confirmDocumentPackageVerified!==true)throw new ApiError(409,'Verify and confirm the exact document package before disclosure.');

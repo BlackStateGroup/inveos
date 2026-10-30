@@ -3,7 +3,7 @@ import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient,QueryResultRow} from 'pg';
 import type {Actor} from './app.js';
 import type {OriginalStore} from './original-encryption.js';
-import type {TikaSelection,TikaCitationEntry,TikaReview,TikaClaim,TikaDecision,TikaInspection} from '@inveos/contracts';
+import type {TikaSelection,TikaCitationEntry,TikaReview,TikaClaim,TikaDecision,TikaInspection,TikaReportFinding,TikaWithdrawal} from '@inveos/contracts';
 import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
 import {sourceUseProofs} from './source-use.js';
@@ -11,7 +11,7 @@ import {readOriginalBounded} from './storage.js';
 import {sha256} from './text-derivative.js';
 import {transcriptHash} from './transcript-findings.js';
 import {tikaKind,tikaProfile,tikaProfileDigest,makeTikaDerivative} from './tika-derivative.js';
-import {makeTikaEntry,makeTikaReview,makeTikaClaim,makeTikaDecision} from './tika-review.js';
+import {makeTikaEntry,makeTikaReview,makeTikaClaim,makeTikaDecision,tikaSeal} from './tika-review.js';
 type Services={pool:Pool;storageRoot:OriginalStore;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,type:string,id:string,summary:string)=>Promise<void>};
 const uuid={type:'string',pattern:'^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'},digest={type:'string',pattern:'^[a-f0-9]{64}$'},reason={type:'string',minLength:10,maxLength:3000};
 const object=(properties:Record<string,unknown>)=>({type:'object',additionalProperties:false,required:Object.keys(properties),properties});
@@ -56,6 +56,8 @@ export function registerTikaJobs(app:FastifyInstance,s:Services){
   const allClaims=(await c.query('SELECT * FROM tika_claims WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 ORDER BY citation_id,id LIMIT 251',scope)).rows;
   const allDecisions=(await c.query('SELECT * FROM tika_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 ORDER BY citation_id,claim_id LIMIT 251',scope)).rows;
   if(allReviews.length>500||allClaims.length>250||allDecisions.length>250)throw new ApiError(409,'Tika review history bound exceeded.');
+  const withdrawals=(await c.query('SELECT * FROM tika_claim_withdrawals WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 LIMIT 251',scope)).rows;
+  if(withdrawals.length>250)throw new ApiError(409,'Tika withdrawal history bound exceeded.');
   try{return citations.map(stored=>{
    const v=stored.record as TikaCitationEntry,entry=makeTikaEntry(output,stored.id,stored.selection,stored.created_by,v.authorName,iso(stored.created_at));same(v,entry,stored);
    const reviews:TikaReview[]=[];
@@ -67,14 +69,16 @@ export function registerTikaJobs(app:FastifyInstance,s:Services){
     const claim=makeTikaClaim(entry,correspondence,v,row.author_id,v.authorName,v.recordedAt);if(claim.id!==row.id)throw new ApiError(409,'Tika claim identity differs.');same(v,claim,row);
     const saved=allDecisions.find(r=>r.citation_id===entry.id&&r.claim_id===claim.id);let decision:TikaDecision|null=null;
     if(saved){const v=saved.record as TikaDecision;decision=makeTikaDecision(claim,v,saved.reviewer_id,v.reviewerName,v.recordedAt);if(decision.id!==saved.id)throw new ApiError(409,'Tika decision identity differs.');same(v,decision,saved);}
-    return {claim,decision,eligible:decision?.accepted===true&&reviews.at(-1)?.decision==='accepted'&&reviews.at(-1)?.digest===claim.correspondenceDigest};
+    const withdrawn=withdrawals.find(r=>r.citation_id===entry.id&&r.claim_id===claim.id);let withdrawal:TikaWithdrawal|undefined;
+    if(withdrawn){const w=withdrawn.record as TikaWithdrawal;withdrawal=tikaSeal({id:withdrawn.id,claimId:claim.id,claimDigest:claim.digest,decisionDigest:decision?.digest??null,reason:w.reason,actorId:withdrawn.actor_id,actorName:w.actorName,recordedAt:w.recordedAt});same(w,withdrawal,withdrawn);if(w.reason.trim().length<10||w.reason.length>3000||/[\u0000-\u001f\u007f]/u.test(w.reason)||!Number.isFinite(Date.parse(w.recordedAt))||new Date(w.recordedAt)<new Date(decision?.recordedAt??claim.recordedAt))throw new ApiError(409,'Invalid Tika withdrawal.');}
+    return {claim,decision,...(withdrawal?{withdrawal}:{}),eligible:!withdrawal&&decision?.accepted===true&&reviews.at(-1)?.decision==='accepted'&&reviews.at(-1)?.digest===claim.correspondenceDigest};
    });if(claims.length>10)throw new ApiError(409,'Tika interpretation count exceeds bound.');return {entry,reviews,claims};
   });}catch(error){if(error instanceof ApiError)throw error;throw new ApiError(409,'Stored Tika human review history failed verification.');}
  }
  function view(loaded:Awaited<ReturnType<typeof load>>,citations:TikaInspection['citations'],a:Actor):TikaInspection{
   const {row,output,canChange}=loaded;return {jobId:row.job_id,caseId:row.case_id,evidenceId:row.evidence_id,source:{filename:row.filename,sha256:row.source_digest.trim(),sourceTime:row.source_time,receivedAt:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.source_authority_version},processedAt:iso(row.processed_at),profile:tikaProfile,profileDigest:tikaProfileDigest,rawDigest:output.rawDigest,derivativeDigest:output.digest,derivative:output.derivative,canReview:a.role==='reviewer',canChange,citations:citations.map(item=>({...item,claims:item.claims.map(v=>({...v,eligible:v.eligible&&canChange}))}))};
  }
- app.get(base,{preHandler:s.authenticate,schema:{params}},r=>tx(async c=>{const a=r.actor!,{caseId,jobId}=r.params as {caseId:string;jobId:string},loaded=await load(c,a,caseId,jobId),history=await histories(c,a,caseId,jobId,loaded.output);await s.audit(c,a,caseId,'tika.inspected','integrity_job',jobId,'Verified research PDF page text and human decision lineage inspected');return view(loaded,history,a);}));
+ app.get(base,{preHandler:s.authenticate,schema:{params}},r=>tx(async c=>{const a=r.actor!,{caseId,jobId}=r.params as {caseId:string;jobId:string},loaded=await load(c,a,caseId,jobId),history=await histories(c,a,caseId,jobId,loaded.output);await s.audit(c,a,caseId,'tika.inspected','integrity_job',jobId,'Verified research PDF page text and human decision lineage inspected');const result=view(loaded,history,a);for(const item of result.citations)for(const claim of item.claims){const why=await ineligibility(c,a,caseId,loaded,item,claim);claim.reportEligible=!why;claim.reportIneligibility=why??'Eligible for explicit report selection; not automatically included.';}return result;}));
  app.post(base+'/citations/:citationId',{preHandler:s.requireCsrf,schema:{params:citationParams,body:selectionSchema}},r=>tx(async c=>{
   const a=r.actor!,{caseId,jobId,citationId}=r.params as {caseId:string;jobId:string;citationId:string},selection=r.body as TikaSelection,loaded=await load(c,a,caseId,jobId,true),scope=keys(a,caseId,jobId),hash=transcriptHash(selection);
   const old=(await c.query('SELECT * FROM tika_citations WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND id=$4',[...scope,citationId])).rows[0];if(old){if(old.created_by!==a.userId||old.request_hash.trim()!==hash)throw new ApiError(409,'Citation identity already used.');await histories(c,a,caseId,jobId,loaded.output);return old.record;}
@@ -99,6 +103,7 @@ export function registerTikaJobs(app:FastifyInstance,s:Services){
  app.post(base+'/citations/:citationId/claims/:claimId/decision',{preHandler:s.requireCsrf,schema:{params:claimParams,body:object({id:uuid,claimDigest:digest,accepted:{type:'boolean'},reason})}},r=>tx(async c=>{
   const a=r.actor!;if(a.role!=='reviewer')throw new ApiError(403,'Assigned independent reviewer required.');const {caseId,jobId,citationId,claimId}=r.params as {caseId:string;jobId:string;citationId:string;claimId:string},input=r.body as Pick<TikaDecision,'id'|'claimDigest'|'accepted'|'reason'>,loaded=await load(c,a,caseId,jobId,true),item=(await histories(c,a,caseId,jobId,loaded.output)).find(v=>v.entry.id===citationId),entry=item?.claims.find(v=>v.claim.id===claimId);if(!item||!entry)notFound();const scope=keys(a,caseId,jobId),hash=transcriptHash(input);
   const old=(await c.query('SELECT * FROM tika_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',[...scope,citationId,claimId])).rows[0];if(old){if(old.id!==input.id||old.reviewer_id!==a.userId||old.request_hash.trim()!==hash)throw new ApiError(409,'Interpretation already decided; retain history and propose a correction separately.');return old.record;}
+  if(entry.withdrawal)throw new ApiError(409,'Withdrawn interpretations cannot receive a new decision.');
   if(input.claimDigest!==entry.claim.digest||input.accepted&&(item.reviews.at(-1)?.decision!=='accepted'||item.reviews.at(-1)?.digest!==entry.claim.correspondenceDigest))throw new ApiError(409,'Claim or latest correspondence decision changed.');
   let decision;try{decision=makeTikaDecision(entry.claim,input,a.userId,a.displayName,iso((await c.query('SELECT clock_timestamp() at')).rows[0].at));}catch{throw new ApiError(422,'An independent interpretation decision and meaningful reason are required.');}
   await c.query('INSERT INTO tika_claim_decisions(tenant_id,case_id,job_id,citation_id,claim_id,id,record,digest,reviewer_id,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10)',[...scope,citationId,claimId,decision.id,JSON.stringify(decision),decision.digest,a.userId,hash]);await s.audit(c,a,caseId,'tika.interpretation_decided','tika_claim',claimId,'Independent interpretation decision retained; no automatic report or release');return decision;
@@ -108,4 +113,58 @@ export function registerTikaJobs(app:FastifyInstance,s:Services){
   const payload={format:'inveos.tika_context.v1',inspection:view(loaded,history,a),originalBase64:loaded.original.toString('base64'),rawBase64:(row.raw_bytes as Buffer).toString('base64'),derivativeBase64:loaded.output.bytes.toString('base64'),runtime:row.runtime,processingAuthority:authority,sourceUse:loaded.proofs,job:{id:jobId,kind:row.kind,status:row.status,attempt:row.attempt,requestedBy:row.requested_by,createdAt:iso(row.job_created_at),finishedAt:iso(row.finished_at)},exportedAt:iso((await c.query('SELECT clock_timestamp() at')).rows[0].at),limitation:'Internal research consistency record. Not provider truth, runtime certification, actor authentication, current permission or report/client release approval.'};
   if(Buffer.byteLength(JSON.stringify(payload))>12582912)throw new ApiError(422,'Tika context export exceeds its bound.');await s.audit(c,a,caseId,'tika.context_exported','integrity_job',jobId,'Original, immutable raw/profile/derivative and linked human decisions exported for independent verification');return {payload,sha256:transcriptHash(payload)};
  }));
+
+ app.post(base+'/citations/:citationId/claims/:claimId/withdraw',{preHandler:s.requireCsrf,schema:{params:claimParams,body:object({id:uuid,claimDigest:digest,reason})}},r=>tx(async c=>{
+  const a=r.actor!;internal(a);const {caseId,jobId,citationId,claimId}=r.params as {caseId:string;jobId:string;citationId:string;claimId:string},input=r.body as {id:string;claimDigest:string;reason:string};
+  // Withdrawal remains available after authority/source-use expiry; it never needs to read the original.
+  await s.findCase(c,a,caseId,true);const scope=[...keys(a,caseId,jobId),citationId,claimId],hash=transcriptHash(input);
+  const old=(await c.query('SELECT * FROM tika_claim_withdrawals WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',scope)).rows[0];if(old){if(old.id!==input.id||old.actor_id!==a.userId||old.request_hash.trim()!==hash)throw new ApiError(409,'Interpretation is already terminally withdrawn.');return old.record;}
+  const row=(await c.query('SELECT record,digest FROM tika_claims WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND id=$5',scope)).rows[0];if(!row)notFound();
+  const decision=(await c.query('SELECT digest FROM tika_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',scope)).rows[0];
+  if(input.claimDigest!==row.digest.trim()||input.reason.trim().length<10||/[\u0000-\u001f\u007f]/u.test(input.reason))throw new ApiError(422,'Exact interpretation digest and meaningful withdrawal reason required.');
+  const record=tikaSeal({id:input.id,claimId,claimDigest:input.claimDigest,decisionDigest:decision?.digest.trim()??null,reason:input.reason.trim(),actorId:a.userId,actorName:a.displayName,recordedAt:iso((await c.query('SELECT clock_timestamp() at')).rows[0].at)});
+  await c.query('INSERT INTO tika_claim_withdrawals(tenant_id,case_id,job_id,citation_id,claim_id,id,record,digest,actor_id,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10)',[...scope,record.id,JSON.stringify(record),record.digest,a.userId,hash]);
+  await s.audit(c,a,caseId,'tika.interpretation_withdrawn','tika_claim',claimId,record.reason);return record;
+ }));
+ async function ineligibility(c:PoolClient,a:Actor,caseId:string,loaded:Awaited<ReturnType<typeof load>>,item:TikaInspection['citations'][number],entry:TikaInspection['citations'][number]['claims'][number]):Promise<string|null>{
+  if(entry.withdrawal)return 'Interpretation withdrawn; historical receipts remain available.';
+  if(!loaded.canChange)return 'Current active case authority must match the extraction.';
+  if(!entry.eligible||!entry.decision)return 'Current independent correspondence and interpretation acceptance are required.';
+  const reviewers=[...new Set([item.reviews.at(-1)!.reviewerId,entry.decision.reviewerId])],authors=[...new Set([item.entry.authorId,entry.claim.authorId])];
+  const roles=(await c.query('SELECT cm.user_id,m.role FROM case_memberships cm JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id WHERE cm.tenant_id=$1 AND cm.case_id=$2 AND cm.user_id=ANY($3::uuid[])',[a.tenantId,caseId,[...new Set([...reviewers,...authors])]])).rows;
+  if(reviewers.some(id=>!roles.some(r=>r.user_id===id&&r.role==='reviewer'))||authors.some(id=>!roles.some(r=>r.user_id===id&&r.role!=='client')))return 'Citation/interpretation authors and independent reviewers must retain their current case roles.';
+  return null;
+ }
+ async function authority(c:PoolClient,a:Actor,caseId:string,version:number){const record=(await c.query('SELECT to_jsonb(ar) authority FROM authority_records ar WHERE tenant_id=$1 AND case_id=$2 AND version=$3',[a.tenantId,caseId,version])).rows[0]?.authority;if(!record)throw new ApiError(409,'Processing authority history is missing.');return record;}
+ function finding(loaded:Awaited<ReturnType<typeof load>>,item:TikaInspection['citations'][number],entry:TikaInspection['citations'][number]['claims'][number],processingAuthority:unknown,sourceAuthority:unknown):TikaReportFinding{
+  const r=loaded.row,d=entry.decision!,output=loaded.output;
+  return {kind:'reviewed_tika_page_text',id:d.id,text:entry.claim.text,reviewer:d.reviewerId,reviewedAt:d.recordedAt,
+   source:{id:r.evidence_id,filename:r.filename,sha256:r.source_digest.trim(),sourceTime:r.source_time,receivedTime:iso(r.received_time),authorityId:r.authority_id,authorityVersion:r.source_authority_version},
+   extraction:{jobId:r.job_id,authorityVersion:r.authority_version,attempt:r.attempt,processedAt:iso(r.processed_at),profile:tikaProfile,profileDigest:tikaProfileDigest,rawDigest:output.rawDigest,derivativeDigest:output.digest,xhtmlDigest:output.derivative.xhtmlDigest,runtimeDigest:output.derivative.runtimeDigest,processingAuthorityDigest:transcriptHash(processingAuthority),sourceAuthorityDigest:transcriptHash(sourceAuthority)},
+   reference:item.entry,correspondence:item.reviews,interpretation:{claim:entry.claim,decision:d},
+   limitations:'Human-reviewed Tika PDF page-text interpretation. UTF-8 offsets address normalized extracted page text only; no geometry or original PDF byte offsets. Pinned reduced research parser, without OCR or completeness/source-truth/runtime/legal approval. Verify exact original and raw/derivative/runtime/authority exhibits separately.'};
+ }
+ async function* reportTikaFindings(c:PoolClient,a:Actor,caseId:string,selected:string[]|'available'=[]):AsyncGenerator<TikaReportFinding>{
+  internal(a);if(Array.isArray(selected)&&!selected.length)return;
+  const rows=(await c.query("SELECT id,job_id,citation_id,claim_id FROM tika_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND record->>'accepted'='true' AND ($3::uuid[] IS NULL OR id=ANY($3)) ORDER BY record->>'recordedAt',id LIMIT 1001",[a.tenantId,caseId,selected==='available'?null:selected])).rows;
+  if(rows.length>1000)throw new ApiError(422,'Tika report finding bound exceeded.');if(selected!=='available'&&rows.length!==selected.length)throw new ApiError(409,'A selected Tika interpretation is missing or unaccepted.');
+  for(const row of rows){
+   let loaded:Awaited<ReturnType<typeof load>>;try{loaded=await load(c,a,caseId,row.job_id);}catch(error){if(selected==='available'&&error instanceof ApiError&&error.statusCode===409)continue;throw error;}
+   const item=(await histories(c,a,caseId,row.job_id,loaded.output)).find(i=>i.entry.id===row.citation_id),entry=item?.claims.find(e=>e.claim.id===row.claim_id);
+   if(!item||!entry||entry.decision?.id!==row.id)throw new ApiError(409,'Tika finding identity differs.');
+   const why=await ineligibility(c,a,caseId,loaded,item,entry);if(why){if(selected==='available')continue;throw new ApiError(409,why);}
+   const sourceAuthority=await authority(c,a,caseId,loaded.row.source_authority_version);if(sourceAuthority.id!==loaded.row.authority_id)throw new ApiError(409,'Original authority identity differs.');
+   yield finding(loaded,item,entry,await authority(c,a,caseId,loaded.row.authority_version),sourceAuthority);
+  }
+ }
+ async function* tikaReportExhibits(c:PoolClient,a:Actor,caseId:string,findings:TikaReportFinding[]){
+  for(const frozen of findings){
+   const loaded=await load(c,a,caseId,frozen.extraction.jobId),item=(await histories(c,a,caseId,loaded.row.job_id,loaded.output)).find(i=>i.entry.id===frozen.reference.id),entry=item?.claims.find(e=>e.claim.id===frozen.interpretation.claim.id);
+   if(!item||!entry)throw new ApiError(409,'Tika exhibit interpretation is missing.');const why=await ineligibility(c,a,caseId,loaded,item,entry);if(why)throw new ApiError(409,why);
+   const processingAuthority=await authority(c,a,caseId,loaded.row.authority_version),sourceAuthority=await authority(c,a,caseId,loaded.row.source_authority_version);if(sourceAuthority.id!==loaded.row.authority_id)throw new ApiError(409,'Original authority identity differs.');if(JSON.stringify(finding(loaded,item,entry,processingAuthority,sourceAuthority))!==JSON.stringify(frozen))throw new ApiError(409,'Tika exhibit no longer matches frozen finding.');
+   const {row}=loaded;
+   yield {format:'inveos.tika_report_exhibit.v1',findingId:frozen.id,inspection:{...view(loaded,[{entry:item.entry,reviews:item.reviews,claims:[entry]}],a),canReview:false},originalBase64:loaded.original.toString('base64'),rawBase64:(row.raw_bytes as Buffer).toString('base64'),derivativeBase64:loaded.output.bytes.toString('base64'),runtime:row.runtime,processingAuthority,sourceAuthority,job:{id:row.job_id,kind:row.kind,status:row.status,attempt:row.attempt,requestedBy:row.requested_by,createdAt:iso(row.job_created_at),finishedAt:iso(row.finished_at)}};
+  }
+ }
+ return {reportTikaFindings,tikaReportExhibits};
 }

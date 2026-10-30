@@ -11,7 +11,7 @@ export const verificationKitFiles=[
  'verify_casework.py','verify_collection_context.py','verify_document_package.py',
  'verify_field_provenance.py','verify_internal_invoice.py','verify_ocr_derivative.py',
  'verify_report.py','verify_report_composition.py','verify_report_docx.py','verify_report_pdf.py',
- 'verify_research_context.py','verify_speech_context.py','verify_speech_findings.py','verify_tika_context.py','verify_transcript.py',
+ 'verify_research_context.py','verify_speech_context.py','verify_speech_findings.py','verify_tika_context.py','verify_tika_report.py','verify_transcript.py',
 ] as const;
 const sha=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
 const maxBytes=4*1024*1024;
@@ -19,7 +19,8 @@ const instructions=`INVEOS offline verification kit
 
 This kit contains first-party Python source and instructions only. No case data,
 credentials, parser/model runtime or network access is required. Use Python 3.11+
-with its standard library. Keep all files together. Preserve the exact ZIP and
+with its standard library. Keep all files together. Tika report packages require verify_tika_report.py
+and its verify_tika_context.py dependency, both included. Preserve the exact ZIP and
 its SHA-256 fingerprint independently from the copy being checked.
 
 Before extracting or running downloaded code, check the ZIP fingerprint against

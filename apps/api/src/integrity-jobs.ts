@@ -353,7 +353,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
     return (await terminal(client,scope,'cancelled','user_cancelled'))!;
   }
   registerProcessingBatches(app,{...svc,queueJob,cancelJob,jobDto:dto});
-  registerTikaJobs(app,svc);
+  const tikaReports=registerTikaJobs(app,svc);
   app.get('/api/cases/:caseId/integrity-jobs', {preHandler:svc.authenticate,schema:{
     params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
     querystring:{type:'object',additionalProperties:false,properties:{before:uuid,limit:{type:'integer',minimum:1,maximum:50,default:25}}},
@@ -711,5 +711,5 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         });
       }});
   }
-  return {reportDocumentFindings,documentReportExhibits};
+  return {reportDocumentFindings,documentReportExhibits,...tikaReports};
 }

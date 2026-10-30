@@ -100,14 +100,8 @@ def pages(raw, count):
     return rows
 
 
-def verify(data, expected=None):
-    require(0 < len(data) <= 12582912, 'Export byte bound')
-    envelope = decode(data)
-    require(set(envelope) == {'payload', 'sha256'} and digest(envelope['payload']) == envelope['sha256'], 'Context digest differs')
-    if expected is not None:
-        require(envelope['sha256'] == expected, 'Trusted fingerprint differs')
-    p = envelope['payload']
-    require(set(p) == set('format inspection originalBase64 rawBase64 derivativeBase64 runtime processingAuthority sourceUse job exportedAt limitation'.split()) and p['format'] == 'inveos.tika_context.v1', 'Context schema differs')
+def verify_material(p):
+    """Reconstruct immutable PDF material and human lineage; no export/access attestation."""
     i, job = p['inspection'], p['job']
     original, raw, derived_bytes = raw64(p['originalBase64'], 2097152), raw64(p['rawBase64'], 1048576), raw64(p['derivativeBase64'], 1048576)
     require(len(original) >= 8 and original.startswith(b'%PDF-') and sha(original) == i['source']['sha256'], 'Original PDF digest/signature differs')
@@ -141,7 +135,7 @@ def verify(data, expected=None):
         require(isinstance(context[key], str) and re.fullmatch(r'[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}', context[key]) is not None, 'Scoped identifier differs')
     require(context['caseId'] == i['caseId'] == authority['case_id'] and context['tenantId'] == authority['tenant_id'] and context['authorityVersion'] == authority['version'] and context['evidenceId'] == i['evidenceId'] and context['jobId'] == i['jobId'] == job['id'] and context['sourceDigest'] == sha(original), 'Scoped source/processing authority differs')
     require(job['kind'] == KIND and job['status'] == 'succeeded' and type(job['attempt']) is int and 1 <= job['attempt'] <= 3, 'Successful processing attempt required')
-    require(stamp(authority['approved_at']) <= stamp(job['finishedAt']) and stamp(job['createdAt']) <= stamp(job['finishedAt']) <= stamp(i['processedAt']) <= stamp(p['exportedAt']), 'Processing chronology differs')
+    require(stamp(authority['approved_at']) <= stamp(job['finishedAt']) and stamp(job['createdAt']) <= stamp(job['finishedAt']) <= stamp(i['processedAt']), 'Processing chronology differs')
     require(0 <= (stamp(i['processedAt']) - stamp(q['checkedAt'])).total_seconds() <= 1200, 'Historical qualification time differs')
     derivative = {'format': 'inveos.tika_page_text.v1', 'context': context, 'profileDigest': PROFILE, 'rawDigest': sha(raw), 'xhtmlDigest': sha(xhtml), 'runtimeDigest': digest(runtime), 'state': 'unreviewed_extraction', 'offsetBasis': BASIS, 'pages': page_rows, 'coverage': {'pagesWithoutText': [v['page'] for v in page_rows if not v['textPresent']], 'completeExtractionVerified': False}, 'metrics': metrics}
     require(decode(derived_bytes) == derivative == i['derivative'] and sha(derived_bytes) == i['derivativeDigest'], 'Derived page text/coverage differs')
@@ -184,9 +178,31 @@ def verify(data, expected=None):
                 require(type(decision['accepted']) is bool and decision['reviewerId'] != claim['authorId'] and stamp(decision['recordedAt']) >= stamp(claim['recordedAt']), 'Independent interpretation decision missing')
                 value = {k: decision[k] for k in ('id', 'accepted', 'reason', 'reviewerId', 'reviewerName', 'recordedAt')}
                 require(decision == sealed(value | {'claimId': claim['id'], 'claimDigest': claim['digest'], 'scope': 'interpretation_only'}), 'Interpretation decision linkage differs')
-            eligible = bool(decision and decision['accepted'] and previous and previous['decision'] == 'accepted' and previous['digest'] == claim['correspondenceDigest'] and i['canChange'])
+            withdrawal = row.get('withdrawal')
+            if withdrawal is not None:
+                require(set(withdrawal) == set('id claimId claimDigest decisionDigest reason actorId actorName recordedAt digest'.split()), 'Withdrawal schema differs')
+                require(withdrawal == sealed({k: v for k, v in withdrawal.items() if k != 'digest'}), 'Withdrawal digest differs')
+                require(withdrawal['claimId'] == claim['id'] and withdrawal['claimDigest'] == claim['digest'] and withdrawal['decisionDigest'] == (decision['digest'] if decision else None), 'Withdrawal linkage differs')
+                text(withdrawal['reason'], 3000, 10)
+                actor(withdrawal, 'actor')
+                require(stamp(withdrawal['recordedAt']) >= stamp(decision['recordedAt'] if decision else claim['recordedAt']), 'Withdrawal actor/time differs')
+            eligible = bool(not withdrawal and decision and decision['accepted'] and previous and previous['decision'] == 'accepted' and previous['digest'] == claim['correspondenceDigest'] and i['canChange'])
             require(type(row['eligible']) is bool and row['eligible'] == eligible, 'Superseded review eligibility differs')
             interpretations += 1
+    return {'pagesChecked': len(page_rows), 'citationsChecked': len(i['citations']), 'interpretationsChecked': interpretations}
+
+
+def verify(data, expected=None):
+    require(0 < len(data) <= 12582912, 'Export byte bound')
+    envelope = decode(data)
+    require(set(envelope) == {'payload', 'sha256'} and digest(envelope['payload']) == envelope['sha256'], 'Context digest differs')
+    if expected is not None:
+        require(envelope['sha256'] == expected, 'Trusted fingerprint differs')
+    p = envelope['payload']
+    require(set(p) == set('format inspection originalBase64 rawBase64 derivativeBase64 runtime processingAuthority sourceUse job exportedAt limitation'.split()) and p['format'] == 'inveos.tika_context.v1', 'Context schema differs')
+    material = verify_material(p)
+    i = p['inspection']
+    require(stamp(i['processedAt']) <= stamp(p['exportedAt']), 'Export predates processing')
     require(isinstance(p['sourceUse'], list) and len(p['sourceUse']) <= 200, 'Source-use snapshot bound')
     source_ids = set()
     for proof in p['sourceUse']:
@@ -199,7 +215,7 @@ def verify(data, expected=None):
         require(stamp(decision['recordedAt']) <= stamp(p['exportedAt']) < stamp(decision['expiresAt']), 'Historical source-use expiry differs')
         for a, b in (('filename', 'filename'), ('sha256', 'sha256'), ('sourceTime', 'sourceTime'), ('receivedTime', 'receivedAt'), ('authorityId', 'authorityId'), ('authorityVersion', 'authorityVersion')):
             require(record['original'][a] == i['source'][b], 'Source-use original differs')
-    return {'status': 'consistency_checks_passed', 'sha256': envelope['sha256'], 'profileDigest': PROFILE, 'pagesChecked': len(page_rows), 'citationsChecked': len(i['citations']), 'interpretationsChecked': interpretations, 'actualParserExecutionVerified': False, 'actorAuthenticityVerified': False, 'currentPermissionVerified': False, 'productionOrLegalApprovalVerified': False, 'clientReleaseApproved': False}
+    return {'status': 'consistency_checks_passed', 'sha256': envelope['sha256'], 'profileDigest': PROFILE, **material, 'actualParserExecutionVerified': False, 'actorAuthenticityVerified': False, 'currentPermissionVerified': False, 'productionOrLegalApprovalVerified': False, 'clientReleaseApproved': False}
 
 
 def main():

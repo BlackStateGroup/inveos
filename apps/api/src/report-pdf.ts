@@ -93,6 +93,12 @@ export function reportLines(report:ReportDraft,redacted:Set<string>,reason:strin
     fieldLines(c.source.id);
     lines.push(...researchLines(c.source.id));
   }
+  const tikaFinding=(finding:NonNullable<ReportDraft['tikaFindings']>[number])=>{
+    number++;if(redacted.has(finding.id)){lines.push(`TIKA PAGE-TEXT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');return;}
+    const c=finding.reference,r=c.citation.location,d=finding.interpretation,review=finding.correspondence.at(-1)!;
+    lines.push(`TIKA PAGE-TEXT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${finding.source.filename}; SHA-256 ${finding.source.sha256}`),...format('Source times',`source ${finding.source.sourceTime}; received ${finding.source.receivedTime}; extracted ${finding.extraction.processedAt}`),...format('Source authority',`${finding.source.authorityId} v${finding.source.authorityVersion}; SHA-256 ${finding.extraction.sourceAuthorityDigest}`),...format('Extraction authority',`v${finding.extraction.authorityVersion}; SHA-256 ${finding.extraction.processingAuthorityDigest}`),...format('Page-text location',`page ${r.page}; ${r.path}; normalized UTF-8 ${r.startByte}-${r.endByte}; ${r.offsetBasis}`),...format('Reviewed passage',c.citation.quote),...format('Page text SHA-256',r.pageTextSha256),...format('Citation',`${c.id}; SHA-256 ${c.digest}`),...format('Correspondence',`${review.id}; sequence ${review.sequence}; ${review.reviewerId} at ${review.recordedAt}; SHA-256 ${review.digest}`),...format('Correspondence reason',review.reason),...format('Interpretation',`${d.claim.id}; SHA-256 ${d.claim.digest}`),...format('Interpretation decision',`${d.decision.id}; SHA-256 ${d.decision.digest}`),...format('Interpretation reason',d.decision.reason),...format('Processing job',`${finding.extraction.jobId}; attempt ${finding.extraction.attempt}`),...format('Profile SHA-256',finding.extraction.profileDigest),...format('Raw SHA-256',finding.extraction.rawDigest),...format('XHTML SHA-256',finding.extraction.xhtmlDigest),...format('Derivative SHA-256',finding.extraction.derivativeDigest),...format('Runtime receipt SHA-256',finding.extraction.runtimeDigest),...format('Finding limitation',finding.limitations),'');
+    fieldLines(finding.source.id);lines.push(...researchLines(finding.source.id));
+  };
   if(report.composition){
     const c=report.composition,p=c.payload,o=p.outline,withheld=redacted.size>0;
     lines.push('REPORT COMPOSITION v1 — AUTHOR CONTEXT, NOT FINDINGS',...format('Outline version',p.version),...format('Outline SHA-256',c.sha256),...format('Composition review',`${c.review.reviewerName} at ${c.review.recordedAt}`));
@@ -105,7 +111,8 @@ export function reportLines(report:ReportDraft,redacted:Set<string>,reason:strin
         if(ref.kind==='text')textFinding(report.findings.find(f=>f.id===ref.id)!);
         else if(ref.kind==='document')documentFinding(report.documentFindings!.find(f=>f.id===ref.id)!);
         else if(ref.kind==='transcript')transcriptFinding(report.transcriptFindings!.find(f=>f.id===ref.id)!);
-        else speechFinding(report.speechFindings!.find(f=>f.id===ref.id)!);
+        else if(ref.kind==='speech')speechFinding(report.speechFindings!.find(f=>f.id===ref.id)!);
+        else tikaFinding(report.tikaFindings!.find(f=>f.id===ref.id)!);
       }
     }
   }else{
@@ -113,6 +120,7 @@ export function reportLines(report:ReportDraft,redacted:Set<string>,reason:strin
     for(const finding of report.documentFindings??[])documentFinding(finding);
     for(const finding of report.transcriptFindings??[])transcriptFinding(finding);
     for(const finding of report.speechFindings??[])speechFinding(finding);
+    for(const finding of report.tikaFindings??[])tikaFinding(finding);
   }
   const context=report.composition?undefined:report.investigation;
   if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...format('-',JSON.stringify(item)));}lines.push('');}
@@ -174,7 +182,7 @@ export function buildReportPdf(report:ReportDraft,sourceReportSha256:string,inpu
 
 export function reportRedaction(report:ReportDraft,sourceReportSha256:string,input:{findingIds?:string[];reason?:string}){
   if(!digestPattern.test(sourceReportSha256))throw new Error('A valid source report fingerprint is required.');
-  const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[]),...(report.speechFindings??[])],findingIds=input.findingIds??[];
+  const all=[...report.findings,...(report.documentFindings??[]),...(report.transcriptFindings??[]),...(report.speechFindings??[]),...(report.tikaFindings??[])],findingIds=input.findingIds??[];
   if(findingIds.length>all.length||findingIds.some(id=>!uuid.test(id))||new Set(findingIds).size!==findingIds.length)throw new Error('The redaction finding list is invalid.');
   const known=new Set(all.map(f=>f.id));if(findingIds.some(id=>!known.has(id)))throw new Error('The redaction plan references a finding outside the frozen report.');
   const reason=clean(input.reason??'').trim();if(findingIds.length&&(reason.length<10||reason.length>500))throw new Error('A redaction reason between 10 and 500 characters is required.');

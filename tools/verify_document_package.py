@@ -145,7 +145,7 @@ def verify_document_work_links(report):
             identifier(item['id'])
             require(item['caseId'] == report['case']['id'] and item['id'] not in items, 'Working context scope or duplicate')
             items[item['id']] = item
-    findings = {f['id'] for f in report['documentFindings']}
+    findings = {f['id'] for f in report.get('documentFindings', [])}
     seen, relations = set(), set()
     for link in links:
         fields(link, 'id caseId itemId kind findingId relation reason createdBy createdAt')
@@ -255,8 +255,9 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         require(sha(raw) == expected_package_sha256, 'Trusted package fingerprint mismatch')
     try:
         package = parse(raw)
-        fields(package, 'format reportSha256 reportBase64 exhibits')
-        require(package['format'] == FORMAT, 'Unsupported package format')
+        expanded = package.get('format') == 'inveos_document_report_package_v2'
+        fields(package, 'format reportSha256 reportBase64 exhibits' + (' tikaExhibits' if expanded else ''))
+        require(expanded or package['format'] == FORMAT, 'Unsupported package format')
         report_raw = blob(package['reportBase64'], 32 * 1024 * 1024)
         require(sha(report_raw) == package['reportSha256'], 'Report fingerprint mismatch')
         if expected_report_sha256 is not None:
@@ -267,23 +268,25 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         for field in ('ref', 'title', 'client', 'scope', 'jurisdiction'):
             require(isinstance(report['case'][field], str) and report['case'][field].strip(), 'Report case metadata')
         require(isinstance(report['limitations'], str) and report['limitations'].strip(), 'Report limitations')
-        legacy, findings, exhibits = report['findings'], report['documentFindings'], package['exhibits']
+        legacy, findings, exhibits = report['findings'], report.get('documentFindings', []), package['exhibits']
+        tikas, tika_exhibits = report.get('tikaFindings', []), package.get('tikaExhibits', [])
+        require(isinstance(tikas, list) and isinstance(tika_exhibits, list) and len(tikas) == len(tika_exhibits) and bool(tikas) == expanded, 'Tika package format/finding count differs')
         require(isinstance(legacy, list) and isinstance(findings, list) and isinstance(exhibits, list)
-                and 1 <= len(findings) == len(exhibits) and len(legacy) + len(findings) <= 1000, 'Finding count limit')
+                and len(findings) == len(exhibits) and len(findings) + len(tikas) > 0 and len(legacy) + len(findings) <= 1000, 'Finding count limit')
         speeches = report.get('speechFindings', [])
         require(isinstance(speeches, list), 'Invalid speech finding array')
         transcripts = report.get('transcriptFindings', [])
-        require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) + len(speeches) <= 1000, 'Mixed finding count limit')
+        require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) + len(speeches) + len(tikas) <= 1000, 'Mixed finding count limit')
         if legacy or transcripts or speeches:
-            original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'sourceUse', 'fieldProvenance', 'composition')}
+            original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'tikaFindings', 'sourceUse', 'fieldProvenance', 'composition')}
             # The complete mixed-source chronology is validated below, after both source families.
             original_report['investigation'] = {key: value for key, value in report.get('investigation', {}).items() if key != 'chronology'}
             verify_report(json.dumps(original_report, ensure_ascii=False).encode('utf-8'))
-        ids = [f['id'] for f in legacy + findings + transcripts + speeches]
+        ids = [f['id'] for f in legacy + findings + transcripts + speeches + tikas]
         require(len(set(ids)) == len(ids), 'Duplicate finding identity')
         sources = {}
         original_ids = {f['source']['id'] for f in legacy} | {f['claim']['source']['id'] for f in transcripts} | {f['source']['id'] for f in speeches}
-        for finding in findings:
+        for finding in findings + tikas:
             source = finding['source']
             require(source['id'] not in original_ids, 'Conflicting original representation')
             if source['id'] in sources:
@@ -308,13 +311,24 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         except (ValueError, TypeError, KeyError, UnicodeError) as exc:
             raise InvalidReport('Invalid frozen chronology') from exc
         tenants = {verify_exhibit(f, e, case_id) for f, e in zip(findings, exhibits)}
-        field_count = verify_field_provenance(report, {f['source']['id']: len(blob(e['originalBase64'], 262144)) for f, e in zip(findings, exhibits)})
+        if expanded:
+            if __package__:
+                from .verify_tika_report import verify_exhibit as verify_tika_exhibit
+            else:
+                from verify_tika_report import verify_exhibit as verify_tika_exhibit
+            try:
+                tenants.update(verify_tika_exhibit(f, e, case_id) for f, e in zip(tikas, tika_exhibits))
+            except ValueError as exc:
+                raise InvalidReport('Invalid Tika report exhibit: ' + str(exc)) from exc
+        original_lengths = {f['source']['id']: len(blob(e['originalBase64'], 262144)) for f, e in zip(findings, exhibits)}
+        original_lengths.update({f['source']['id']: len(blob(e['originalBase64'], 2097152)) for f, e in zip(tikas, tika_exhibits)})
+        field_count = verify_field_provenance(report, original_lengths)
         tenants.update(f['claim']['context']['payload']['derivative']['context']['tenantId'] for f in speeches)
         require(len(tenants) == 1, 'Mixed tenant lineage')
     except (KeyError, TypeError, IndexError, AttributeError, UnicodeError, OverflowError, RecursionError, StopIteration) as exc:
         raise InvalidReport('Malformed document package') from exc
     return {'status': 'integrity_checks_passed', **({'fieldCapturesChecked': field_count} if field_count else {}), 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
-            'caseId': case_id, **({'compositionFindingsChecked': composition_count} if composition_count else {}), **({'speechWorkLinksChecked': speech_links} if speech_links else {}), **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}), 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
+            'caseId': case_id, **({'compositionFindingsChecked': composition_count} if composition_count else {}), **({'speechWorkLinksChecked': speech_links} if speech_links else {}), **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}), 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), **({'tikaFindingsChecked': len(tikas)} if tikas else {}), 'originalFindingsChecked': len(legacy),
             **({'transcriptFindingsChecked': len(transcripts), 'transcriptWorkLinksChecked': transcript_links} if transcripts or transcript_links else {}),
             **({'speechFindingsChecked': len(speeches)} if speeches else {}), 'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
             'releaseStatus': 'draft_not_released', 'limitations': 'Consistency only; no parser execution, source truth, reviewer authentication, current server policy, signature or release certification. Trust report and package fingerprints through a separate channel.'}
