@@ -6,7 +6,7 @@ import {ApiError,notFound} from './errors.js';
 import {compositionChoices,compositionDigest,compositionHash,compositionIds,orderedCompositionPayload,verifyCompositionSelection} from './report-composition-model.js';
 
 type Services={authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
- transaction:<T>(op:(c:PoolClient)=>Promise<T>)=>Promise<T>;access:(c:PoolClient,a:Actor,caseId:string)=>Promise<void>;
+ assertSession:(c:PoolClient,a:Actor)=>Promise<void>;transaction:<T>(op:(c:PoolClient)=>Promise<T>)=>Promise<T>;access:(c:PoolClient,a:Actor,caseId:string)=>Promise<void>;
  lock:(c:PoolClient,a:Actor,caseId:string)=>Promise<unknown>;
  build:(c:PoolClient,a:Actor,caseId:string,text?:string[],documents?:string[],transcripts?:string[],speech?:string[],omitContext?:boolean,tika?:string[]|'available')=>Promise<ReportDraft>;
  audit:(c:PoolClient,a:Actor,caseId:string,action:string,type:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
@@ -29,7 +29,9 @@ async function strict(r:FastifyRequest){
 }
 export function registerReportCompositions(app:FastifyInstance,s:Services){
  const base='/api/cases/:caseId/report-compositions',params=obj({caseId:uuid}),itemParams=obj({caseId:uuid,compositionId:uuid});
- const tx=<T>(r:FastifyRequest,work:(c:PoolClient,a:Actor,caseId:string)=>Promise<T>)=>s.transaction(async c=>{const a=r.actor!,{caseId}=r.params as {caseId:string};await s.access(c,a,caseId);await s.lock(c,a,caseId);return work(c,a,caseId);});
+ // Fresh statements after the case lock and before commit must see revocations.
+ const transaction=<T>(a:Actor,caseId:string,work:(c:PoolClient)=>Promise<T>)=>s.transaction(async c=>{await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='20s'");await s.assertSession(c,a);await s.access(c,a,caseId);await s.lock(c,a,caseId);const value=await work(c);await s.lock(c,a,caseId);await s.access(c,a,caseId);await s.assertSession(c,a);return value;});
+ const tx=<T>(r:FastifyRequest,work:(c:PoolClient,a:Actor,caseId:string)=>Promise<T>)=>{const a=r.actor!,{caseId}=r.params as {caseId:string};return transaction(a,caseId,c=>work(c,a,caseId));};
  async function head(c:PoolClient,a:Actor,caseId:string,id:string,v?:number){const row=(await c.query('SELECT * FROM report_composition_revisions WHERE tenant_id=$1 AND case_id=$2 AND composition_id=$3 AND ($4::int IS NULL OR version=$4) ORDER BY version DESC LIMIT 1',[a.tenantId,caseId,id,v??null])).rows[0];if(!row)notFound();check(row);return row;}
  function check(r:QueryResultRow){if(compositionDigest(r.payload)!==r.sha256.trim())throw new ApiError(409,'Saved outline fingerprint failed.');}
  async function latestReview(c:PoolClient,a:Actor,caseId:string,id:string,v:number){return (await c.query('SELECT * FROM report_composition_reviews WHERE tenant_id=$1 AND case_id=$2 AND composition_id=$3 AND version=$4 ORDER BY sequence DESC LIMIT 1',[a.tenantId,caseId,id,v])).rows[0];}
@@ -89,9 +91,14 @@ export function registerReportCompositions(app:FastifyInstance,s:Services){
   if(b.decision==='accepted')await selected(c,a,caseId,row.payload);
   await c.query('INSERT INTO report_composition_reviews(tenant_id,case_id,composition_id,version,id,sequence,request_hash,sha256,decision,reason,actor_id,actor_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[a.tenantId,caseId,compositionId,row.version,b.id,b.expectedReviewSequence+1,hash,b.sha256,b.decision,reason,a.userId,a.displayName]);await audit(c,a,caseId,'reviewed',compositionId,{version:row.version,decision:b.decision,sha256:b.sha256});return view(c,a,caseId,row);
  }));
- return {async freeze(c:PoolClient,a:Actor,caseId:string,binding:{id:string;version:number;sha256:string;reviewId:string}){
+ async function assertAccepted(c:PoolClient,a:Actor,caseId:string,binding:{id:string;version:number;sha256:string;reviewId:string}){
   const row=await head(c,a,caseId,binding.id),review=await latestReview(c,a,caseId,binding.id,row.version);
   if(row.version!==binding.version||row.sha256.trim()!==binding.sha256||row.payload.state!=='active'||!review||review.id!==binding.reviewId||review.decision!=='accepted')throw new ApiError(409,'Freezing requires the current independently accepted outline and exact review receipt.');
+  if(review.sha256.trim()!==binding.sha256||!(await c.query("SELECT 1 FROM memberships m JOIN case_memberships cm ON cm.tenant_id=m.tenant_id AND cm.user_id=m.user_id WHERE m.tenant_id=$1 AND cm.case_id=$2 AND m.user_id=$3 AND m.role='reviewer'",[a.tenantId,caseId,review.actor_id])).rowCount)throw new ApiError(409,'The accepting reviewer no longer has current case access. Request a fresh independent outline review.');
+  return {row,review};
+ }
+ return {transaction,assertAccepted,async freeze(c:PoolClient,a:Actor,caseId:string,binding:{id:string;version:number;sha256:string;reviewId:string}){
+  const {row,review}=await assertAccepted(c,a,caseId,binding);
   const report=await selected(c,a,caseId,row.payload);report.composition={format:'inveos_report_composition_v1',payload:orderedCompositionPayload(row.payload),sha256:binding.sha256,authorId:row.actor_id,authorName:row.actor_name,recordedAt:iso(row.recorded_at),review:reviewView(review)};
   return report;
  }};
