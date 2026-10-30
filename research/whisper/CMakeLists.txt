@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.16)
+project(inveos_whisper_research LANGUAGES C CXX)
+set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Static Whisper/GGML, dynamically linked base-image C/C++ runtime. CPU baseline,
+# no downloader, server, codecs, GPU, vendor BLAS or fetched dependencies.
+foreach(flag BUILD_SHARED_LIBS WHISPER_BUILD_EXAMPLES WHISPER_BUILD_TESTS WHISPER_BUILD_SERVER WHISPER_CURL WHISPER_SDL2 WHISPER_COMMON_FFMPEG WHISPER_COREML WHISPER_OPENVINO WHISPER_VITISAI WHISPER_USE_SYSTEM_GGML WHISPER_USE_SYSTEM_LLAMA GGML_NATIVE GGML_CPU_HBM GGML_CPU_KLEIDIAI GGML_ACCELERATE GGML_SSE42 GGML_BMI2 GGML_AVX_VNNI GGML_OPENMP GGML_OPENMP_FETCH GGML_BACKEND_DL GGML_CPU_ALL_VARIANTS GGML_BLAS GGML_CUDA GGML_METAL GGML_VULKAN GGML_SYCL GGML_RPC GGML_AVX GGML_AVX2 GGML_AVX512 GGML_FMA GGML_F16C)
+  set(${flag} OFF CACHE BOOL "" FORCE)
+endforeach()
+set(FETCHCONTENT_FULLY_DISCONNECTED ON CACHE BOOL "" FORCE)
+add_compile_options(-ffile-prefix-map=/scratch/project=. -ffile-prefix-map=/scratch/build=./build)
+add_subdirectory(source)
+add_executable(inveos-whisper runner.cpp)
+target_link_libraries(inveos-whisper PRIVATE whisper)

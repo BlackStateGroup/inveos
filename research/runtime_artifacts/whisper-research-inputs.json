@@ -1,0 +1,60 @@
+{
+  "format": "inveos.whisper_research_inputs.v1",
+  "sourceRevision": "231638a0717b7822784297e5980965ffcec05810",
+  "sourceLicenceSha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+  "modelRevision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+  "modelTermsRevision": "86098128c0b4f24f0e2aa2994de830614b474227",
+  "baseImage": "python@sha256:77c90594edb5d6a43ed73de1c73b5f9d795bc94fa76d438fba4cc00036100014",
+  "baseConfig": "sha256:a09cf88e765a0752a769b1eaf5b3d47034ff846e32da48258646f80c63e120fb",
+  "artifacts": [
+    {
+      "name": "ggml-tiny.en.bin",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin",
+      "bytes": 77704715,
+      "sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"
+    },
+    {
+      "name": "cmake-3.31.8-linux-x86_64.tar.gz",
+      "url": "https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-linux-x86_64.tar.gz",
+      "bytes": 55012213,
+      "sha256": "630615d8e98ac33eba7fbe472626dff5c899c85af3c024585ae109166a6909d0"
+    },
+    {
+      "name": "model-README.md",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/raw/5359861c739e955e79d9a303bcbc70fb988958b1/README.md",
+      "bytes": 3196,
+      "sha256": "21fd967098804f33fc84e803fb0e5ab7666d71801f4027cf28a65e7af09c1758"
+    },
+    {
+      "name": "cmake-Copyright.txt",
+      "url": "https://raw.githubusercontent.com/Kitware/CMake/v3.31.8/Copyright.txt",
+      "bytes": 5477,
+      "sha256": "0676e30827684487aa0ea8f72f01e9460a6320fa34a2888df0ad1dd3e8a06eb8"
+    },
+    {
+      "name": "cmake-3.31.8-SHA-256.txt",
+      "url": "https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-SHA-256.txt",
+      "bytes": 1646,
+      "sha256": "8d08ce0586bf40ff6b80e46fffe2db8855bab5b030db8b3782f11f68b6274ad8"
+    },
+    {
+      "name": "openai-LICENSE",
+      "url": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/LICENSE",
+      "bytes": 1063,
+      "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d"
+    },
+    {
+      "name": "openai-README.md",
+      "url": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/README.md",
+      "bytes": 8246,
+      "sha256": "38c180c2a8d8ba628a3e131ad42bf06c8a51bb681efb30fbe28d5a0f4b65f288"
+    },
+    {
+      "name": "openai-model-card.md",
+      "url": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/model-card.md",
+      "bytes": 7307,
+      "sha256": "3c2dc15e0c4bf2f1067db8530b1ecd6675abb431c4bc09fad3bc4453434f3333"
+    }
+  ],
+  "limitation": "Research input correspondence only. No operational trust, model/data provenance, complete base-image source/licence/security or distribution approval."
+}

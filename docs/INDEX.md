@@ -235,3 +235,5 @@
 - [116 — Source, correspondence and expense review queue](116_SOURCE_EXPENSE_REVIEW_QUEUE.md) — independent pending records and exact context navigation; actual acceptance recorded separately.
 
 - [117 — Versioned independent-review ownership](117_REVIEW_OWNERSHIP.md) — exact-version assignments, independence, current access, history and personal filters.
+
+- [118 — Pinned CPU speech research](118_WHISPER_RESEARCH.md) — unchanged catalogue Whisper/GGML sources, bounded fictional audio harness and actual qualification evidence.
