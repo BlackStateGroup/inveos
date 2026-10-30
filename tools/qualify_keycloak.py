@@ -112,6 +112,7 @@ def realm():
     users = []
     for number, name in enumerate(['reviewer', 'client', 'outsider', 'unbound'], 1):
         users.append({'id': f'10000000-0000-4000-8000-{number:012d}', 'username': 'fictional-' + name, 'enabled': True,
+                      'firstName': 'Fictional', 'lastName': name, 'email': 'fictional-' + name + '@example.test',
                       'credentials': [{'type': 'password', 'value': 'Fictional-test-only-2026!', 'temporary': False},
                                       {'type': 'otp', 'secretData': json.dumps({'value': 'FictionalOtpSeedOnly' + name}),
                                        'credentialData': json.dumps({'digits': 6, 'counter': 0, 'period': 30, 'algorithm': 'HmacSHA1', 'subType': 'totp'})}]})
