@@ -48,8 +48,10 @@ test('case handling preserves explicit versions, current reviewer boundaries and
 
 test('internal-only handling blocks actual release access and new grants without replacing frozen report bytes',{timeout:30000},async()=>{
  const f=await fixture();try{
+  const text='Fictional handling source records a supplied note.',evidence=await f.must<{id:string}>(f.base+'/evidence',{filename:'fictional-handling.txt',text,expectedSha256:sha(text),sourceTime:'2026-10-01T10:00:00Z',method:'Fictional supplied acceptance record',idempotencyKey:randomUUID()},f.investigator.headers);
+  const claim=await f.must<{id:string}>(f.base+'/claims',{evidenceId:evidence.id,text:'The fictional note records the supplied statement.',quote:text},f.investigator.headers);await f.must(f.base+'/claims/'+claim.id+'/review',{accepted:true,reason:'Exact fictional source quote inspected.'});
   const revision=await f.must<{id:string;sha256:string}>(f.base+'/report-revisions',{idempotencyKey:randomUUID()}),path=f.base+'/report-revisions/'+revision.id;
-  await f.must(path+'/reviews',{sha256:revision.sha256,decision:'accept_internal',reason:'Fictional independent review of the empty scoped draft.'},f.reviewer.headers);
+  await f.must(path+'/reviews',{sha256:revision.sha256,decision:'accept_internal',reason:'Fictional independent review of the source-linked scoped draft.'},f.reviewer.headers);
   const disclosureInput={sha256:revision.sha256,recipientId:f.client.id,idempotencyKey:randomUUID(),expiresAt:new Date(Date.now()+3600000).toISOString(),reason:'Fictional explicitly approved recipient disclosure.',confirmFullDisclosure:true};
   const disclosure=await f.must<{id:string}>(path+'/disclosures',disclosureInput),download='/api/portal/disclosures/'+disclosure.id;
   const original=await f.call(download,undefined,f.client.headers);assert.equal(original.statusCode,200,original.body);assert.equal(sha(original.rawPayload),revision.sha256);
