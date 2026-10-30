@@ -10,12 +10,20 @@ import {ApiError,notFound} from './errors.js';
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};
 const kinds=['original','claim','document_claim','document_text','text_finding','document_finding','work','chronology','entity','relationship','source_context','transcript','transcript_claim','transcript_finding','speech_claim','speech_finding'];
 const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'};
-const filterProperties={query:{type:'string',maxLength:200},kind:{enum:['all',...kinds]},status:{type:'string',maxLength:40}};
-const filterSchema={type:'object',additionalProperties:false,required:Object.keys(filterProperties),properties:filterProperties};
+const timestamp={type:'string',minLength:20,maxLength:40};
+const filterProperties={query:{type:'string',maxLength:200},kind:{enum:['all',...kinds]},status:{type:'string',maxLength:40},queryMode:{enum:['phrase','all_words','any_words']},sourceFrom:timestamp,sourceTo:timestamp,receivedFrom:timestamp,receivedTo:timestamp,evidenceId:uuid};
+const filterSchema={type:'object',additionalProperties:false,required:['query','kind','status'],properties:filterProperties};
 const params={type:'object',additionalProperties:false,required:['caseId'],properties:{caseId:uuid}};
 const viewParams={...params,required:['caseId','viewId'],properties:{...params.properties,viewId:uuid}};
 const clean=(s:string)=>Buffer.from(s).toString('utf8')===s&&!/[\u0000-\u001f\u007f]/u.test(s);
-function validate(filter:CaseSearchFilter){if(!clean(filter.query)||!clean(filter.status))throw new ApiError(422,'Use a plain search phrase and status.');}
+const timeKeys=['sourceFrom','sourceTo','receivedFrom','receivedTo'] as const;
+function validate(filter:CaseSearchFilter){
+ if(!clean(filter.query)||!clean(filter.status))throw new ApiError(422,'Use a plain search phrase and status.');
+ if(filter.queryMode&&filter.queryMode!=='phrase'&&filter.query.trim().split(/\s+/u).length>12)throw new ApiError(422,'Use at most twelve words for word matching.');
+ for(const key of timeKeys){const value=filter[key];if(value!==undefined&&(!/^[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,3})?(Z|[+-](0[0-9]|1[0-4]):[0-5][0-9])$/.test(value)||value.endsWith('-00:00')||/[+-]14:(?!00)/.test(value)||!Number.isFinite(Date.parse(value))||new Date(value.slice(0,10)+'T00:00:00Z').toISOString().slice(0,10)!==value.slice(0,10)))throw new ApiError(422,'Search time bounds require valid explicit instants and known timezone offsets.');}
+ if(filter.sourceFrom&&filter.sourceTo&&Date.parse(filter.sourceFrom)>Date.parse(filter.sourceTo)||filter.receivedFrom&&filter.receivedTo&&Date.parse(filter.receivedFrom)>Date.parse(filter.receivedTo))throw new ApiError(422,'Search start must not follow its end.');
+}
+
 // Search describes current stored records. It never asserts source-byte verification or evidential truth.
 const records=`
  SELECT 'transcript' kind,t.id,t.title title,t.title||' '||coalesce((SELECT string_agg(coalesce(c.text,g.raw_text),' ' ORDER BY g.ordinal) FROM interview_transcript_segments g LEFT JOIN interview_transcript_corrections c ON c.tenant_id=g.tenant_id AND c.case_id=g.case_id AND c.transcript_id=g.transcript_id AND c.segment_id=g.id AND c.version=g.current_version WHERE g.tenant_id=t.tenant_id AND g.case_id=t.case_id AND g.transcript_id=t.id),'') body,'Supplied transcript' status,t.evidence_id,'Interview' page FROM interview_transcripts t WHERE t.tenant_id=$1 AND t.case_id=$2
@@ -50,18 +58,26 @@ const records=`
 export function registerCaseSearch(app:FastifyInstance,s:Services){
  const internal=async(r:FastifyRequest)=>{await s.authenticate(r);if(r.actor!.role==='client')throw new ApiError(403,'Internal case search only.');};
  const base='/api/cases/:caseId',views=base+'/saved-views';
- app.post(base+'/search',{preHandler:s.requireCsrf,schema:{params,body:{type:'object',additionalProperties:false,required:Object.keys(filterProperties),properties:{...filterProperties,after:{type:'object',additionalProperties:false,required:['kind','id'],properties:{kind:{enum:kinds},id:uuid}}}}}},async r=>inTransaction(s.pool,async c=>{
+ app.post(base+'/search',{preHandler:s.requireCsrf,schema:{params,body:{type:'object',additionalProperties:false,required:['query','kind','status'],properties:{...filterProperties,after:{type:'object',additionalProperties:false,required:['kind','id'],properties:{kind:{enum:kinds},id:uuid}}}}}},async r=>inTransaction(s.pool,async c=>{
   const actor=r.actor!,{caseId}=r.params as {caseId:string};if(actor.role==='client')throw new ApiError(403,'Internal case search only.');await s.findCase(c,actor,caseId);
   const input=r.body as CaseSearchFilter&{after?:{kind:string;id:string}};validate(input);
   await c.query("SET LOCAL statement_timeout='2s'");
-  const found=await c.query(`WITH records AS (${records}), matched AS (SELECT * FROM records WHERE strpos(lower(body),lower($3))>0 AND ($4='' OR status=$4)),
+  const found=await c.query(`WITH records AS (${records}), located AS (
+   SELECT r.*,e.filename,e.source_time,e.received_time FROM records r LEFT JOIN evidence e ON e.tenant_id=$1 AND e.case_id=$2 AND e.id=r.evidence_id
+  ), matched AS (SELECT * FROM located WHERE
+   ($3='' OR CASE WHEN $8='all_words' THEN NOT EXISTS(SELECT 1 FROM unnest($9::text[]) term WHERE strpos(lower(body),lower(term))=0)
+    WHEN $8='any_words' THEN EXISTS(SELECT 1 FROM unnest($9::text[]) term WHERE strpos(lower(body),lower(term))>0)
+    ELSE strpos(lower(body),lower($3))>0 END)
+   AND ($4='' OR status=$4) AND ($10::timestamptz IS NULL OR source_time::timestamptz>=$10) AND ($11::timestamptz IS NULL OR source_time::timestamptz<=$11)
+   AND ($12::timestamptz IS NULL OR received_time>=$12) AND ($13::timestamptz IS NULL OR received_time<=$13) AND ($14::uuid IS NULL OR evidence_id=$14)),
    facets AS (SELECT kind,count(*)::int count FROM matched GROUP BY kind),
-   page AS (SELECT kind,id,title,substring(body FROM greatest(1,strpos(lower(body),lower($3))-60) FOR 260) excerpt,status,evidence_id AS "evidenceId",page FROM matched WHERE ($5='all' OR kind=$5) AND ($6::text IS NULL OR (kind,id)>($6,$7::uuid)) ORDER BY kind,id LIMIT 51)
-   SELECT (SELECT coalesce(jsonb_agg(facets ORDER BY kind),'[]'::jsonb) FROM facets) facets,(SELECT coalesce(jsonb_agg(p ORDER BY p.kind,p.id),'[]'::jsonb) FROM page p) items`,[actor.tenantId,caseId,input.query.trim(),input.status,input.kind,input.after?.kind??null,input.after?.id??null]);
-  const {facets,items}=found.rows[0],more=items.length>50;if(more)items.pop();const last=items.at(-1);
+   status_facets AS (SELECT status,count(*)::int count FROM matched WHERE $5='all' OR kind=$5 GROUP BY status),
+   page AS (SELECT kind,id,title,substring(body FROM greatest(1,strpos(lower(body),lower(CASE WHEN $8='phrase' THEN $3 ELSE coalesce((SELECT term FROM unnest($9::text[]) term WHERE strpos(lower(body),lower(term))>0 LIMIT 1),'') END))-60) FOR 260) excerpt,status,evidence_id AS "evidenceId",page,source_time AS "sourceTime",received_time AS "receivedTime",filename FROM matched WHERE ($5='all' OR kind=$5) AND ($6::text IS NULL OR (kind,id)>($6,$7::uuid)) ORDER BY kind,id LIMIT 51)
+   SELECT (SELECT coalesce(jsonb_agg(facets ORDER BY kind),'[]'::jsonb) FROM facets) facets,(SELECT coalesce(jsonb_agg(status_facets ORDER BY status),'[]'::jsonb) FROM status_facets) status_facets,(SELECT coalesce(jsonb_agg(p ORDER BY p.kind,p.id),'[]'::jsonb) FROM page p) items`,[actor.tenantId,caseId,input.query.trim(),input.status,input.kind,input.after?.kind??null,input.after?.id??null,input.queryMode??'phrase',input.query.trim()?input.query.trim().split(/\s+/u):[],input.sourceFrom??null,input.sourceTo??null,input.receivedFrom??null,input.receivedTo??null,input.evidenceId??null]);
+  const {facets,items,status_facets:statusFacets}=found.rows[0],more=items.length>50;if(more)items.pop();const last=items.at(-1);
   for(const id of new Set<string>(items.filter((item:{evidenceId:string|null;kind:string})=>item.evidenceId&&!['original','source_context'].includes(item.kind)).map((item:{evidenceId:string})=>item.evidenceId)))await sourceUseProofs(c,actor.tenantId,caseId,id,'analysis');
   for(const item of items)if(item.kind==='speech_claim'||item.kind==='speech_finding'){const row=(await c.query('SELECT p.job_id FROM speech_claims p LEFT JOIN speech_findings f ON f.tenant_id=p.tenant_id AND f.case_id=p.case_id AND f.claim_id=p.id WHERE p.tenant_id=$1 AND p.case_id=$2 AND (($3=\'speech_claim\' AND p.id=$4) OR ($3=\'speech_finding\' AND f.id=$4))',[actor.tenantId,caseId,item.kind,item.id])).rows[0];if(!row)throw new ApiError(409,'Speech search source changed.');item.speechJobId=row.job_id;}
-  return {items,facets,next:more?{kind:last.kind,id:last.id}:null,interpretation:'stored_records_reverify_sources'} satisfies CaseSearchResult;
+  return {items,facets,statusFacets,next:more?{kind:last.kind,id:last.id}:null,interpretation:'stored_records_reverify_sources'} satisfies CaseSearchResult;
  }));
  app.get(views,{preHandler:internal,schema:{params}},async r=>inTransaction(s.pool,async c=>{
   const actor=r.actor!,{caseId}=r.params as {caseId:string};await s.findCase(c,actor,caseId);
@@ -72,7 +88,8 @@ export function registerCaseSearch(app:FastifyInstance,s:Services){
   const input=r.body as {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;expectedVersion:number};validate(input.filter);if(!clean(input.name)||input.name.trim().length<3)throw new ApiError(422,'Name the saved view.');
   const id=edit?viewId!:input.id,keys=[actor.tenantId,caseId,actor.userId,id];
   const current=(await c.query(`SELECT v.request_hash,r.snapshot FROM saved_case_views v JOIN saved_case_view_revisions r ON r.tenant_id=v.tenant_id AND r.case_id=v.case_id AND r.owner_id=v.owner_id AND r.view_id=v.id AND r.version=v.version WHERE v.tenant_id=$1 AND v.case_id=$2 AND v.owner_id=$3 AND v.id=$4`,keys)).rows[0];
-  const hash=createHash('sha256').update(JSON.stringify([input.name,input.filter.query,input.filter.kind,input.filter.status,input.withdrawn])).digest('hex');
+  const extra=Object.fromEntries(['queryMode',...timeKeys,'evidenceId'].filter(key=>input.filter[key as keyof CaseSearchFilter]!==undefined).map(key=>[key,input.filter[key as keyof CaseSearchFilter]]));
+  const hash=createHash('sha256').update(JSON.stringify([input.name,input.filter.query,input.filter.kind,input.filter.status,input.withdrawn,...(Object.keys(extra).length?[extra]:[])])).digest('hex');
   if(!edit&&current){if(current.request_hash!==hash)throw new ApiError(409,'Saved-view identity already used.');return current.snapshot;}
   if(edit&&!current)notFound();if(edit&&current.snapshot.version!==input.expectedVersion)throw new ApiError(409,'Saved view changed. Refresh and compare before editing.');
   if(edit&&current.snapshot.version>=100)throw new ApiError(422,'Saved-view revision limit reached.');

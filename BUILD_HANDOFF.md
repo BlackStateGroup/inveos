@@ -1,3 +1,11 @@
+## Current root checkpoint — platform build branch
+
+`feat/platform-build-batch` now includes portal feedback a74853d60 via merge489024b1; its integrated web/contracts/API compile passed (`/tmp/inveos-platform-portal-compile.log`). Desktop intake bf2a3298, migration094/docs131, also passed final compilation including manifest integrity. Root now adds source/receipt-time bounds, exact original filters and word matching to case search/docs133, preserving historical saved-filter meaning; compilation passes, all database/browser/performance checks remain unrun.
+
+Current child assignments: @thread:thr_gzfv5czq7n builds saved report composition on feat/report-composition, migrations095–099/docs132, atop its portal branch. @thread:thr_2fsytqdbkm builds bulk processing,085–088/docs129 atop Field. @thread:thr_d5kgavmfyc finishes RDAP/webpage PDF-DOCX provenance then bounded GLEIF legal-entity lookup,090–093/docs130. Root owns094 and no new migration for search. Three children plus root are actively implementing as explicitly requested. Do not begin broad acceptance until the connected implementation batch is ready; compiler feedback only so far.
+
+No platform-batch PR/main merge, production deployment, live collection, provider activation, new application dependency or native-device acceptance. Old PR116 CI was already running before the build-first steering; its completion still needs a separate receipt, not a claim that this batch passes. Main115 remains the latest verified merged state at this checkpoint.
+
 ## Latest build checkpoint: desktop batch intake
 
 Root adds migration094/docs131: saved20-file manifests, per-original declared metadata, stable server retry identities, current-authority fencing, exact original reselection and bounded sequential chunk transfer with per-file outcomes/pause/cancel controls. Compilation passes before the final manifest guard; runtime/browser acceptance remains unrun. The combined branch already integrates OSINT171f0ac3 at55db2af9 and is pushed as `feat/platform-build-batch`; integrated web/contracts/API compile passed (`/tmp/inveos-platform-osint-compile.log`).

@@ -173,8 +173,8 @@ export type ReportDraft = {
 };
 
 export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context'|'transcript'|'transcript_claim'|'transcript_finding'|'speech_claim'|'speech_finding';
-export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
-export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string;speechJobId?:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
+export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string;queryMode?:'phrase'|'all_words'|'any_words';sourceFrom?:string;sourceTo?:string;receivedFrom?:string;receivedTo?:string;evidenceId?:string};
+export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string;speechJobId?:string;sourceTime?:string|null;receivedTime?:string|null;filename?:string|null}>;statusFacets?:{status:string;count:number}[];facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
 
 export type GraphEntityKind = 'person'|'organisation'|'asset'|'place'|'incident'|'document';
