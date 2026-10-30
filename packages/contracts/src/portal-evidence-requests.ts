@@ -1,0 +1,11 @@
+/** Explicit external DTOs contain no case, source, authority, storage or staff identifiers. */
+export type EvidenceRequestContent={format:'inveos_portal_evidence_request_v1';requestId:string;version:number;title:string;instructions:string};
+export type EvidenceRequestPublication={id:string;sequence:number;version:number;sha256:string;action:'published'|'withdrawn'|'revoked';recordedAt:string};
+export type EvidenceRequestResponse={id:string;publicationId:string;publicationSha256:string;sequence:number;state:'submitted'|'withdrawn';body:string;reason:string;sha256:string;recordedAt:string};
+export type SuppliedFileDeclaration={filename:string;sourceTime:string;method:string;consentDeclaration:string;expectedSha256:string;byteLength:number};
+export type SuppliedFileReceipt={id:string;uploadId:string;requestId:string;publicationId:string;publicationSha256:string;responseId:string;responseSha256:string;declaration:SuppliedFileDeclaration;sha256:string;byteLength:number;receivedAt:string;recordedAt:string;state:'quarantined_unassessed'};
+export type PortalEvidenceRequest={id:string;content:EvidenceRequestContent;publication:EvidenceRequestPublication;expiresAt:string;responses:EvidenceRequestResponse[];receipts:SuppliedFileReceipt[]};
+export type PortalUpload={id:string;requestKey:string;requestId:string;publicationId:string;responseId:string;status:'open'|'completed'|'cancelled';expiresAt:string;chunkSize:32768;declaration:SuppliedFileDeclaration;received:number[];receipt:SuppliedFileReceipt|null};
+export type EvidenceRequestDraft={content:EvidenceRequestContent;sha256:string;authorId:string;authorName:string;reason:string;recordedAt:string};
+export type InternalEvidenceRequest={id:string;recipientId:string;recipientName:string;expiresAt:string;authorityVersion:number;draft:EvidenceRequestDraft;publication:EvidenceRequestPublication|null;publishedContent:EvidenceRequestContent|null;canPublish:boolean;eligible:boolean;canReview:boolean;drafts:EvidenceRequestDraft[];publications:Array<EvidenceRequestPublication&{reason:string;actorName:string}>;responses:EvidenceRequestResponse[];receipts:Array<SuppliedFileReceipt&{evidenceId:string;sourceReference:string}>};
+export type EvidenceRequestSummary={id:string;title:string;recipientName:string;version:number;publication:EvidenceRequestPublication|null;expiresAt:string};

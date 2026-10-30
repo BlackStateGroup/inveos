@@ -1,3 +1,4 @@
+import {registerPortalEvidenceRequests,type RestrictedIntakePermit} from './portal-evidence-requests.js';
 import {registerTaskTemplates} from './task-templates.js';
 import {registerRestrictedWork} from './restricted-work.js';
 import {registerReportCompositions} from './report-compositions.js';
@@ -131,6 +132,8 @@ type ClaimRow = QueryResultRow & {
 };
 
 type AppOptions = {
+  /** Integration must supply the shared current case-handling gate. Absent means deny. */
+  assertCaseSharing?: (c:PoolClient,tenantId:string,caseId:string)=>Promise<void>;
   identity?: IdentityProvider;
   pool: Pool;
   storageRoot: OriginalStore;
@@ -1039,8 +1042,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string,field?:FieldManifest) {
-        rejectClientRole(actor);
+  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string,field?:FieldManifest,restricted?:RestrictedIntakePermit) {
+        if(restricted){if(actor.role!=='client'||!binary||!uploadId||field)throw new ApiError(403,'Invalid restricted original intake.');}else rejectClientRole(actor);
         const originalKind = binary ? 'opaque_binary' : 'original_utf8';
         if (!validFilename(input.filename, binary)) {
           throw new ApiError(422, binary ? 'Evidence filename must be safe.' : 'Evidence filename must be a safe .txt filename.');
@@ -1071,7 +1074,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
               [`${actor.tenantId}:${caseId}:${actor.userId}:${input.idempotencyKey}`],
             );
-            const kase = await findCase(client, actor, caseId, true);
+            const kase = restricted?await restricted.authorize(client):await findCase(client, actor, caseId, true);
             const prior = await client.query<EvidenceRow>(
               `SELECT * FROM evidence
                 WHERE tenant_id = $1 AND case_id = $2 AND created_by = $3 AND idempotency_key = $4`,
@@ -1089,6 +1092,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               const existingBytes = await verifiedBytes(options.storageRoot, prior.rows[0]);
               const capture=field?(await client.query('SELECT * FROM field_captures WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND user_id=$4 AND evidence_id=$5',[actor.tenantId,caseId,field.id,actor.userId,prior.rows[0].id])).rows[0]:undefined;
               if(field&&(!capture||capture.manifest_sha256.trim()!==fieldManifestHash(field)))throw new ApiError(409,'Frozen field receipt does not match this original.');
+              if(restricted)await restricted.record(client,prior.rows[0].id);
               return {row: prior.rows[0], bytes: existingBytes,capture};
             }
             if(uploadId){
@@ -1158,6 +1162,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               await client.query('DELETE FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3',keys);
               await writeAudit(client,actor,caseId,'upload.completed','upload',uploadId,'Upload verified and attached as quarantined original');
             }
+            if(restricted)await restricted.record(client,row.id);
             let capture:QueryResultRow|undefined;
             if(field){
               capture=(await client.query('INSERT INTO field_captures(tenant_id,case_id,id,user_id,device_id,evidence_id,authority_id,authority_version,manifest,manifest_sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *',[actor.tenantId,caseId,field.id,actor.userId,field.deviceId,evidenceId,authority.id,authority.version,JSON.stringify(field),fieldManifestHash(field)])).rows[0];
@@ -1181,6 +1186,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     request=>receiveEvidence(request.actor!,(request.params as {caseId:string}).caseId,request.body as EvidenceInput|BinaryEvidenceInput,binary));
   registerFieldCapture(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
     receive:async(actor,caseId,manifest,contentBase64)=>await receiveEvidence(actor,caseId,{filename:manifest.filename,sourceTime:manifest.sourceTime,method:manifest.method,expectedSha256:manifest.expectedSha256,idempotencyKey:manifest.id,contentBase64},true,undefined,manifest) as FieldCaptureReceipt});
+  registerPortalEvidenceRequests(app,{pool:options.pool,authenticate,csrf:requireSessionCsrf,findCase,assertSession:assertCurrentSession,
+    // Root integration: inject assertCaseSharing from case-handling.ts here (mandatory, no permissive fallback).
+    assertSharing:options.assertCaseSharing??(async()=>{throw new ApiError(503,'Case sharing integration is required before evidence requests can be published or accessed.');}),
+    audit:writeAudit,validFilename,validSourceTime,
+    receive:async(actor,caseId,input,uploadId,permit)=>{await receiveEvidence(actor,caseId,input,true,uploadId,undefined,permit);},
+    verifyOriginal:async(c,tenantId,caseId,id)=>{const row=(await c.query<EvidenceRow>('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[tenantId,caseId,id])).rows[0];if(!row)notFound();await verifiedBytes(options.storageRoot,row);},
+  });
   registerUploads(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validFilename,validSourceTime,
     receive:async(actor,caseId,input,uploadId)=>await receiveEvidence(actor,caseId,input,true,uploadId) as Evidence,
     receipt:(actor,caseId,id)=>inTransaction(options.pool,async c=>{const row=await findEvidence(c,actor,caseId,id);return evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));})});
