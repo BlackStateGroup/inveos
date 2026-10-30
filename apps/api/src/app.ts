@@ -1,3 +1,4 @@
+import {registerCaseInvitations} from './case-invitations.js';
 import {registerWorkload} from './workload.js';
 import {registerTranscriptFindings} from './transcript-findings.js';
 import {registerFieldCapture,checkFieldDevice,fieldManifestHash,fieldReceipt} from './field-capture.js';
@@ -677,6 +678,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return finding;
   };
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
+  registerCaseInvitations(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseAccess(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerPreservationHolds(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);return {id:row.id,digest:row.digest.trim(),filename:row.filename,authorityVersion:row.authority_version};}});
   registerChronology(app,investigationServices);

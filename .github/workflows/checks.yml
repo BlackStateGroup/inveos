@@ -224,3 +224,11 @@ jobs:
             output/evals/transcript-graph-desktop.png
           if-no-files-found: ignore
           retention-days: 7
+      - name: Retain fictional invitation browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: case-invitations-browser
+          path: output/evals/case-invitations-*.png
+          if-no-files-found: ignore
+          retention-days: 7

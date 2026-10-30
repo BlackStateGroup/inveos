@@ -235,3 +235,6 @@ export type TranscriptClaimRecord={claim:TranscriptClaim;review:TranscriptClaimR
 export type TranscriptReportFinding={kind:'reviewed_transcript';id:string;text:string;reviewer:string;reviewedAt:string;claim:TranscriptClaim;review:TranscriptClaimReview;originalBase64:string};
 
 export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding;
+
+export type CaseInvitation={id:string;caseId:string;caseRef:string;caseTitle:string;recipientId:string;recipientName:string;ownerId:string;ownerName:string;reason:string;authorityVersion:number;approvedScope:string;approvedPurpose:string;offeredAt:string;expiresAt:string;response:{id:string;decision:'accept'|'decline';reason:string;actorId:string;recordedAt:string;accessVersion:number|null}|null;cancellation:{id:string;reason:string;actorId:string;recordedAt:string}|null;hasCurrentMembership:boolean;canAccept:boolean;state:'offered'|'accepted'|'declined'|'cancelled'|'expired'|'scope_changed'|'already_assigned'};
+export type CaseInvitationPage={items:CaseInvitation[];next:string|null};

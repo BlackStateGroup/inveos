@@ -1,6 +1,6 @@
 # Transcript findings across casework and search
 
-Active connected batch following merged PR97. Fictional fixtures only; product completion and production acceptance remain open.
+Merged PR98 following merged PR97. Earlier pending checkpoints below are historical; the final receipt supersedes their status. Fictional fixtures only; product completion and production acceptance remain open.
 
 ## Implemented
 
@@ -35,3 +35,9 @@ Five focused actual migration/chronology/graph checks pass, including prior text
 At expanded head `78c2b14a93268d3ac1898fd464acd15f1ef5077b`, Checks **40995503955**, job **123867562061**, failed **383/384 Node, zero skips**. The expanded transcript reasoning/search/chronology/graph browser journey passed. An existing team/entity browser waited only for the page heading, then clicked an entity before records loaded; it now waits for the exact enabled saved-entity control. Actual expanded reasoning and graph renders were inspected and the metadata/button spacing fix verified. Research **40995498127** passed independently; do not relabel the failed application run.
 
 Review also reproduced a functional gap through the real API: searching a saved entity alias returned zero records. Case search now includes values from the current attributed entity revision only. The failing reproduction is retained in the task log; five focused real PostgreSQL search/private-view/access/alias tests now pass, including superseded-alias exclusion while history retains it. The browser journey now exercises alias discovery too. Final lint/types pass. A complete final-head hosted rerun and merge remain pending; no current claim of 385 passing tests.
+
+## Final reviewed merge and main receipt
+
+Exact reviewed head `588c94ecaa41fb4c9827985fd1ecddaf8d261e06` passed Checks **40996258156**, job **123869976068**: **385 Node/145 Python, zero failures/skips, 36 actual browser journeys**, lint/types/build and host probes. Research **40996257930**, job **123869975034**, passed actual pinned source/runtime/archive qualification, native/OCR supplier paths/corpora, raster and five daemon/failure/isolation checks. Final reasoning and graph renders were inspected; retained images are in docs/evals/assets/transcript-reasoning-desktop.png and transcript-graph-desktop.png.
+
+Source/privacy review covered current case/tenant/authority boundaries, safe fixed-column SQL, selected transcript versions and withdrawal, stable retries/immutable history, typed export joins/redaction, old-output compatibility and access-denial clearing. No outstanding PR feedback remained. PR98 merged as `ad891d055dc0efebab2b2e5dfd32b481087f5bfc`. Resulting-main Checks **40997304678**, job **123873299925**, passed **385 Node/145 Python with zero failures/skips**, including all 36 actual browser journeys. Preserve the failed earlier run described above. No source-truth, media-alignment or production-readiness claim.

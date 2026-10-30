@@ -1,3 +1,4 @@
+import {CaseInvitations} from './CaseInvitations';
 import {TeamWorkload} from './TeamWorkload';
 import type {Case} from '@inveos/contracts';
 import {useEffect,useRef,useState} from 'react';
@@ -27,7 +28,7 @@ function PersonalWork({openWork}:{openWork:(item:AssignedWorkEntry)=>Promise<voi
  </div></Panel></>;
 }
 
-export function AssignedWork({openWork,cases=[],reviewer=false}:{openWork:(item:AssignedWorkEntry)=>Promise<void>;cases?:Case[];reviewer?:boolean}){
- const [team,setTeam]=useState(false);
- return <>{reviewer&&<div className="work-record-actions"><button className={team?'secondary':'primary'} onClick={()=>setTeam(false)}>My assignments</button><button className={team?'primary':'secondary'} onClick={()=>setTeam(true)}>Team workload</button></div>}{team&&reviewer?<TeamWorkload cases={cases} openWork={openWork}/>:<PersonalWork openWork={openWork}/>}</>;
+export function AssignedWork({openWork,cases=[],reviewer=false,csrf,onChanged,openCase}:{openWork:(item:AssignedWorkEntry)=>Promise<void>;cases?:Case[];reviewer?:boolean;csrf:string;onChanged:()=>Promise<unknown>;openCase:(id:string)=>Promise<void>}){
+ const [view,setView]=useState<'personal'|'team'|'invitations'>('personal');
+ return <><div className="work-record-actions"><button className={view==='personal'?'primary':'secondary'} onClick={()=>setView('personal')}>My assignments</button>{reviewer&&<button className={view==='team'?'primary':'secondary'} onClick={()=>setView('team')}>Team workload</button>}<button className={view==='invitations'?'primary':'secondary'} onClick={()=>setView('invitations')}>Case invitations</button></div>{view==='invitations'?<CaseInvitations csrf={csrf} onChanged={onChanged} openCase={openCase}/>:view==='team'&&reviewer?<TeamWorkload cases={cases} openWork={openWork}/>:<PersonalWork openWork={openWork}/>}</>;
 }
