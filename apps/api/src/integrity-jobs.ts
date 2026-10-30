@@ -1,3 +1,4 @@
+import {registerProcessingBatches} from './processing-batches.js';
 import {speechKind,speechProfile,speechProfileDigest,makeSpeechDerivative} from './speech-derivative.js';
 import {sourceUseProofs} from './source-use.js';
 import type {OriginalStore} from './original-encryption.js';
@@ -303,6 +304,39 @@ export async function finishRasterJob(pool:Pool,root:OriginalStore,s:Scope,token
 }
 
 export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
+  async function queueJob(client:PoolClient,actor:Actor,caseId:string,input:{evidenceId:string;idempotencyKey:string;kind?:string}){
+    if(actor.role==='client')throw new ApiError(403,'Internal jobs only.');
+    if(input.kind===speechKind&&!svc.speechLab)throw new ApiError(409,'Speech processing lab is disabled.');
+    if(input.kind!==speechKind&&isolatedKinds.includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
+      await svc.findCase(client,actor,caseId,true);
+      const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
+      if (old.rows[0]) {
+        if (old.rows[0].evidence_id !== input.evidenceId || old.rows[0].kind !== (input.kind ?? 'original_sha256_v1')) throw new ApiError(409,'Idempotency key already used.');
+        return dto(old.rows[0]);
+      }
+      const source = await client.query(`SELECT e.digest,e.original_kind,e.byte_length,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
+        WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')`, [actor.tenantId,caseId,input.evidenceId]);
+      if (!source.rows[0]) notFound();
+      if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
+      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>(input.kind===speechKind?262144:(ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
+      if(input.kind&&input.kind!=='original_sha256_v1')await sourceUseProofs(client,actor.tenantId,caseId,input.evidenceId,'analysis');
+      const id = randomUUID();
+      const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
+      await event(client,{tenantId:actor.tenantId,caseId,jobId:id},inserted.rows[0]);
+      await svc.audit(client,actor,caseId,'integrity_job.queued','integrity_job',id,'Scoped original processing requested');
+      return dto(inserted.rows[0]);
+  }
+  async function cancelJob(client:PoolClient,actor:Actor,caseId:string,jobId:string,expected?:{attempt:number;status:string}){
+    if(actor.role==='client')throw new ApiError(403,'Internal jobs only.');
+    await svc.findCase(client,actor,caseId,true);const scope={tenantId:actor.tenantId,caseId,jobId};
+    const row=(await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE',values(scope))).rows[0];if(!row)notFound();
+    if(!['queued','running'].includes(row.status))return dto(row);
+    if(expected&&(row.attempt!==expected.attempt||row.status!==expected.status))throw new ApiError(409,'Worker status or attempt changed. Inspect the current receipt before cancelling.');
+    await svc.audit(client,actor,caseId,'integrity_job.cancelled','integrity_job',jobId,'Scoped original processing cancelled');
+    return (await terminal(client,scope,'cancelled','user_cancelled'))!;
+  }
+  registerProcessingBatches(app,{...svc,queueJob,cancelJob,jobDto:dto});
   app.get('/api/cases/:caseId/integrity-jobs', {preHandler:svc.authenticate,schema:{
     params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
     querystring:{type:'object',additionalProperties:false,properties:{before:uuid,limit:{type:'integer',minimum:1,maximum:50,default:25}}},
@@ -347,28 +381,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
     const actor = request.actor!;
     const {caseId} = request.params as {caseId:string};
     const input = request.body as {evidenceId:string;idempotencyKey:string;kind?:string};
-    if(input.kind===speechKind&&!svc.speechLab)throw new ApiError(409,'Speech processing lab is disabled.');
-    if(input.kind!==speechKind&&isolatedKinds.includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
-    return inTransaction(svc.pool,async client => {
-      await svc.findCase(client,actor,caseId,true);
-      const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
-      if (old.rows[0]) {
-        if (old.rows[0].evidence_id !== input.evidenceId || old.rows[0].kind !== (input.kind ?? 'original_sha256_v1')) throw new ApiError(409,'Idempotency key already used.');
-        return dto(old.rows[0]);
-      }
-      const source = await client.query(`SELECT e.digest,e.original_kind,e.byte_length,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
-        WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')`, [actor.tenantId,caseId,input.evidenceId]);
-      if (!source.rows[0]) notFound();
-      if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
-      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>(input.kind===speechKind?262144:(ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
-      if(input.kind&&input.kind!=='original_sha256_v1')await sourceUseProofs(client,actor.tenantId,caseId,input.evidenceId,'analysis');
-      const id = randomUUID();
-      const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
-      await event(client,{tenantId:actor.tenantId,caseId,jobId:id},inserted.rows[0]);
-      await svc.audit(client,actor,caseId,'integrity_job.queued','integrity_job',id,'Scoped original processing requested');
-      return dto(inserted.rows[0]);
-    });
+    return inTransaction(svc.pool,client=>queueJob(client,actor,caseId,input));
   });
   app.get('/api/cases/:caseId/integrity-jobs/:jobId/derivative', {preHandler:svc.authenticate,schema:{params}}, async (request,reply) => {
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
@@ -673,13 +686,10 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         const {caseId,jobId} = request.params as {caseId:string;jobId:string};
         const s = {tenantId:actor.tenantId,caseId,jobId};
         return inTransaction(svc.pool,async client => {
+          if(cancel)return cancelJob(client,actor,caseId,jobId);
           await svc.findCase(client,actor,caseId,true);
           const r = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE',values(s));
           if (!r.rows[0]) notFound();
-          if (cancel && ['queued','running'].includes(r.rows[0].status)) {
-            await svc.audit(client,actor,caseId,'integrity_job.cancelled','integrity_job',jobId,'Integrity check cancelled');
-            return terminal(client,s,'cancelled','user_cancelled');
-          }
           return dto(r.rows[0]);
         });
       }});

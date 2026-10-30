@@ -1,3 +1,4 @@
+import {BatchProcessing} from './BatchProcessing';
 import {DocumentCitations} from './DocumentCitations';
 import {pairRasterDocument} from './rasterOverlay';
 import {RasterInspection} from './RasterInspection';
@@ -72,7 +73,7 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCit
   async function cancel(job:Job){const r=await fetch(`${base}/${job.id}/cancel`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:'{}'});
     const value=await r.json();if(!r.ok)throw new Error(value.error||'Cancellation failed.');if(!alive.current)return;
     setRows(old=>old.map(x=>x.id===job.id?value:x));await events(job.id);}
-  return <Panel title="Original processing history"><div className="panel-body">
+  return <><BatchProcessing caseId={caseId} csrf={csrf} onDenied={onDenied} onChanged={()=>load()} onInspect={async job=>{setRows(old=>old.some(j=>j.id===job.id)?old:[job,...old]);setSource(job.evidenceId);onSource?.(job.evidenceId);await act(()=>events(job.id));requestAnimationFrame(()=>window.document.getElementById('processing-individual-'+caseId)?.scrollIntoView({block:'start'}));}}/><div id={'processing-individual-'+caseId}><Panel title="Original processing history"><div className="panel-body">
     <Notice>Checks and text indexes remain separate from findings. Successful processing does not clear binary quarantine or approve a citation. A trusted worker must execute queued jobs.</Notice>
     <form onSubmit={e=>{e.preventDefault();void act(queue);}}>
       <label className="form-label">Original to process<select required disabled={busy||!!pending} value={pending?.evidenceId||source} onChange={e=>{setSource(e.target.value);setKind('original_sha256_v1');}}>
@@ -130,5 +131,5 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCit
     {raster&&<RasterInspection key={raster.job.id} raster={raster} document={document??undefined}/>}
     {history&&<section aria-label="Selected job attempts"><h3>Attempts for {history.jobId}</h3><ol>{history.items.map(e=><li key={e.id}>{e.status} · attempt {e.attempt} · {new Date(e.recordedAt).toISOString()} {e.failureCode||''}</li>)}</ol>
       {history.nextAfter&&<button disabled={busy} className="secondary" onClick={()=>void act(()=>events(history.jobId,history.nextAfter!))}>More attempts</button>}</section>}
-  </div></Panel>;
+  </div></Panel></div></>;
 }
