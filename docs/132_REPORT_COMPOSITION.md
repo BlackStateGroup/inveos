@@ -198,3 +198,8 @@ independent verifier success/tampering for mixed packages and trusted hashes;
 exact-copy review/release/expiry/revocation regression; UI/browser/accessibility,
 Office rendering, browser print, lifecycle/retention, privacy, lint and full suites.
 No broad tests or browser sessions were run or added during this build phase.
+
+
+### Executed integration follow-through
+
+Actual PostgreSQL acceptance reproduced and fixed the non-completing validation hook (48cf9fdc). Root reran three composition/portal/collaborator workflows successfully at4216ad12, including frozen selection and copied JSON/PDF/DOCX verification (`/tmp/inveos-platform-composition-accepted.log`). Eight actual old-versus-new PDF/DOCX byte comparisons passed against the PR116 renderer7d9f1540 for full/redacted text-document and speech fixtures; fixed baseline fingerprints are retained in `apps/api/test/report-pdf.test.ts`. This is bounded legacy compatibility evidence, not a claim that every possible report or Office renderer is qualified.

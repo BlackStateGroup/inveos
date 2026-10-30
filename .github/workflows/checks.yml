@@ -73,6 +73,8 @@ jobs:
         # The growing serial suite includes actual database and browser journeys.
         # Individual worker/browser deadlines remain unchanged.
         run: timeout 360s npm test --workspace @inveos/api
+      - name: Exercise actual recipient evidence upload and privacy in the browser
+        run: timeout 180s node --import tsx --test apps/api/test/workflow-browser.integration.ts
       - name: Exercise development effect replay in the actual browser
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
@@ -385,5 +387,14 @@ jobs:
         with:
           name: desktop-batch-browser
           path: output/evals/desktop-batch-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Retain recipient evidence browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: recipient-evidence-browser
+          path: output/evals/workflow-evidence-*.png
           if-no-files-found: ignore
           retention-days: 14
