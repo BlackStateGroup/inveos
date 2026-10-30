@@ -23,3 +23,5 @@ Final acquisition review reproduced a slow-response deadline gap using a real lo
 
 
 Final reviewed head `d8c49150fe477ce363b8174ae520f24fc609d919` passed **Checks 40983304386**, job 123828287725: **343 Node/136 Python, zero failures/skips and 30 actual browsers**. **Research 40983304312**, job 123828287303, passed complete acquisition, networkless image build/qualification, unchanged runtime inventory, both supplier paths/corpora, raster (1) and daemon failure/isolation (5). No unresolved feedback remained after source/privacy/runtime review. PR #93 merged as `eff69b0bdc7a92d258a9310b21b1e17dfbb9dd3e`; resulting-main Checks 40984158675 is pending. Final artifact 12946620214 has ZIP SHA-256 `8cc428c79d5c9010addd91843ccf5dce037d5d40832746218f4a64bdd27963c1`.
+
+Resulting-main Checks 40984158675 passed (job 123831098923): 343 Node/136 Python, zero failures/skips, 30 browsers. Final corpus measurements independently replayed from retained TSV and matched the prior passing run exactly: 14 v1 outputs and 24 v2 outputs. No additional accuracy or licence approval is inferred.
