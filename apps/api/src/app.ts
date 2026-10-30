@@ -11,6 +11,7 @@ import {registerTranscriptFindings} from './transcript-findings.js';
 import {registerFieldCapture,fieldManifestHash,fieldReceipt} from './field-capture.js';
 import {registerFieldSync} from './field-sync.js';
 import {registerFieldSessions} from './field-sessions.js';
+import {registerFieldDispatch} from './field-dispatch.js';
 import {checkFieldAcceptance,activeDevice,type FieldCase} from './field-authority.js';
 import type {FieldManifest,FieldCaptureReceipt,FieldAcceptance} from '@inveos/contracts';
 import {registerAttention} from './attention.js';
@@ -1164,6 +1165,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   for(const binary of [false,true])app.post(binary?'/api/cases/:caseId/evidence/binary':'/api/cases/:caseId/evidence',
     {preHandler:requireCsrf,schema:{params:caseParamsSchema,body:binary?binaryEvidenceBodySchema:evidenceBodySchema}},
     request=>receiveEvidence(request.actor!,(request.params as {caseId:string}).caseId,request.body as EvidenceInput|BinaryEvidenceInput,binary));
+  registerFieldDispatch(app,{pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerFieldSessions(app,{pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerFieldCapture(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
     receive:async(actor,caseId,manifest,contentBase64,recoveryId)=>await receiveEvidence(actor,caseId,{filename:manifest.filename,sourceTime:manifest.sourceTime,method:manifest.method,expectedSha256:manifest.expectedSha256,idempotencyKey:manifest.id,contentBase64},true,undefined,manifest,recoveryId) as FieldCaptureReceipt});

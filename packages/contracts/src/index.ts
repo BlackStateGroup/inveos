@@ -289,3 +289,4 @@ export type CollectionReceipt={schemaVersion:'inveos.collection.v1';captureMode:
 
 export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-provenance.v1';receipt:CollectionReceipt;receiptSha256:string;authorisation:Record<string,unknown>;caseAuthority:Record<string,unknown>;sourcePolicy:Record<string,unknown>;policyReview:Record<string,unknown>};sha256:string};
 export * from './field-sessions.js';
+export * from './field-dispatch.js';
