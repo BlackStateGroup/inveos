@@ -21,7 +21,7 @@ function cleanOutline(o:ReportOutline):ReportOutline{
  if(new Set(sections.map(s=>s.id)).size!==sections.length||new Set(ids).size!==ids.length||ids.length>1000)throw new ApiError(422,'Section identities and selected findings must be unique; select at most 1000 findings.');
  return {name:clean(o.name,3),scope:clean(o.scope),method:clean(o.method),limitations:clean(o.limitations),sections};
 }
-function strict(r:FastifyRequest){
+async function strict(r:FastifyRequest){
  const b=r.body as Record<string,unknown>;
  if(!b||typeof b!=='object'||Array.isArray(b)||['expectedVersion','expectedReviewSequence'].some(k=>k in b&&(!Number.isInteger(b[k])||typeof b[k]!=='number'))||'confirmContextNotFindings' in b&&b.confirmContextNotFindings!==true)throw new ApiError(422,'Explicit typed version and review decisions required.');
  for(const k of ['id','reason','sha256','decision'])if(k in b&&typeof b[k]!=='string')throw new ApiError(422,'Explicit plain-text fields required.');
