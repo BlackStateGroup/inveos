@@ -236,4 +236,6 @@
 
 - [117 — Versioned independent-review ownership](117_REVIEW_OWNERSHIP.md) — exact-version assignments, independence, current access, history and personal filters.
 
+- [118 — Pinned CPU speech research](118_WHISPER_RESEARCH.md) — unchanged catalogue Whisper/GGML sources, bounded fictional audio harness and actual qualification evidence.
+
 - [119 — Retained review assignment register](119_REVIEW_ASSIGNMENT_REGISTER.md) — current-access discovery of exact completed/superseded assignment histories.

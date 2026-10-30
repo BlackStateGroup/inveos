@@ -1,0 +1,35 @@
+{
+  "format": "inveos.fictional_speech_fixture.v1",
+  "generatorVersion": "eSpeak NG text-to-speech: 1.51  Data at: /usr/lib/aarch64-linux-gnu/espeak-ng-data",
+  "command": [
+    "espeak-ng",
+    "-v",
+    "en-gb",
+    "-s",
+    "150",
+    "-w",
+    "<temporary WAV>",
+    "<fictional text>"
+  ],
+  "generatorBinarySha256": "8133a9740d9d903781385c290f8eedad055c320f9a544ae4d7775a4f5c4c6c4f",
+  "resampling": "First-party integer linear interpolation to mono signed PCM16 LE at16000Hz; canonical44-byte RIFF header.",
+  "fixtures": [
+    {
+      "file": "supplier.wav",
+      "referenceText": "Fictional interview. The supplier sent twelve cartons on Monday.",
+      "sha256": "48bd8f791be211744f604f60f274b76648963a0fbf93c6240d7877e094f5700c",
+      "bytes": 149856,
+      "samples": 74906,
+      "sampleRate": 16000
+    },
+    {
+      "file": "uncertainty.wav",
+      "referenceText": "Fictional statement. I did not check the ownership record.",
+      "sha256": "3d590a4af159b443ecb41f8426e575634e2d8ae07bebbd7e2866f30a2fb4fefa",
+      "bytes": 131696,
+      "samples": 65826,
+      "sampleRate": 16000
+    }
+  ],
+  "limitation": "Generated formant speech only; no human speaker, actual interview, microphone/device, accent/noise or representative recognition acceptance. Generator is a host test tool, not an application dependency."
+}
