@@ -239,3 +239,5 @@
 - [118 — Pinned CPU speech research](118_WHISPER_RESEARCH.md) — unchanged catalogue Whisper/GGML sources, bounded fictional audio harness and actual qualification evidence.
 
 - [119 — Retained review assignment register](119_REVIEW_ASSIGNMENT_REGISTER.md) — current-access discovery of exact completed/superseded assignment histories.
+
+- [121 — Controlled OSINT workbench](121_OSINT_WORKBENCH.md) — source policies, scoped collection, preserved responses and actual evidence; live activation remains disabled.

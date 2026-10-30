@@ -1,0 +1,68 @@
+{
+  "status": "source_inspection_only_no_live_collection_or_dependency_install",
+  "files": [
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "revision": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "path": "LICENSE",
+      "bytes": 1066,
+      "sha256": "cba0fd452b1442f9d9a8b7f35e1457bf9fa4832ffe7ad6eaf26d10177f217ab1"
+    },
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "revision": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "path": "COMMERCIAL-LICENSE.md",
+      "bytes": 604,
+      "sha256": "5006be182bd1d9b30e6ace67801d47d0323073d8a9fde076a058446cf2bf9c88"
+    },
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "revision": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "path": "pyproject.toml",
+      "bytes": 3806,
+      "sha256": "aad5ae78ac1f1f8d8d9ad35b438003453a1bc28dfcb772397bc58a8a6e384f5d"
+    },
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "revision": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "path": "openosint/tool_policy.py",
+      "bytes": 12732,
+      "sha256": "6fb1cad67a3a8d55577c73fc19e90250758230097da59b85d8f7a1ccd5844418"
+    },
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "revision": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "path": "cloud/rate_limit.py",
+      "bytes": 2805,
+      "sha256": "40e70d91ba332d17205d3184c5edcd720e91c170673cc3ef0646728ea9185897"
+    },
+    {
+      "repository": "OpenOSINT/OpenOSINT",
+      "revision": "4acf13d6c27e2c10cdb0cfc7d1c732653cb3b42f",
+      "path": "openosint/tools/search_rdap.py",
+      "bytes": 8433,
+      "sha256": "87407dceb8231fcb7c02b20aa007f3be2f6852ae0bf9c285928840dd4c484899"
+    },
+    {
+      "repository": "smicallef/spiderfoot",
+      "revision": "0f815a203afebf05c98b605dba5cf0475a0ee5fd",
+      "path": "LICENSE",
+      "bytes": 1077,
+      "sha256": "41eb86ec55a9a98167a76dccb73f093000a96947e9f5d986fe79c741f4369684"
+    },
+    {
+      "repository": "smicallef/spiderfoot",
+      "revision": "0f815a203afebf05c98b605dba5cf0475a0ee5fd",
+      "path": "requirements.txt",
+      "bytes": 544,
+      "sha256": "5cbb80267846250a37c15ff31f6024ab63419183cdd23235ec3c39ef2c079356"
+    },
+    {
+      "repository": "smicallef/spiderfoot",
+      "revision": "0f815a203afebf05c98b605dba5cf0475a0ee5fd",
+      "path": "modules/sfp_opencorporates.py",
+      "bytes": 8536,
+      "sha256": "ee33bf51c7922d09faa8de2a111518be0148d4b0fe666da54d8be2c79a24dac8"
+    }
+  ]
+}

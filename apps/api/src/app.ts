@@ -1,3 +1,5 @@
+import {registerCollectionJobs} from './collection-jobs.js';
+import {registerConnectorPolicies} from './connector-policies.js';
 import {buildReportDocx} from './report-docx.js';
 import {registerCaseExpenses} from './case-expenses.js';
 import {registerSourceUse,sourceUseProofs,reportSourceUse} from './source-use.js';
@@ -405,7 +407,7 @@ function displayClaim(row: ClaimRow): Claim {
   };
 }
 
-async function findCase(
+export async function findCase(
   client: PoolClient,
   actor: Actor,
   caseId: string | null,
@@ -492,7 +494,7 @@ async function verifiedBytes(storageRoot: OriginalStore, evidence: EvidenceRow):
   return bytes;
 }
 
-async function writeAudit(
+export async function writeAudit(
   client: PoolClient,
   actor: Actor,
   caseId: string | null,
@@ -662,6 +664,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   });
 
+  registerConnectorPolicies(app,{pool:options.pool,authenticate,requireCsrf});
+  registerCollectionJobs(app,{pool:options.pool,storage:options.storageRoot,authenticate,requireCsrf});
   const manualSourceService=registerManualSources(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
   registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
