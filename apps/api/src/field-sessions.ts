@@ -34,9 +34,12 @@ export function registerFieldSessions(app:FastifyInstance,s:Services){
   try{
    const requestHash=hash(JSON.stringify({captureId,expectedSha256:source.digest.trim(),authority:syncOrder(v.organisation.authority),reason:v.organisation.reason}));
    if(v.id!==row.request_id||v.caseId!==caseId||v.userId!==row.user_id||v.userId!==record.userId||v.captureId!==captureId||v.sessionId!==row.session_id||v.sessionId!==record.sessionId||v.observationId!==row.observation_id||v.version!==row.version||v.version!==record.expectedVersion+1||v.previousCaptureId!==row.previous_capture_id||row.kind!==record.kind||fieldRecordCanonical(v.record)!==fieldRecordCanonical(record)||v.source.evidenceId!==source.evidence_id||v.source.sha256!==source.digest.trim()||v.source.manifestSha256!==source.manifest_sha256.trim()||v.source.sourceTime!==record.sourceTime||v.source.deviceTime!==record.deviceTime||v.source.receivedAt!==stamp(source.received_at)||v.organisation.recordedAt!==stamp(row.recorded_at)||requestHash!==row.request_sha256.trim()||typeof v.receivedAfterEnd!=='boolean')throw new Error('Receipt differs');
-   const links=isObservation(record)?(record as import('@inveos/contracts').FieldObservationRecord).attachments:[];
+   const observation=isObservation(record)?record as import('@inveos/contracts').FieldObservationRecord:null;
+   if(v.observationId!==(observation?.observationId??null)||(observation&&v.previousCaptureId!==observation.supersedesCaptureId)||(v.version===1)!==(v.previousCaptureId===null))throw new Error('Predecessor identity differs');
+   const links=observation?.attachments??[];
    if(!Array.isArray(v.attachments)||v.attachments.length!==links.length||v.attachments.some((link,i)=>fieldRecordCanonical({kind:link.kind,id:link.id,sha256:link.sha256,relation:link.relation,note:link.note})!==fieldRecordCanonical(links[i])))throw new Error('Attachment link differs');
   }catch{throw new ApiError(409,'Field organisation receipt does not match its immutable original and request.');}
+  if(v.previousCaptureId){const previous=(await c.query('SELECT session_id,observation_id,version FROM field_session_records WHERE tenant_id=$1 AND case_id=$2 AND capture_id=$3',[a.tenantId,caseId,v.previousCaptureId])).rows[0];if(!previous||previous.session_id!==v.sessionId||previous.observation_id!==v.observationId||previous.version!==v.version-1)throw new ApiError(409,'Field correction predecessor is not the preceding version of this record.');}
   await sourceUseProofs(c,a.tenantId,caseId,source.evidence_id,'analysis');return v;
  };
  app.get('/api/cases/:caseId/field-records/:captureId/receipt',{preHandler:r=>internal(r),schema:{params:params(['caseId','captureId'])}},r=>tx(async c=>{const a=r.actor!,{caseId,captureId}=r.params as {caseId:string;captureId:string};await s.findCase(c,a,caseId,true);return receipt(c,a,caseId,captureId);}));
@@ -55,7 +58,7 @@ export function registerFieldSessions(app:FastifyInstance,s:Services){
   const a=r.actor!,{caseId}=r.params as {caseId:string},input=r.body as FieldOrganiseRequest;reason(input.reason);const kase=await s.findCase(c,a,caseId,true),{row,record}=await original(c,a,caseId,input.captureId);if(row.digest.trim()!==input.expectedSha256)throw new ApiError(409,'Organise request digest differs from the retained original.');
   const requestHash=hash(JSON.stringify({captureId:input.captureId,expectedSha256:input.expectedSha256,authority:syncOrder(input.authority),reason:input.reason}));
   const prior=(await c.query('SELECT * FROM field_session_records WHERE tenant_id=$1 AND case_id=$2 AND (request_id=$3 OR capture_id=$4)',[a.tenantId,caseId,input.id,input.captureId])).rows;
-  const reused=prior.find(p=>p.request_id===input.id);if(reused&&reused.request_sha256.trim()!==requestHash)throw new ApiError(409,'Organisation request identity already used for another decision.');const same=prior.find(p=>p.capture_id===input.captureId);if(same)return same.receipt as FieldRecordReceipt;
+  const reused=prior.find(p=>p.request_id===input.id);if(reused&&reused.request_sha256.trim()!==requestHash)throw new ApiError(409,'Organisation request identity already used for another decision.');const same=prior.find(p=>p.capture_id===input.captureId);if(same)return receipt(c,a,caseId,input.captureId);
   // Acknowledged bytes are historical. Organisation is a separate current-scope decision;
   // it does not reaccept bytes or alter their historical capture/acceptance authority.
   await checkGrant(c,a,caseId,kase,input.authority);

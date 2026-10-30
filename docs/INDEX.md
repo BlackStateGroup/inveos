@@ -273,3 +273,6 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 - [141 — Field records in investigator search](141_FIELD_CASE_SEARCH.md): exact original/correction inspection from case search; runtime acceptance pending.
 
 - [142 — Offline verification kit](142_OFFLINE_VERIFICATION_KIT.md): downloadable standard-library export checkers without case data; runtime acceptance pending.
+
+- [136 — Locked Tika PDF application worker](136_TIKA_APPLICATION_WORKER.md): page-text citations, independent decisions and isolated worker integration; actual acceptance pending.
+- [140 — Reusable case task templates](140_REUSABLE_TASK_TEMPLATES.md): pinned reviewed boilerplate and atomic explicit application; runtime acceptance pending.
