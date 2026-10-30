@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
-import { workStatuses, type TaskStatusBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskPlanBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding } from '@inveos/contracts';
 import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -192,50 +192,58 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     });
   });
 
-  app.post('/api/cases/:caseId/work/task-status-batches', {
+  for(const planning of [false,true])app.post('/api/cases/:caseId/work/'+(planning?'task-plan-batches':'task-status-batches'), {
     preHandler: services.requireCsrf,
     preValidation: async request => {
-      const body=request.body as TaskStatusBatch|null;
-      if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.id!=='string'||typeof body.status!=='string'||typeof body.reason!=='string'||
+      const body=request.body as (TaskStatusBatch&TaskPlanBatch)|null;
+      const object=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
+      if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.id!=='string'||(!planning&&typeof body.status!=='string')||typeof body.reason!=='string'||
+         (planning&&body.ownerChange!==undefined&&(!object(body.ownerChange)||(body.ownerChange.ownerId!==null&&typeof body.ownerChange.ownerId!=='string')))||
+         (planning&&body.dueDateChange!==undefined&&(!object(body.dueDateChange)||(body.dueDateChange.dueDate!==null&&typeof body.dueDateChange.dueDate!=='string')))||
          !Array.isArray(body.items)||body.items.some(item=>!item||typeof item!=='object'||Array.isArray(item)||typeof item.id!=='string'||typeof item.expectedVersion!=='number'))
-        throw new ApiError(422,'Choose explicit task identities, numeric versions, a status and a reason.');
+        throw new ApiError(422,'Choose explicit task identities, numeric versions, changes and a reason.');
     },
-    schema:{params:caseParams,body:{type:'object',additionalProperties:false,required:['id','items','status','reason'],properties:{
-      id:uuid,status:{type:'string',enum:workStatuses.task},reason:{type:'string',minLength:10,maxLength:3000},
+    schema:{params:caseParams,body:{type:'object',additionalProperties:false,required:['id','items','reason',...(planning?[]:['status'])],...(planning?{anyOf:[{required:['ownerChange']},{required:['dueDateChange']}]}:{}),properties:{
+      id:uuid,...(planning?{ownerChange:{type:'object',additionalProperties:false,required:['ownerId'],properties:{ownerId:nullableUuid}},dueDateChange:{type:'object',additionalProperties:false,required:['dueDate'],properties:{dueDate:editable.dueDate}}}:{status:{type:'string',enum:workStatuses.task}}),reason:{type:'string',minLength:10,maxLength:3000},
       items:{type:'array',minItems:1,maxItems:50,items:{type:'object',additionalProperties:false,required:['id','expectedVersion'],properties:{id:uuid,expectedVersion:{type:'integer',minimum:1,maximum:2147483646}}}},
     }}},
   },async request=>{
-    const actor=request.actor!,{caseId}=request.params as {caseId:string},input=request.body as TaskStatusBatch;
+    const actor=request.actor!,{caseId}=request.params as {caseId:string},input=request.body as TaskStatusBatch&TaskPlanBatch;
+    const ownerChange=input.ownerChange?{ownerId:input.ownerChange.ownerId?.toLowerCase()??null}:undefined,dueDateChange=input.dueDateChange;
+    const table=planning?'task_plan_batches':'task_status_batches';
     const reason=input.reason.trim(),id=input.id.toLowerCase(),items=input.items.map(item=>({id:item.id.toLowerCase(),expectedVersion:item.expectedVersion})).sort((a,b)=>a.id.localeCompare(b.id));
-    validateText({title:'Task status batch',body:'',dueDate:null},reason);
+    validateText({title:'Task batch',body:'',dueDate:dueDateChange?.dueDate??null},reason);
     if(reason.length<10||new Set(items.map(item=>item.id)).size!==items.length)throw new ApiError(422,'Choose distinct tasks and give a clear reason.');
-    const hash=createHash('sha256').update(JSON.stringify({items,status:input.status,reason})).digest('hex');
+    const hash=createHash('sha256').update(JSON.stringify(planning?{items,ownerChange:ownerChange??null,dueDateChange:dueDateChange??null,reason}:{items,status:input.status,reason})).digest('hex');
     return inTransaction(services.pool,async client=>{
       await client.query("SET LOCAL lock_timeout='2s'");await client.query("SET LOCAL statement_timeout='5s'");
       await services.findCase(client,actor,caseId,true);
-      const previous=(await client.query('SELECT * FROM task_status_batches WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,id])).rows[0];
+      const previous=(await client.query(`SELECT * FROM ${table} WHERE tenant_id=$1 AND case_id=$2 AND id=$3`,[actor.tenantId,caseId,id])).rows[0];
       if(previous&&(previous.actor_id!==actor.userId||previous.request_hash!==hash))throw new ApiError(409,'This batch identity was used for a different decision.');
       const current:WorkItem[]=[];
       // Resolve the complete selection inside this case before changing anything.
       for(const selected of items){const item=displayWork(await findWork(client,actor,caseId,selected.id));
-        if(item.kind!=='task')throw new ApiError(422,'Batch status changes apply only to tasks.');
+        if(item.kind!=='task')throw new ApiError(422,'Batch changes apply only to tasks.');
         current.push(item);
       }
       if(previous)return {id,applied:previous.applied,items:current} satisfies TaskStatusBatchResult;
       if(current.some((item,i)=>item.version!==items[i]!.expectedVersion))throw new ApiError(409,'A selected task changed. Refresh and select its current version; no tasks were changed.');
-      if(current.some(item=>item.status===input.status))throw new ApiError(422,'Every selected task must change status; no tasks were changed.');
-      const count=(await client.query('SELECT count(*)::int n FROM task_status_batches WHERE tenant_id=$1 AND case_id=$2',[actor.tenantId,caseId])).rows[0].n;
+      if(planning){
+        if(ownerChange)await checkOwner(client,actor,caseId,ownerChange.ownerId);
+        if(current.some(item=>(!ownerChange||item.ownerId===ownerChange.ownerId)&&(!dueDateChange||item.dueDate===dueDateChange.dueDate)))throw new ApiError(422,'Every selected task must change owner or deadline; no tasks were changed.');
+      }else if(current.some(item=>item.status===input.status))throw new ApiError(422,'Every selected task must change status; no tasks were changed.');
+      const count=(await client.query(`SELECT count(*)::int n FROM ${table} WHERE tenant_id=$1 AND case_id=$2`,[actor.tenantId,caseId])).rows[0].n;
       if(count>=1000)throw new ApiError(409,'This case has reached its batch limit. Individual task revisions remain available.');
       const updated:WorkItem[]=[];
       for(const item of current){
-        const row=(await client.query(`UPDATE case_work_items SET status=$4,version=version+1,updated_at=clock_timestamp()
-          WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *,due_date::text AS due_date`,[actor.tenantId,caseId,item.id,input.status])).rows[0];
+        const row=(await client.query(`UPDATE case_work_items SET status=$4,owner_id=$5,due_date=$6,version=version+1,updated_at=clock_timestamp()
+          WHERE tenant_id=$1 AND case_id=$2 AND id=$3 RETURNING *,due_date::text AS due_date`,[actor.tenantId,caseId,item.id,planning?item.status:input.status,ownerChange?ownerChange.ownerId:item.ownerId,dueDateChange?dueDateChange.dueDate:item.dueDate])).rows[0];
         const next=displayWork(row);await recordRevision(client,actor,next,reason);
-        await services.audit(client,actor,caseId,'work.revised','case_work',next.id,'Task status changed in a recorded batch',{version:next.version,reason,batchId:id});updated.push(next);
+        await services.audit(client,actor,caseId,'work.revised','case_work',next.id,planning?'Task assignment/deadline changed in a recorded batch':'Task status changed in a recorded batch',{version:next.version,reason,batchId:id});updated.push(next);
       }
       const applied=updated.map(item=>({id:item.id,version:item.version}));
-      await client.query('INSERT INTO task_status_batches(tenant_id,case_id,id,request_hash,actor_id,applied) VALUES($1,$2,$3,$4,$5,$6::jsonb)',[actor.tenantId,caseId,id,hash,actor.userId,JSON.stringify(applied)]);
-      await services.audit(client,actor,caseId,'work.task_batch','task_status_batch',id,'Task status batch recorded',{count:applied.length,status:input.status});
+      await client.query(`INSERT INTO ${table}(tenant_id,case_id,id,request_hash,actor_id,applied) VALUES($1,$2,$3,$4,$5,$6::jsonb)`,[actor.tenantId,caseId,id,hash,actor.userId,JSON.stringify(applied)]);
+      await services.audit(client,actor,caseId,planning?'work.task_plan_batch':'work.task_batch',planning?'task_plan_batch':'task_status_batch',id,planning?'Task assignment/deadline batch recorded':'Task status batch recorded',planning?{count:applied.length,ownerChange:ownerChange??null,dueDateChange:dueDateChange??null}:{count:applied.length,status:input.status});
       return {id,applied,items:updated} satisfies TaskStatusBatchResult;
     });
   });
