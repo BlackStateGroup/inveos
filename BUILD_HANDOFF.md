@@ -35,3 +35,6 @@ Local Chrome/worker isolation remains unavailable and must not be bypassed; qual
 
 
 Initial draft `1f5be613951efb62832929d457a5d58dadf67ac0` passed application Checks 40980543961. Research 40980544161 successfully acquired/audited the locked archives but failed during the networkless Docker build, before OCR acceptance. The generic helper suppressed build output, so the cause is not yet established. The controller now retains bounded public-context build diagnostics and reports the error tail, with networking still disabled. A diagnostic rerun is required; no rebuilt-runtime acceptance is claimed.
+
+
+Diagnostic Research 40981338216 at `5c484c6` reproduced APT’s local-archive staging failure: `Pathname to install is not absolute`. No parser acceptance ran. The build now supplies empty repository sources/indexes and allows APT to stage the already verified local archives into its cache. Docker `--network=none`, the complete archive lock, no-removal setting and pre-OCR runtime inventory checks remain unchanged. A fresh hosted rebuild is required.
