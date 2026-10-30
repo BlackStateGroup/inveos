@@ -70,6 +70,8 @@ class WhisperResearchTests(unittest.TestCase):
             write_tar(first, {'source/LICENSE': b'Fictional terms', 'runner.cpp': b'Fictional harness'})
             write_tar(second, {'runner.cpp': b'Fictional harness', 'source/LICENSE': b'Fictional terms'})
             self.assertEqual(first.read_bytes(), second.read_bytes())
+            with self.assertRaisesRegex(ValueError, 'Unsafe'):
+                write_tar(Path(directory) / 'unsafe.tar', {'../escape': b'Fictional'})
             with tarfile.open(first) as archive:
                 self.assertTrue(all(m.isfile() and m.mode == 0o444 and m.mtime == 1 for m in archive))
 
@@ -99,6 +101,13 @@ class WhisperResearchTests(unittest.TestCase):
             validate_output(json.dumps(base), 32000)
         with self.assertRaises(ValueError):
             validate_output(' ' * (128 * 1024 + 1), 16000)
+        for invalid in ['{"samples":1,"samples":16000}', '{"samples":NaN}', '[]', '漢' * 50000, '\ud800']:
+            with self.subTest(output=repr(invalid[:80])), self.assertRaises(ValueError):
+                validate_output(invalid, 16000)
+        base['segments'][0]['endMs'] = 500
+        base['samples'] = True
+        with self.assertRaises(ValueError):
+            validate_output(json.dumps(base), 1)
 
     def test_word_errors_preserve_substitutions_and_hallucinated_words_on_silence(self):
         self.assertEqual(errors('Twelve cartons', 'Twelve cartons.')['normalisedWordErrorRate'], 0)

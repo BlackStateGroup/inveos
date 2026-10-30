@@ -32,7 +32,7 @@ def errors(reference, hypothesis):
 
 
 def validate_output(data, samples):
-    require(len(data) <= 128 * 1024, 'Inference output bound')
+    require(isinstance(data, str) and len(data.encode('utf-8')) <= 128 * 1024, 'Inference output byte bound')
     def unique(pairs):
         value = {}
         for key, item in pairs:
