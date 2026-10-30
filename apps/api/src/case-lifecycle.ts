@@ -1,3 +1,4 @@
+import {assertRestoredRetirementComplete} from './restored-case-gates.js';
 import {createHash,randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
@@ -5,7 +6,7 @@ import {caseStages,type CaseStage} from '@inveos/contracts';
 import type {Actor} from './app.js';
 import {inTransaction} from './db.js';
 import {ApiError} from './errors.js';
-export type LifecycleCase={lifecycle_state:CaseStage;lifecycle_version:number;authority_version:number|null;status:string};
+export type LifecycleCase={lifecycle_state:CaseStage;lifecycle_version:number;authority_version:number|null;status:string;restored_work_open?:boolean};
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
  findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<LifecycleCase>;
  audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>;
@@ -13,9 +14,11 @@ type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireC
 const uuid={type:'string',pattern:'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-8][a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$'};
 const params={type:'object',additionalProperties:false,required:['caseId'],properties:{caseId:uuid}};
 const choices:Record<CaseStage,CaseStage[]>={Intake:['Scope review','Closed'],'Scope review':['Closed'],Active:['Review','Closed'],Review:['Active','Released','Closed'],Released:['Active','Review','Closed'],Closed:['Scope review','Archived'],Archived:['Scope review']};
-export function collectionOpen(kase:LifecycleCase){return kase.status==='Active'&&kase.authority_version!==null&&['Active','Review'].includes(kase.lifecycle_state);}
+export function collectionOpen(kase:LifecycleCase){return kase.restored_work_open!==false&&kase.status==='Active'&&kase.authority_version!==null&&['Active','Review'].includes(kase.lifecycle_state);}
 // Caller holds the case lock. Authority approval and explicit transitions share this history.
 export async function appendCaseStage(c:PoolClient,a:Actor,caseId:string,kase:LifecycleCase,to:CaseStage,reason:string,source:'authority_approved'|'investigator_transition',id:string=randomUUID(),requestHash:string|null=null,disclosureId:string|null=null){
+ if(source==='investigator_transition'&&!choices[kase.lifecycle_state].includes(to))throw new ApiError(409,'This stage transition is unavailable.');
+ await assertRestoredRetirementComplete(c,a.tenantId,caseId);
  if(kase.lifecycle_version>=1000)throw new ApiError(409,'Case stage history limit reached.');
  const version=kase.lifecycle_version+1;
  await c.query(`INSERT INTO case_lifecycle_events(tenant_id,case_id,id,version,from_state,to_state,actor_id,reason,source,authority_version,request_hash,disclosure_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,[a.tenantId,caseId,id,version,kase.lifecycle_state,to,a.userId,reason,source,kase.authority_version,requestHash,disclosureId]);

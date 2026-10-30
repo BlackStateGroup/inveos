@@ -1299,7 +1299,7 @@ test('ordered migrations upgrade a pre-ledger foundation database, rerun safely 
     await runMigrations(context.adminPool!, schema);
     await runMigrations(context.adminPool!, schema);
     const result = await client.query(`SELECT filename,sha256 FROM "${schema}".schema_migrations ORDER BY filename`);
-    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql', '034_saved_case_views.sql', '035_work_discussions.sql', '036_case_graph.sql', '037_manual_sources.sql', '038_assigned_work_queue_index.sql', '039_case_lifecycle.sql', '040_interview_transcripts.sql', '041_case_access.sql', '042_case_time_ledger.sql', '043_preservation_holds.sql', '044_attention_queue.sql', '045_expanded_document_profiles.sql', '046_case_time_budgets.sql', '047_task_status_batches.sql', '048_field_capture.sql', '049_transcript_findings.sql', '050_transcript_work_links.sql', '051_transcript_graph_sources.sql', '052_case_invitations.sql', '053_source_use_decisions.sql', '054_case_expenses.sql', '055_editable_report_renditions.sql', '056_task_plan_batches.sql', '057_reviewed_docx_disclosures.sql', '058_review_assignments.sql', '059_speech_derivatives.sql', '060_speech_findings.sql', '061_connector_policies.sql', '062_collection_jobs.sql', '063_speech_work_links.sql', '064_speech_graph_sources.sql', '065_research_requests.sql', '070_field_device_control.sql', '071_field_case_grants.sql', '072_field_sync_recovery.sql', '075_agency_billing_declarations.sql', '076_agency_draft_invoices.sql', '077_agency_invoice_guards.sql', '080_case_analysis.sql', '081_portal_feedback_requests.sql', '082_portal_feedback_responses.sql', '083_portal_feedback_receipt_guards.sql', '085_processing_batches.sql', '086_processing_request_resolution.sql', '089_analysis_followup.sql', '090_legal_entity_research.sql', '094_desktop_intake_batches.sql', '095_report_compositions.sql', '100_field_sessions.sql', '101_field_observation_reviews.sql', '105_tika_application_worker.sql', '110_restricted_work_grants.sql', '111_restricted_work_submissions.sql', '112_restricted_work_guards.sql', '115_case_handling.sql', '116_field_dispatch.sql', '117_field_dispatch_originals.sql', '120_case_task_templates.sql', '121_task_template_applications.sql', '122_task_template_receipt_guards.sql', '125_portal_evidence_requests.sql', '126_portal_evidence_receipts.sql', '127_portal_evidence_guards.sql', '128_portal_upload_binding_guard.sql', '130_tika_interpretation_withdrawals.sql']);
+    assert.deepEqual(result.rows.map(r => r.filename), ['001_foundation.sql', '002_casework.sql', '003_binary_originals.sql', '004_integrity_jobs.sql', '005_text_derivatives.sql', '006_claim_source_identity.sql', '007_report_revisions.sql', '008_report_revision_listing.sql', '009_job_history_indexes.sql', '010_dispatch_candidates.sql', '011_upload_reservations.sql', '012_upload_maintenance.sql', '013_upload_history.sql', '014_report_review.sql', '015_report_disclosures.sql', '016_disclosure_recipient_index.sql', '017_disclosure_acknowledgements.sql', '018_disclosure_case_history.sql', '019_session_owner_index.sql', '020_session_epoch.sql', '021_job_lease_deadline.sql', '022_document_derivatives.sql', '023_raster_derivatives.sql', '024_document_citation_candidates.sql', '025_document_citation_reviews.sql', '026_document_derived_findings.sql', '027_document_disclosure_packages.sql', '028_report_renditions.sql', '029_reviewed_pdf_disclosures.sql', '030_ocr_document_derivatives.sql', '031_document_work_links.sql', '032_chronology.sql', '033_provider_identity.sql', '034_saved_case_views.sql', '035_work_discussions.sql', '036_case_graph.sql', '037_manual_sources.sql', '038_assigned_work_queue_index.sql', '039_case_lifecycle.sql', '040_interview_transcripts.sql', '041_case_access.sql', '042_case_time_ledger.sql', '043_preservation_holds.sql', '044_attention_queue.sql', '045_expanded_document_profiles.sql', '046_case_time_budgets.sql', '047_task_status_batches.sql', '048_field_capture.sql', '049_transcript_findings.sql', '050_transcript_work_links.sql', '051_transcript_graph_sources.sql', '052_case_invitations.sql', '053_source_use_decisions.sql', '054_case_expenses.sql', '055_editable_report_renditions.sql', '056_task_plan_batches.sql', '057_reviewed_docx_disclosures.sql', '058_review_assignments.sql', '059_speech_derivatives.sql', '060_speech_findings.sql', '061_connector_policies.sql', '062_collection_jobs.sql', '063_speech_work_links.sql', '064_speech_graph_sources.sql', '065_research_requests.sql', '070_field_device_control.sql', '071_field_case_grants.sql', '072_field_sync_recovery.sql', '075_agency_billing_declarations.sql', '076_agency_draft_invoices.sql', '077_agency_invoice_guards.sql', '080_case_analysis.sql', '081_portal_feedback_requests.sql', '082_portal_feedback_responses.sql', '083_portal_feedback_receipt_guards.sql', '085_processing_batches.sql', '086_processing_request_resolution.sql', '089_analysis_followup.sql', '090_legal_entity_research.sql', '094_desktop_intake_batches.sql', '095_report_compositions.sql', '100_field_sessions.sql', '101_field_observation_reviews.sql', '105_tika_application_worker.sql', '110_restricted_work_grants.sql', '111_restricted_work_submissions.sql', '112_restricted_work_guards.sql', '115_case_handling.sql', '116_field_dispatch.sql', '117_field_dispatch_originals.sql', '120_case_task_templates.sql', '121_task_template_applications.sql', '122_task_template_receipt_guards.sql', '125_portal_evidence_requests.sql', '126_portal_evidence_receipts.sql', '127_portal_evidence_guards.sql', '128_portal_upload_binding_guard.sql', '130_tika_interpretation_withdrawals.sql', '135_restored_case_quarantine.sql']);
     assert.equal((await client.query(`SELECT count(*)::int AS count FROM "${schema}".users`)).rows[0].count, 1);
     await client.query(`UPDATE "${schema}".schema_migrations SET sha256=$1 WHERE filename='002_casework.sql'`, ['0'.repeat(64)]);
     await assert.rejects(runMigrations(context.adminPool!, schema), /Applied migration was modified/);
@@ -1737,23 +1737,26 @@ test('freezing requires reviewed findings and rolls back its revision when audit
   const retried=await request('POST',url,context.demo!,{payload:input});assert.equal(retried.statusCode,200,retried.body);
 });
 
-test('report freeze keeps one real database snapshot when a case edit commits between assembler queries',async()=>{
+test('report freeze retries a concurrent case edit and commits one coherent locked snapshot',async()=>{
   const {kase,url}=await reportFixture();
   const scopeBefore=JSON.parse((await request('GET',`/api/cases/${kase.id}/report`,context.demo!)).body).case.scope;
   const pool=context.pool!;
   const originals=new Map<import('pg').PoolClient,import('pg').PoolClient['query']>();
-  let edited=false;
-  // Commit on a second connection after access establishes the snapshot, before assembly.
+  let edited=false,transactions=0;
+  const scopeAfter='Fictional scope edited during report assembly',titleAfter='Fictional concurrent report title';
+  // Commit after the first snapshot is established, before its case lock. PostgreSQL
+  // must reject that lock with 40001; the bounded retry freezes the complete new state.
   // No query results are mocked; restore the instrumented client before returning it to the pool.
   const instrument=(client: import('pg').PoolClient)=>{
     if(originals.has(client)) return;
     const query=client.query.bind(client);originals.set(client,query);
     client.query=((...args: unknown[])=>{
+      if(args[0]==='SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')transactions++;
       const result=(query as (...args:unknown[])=>Promise<unknown>)(...args);
       if(!edited && typeof args[0]==='string' && args[0].includes("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role")) {
         edited=true;
         return result.then(async rows=>{
-          await context.schemaAdminPool!.query('UPDATE cases SET scope=$2 WHERE id=$1',[kase.id,'Fictional scope edited during report assembly']);
+          await context.schemaAdminPool!.query('UPDATE cases SET scope=$2,title=$3 WHERE id=$1',[kase.id,scopeAfter,titleAfter]);
           return rows;
         });
       }
@@ -1763,7 +1766,7 @@ test('report freeze keeps one real database snapshot when a case edit commits be
   pool.on('acquire',instrument);
   let frozen;
   try {frozen=await request('POST',url,context.demo!,{payload:{idempotencyKey:randomUUID()}});} finally {pool.off('acquire',instrument);for(const [client,query] of originals) client.query=query;}
-  assert.equal(frozen.statusCode,200,frozen.body);assert.equal(edited,true);
+  assert.equal(frozen.statusCode,200,frozen.body);assert.equal(edited,true);assert.equal(transactions,2);
   const id=JSON.parse(frozen.body).id;
   const app=await createAppInstance();
   try {
@@ -1771,7 +1774,8 @@ test('report freeze keeps one real database snapshot when a case edit commits be
     const response=await fetch(`${address}${url}/${id}`,{headers:{cookie:context.demo!.cookie}});
     assert.equal(response.status,200);
     const raw=await response.text();assert.equal(digest(raw),JSON.parse(frozen.body).sha256);
-    assert.equal(JSON.parse(raw).case.scope,scopeBefore);
+    const report=JSON.parse(raw);assert.notEqual(report.case.scope,scopeBefore);assert.equal(report.case.scope,scopeAfter);assert.equal(report.case.title,titleAfter);
+    assert.equal((await context.pool!.query('SELECT count(*)::int n FROM report_revisions WHERE case_id=$1',[kase.id])).rows[0].n,1);
   } finally {await app.close();}
   const current=await request('GET',`/api/cases/${kase.id}/report`,context.demo!);
   assert.equal(JSON.parse(current.body).case.scope,'Fictional scope edited during report assembly');
