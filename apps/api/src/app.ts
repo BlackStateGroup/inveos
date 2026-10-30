@@ -1,3 +1,4 @@
+import {assertRestoredCaseWork,assertRestoredRetirementComplete,restoredCaseWorkEligibility} from './restored-case-gates.js';
 import {registerVerificationKit} from './verification-kit.js';
 import {registerCaseHandling,caseSharingEligibility,caseSharingState,assertCaseSharing} from './case-handling.js';
 import {reportFieldProvenance} from './field-provenance.js';
@@ -432,7 +433,7 @@ export async function findCase(
   lock = false,
 ): Promise<CaseRow> {
   const result = await client.query<CaseRow>(
-    `SELECT c.*
+    `SELECT c.*, (${restoredCaseWorkEligibility}) AS restored_work_open
        FROM cases c
        JOIN case_memberships cm
          ON cm.tenant_id = c.tenant_id AND cm.case_id = c.id
@@ -618,6 +619,16 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       || !sameSecret(sha256(header), request.actor!.csrfHash)
     ) {
       throw new ApiError(403, 'A valid CSRF token is required.');
+    }
+    if(request.actor!.role!=='client'){
+      const {caseId}=(request.params??{}) as {caseId?:string};
+      // Recovery remains an operator CLI. Existing reviewer recovery controls stay
+      // available; ordinary case mutations fail closed even after a fresh login.
+      const controls=['/api/cases/:caseId/authority','/api/cases/:caseId/lifecycle','/api/cases/:caseId/handling','/api/cases/:caseId/access'];
+      if(caseId&&!controls.includes(request.routeOptions.url??''))await inTransaction(options.pool,async client=>{
+        await findCase(client,request.actor!,caseId,true);
+        await assertRestoredCaseWork(client,request.actor!.tenantId,caseId);
+      });
     }
   };
   const requireCsrf = async (request: AppRequest): Promise<void> => {
@@ -1014,6 +1025,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const record = await inTransaction(options.pool, async (client) => {
         const kase = await findCase(client, actor, caseId, true);
         if(['Closed','Archived'].includes(kase.lifecycle_state))throw new ApiError(409,'Reopen the case for scope review before approving authority.');
+        await assertRestoredRetirementComplete(client,actor.tenantId,caseId);
         const version = (kase.authority_version ?? 0) + 1;
         const inserted = await client.query(
           `INSERT INTO authority_records
