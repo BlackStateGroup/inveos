@@ -1,13 +1,13 @@
 const digest=/^[a-f0-9]{64}$/,encoder=new TextEncoder();
 export const maxReportPdfBytes=33554432;
-export async function readReportPdfBytes(response:Response):Promise<ArrayBuffer>{
+export async function readReportPdfBytes(response:Response,label='PDF'):Promise<ArrayBuffer>{
  const length=response.headers.get('Content-Length');
- if(length!==null&&(!/^\d+$/.test(length)||Number(length)>maxReportPdfBytes)){await response.body?.cancel();throw new Error('PDF download exceeds its size limit.');}
- if(!response.body)throw new Error('PDF response has no readable body.');
+ if(length!==null&&(!/^\d+$/.test(length)||Number(length)>maxReportPdfBytes)){await response.body?.cancel();throw new Error(`${label} download exceeds its size limit.`);}
+ if(!response.body)throw new Error(`${label} response has no readable body.`);
  const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
- try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxReportPdfBytes)throw new Error('PDF download exceeds its size limit.');chunks.push(value);}}
+ try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxReportPdfBytes)throw new Error(`${label} download exceeds its size limit.`);chunks.push(value);}}
  catch(error){await reader.cancel().catch(()=>{});throw error;}finally{reader.releaseLock();}
- if(length!==null&&size!==Number(length))throw new Error('PDF download was incomplete.');
+ if(length!==null&&size!==Number(length))throw new Error(`${label} download was incomplete.`);
  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}return bytes.buffer;
 }
 function fail():never{throw new Error('The PDF rendition does not match its frozen fingerprints.');}

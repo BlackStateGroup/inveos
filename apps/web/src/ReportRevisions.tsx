@@ -1,3 +1,5 @@
+import {ReportRedactionChoices} from './ReportRedactionChoices';
+import {EditableReports} from './EditableReports';
 import {useEffect, useRef, useState} from 'react';
 import {verifyRevisionDownload} from './reportDownload';
 import {readDocumentPackageBytes,readVerifiedDocumentPackage,saveVerifiedDocumentPackage,verifyDocumentPackageDownload} from './documentPackageDownload';
@@ -92,6 +94,7 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
   }
   async function rendition(row:Receipt,data?:FormData){
     const store=window.sessionStorage,previous=pendingRendition(store,caseId,row.id),ids=String(data?.get('findingIds')??'').split(/[\s,]+/).map(v=>v.trim()).filter(Boolean);
+    if(data&&!ids.length)throw new Error('Select at least one frozen finding to redact.');
     const payload:RenditionPayload=previous??{idempotencyKey:crypto.randomUUID(),redactedFindingIds:ids,...(ids.length?{reason:String(data?.get('reason')??'')}: {})};store.setItem(renditionKey(caseId,row.id),JSON.stringify(payload));setPendingRenditions(old=>({...old,[row.id]:true}));
     const receipt=await json<RenditionReceipt>(`${base}/${row.id}/renditions`,AbortSignal.timeout(30000),payload,csrf);if(receipt.caseId!==caseId||receipt.revisionId!==row.id||receipt.sourceReportSha256!==row.sha256||receipt.status!=='internal_rendition_not_released'||receipt.format!=='pdf')throw new Error('PDF rendition receipt mismatch.');
     const response=await fetch(`${base}/${row.id}/renditions/${receipt.id}`,{credentials:'same-origin',cache:'no-store'});if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'PDF rendition download failed.');}const bytes=await readReportPdfBytes(response);await verifyReportPdfDownload(bytes,receipt.pdfSha256,row.sha256,response.headers.get('X-INVEOS-PDF-SHA256'),response.headers.get('X-INVEOS-Report-SHA256'));
@@ -132,15 +135,16 @@ export function ReportRevisions({caseId,csrf}:{caseId:string;csrf:string}){
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>download(row))}>Download revision {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>documentPackage(row))}>Verify and download document package {row.id.slice(0,8)}</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Create unredacted PDF {row.id.slice(0,8)}</button>
+      <EditableReports key={`docx:${caseId}:${row.id}:${csrf}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256} csrf={csrf}/>
       <ReportRenditionHistory key={`${caseId}:${row.id}`} caseId={caseId} revisionId={row.id} reportSha256={row.sha256} csrf={csrf}/>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>verifySources(row))}>Reverify cited originals</button>
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>reviews(row))}>Inspect review decisions</button>
       {verifiedPackages[row.id]&&<label className="form-label">Verified package SHA-256<input aria-label={`Verified package SHA-256 ${row.id}`} readOnly value={verifiedPackages[row.id]}/></label>}
       {reviewHistory[row.id]?.map(item=><p key={item.id}>{item.decision} · reviewer {item.reviewerId} · {item.createdAt}: {item.reason}</p>)}
-      <details><summary>Create an internal redacted PDF</summary><p>Enter whole finding UUIDs only. Redacted findings and their source metadata are omitted from both visible PDF streams and the embedded semantic model. This narrow profile rejects unsupported Unicode; it does not release the result.</p>
+      <details><summary>Create an internal redacted PDF</summary><p>Select whole findings from this frozen revision. Redacted findings and their source metadata are omitted from both visible PDF streams and the embedded semantic model. This narrow profile rejects unsupported Unicode; it does not release the result.</p>
         {pendingRenditions[row.id]&&<><p role="status">A rendition request has no confirmed receipt. Recover it with the saved request identity before starting another.</p><button className="secondary" disabled={busy} onClick={()=>void act(()=>rendition(row))}>Recover pending PDF rendition</button></>}
         <form className="work-form" onSubmit={e=>{e.preventDefault();void act(()=>rendition(row,new FormData(e.currentTarget)));}}><fieldset disabled={busy||pendingRenditions[row.id]}>
-          <label className="form-label">Finding UUIDs to redact<textarea name="findingIds" required placeholder="One or more UUIDs, separated by spaces, commas or new lines"/></label>
+          <ReportRedactionChoices caseId={caseId} revisionId={row.id} reportSha256={row.sha256}/>
           <label className="form-label">Redaction reason<textarea name="reason" required minLength={10} maxLength={500}/></label>
           <label><input type="checkbox" required/> I understand this omits whole findings only and requires independent review before any disclosure.</label><button className="secondary">Create redacted PDF</button>
         </fieldset></form></details>

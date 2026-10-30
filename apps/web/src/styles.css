@@ -20,3 +20,5 @@
 .attention-preferences{border:1px solid var(--border);border-radius:8px;padding:16px;margin:16px 0}.attention-preferences legend{padding:0 6px;font-weight:600}.attention-preferences .checkbox-row{margin:8px 0}
 
 .source-digest{overflow-wrap:anywhere;word-break:break-word}
+
+.work-form .report-redaction-choice{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}.work-form .report-redaction-choice input[type=checkbox]{width:16px;height:16px;flex:0 0 16px;margin:2px 0}.report-redaction-choice span{min-width:0}
