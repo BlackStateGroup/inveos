@@ -11,7 +11,7 @@ export const verificationKitFiles=[
  'verify_casework.py','verify_collection_context.py','verify_document_package.py',
  'verify_field_provenance.py','verify_internal_invoice.py','verify_ocr_derivative.py',
  'verify_report.py','verify_report_composition.py','verify_report_docx.py','verify_report_pdf.py',
- 'verify_research_context.py','verify_speech_context.py','verify_speech_findings.py','verify_transcript.py',
+ 'verify_research_context.py','verify_speech_context.py','verify_speech_findings.py','verify_tika_context.py','verify_transcript.py',
 ] as const;
 const sha=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
 const maxBytes=4*1024*1024;

@@ -1,4 +1,4 @@
-export const processingKinds=['original_sha256_v1','utf8_line_index_v1','native_pdf_lab_v1','pdf_raster_lab_v1','pdf_raster_lab_v2','tesseract_scan_lab_v1','tesseract_scan_lab_v2','whisper_pcm_lab_v1'] as const;
+export const processingKinds=['original_sha256_v1','utf8_line_index_v1','native_pdf_lab_v1','pdf_raster_lab_v1','pdf_raster_lab_v2','tesseract_scan_lab_v1','tesseract_scan_lab_v2','whisper_pcm_lab_v1','tika_pdf_text_lab_v1'] as const;
 export type ProcessingKind=typeof processingKinds[number];
 export type ProcessingProfile={kind:ProcessingKind;label:string;profileDigest:string;enabled:boolean;originalKind:'any'|'original_utf8'|'opaque_binary';maxOriginalBytes:number;isolated:boolean;limits:string};
 export type ProcessingJob={id:string;caseId:string;evidenceId:string;sourceDigest:string;authorityVersion:number;kind:string;status:string;attempt:number;failureCode:string|null;createdAt:string;finishedAt:string|null};

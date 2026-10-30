@@ -1,4 +1,4 @@
-export const jobKinds=['original_sha256_v1','utf8_line_index_v1','native_pdf_lab_v1','pdf_raster_lab_v1','pdf_raster_lab_v2','tesseract_scan_lab_v1','tesseract_scan_lab_v2','whisper_pcm_lab_v1'] as const;
+export const jobKinds=['original_sha256_v1','utf8_line_index_v1','native_pdf_lab_v1','pdf_raster_lab_v1','pdf_raster_lab_v2','tesseract_scan_lab_v1','tesseract_scan_lab_v2','whisper_pcm_lab_v1','tika_pdf_text_lab_v1'] as const;
 export type JobKind=(typeof jobKinds)[number];
 export type PendingJob={idempotencyKey:string;evidenceId:string;kind:JobKind};
 export type QueueReceipt={id:string;caseId:string;evidenceId:string;kind:JobKind;status:string};

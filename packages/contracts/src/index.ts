@@ -2,6 +2,7 @@ export * from './case-handling.js';
 export * from './processing-batches.js';
 import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance,FieldProvenance} from './field-sync.js';
 export * from './field-sync.js';
+export type * from './tika.js';
 import type {ResearchProvenance} from './research.js';
 export type * from './research.js';
 export {researchProvenanceRows} from './research.js';

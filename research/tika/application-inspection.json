@@ -1,0 +1,61 @@
+{
+  "inspectionDate": "2026-10-30",
+  "source": "https://github.com/apache/tika",
+  "revision": "f45b9498f35d55445af28737407586362b2e37fc",
+  "decision": "PDF-only locked research integration; unsupported Office/text parsers excluded",
+  "sourceCopies": ".research-cache/sources/apache/tika (ignored)",
+  "inspectedFiles": [
+    {
+      "path": "LICENSE.txt",
+      "bytes": 32149,
+      "sha256": "ad5f4c4d0d4a04ac264ee55539191e1d36eb5d43ff63bbfc2cf97d541dc7ce8c"
+    },
+    {
+      "path": "NOTICE.txt",
+      "bytes": 848,
+      "sha256": "407c430392d86b3eca6df93f62d9c07625f1968f4ed0bd68d817e00da44945aa"
+    },
+    {
+      "path": "tika-core/src/main/appended-resources/META-INF/LICENSE",
+      "bytes": 10173,
+      "sha256": "ee2d54b2e7c0141b109690cfd95e4157b52c87db7a5576bd464b5c3a2cb931a4"
+    },
+    {
+      "path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/pom.xml",
+      "bytes": 4031,
+      "sha256": "d3b78ebe5a6b27e191f73c0d5a0cfa4ed6bf8fa3b72bbb518d0e0f26fe1bce9f"
+    },
+    {
+      "path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/src/main/java/org/apache/tika/parser/pdf/PDFParser.java",
+      "bytes": 36817,
+      "sha256": "a9f00f6feff264104aba6900d82cec5fd9af2cc0160002684cc4a48fc2e6f1cf"
+    },
+    {
+      "path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/src/main/java/org/apache/tika/parser/pdf/AbstractPDF2XHTML.java",
+      "bytes": 82915,
+      "sha256": "60b1a6893084d9769f5f11179b30f881f3c32ab897978a284cbe8eff91562a8b"
+    },
+    {
+      "path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/src/main/java/org/apache/tika/parser/pdf/PDFParserConfig.java",
+      "bytes": 26250,
+      "sha256": "3a7e63a1196738f60adee7e3962c0844e2ca4fd950d7585405b8785bfafa4c74"
+    }
+  ],
+  "runtimeLock": "research/runtime_artifacts/tika-research-artifacts.json",
+  "runtimeLockSha256": "7dd4b380c2deed19c9086f8b398df2b2fc13fe7a92c53af5b9172a8e1e12b581",
+  "staticArtifactInspection": {
+    "filesVerified": 66,
+    "bytesVerified": 29072338,
+    "jarSourcePairsVerified": 18,
+    "sourceGraphReplayed": true,
+    "runtimeExecuted": false,
+    "licenceApproved": false
+  },
+  "retainedNotices": [
+    "third_party/tika/LICENSE-tika.txt",
+    "third_party/tika/NOTICE-tika.txt",
+    "third_party/tika/LICENSE-tika-core-additions.txt"
+  ],
+  "applicationProfileDigest": "9a31e0678635591dc2caaa5c9379850e5a15a5c33c38bd9cda08885369915c53",
+  "applicationExecution": "UNRUN: migration, host qualification, build, worker, verifier and browser acceptance deferred to root"
+}
