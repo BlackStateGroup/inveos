@@ -21,6 +21,22 @@ export function registerReviewAssignments(app:FastifyInstance,s:Services,candida
  // Reuse the same independent-review eligibility for each current case reviewer.
  // Only static SQL aliases replace parameters; user values remain bound parameters.
  const forMember=candidates.replaceAll('$2','m.user_id').replaceAll('$3',"'reviewer'").replaceAll('$4','$2');
+ app.get('/api/review-assignments',{preHandler:reviewer,schema:{querystring:{type:'object',additionalProperties:false,properties:{ownership:{type:'string',enum:['all','mine']},afterCaseId:uuid,afterKey:key,afterRevision:revision}}}},r=>tx(async c=>{
+  const a=r.actor!,q=r.query as {ownership?:string;afterCaseId?:string;afterKey?:string;afterRevision?:string};
+  if([q.afterCaseId,q.afterKey,q.afterRevision].filter(v=>v!==undefined).length%3)throw new ApiError(422,'Supply the complete review history cursor.');
+  // History is scoped by fresh membership, independently of reminder settings or
+  // pending eligibility. Absence from current does not mean a review is complete.
+  const rows=(await c.query(candidates+`, latest AS (
+   SELECT DISTINCT ON(a.case_id,a.item_key,a.revision) a.*,c.ref case_ref,c.title case_title,${available} assignee_available
+   FROM case_review_assignments a JOIN scope c ON c.tenant_id=a.tenant_id AND c.id=a.case_id
+   ORDER BY a.case_id,a.item_key,a.revision,a.version DESC
+  ) SELECT a.*,x.title,x.item_key IS NOT NULL pending FROM latest a
+   LEFT JOIN current x ON x.case_id=a.case_id AND x.item_key=a.item_key AND x.revision=a.revision AND x.category='reviews'
+   WHERE ($5='all' OR a.assignee_id=$2) AND ($6::uuid IS NULL OR (a.case_id,a.item_key,a.revision)>($6::uuid,$7::text,$8::text))
+   ORDER BY a.case_id,a.item_key,a.revision LIMIT 51`,[a.tenantId,a.userId,'reviewer',null,q.ownership??'all',q.afterCaseId??null,q.afterKey??null,q.afterRevision??null])).rows;
+  const labels:Record<string,string>={claim_review:'Source claim',document_review:'Document claim',transcript_review:'Transcript interpretation',report_review:'Frozen report',pdf_review:'PDF copy',docx_review:'DOCX copy',correspondence_review:'Extraction correspondence',source_review:'Source metadata',expense_review:'Expense'};
+  const last=rows[49];return {items:rows.slice(0,50).map(row=>({key:row.item_key,revision:row.revision,caseId:row.case_id,caseRef:row.case_ref,caseTitle:row.case_title,title:row.title??(labels[row.item_key.split(':')[0]]??'Review')+' · '+row.item_key.split(':')[2].slice(0,8),pending:row.pending,assignment:display(row)})),next:rows.length>50?{caseId:last.case_id,key:last.item_key,revision:last.revision}:null};
+ }));
  app.get(base,{preHandler:reviewer,schema:{params,querystring:{type:'object',required:['key','revision'],additionalProperties:false,properties:{key,revision,before:{type:'integer',minimum:1,maximum:1001},after:uuid}}}},r=>tx(async c=>{
   const a=r.actor!,{caseId}=r.params as {caseId:string},q=r.query as {key:string;revision:string;before?:number;after?:string};await s.findCase(c,a,caseId,true);
   const latest=await current(c,a,caseId,q.key,q.revision),pending=await eligible(c,a,caseId,q.key,q.revision);

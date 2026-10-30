@@ -1,0 +1,24 @@
+import {useEffect,useRef,useState} from 'react';
+import type {ReviewAssignmentContext,ReviewRegisterCursor,ReviewRegisterPage} from '@inveos/contracts';
+import {Notice} from './ui';
+import {ReviewAssignment} from './ReviewAssignment';
+
+export function ReviewAssignmentRegister({csrf,onClose}:{csrf:string;onClose:()=>void}){
+ const [page,setPage]=useState<ReviewRegisterPage|null>(null),[selected,setSelected]=useState<ReviewAssignmentContext|null>(null),[ownership,setOwnership]=useState('all'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[after,setAfter]=useState<ReviewRegisterCursor|null>(null),[back,setBack]=useState<(ReviewRegisterCursor|null)[]>([]);
+ const pending=useRef<AbortController|null>(null),live=useRef(true),root=useRef<HTMLElement|null>(null);
+ useEffect(()=>{live.current=true;root.current?.focus();return()=>{live.current=false;pending.current?.abort();};},[]);
+ useEffect(()=>{void load(null,[]);return()=>pending.current?.abort();},[ownership]);
+ async function load(cursor:ReviewRegisterCursor|null=after,previous=back){
+  pending.current?.abort();const c=new AbortController();pending.current=c;setPage(null);setSelected(null);setBusy(true);setError('');setAfter(cursor);setBack(previous);
+  const q=new URLSearchParams({ownership});if(cursor){q.set('afterCaseId',cursor.caseId);q.set('afterKey',cursor.key);q.set('afterRevision',cursor.revision);}
+  try{const response=await fetch('/api/review-assignments?'+q,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.any([c.signal,AbortSignal.timeout(15000)])}),value=await response.json();if(!response.ok)throw new Error(value.error||'Review assignment register unavailable.');if(!c.signal.aborted&&live.current)setPage(value);}catch(e){if(!c.signal.aborted&&live.current)setError((e as Error).message);}finally{if(!c.signal.aborted&&live.current)setBusy(false);}
+ }
+ return <section ref={root} tabIndex={-1} className="attention-queue" aria-label="Review assignment register"><div className="work-record-top"><h3>Review assignment register</h3><button className="secondary" onClick={onClose}>Back to reminders</button></div>
+ <p className="body-copy">Recorded ownership for exact versions, including assignments that have left your pending queue.</p><Notice>Not pending for you can mean reviewed, superseded, withdrawn, changed authority or ineligible authorship. It does not prove approval. This register records coordination only; current case access is required.</Notice>
+ <label className="form-label">Assignment register filter<select value={ownership} disabled={busy} onChange={e=>setOwnership(e.target.value)}><option value="all">All accessible assignments</option><option value="mine">Assigned to me</option></select></label>
+ <div className="work-record-actions"><button className="secondary" disabled={busy} onClick={()=>void load(null,[])}>Refresh assignment register</button>{back.length>0&&<button className="secondary" disabled={busy} onClick={()=>void load(back.at(-1)!,back.slice(0,-1))}>Previous assignments</button>}{page?.next&&<button className="secondary" disabled={busy} onClick={()=>void load(page.next,[...back,after])}>Next assignments</button>}</div>
+ {busy&&<p role="status">Loading assignment register…</p>}{error&&<div role="alert" className="form-error"><p>{error} Previously loaded assignments have been cleared.</p><button className="secondary" disabled={busy} onClick={()=>void load()}>Retry assignment register</button></div>}
+ {selected&&<ReviewAssignment key={selected.caseId+selected.key+selected.revision} item={selected} csrf={csrf} onChanged={()=>void load()} onClose={()=>setSelected(null)}/>}
+ {page&&<div aria-label="Assignment register results">{!page.items.length&&<p>No recorded assignments match your current access and filter.</p>}{page.items.map(item=><article className="work-record" key={item.caseId+item.key+item.revision}><h4>{item.title}</h4><p>{item.caseRef} · {item.caseTitle}</p><p>{item.pending?'Currently pending for you':'Not currently pending for you'}</p><p>{item.assignment.assigneeId?'Assigned to '+item.assignment.assigneeName+(item.assignment.assigneeAvailable?'':' · No longer a current case reviewer'):'Reviewer pool'} · Assignment v{item.assignment.version}</p><p className="small">Record revision: <span className="source-digest">{item.revision}</span></p><p className="small muted">{item.assignment.recordedAt}</p><button className="secondary" disabled={busy} onClick={()=>setSelected(item)}>View assignment history: {item.title}</button></article>)}</div>}
+ <p className="small muted">Up to 50 versions per page, ordered by case, record and revision. Refresh after changes. Historical record titles were not stored; inactive entries use their review type and record identity.</p></section>;
+}
