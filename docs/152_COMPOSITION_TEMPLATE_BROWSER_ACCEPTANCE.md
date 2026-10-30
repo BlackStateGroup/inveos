@@ -72,6 +72,44 @@ These completed successfully. They installed the existing lockfile dependencies
 and checked TypeScript/lint/whitespace only. No browser, API journey or PostgreSQL
 test execution is included in this initial receipt.
 
+Initial compiled definition was pushed as
+`ea0c899e116f6e9536f2e8dece1ad5fbc2300971` before the follow-through below.
+
+### Subsequent review and executed supporting checks
+
+Source review caught an assertion mismatch in that initial definition:
+`workflowFixture.finding()` prefixes the reviewed claim with an attribution. The
+browser assertion now expects that exact finding text and identifies source
+selection by its original quotation. This was a definition correction discovered
+by inspection, not an observed browser or product failure. The helper also waits
+for enabled asynchronous select controls, all eight owner/deadline selectors and
+new documents on reload, with bounded retries across navigation-context changes.
+On a hosted journey failure it saves fictional page text and a screenshot without
+dumping cookies, session tokens or storage, then preserves the failing test.
+
+Executed against the restricted disposable PostgreSQL cluster on port 55471:
+
+```sh
+INVEOS_TEST_DATABASE_URL=postgres://inveos_app@127.0.0.1:55471/inveos_test \
+INVEOS_TEST_ADMIN_DATABASE_URL=postgres://inveos_admin@127.0.0.1:55471/inveos_test \
+node --import tsx --test --test-concurrency=1 \
+  --test-name-pattern='^(composition freezes|pinned templates)' \
+  apps/api/test/report-portal-acceptance.test.ts \
+  apps/api/test/task-template-acceptance.test.ts
+```
+
+Result: **2 passed, 0 failed, 0 skipped**, 7.512 seconds. The selected existing
+checks exercised real composition freezing/retained bytes and copied JSON/PDF/DOCX
+verifiers with tampering rejection, plus pinned-template atomic concurrent retry,
+source-free initial revisions and withdrawal. These are supporting API/database
+checks, **not execution of either new browser journey**. Log:
+`.local-data/composition-template-review/api-fixture-checks.log` (ignored).
+
+`npm run build -w @inveos/web` passed. Vite reported the existing large-bundle
+warning; no bundle or dependency change was made. API typecheck, scoped ESLint and
+`git diff --check` passed again after the definition corrections. No product
+failure was reproduced in these two checks and no product file was changed.
+
 Hosted execution (root supplies restricted disposable URLs, not production):
 
 ```sh

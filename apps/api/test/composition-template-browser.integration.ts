@@ -70,8 +70,9 @@ test('sandboxed composition browser: author/correct/review/freeze, whole-finding
     assert.equal(sha(download.rawPayload),receipt.sha256);assert.equal(report.composition!.payload.version,2);
     assert.deepEqual(report.composition!.payload.outline,corrected.payload.outline);
     assert.equal(report.composition!.review.reviewerId,f.reviewer.id);
-    assert.deepEqual(report.findings.map(x=>x.text).sort(),[alpha,beta].sort());
-    const omitted=report.findings.find(x=>x.text===alpha)!,kept=report.findings.find(x=>x.text===beta)!;
+    assert.deepEqual(report.findings.map(x=>x.text).sort(),[alpha,beta].map(text=>'The fictional supplied record states: '+text).sort());
+    const omitted=report.findings.find(x=>x.source.quote===alpha)!,kept=report.findings.find(x=>x.source.quote===beta)!;
+    assert.ok(omitted&&kept,'exact supplied quotations identify both selected findings');
     assert.deepEqual(report.composition!.payload.outline.sections.flatMap(s=>s.findings.map(x=>x.id)),[kept.id,omitted.id]);
     const row='#report-revision-'+receipt.id;
     for(const format of ['pdf','docx'] as const){
@@ -118,7 +119,7 @@ test('sandboxed composition browser: author/correct/review/freeze, whole-finding
     await h.wait(`!!document.querySelector('.report-composition [role="alert"]')&&!document.querySelector('.report-composition [aria-label="Saved outline detail"]')&&!document.querySelector('.report-composition [aria-label="Selected finding receipts"]')&&!document.querySelector('.report-composition [aria-label="Composition revision history"]')&&!document.querySelector('.report-composition [aria-label="Composition review history"]')`,'revoked session clears loaded composition state');
     for(const secret of [name,scopeNote,alpha,beta,corrected.sha256])assert.ok(!(await h.text(composition)).includes(secret),'cleared composition '+secret);
     await h.captures('composition-denied',composition);
-  }finally{await h.close();}
+  }catch(error){await h.failure('composition',error);throw error;}finally{await h.close();}
 });
 
 test('sandboxed template browser: separate typed boilerplate, independent pin, explicit preview, reload/apply/retry and revocation',{timeout:180000},async()=>{
@@ -157,6 +158,7 @@ test('sandboxed template browser: separate typed boilerplate, independent pin, e
     await h.wait(`document.querySelector('[aria-label="Selected template version"]')?.textContent.includes('pinned version 1 (historical)')`,'explicit historical pin');
     await h.button('Choose owners / deadlines for this version',templates);
     const choices='.task-templates form';
+    await h.wait(`document.querySelectorAll('.task-templates form select').length===8`,'all explicit owner/deadline controls loaded');
     assert.deepEqual(await browser.evaluate<string[]>(`[...document.querySelectorAll('.task-templates form select')].map(e=>e.value)`),Array(8).fill(''),'no implicit owners or deadlines');
     for(const i of kinds.keys()){
       const pane=choices+' .template-entry:nth-of-type('+(i+1)+')';
@@ -196,5 +198,5 @@ test('sandboxed template browser: separate typed boilerplate, independent pin, e
     await h.wait(`!!document.querySelector('.task-templates [role="alert"]')&&!document.querySelector('[aria-label="Immutable application receipt"]')&&!document.querySelector('[aria-label="Exact application preview"]')&&!document.querySelector('[aria-label="Template application history"]')`,'revoked case access clears template data');
     for(const secret of [name,body,t.sha256,pointer.id])assert.ok(!(await h.text(templates)).includes(secret),'cleared template '+secret);
     await h.captures('template-denied',templates);
-  }finally{await h.close();}
+  }catch(error){await h.failure('templates',error);throw error;}finally{await h.close();}
 });

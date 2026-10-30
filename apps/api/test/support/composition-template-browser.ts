@@ -32,13 +32,13 @@ export async function compositionTemplateBrowser(){
     async function navigate(session:Session,view:'Reports'|'Tasks'){
       // A new document prevents a prior user's state from satisfying the next role's assertions.
       await browser.send('Page.navigate',{url:'about:blank'});
-      await eventually(()=>browser.evaluate<boolean>(`location.href==='about:blank'`),'blank before role switch');
+      await wait(`location.href==='about:blank'`,'blank before role switch');
       await browser.send('Network.clearBrowserCookies');
       for(const part of session.cookie.split('; ')){const at=part.indexOf('=');const result=await browser.send<{success:boolean}>('Network.setCookie',{name:part.slice(0,at),value:part.slice(at+1),url:origin,httpOnly:part.startsWith('inveos_session='),sameSite:'Strict'});assert.ok(result.success,'session cookie accepted');}
       await browser.send('Page.navigate',{url:origin+'/#case='+f.caseId+'&view='+view});
       await wait(`!!document.querySelector(${JSON.stringify(view==='Reports'?'.report-composition':'.task-templates')})`,'connected '+view+' workbench');
     }
-    const wait=(expression:string,label:string)=>eventually(()=>browser.evaluate<boolean>(`(()=>{try{return !!(${expression})}catch{return false}})()`),label);
+    async function wait(expression:string,label:string){let diagnostic='';try{await eventually(async()=>{try{return await browser.evaluate<boolean>(`!!(${expression})`);}catch(error){diagnostic=String(error);return false;}},label);}catch(error){throw new Error(String(error)+(diagnostic?'\nLast browser diagnostic: '+diagnostic:''));}}
     const element=(selector:string)=>`document.querySelector(${JSON.stringify(selector)})`;
     // Fail on ambiguity. Hidden copies in collapsed details do not count as actionable controls.
     function textElement(tag:string,text:string,scope='body',prefix=false){return `(()=>{const nodes=[...document.querySelector(${JSON.stringify(scope)}).querySelectorAll(${JSON.stringify(tag)})].filter(e=>e.getClientRects().length&&e.textContent.trim().${prefix?'startsWith':'includes'}(${JSON.stringify(text)}));const exact=${prefix?'nodes':`nodes.filter(e=>e.textContent.trim()===${JSON.stringify(text)})`};if(exact.length!==1)throw Error('Expected one visible '+${JSON.stringify(tag+' '+text)}+', got '+exact.length);return exact[0]})()`;}
@@ -52,7 +52,8 @@ export async function compositionTemplateBrowser(){
     }
     async function key(key:string,code:string,virtual:number){for(const type of ['keyDown','keyUp'])await browser.send('Input.dispatchKeyEvent',{type,key,code,windowsVirtualKeyCode:virtual});}
     async function select(label:string,value:string,scope='body'){
-      const target=control(label,scope),index=await browser.evaluate<number>(`(()=>{const e=${target};e.scrollIntoView({block:'center'});e.focus();return [...e.options].findIndex(o=>o.value===${JSON.stringify(value)})})()`);assert.ok(index>=0,'available option '+value);
+      const target=control(label,scope);await wait(`!!(${target})&&!(${target}).matches(':disabled')`,'editable selection '+label);
+      const index=await browser.evaluate<number>(`(()=>{const e=${target};e.scrollIntoView({block:'center'});e.focus();return [...e.options].findIndex(o=>o.value===${JSON.stringify(value)})})()`);assert.ok(index>=0,'available option '+value);
       await key('Home','Home',36);for(let i=0;i<index;i++)await key('ArrowDown','ArrowDown',40);await key('Tab','Tab',9);
       await wait(`(${target}).value===${JSON.stringify(value)}`,'selected '+label);
     }
@@ -60,6 +61,11 @@ export async function compositionTemplateBrowser(){
     const text=(scope='body')=>browser.evaluate<string>(`${element(scope)}?.textContent??''`);
     async function captures(name:string,selector:string){for(const [suffix,width,height] of [['desktop',1440,1000],['narrow',390,844]] as const){await browser.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});await browser.evaluate(`${element(selector)}.scrollIntoView({block:'start'})`);await browser.send('Runtime.evaluate',{expression:'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',awaitPromise:true});assert.ok(await browser.evaluate<boolean>('document.documentElement.scrollWidth<=innerWidth+1'),'no horizontal overflow '+name+' '+suffix);await writeFile(join(artifacts,name+'-'+suffix+'.png'),Buffer.from((await browser.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data,'base64'));}await browser.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});}
     async function reload(scope:string){await browser.evaluate('window.__inveosJourneyOldDocument=true');await browser.send('Page.reload');await wait(`!window.__inveosJourneyOldDocument&&!!${element(scope)}`,'reloaded '+scope);}
-    return {browser,f,origin,artifacts,navigate,wait,element,textElement,control,click,button,fill,select,check,text,captures,reload,close};
+    async function failure(name:string,error:unknown){
+      // Fictional rendered content only: never dump cookies, tokens or storage.
+      await writeFile(join(artifacts,name+'-failure.txt'),String(error)).catch(()=>{});
+      try{const page=await browser.evaluate<{url:string;body:string}>('({url:location.href,body:document.body?.innerText})');await writeFile(join(artifacts,name+'-failure-page.json'),JSON.stringify(page,null,2));const shot=await browser.send<{data:string}>('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(artifacts,name+'-failure.png'),Buffer.from(shot.data,'base64'));}catch{/* Preserve the original failure when the browser itself has gone away. */}
+    }
+    return {browser,f,origin,artifacts,navigate,wait,element,textElement,control,click,button,fill,select,check,text,captures,reload,failure,close};
   }catch(error){await close();throw error;}
 }
