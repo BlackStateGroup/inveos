@@ -1,0 +1,12 @@
+import type {WorkItem} from './index.js';
+export type TemplateEntryKind='task'|'objective'|'question'|'note';
+export type TaskTemplateEntry={id:string;kind:TemplateEntryKind;title:string;body:string;timingGuidance:string};
+export type TaskTemplateFields={name:string;description:string;entries:TaskTemplateEntry[]};
+export type TaskTemplatePayload={format:'inveos_case_task_template_v1';caseId:string;id:string;version:number;state:'active'|'withdrawn';fields:TaskTemplateFields;reason:string};
+export type TaskTemplateReview={id:string;sequence:number;decision:'accepted'|'changes_requested';reason:string;reviewerId:string;reviewerName:string;recordedAt:string};
+export type TaskTemplateSummary={id:string;version:number;name:string;state:'active'|'withdrawn';sha256:string;entryCount:number;authorName:string;recordedAt:string;review:TaskTemplateReview|null};
+export type TaskTemplateRevision=TaskTemplateSummary&{payload:TaskTemplatePayload;authorId:string;headVersion:number;withdrawn:boolean;canReview:boolean};
+export type TemplateChoice={entryId:string;workId:string;ownerId:string|null;dueDate:string|null};
+export type TaskTemplatePreviewPayload={format:'inveos_task_template_preview_v1';caseId:string;id:string;templateId:string;templateVersion:number;templateSha256:string;reviewId:string;reason:string;entries:Array<TemplateChoice&{kind:TemplateEntryKind;title:string;body:string;timingGuidance:string;ownerName:string|null}>};
+export type TaskTemplatePreview={payload:TaskTemplatePreviewPayload;sha256:string;createdAt:string;expiresAt:string;createdBy:string;applied:boolean};
+export type TaskTemplateApplication={id:string;caseId:string;templateId:string;templateVersion:number;templateSha256:string;reviewId:string;previewSha256:string;createdAt:string;createdBy:string;initialItems:WorkItem[]};
