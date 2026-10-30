@@ -1,5 +1,5 @@
 import {randomUUID} from 'node:crypto';
-import {createWorkItem,displayWork} from './casework.js';
+import {createCaseWorkItem,displayWork} from './casework.js';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient,QueryResultRow} from 'pg';
 import type {AnalysisDecision,AnalysisMode,AnalysisRun,AnalysisRunRecord,AnalysisSource,ChronologySource,ReviewedSourceFinding} from '@inveos/contracts';
@@ -71,11 +71,11 @@ export function registerCaseAnalysis(app:FastifyInstance,s:Services){
   const decision=record.decisions.find(d=>d.suggestion===suggestion);if(!decision||decision.version!==q.decisionVersion||decision.disposition!=='request_check')throw new ApiError(409,'A current independent request for a follow-up check is required. Refresh the suggestion.');
   if((await c.query('SELECT 1 FROM case_work_items WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,q.id])).rowCount)throw new ApiError(409,'Choose a new work request identity.');
   const body=q.body+'\n\nAnalysis run '+id+'; suggestion '+(suggestion+1)+'; triage v'+decision.version+'. Rule suggestions are not findings. '+candidate.check;
-  const item=await createWorkItem(c,a,caseId,{id:q.id,kind:'question',title:q.title,body,ownerId:q.ownerId,dueDate:q.dueDate,parentId:null},s,async work=>{
+  const item=await createCaseWorkItem(c,a,caseId,{id:q.id,kind:'question',title:q.title,body,ownerId:q.ownerId,dueDate:q.dueDate,parentId:null},s,{initialise:async work=>{
    for(const index of candidate.sources){const ref=record.run.sources[index]!.reference;let claimId:string|null=null;if(ref.kind==='text_finding'){const row=(await c.query('SELECT claim_id FROM findings WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,ref.findingId])).rows[0];if(!row)notFound();claimId=row.claim_id;}
     await c.query('INSERT INTO case_work_links(tenant_id,case_id,id,item_id,claim_id,document_finding_id,transcript_finding_id,speech_finding_id,relation,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[a.tenantId,caseId,randomUUID(),work.id,claimId,ref.kind==='document_finding'?ref.findingId:null,ref.kind==='transcript_finding'?ref.findingId:null,ref.kind==='speech_finding'?ref.findingId:null,'context','Context for human follow-up of analysis '+id+', suggestion '+(suggestion+1)+'. No contradiction or factual truth inferred.',a.userId]);
    }
-  });
+  }});
   await c.query('INSERT INTO case_analysis_followups(tenant_id,case_id,run_id,suggestion,decision_version,work_id,created_by,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[a.tenantId,caseId,id,suggestion,decision.version,item.id,a.userId,requestHash]);
   await s.audit(c,a,caseId,'analysis.followup_created','case_analysis',id,'Investigator explicitly created a question with both contextual source links');return item;
  }));

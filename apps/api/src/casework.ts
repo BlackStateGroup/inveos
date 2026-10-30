@@ -100,8 +100,10 @@ async function recordRevision(client: PoolClient, actor: Actor, item: WorkItem, 
   );
 }
 
-export async function createWorkItem(client:PoolClient,actor:Actor,caseId:string,input:WorkInput,services:Pick<Services,'findCase'|'audit'>,initialise?:(item:WorkItem)=>Promise<void>):Promise<WorkItem>{
-  if(actor.role==='client')throw new ApiError(403,'Internal case work only.');
+/** Shared guarded creator. Caller owns the transaction; template application requires fresh IDs. */
+export async function createCaseWorkItem(client: PoolClient, actor: Actor, caseId: string, input: WorkInput,
+  services: Pick<Services, 'findCase' | 'audit'>, options: {requireNew?: boolean; revisionReason?: string; applicationId?: string; initialise?: (item:WorkItem)=>Promise<void>} = {}): Promise<WorkItem> {
+  if (actor.role === 'client') throw new ApiError(403, 'Internal case work only.');
   validateText(input);
   const requestHash = createHash('sha256').update(JSON.stringify([
     input.id, input.kind, input.title, input.body, input.ownerId, input.dueDate, input.parentId,
@@ -109,6 +111,7 @@ export async function createWorkItem(client:PoolClient,actor:Actor,caseId:string
   await services.findCase(client, actor, caseId, true);
   const replay = await client.query('SELECT *, due_date::text AS due_date FROM case_work_items WHERE tenant_id = $1 AND case_id = $2 AND id = $3', [actor.tenantId, caseId, input.id]);
   if (replay.rows[0]) {
+    if (options.requireNew) throw new ApiError(409, 'An application work identity already exists. No work was created.');
     if (replay.rows[0].created_by !== actor.userId || replay.rows[0].request_hash !== requestHash) {
       throw new ApiError(409, 'This record identifier has already been used. Refresh before trying again.');
     }
@@ -128,9 +131,9 @@ export async function createWorkItem(client:PoolClient,actor:Actor,caseId:string
     [actor.tenantId, caseId, input.id, input.kind, input.title, input.body, workStatuses[input.kind][0], input.ownerId, input.dueDate, input.parentId, requestHash, actor.userId],
   );
   const item = displayWork(inserted.rows[0]);
-  if(initialise)await initialise(item);
-  await recordRevision(client, actor, item, 'Record created');
-  await services.audit(client, actor, caseId, 'work.created', 'case_work', item.id, `${input.kind}: ${input.title}`, {kind: input.kind, version: 1});
+  if(options.initialise)await options.initialise(item);
+  await recordRevision(client, actor, item, options.revisionReason ?? 'Record created');
+  await services.audit(client, actor, caseId, 'work.created', 'case_work', item.id, `${input.kind}: ${input.title}`, {kind: input.kind, version: 1, ...(options.applicationId ? {templateApplicationId: options.applicationId} : {})});
   return item;
 }
 
@@ -148,7 +151,7 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     const actor = request.actor!;
     const {caseId} = request.params as {caseId: string};
     const input = request.body as WorkInput;
-    return inTransaction(services.pool,client=>createWorkItem(client,actor,caseId,input,services));
+    return inTransaction(services.pool, client => createCaseWorkItem(client, actor, caseId, input, services));
   });
 
   app.post('/api/cases/:caseId/work/:itemId/revise', {

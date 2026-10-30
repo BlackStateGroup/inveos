@@ -6,9 +6,10 @@ forensic intake, external delivery or full WP17 completion is claimed.
 
 ## ADR-009 — Explicit task grants to restricted principals
 
-Status: accepted implementation direction under user-delegated engineering authority (2026-10-30); not a separate user sign-off.
+Status: implementation direction (root, under user-delegated authority, 2026-10-30)
 
-Use separate explicit task grants to the existing restricted external principal.
+Root directed separate explicit task grants to the existing restricted external
+principal.
 Do not add a broad internal Actor role or implicit case membership. Require
 independent approval before task instructions become externally visible. Keep
 contractor-role and SSO gaps explicit.

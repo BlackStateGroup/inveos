@@ -2,6 +2,7 @@ import {registerVerificationKit} from './verification-kit.js';
 import {registerCaseHandling,caseSharingEligibility,caseSharingState,assertCaseSharing} from './case-handling.js';
 import {reportFieldProvenance} from './field-provenance.js';
 import {registerCaseAnalysis} from './case-analysis.js';
+import {registerTaskTemplates} from './task-templates.js';
 import {registerRestrictedWork} from './restricted-work.js';
 import {registerReportCompositions} from './report-compositions.js';
 import {verifyFrozenComposition} from './report-composition-model.js';
@@ -688,15 +689,17 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerConnectorPolicies(app,{pool:options.pool,authenticate,requireCsrf});
   registerCollectionJobs(app,{pool:options.pool,storage:options.storageRoot,authenticate,requireCsrf});
   const manualSourceService=registerManualSources(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
-  registerVerificationKit(app,{pool:options.pool,authenticate,audit:writeAudit});
-  registerRestrictedWork(app,{assertSharing:assertCaseSharing,pool:options.pool,authenticate,csrf:requireSessionCsrf,findCase,audit:writeAudit,
-    assertSession:async(client,actor)=>{
+  const assertCurrentSession=async(client:PoolClient,actor:Actor)=>{
       const valid=(await client.query(`SELECT 1 FROM sessions ss JOIN memberships m ON m.tenant_id=ss.tenant_id AND m.user_id=ss.user_id
         LEFT JOIN identity_bindings ib ON ib.id=ss.identity_id AND ib.tenant_id=ss.tenant_id AND ib.user_id=ss.user_id
         WHERE ss.tenant_id=$1 AND ss.user_id=$2 AND ss.token_hash=$3 AND m.role=$4 AND ss.epoch=$5 AND ss.revoked_at IS NULL AND ss.expires_at>clock_timestamp()
         AND (($6::text IS NULL AND ss.identity_id IS NULL) OR ($6::text IS NOT NULL AND ib.issuer=$6 AND ib.revoked_at IS NULL AND ss.identity_profile_hash=$7))`,[actor.tenantId,actor.userId,actor.tokenHash,actor.role,epoch,options.identity?.issuer??null,options.identity?.fingerprint??null])).rowCount;
       if(!valid)throw new ApiError(401,'Current session and recipient identity required.');
-    }});
+  };
+  registerVerificationKit(app,{pool:options.pool,authenticate,audit:writeAudit});
+  registerTaskTemplates(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,assertSession:assertCurrentSession});
+  registerRestrictedWork(app,{assertSharing:assertCaseSharing,pool:options.pool,authenticate,csrf:requireSessionCsrf,findCase,audit:writeAudit,
+    assertSession:assertCurrentSession});
   registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   const verifiedFinding=async(client:PoolClient,actor:Actor,caseId:string,reference:ChronologySource)=>{
