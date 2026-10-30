@@ -61,6 +61,8 @@ jobs:
         run: npm run typecheck
       - name: Build web application
         run: npm run build
+      - name: Recreate the fictional disclosure DOCX fixture
+        run: node --import tsx tools/make_disclosure_docx_fixture.mjs
       - name: Validate foundation sources and run Python tests
         run: npm run test:foundation
       - name: Exercise synthetic reference flow
@@ -74,7 +76,7 @@ jobs:
       - name: Exercise development effect replay in the actual browser
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX' apps/api/test/api.test.ts
       - name: Render and re-save the fictional DOCX in LibreOffice
         run: |
           sudo apt-get update -qq
@@ -278,3 +280,21 @@ jobs:
           path: output/evals/task-planning-desktop.png
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Retain fictional reviewed DOCX recipient render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reviewed-docx-delivery-browser
+          path: output/evals/docx-delivery/
+          if-no-files-found: ignore
+
+      - name: Render and re-save fictional disclosure-profile DOCX
+        run: python3 tools/eval_report_docx_office.py --disclosure-profile --output output/evals/docx-delivery/office
+      - name: Retain fictional disclosure-profile office render
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reviewed-docx-office
+          path: output/evals/docx-delivery/office/
+          if-no-files-found: ignore
