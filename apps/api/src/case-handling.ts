@@ -40,21 +40,21 @@ export async function assertCaseSharing(c:PoolClient,tenantId:string,caseId:stri
 }
 
 type Kase={authority_version:number|null;status:string;lifecycle_state:string};
-type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<Kase>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
+type Services={pool:Pool;assertSession:(c:PoolClient,a:Actor)=>Promise<void>;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<Kase>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
 export function registerCaseHandling(app:FastifyInstance,s:Services){
  const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'},params={type:'object',additionalProperties:false,required:['caseId'],properties:{caseId:uuid}},base='/api/cases/:caseId/handling';
- const tx=<T>(fn:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");return fn(c);}).catch(e=>{if(e.code==='23505')throw new ApiError(409,'Handling request identity already used.');throw e;});
+ const tx=<T>(r:FastifyRequest,fn:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");await s.assertSession(c,r.actor!);const value=await fn(c);await s.assertSession(c,r.actor!);return value;}).catch(e=>{if(e.code==='23505')throw new ApiError(409,'Handling request identity already used.');throw e;});
  async function view(c:PoolClient,a:Actor,caseId:string,kase:Kase,before?:number):Promise<CaseHandling>{
   const state=await caseSharingState(c,a.tenantId,caseId),rows=(await c.query('SELECT * FROM case_handling_events WHERE tenant_id=$1 AND case_id=$2 AND ($3::int IS NULL OR version<$3) ORDER BY version DESC LIMIT 26',[a.tenantId,caseId,before??null])).rows;
   return {version:state.current?.version??0,authorityVersion:kase.authority_version,current:state.current,history:rows.slice(0,25).map(decision),nextBefore:rows.length>25?rows[24].version:null,canDecide:a.role==='reviewer'&&(state.current?.version??0)<1000,sharingAllowed:state.allowed,blockReason:state.reason};
  }
  app.get(base,{preHandler:s.authenticate,schema:{params,querystring:{type:'object',additionalProperties:false,properties:{before:{type:'integer',minimum:1,maximum:1000}}}}},async(r,reply)=>{
   reply.header('Cache-Control','no-store');const a=r.actor!;if(a.role==='client')throw new ApiError(403,'Internal handling decisions only.');const {caseId}=r.params as {caseId:string},{before}=r.query as {before?:number};
-  return tx(async c=>{const kase=await s.findCase(c,a,caseId,true);return view(c,a,caseId,kase,before);});
+  return tx(r,async c=>{const kase=await s.findCase(c,a,caseId,true);return view(c,a,caseId,kase,before);});
  });
  app.post(base,{preHandler:s.requireCsrf,preValidation:async r=>{const input=r.body as Record<string,unknown>;if(!input||['id','tier','sharing','instructions','reason'].some(k=>typeof input[k]!=='string')||typeof input.expectedVersion!=='number'||(input.expectedAuthorityVersion!==null&&typeof input.expectedAuthorityVersion!=='number'))throw new ApiError(422,'Explicit typed handling decisions and versions are required.');},schema:{params,body:{type:'object',additionalProperties:false,required:['id','expectedVersion','expectedAuthorityVersion','tier','sharing','instructions','reason'],properties:{id:uuid,expectedVersion:{type:'integer',minimum:0,maximum:999},expectedAuthorityVersion:{anyOf:[{type:'integer',minimum:1},{type:'null'}]},tier:{enum:caseSensitivityTiers},sharing:{enum:['existing_release_controls','internal_only']},instructions:{type:'string',minLength:10,maxLength:2000},reason:{type:'string',minLength:10,maxLength:2000}}}}},async(r,reply)=>{
   reply.header('Cache-Control','no-store');const a=r.actor!;if(a.role!=='reviewer')throw new ApiError(403,'A case reviewer must record handling decisions.');const {caseId}=r.params as {caseId:string},input=r.body as {id:string;expectedVersion:number;expectedAuthorityVersion:number|null;tier:CaseSensitivityTier;sharing:CaseSharing;instructions:string;reason:string};
-  return tx(async c=>{
+  return tx(r,async c=>{
    const kase=await s.findCase(c,a,caseId,true);
    await recordCaseHandling(c,a,caseId,kase,input,s.audit);
    return view(c,a,caseId,kase);
