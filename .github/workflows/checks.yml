@@ -16,7 +16,7 @@ concurrency:
 jobs:
   synthetic-application:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:15
@@ -79,7 +79,7 @@ jobs:
         # Individual worker/browser deadlines remain unchanged.
         env:
           INVEOS_ACCEPTANCE_ARTIFACTS: ${{ github.workspace }}/output/evals/source-family
-        run: timeout 600s npm test --workspace @inveos/api
+        run: timeout 900s npm test --workspace @inveos/api
       - name: Exercise development effect replay in the actual browser
         if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: |
@@ -469,7 +469,7 @@ jobs:
         with:
           name: connected-workflow-browser
           path: |
-            output/evals/workflow-evidence-*.png
+            output/evals/workflow-evidence-*
             output/evals/composition-templates/
             output/evals/research-workbench/
             output/evals/field-operations/

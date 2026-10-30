@@ -70,3 +70,9 @@ INVEOS_TEST_BROWSER=1 node --import tsx --test --test-concurrency=1 \
 ```
 
 The first must cover actual form creation, offline shell/cache exclusions, encrypted capture, wrong-passphrase denial, offline reload, lost HTTP receipt, stable retry, lock/reopen, revoked-device delivery denial and narrow layout. The second must cover real storage, originals/operations/context persistence, invalid receipt/backup negatives, reload, restore and replacement. Root's combined browser suite must also validate the stricter shared click helper. No passing hosted browser result, new rendered UI image or whole-batch acceptance is claimed here.
+
+## Root hosted follow-through at 1d80e3fd
+
+Checks41085834704/job124166647502 progressed through vault creation, offline capture/reload and lost-receipt recovery, then failed its old exact revocation-message assertion. The current versioned device gate returns409 and `Device is lost, revoked or changed. Preserve local originals and request independent recovery.` Root corrects the obsolete text expectation and additionally observes actual proxy HTTP409; the persisted-original counts and encrypted retained-queue assertions remain. This last revised assertion is awaiting hosted execution.
+
+The separate vault-v2 and independent Field-control browser tests passed on this run. Overall API execution was cut off at600seconds after499 passes/1 failure, so this is not a complete suite pass. Log `/tmp/inveos-platform-checks-1d80.log`.

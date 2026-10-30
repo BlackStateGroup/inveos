@@ -209,3 +209,9 @@ Tests use local synthetic session fixtures, not proof of an external identity
 provider. This branch remains based on exact d345524f plus its own changes;
 root's later quarantine/snapshot/Field integrations require root's combined run.
 No full Node/Python suite or shared CI/inventory edit was performed here.
+
+## Root hosted browser follow-through at 1d80e3fd
+
+Actual recipient evidence browser execution ran and failed: Checks41085834704/job124166647502, `Timed out: recipient upload form` after selecting the published fictional request;0/1passed. A fresh real PostgreSQL fixture GET separately confirms its response is submitted. Root adds a fixed viewport and failure page/screenshot/HTTP-status diagnostics without bypassing the assertion. Cause and final acceptance remain open.
+
+The internal invoice browser journey passed in both the standard build and15-check development replay. It exercises selected time rounding, independent review, downloaded standalone verification and revoked-data clearing. Artifact12992975575 was downloaded and desktop/narrow renders inspected; no clipping/overflow issue observed. This does not qualify billing policy or initiate charges. The whole Checks job failed and stopped its API suite at the aggregate deadline; other passing increments are not a combined success.
