@@ -163,6 +163,13 @@
       "github_spdx_metadata": "Apache-2.0",
       "disposition": "candidate",
       "observed_on": "2026-10-27"
+    },
+    {
+      "repository": "keycloak/keycloak",
+      "url": "https://github.com/keycloak/keycloak",
+      "commit": "24ed1dadf3f246a555adb6d3d4a99e9b3003fb3b",
+      "github_spdx_metadata": "Apache-2.0",
+      "disposition": "candidate"
     }
   ]
 }

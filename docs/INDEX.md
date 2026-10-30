@@ -223,3 +223,5 @@
 - `110_TIKA_PDF_COMPARISON.md` — pinned source/runtime acquisition, isolated reduced Tika build and actual comparison protocol.
 
 - `111_TASK_PLANNING.md` — atomic owner/deadline batches, current-version history, assignment boundaries and browser acceptance.
+
+- [112 — Actual Keycloak MFA qualification](112_KEYCLOAK_MFA.md) — pinned provider runtime, real password/OTP and case-boundary acceptance; production gates remain open.
