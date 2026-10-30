@@ -245,3 +245,52 @@
 - [121 — Controlled OSINT workbench](121_OSINT_WORKBENCH.md) — source policies, scoped collection, preserved responses and actual evidence; live activation remains disabled.
 
 - [122 — Collected-source report lineage](122_COLLECTION_REPORT_LINEAGE.md) — frozen collection permissions, original-linked offline verification and redaction; actual acceptance is recorded separately.
+
+- [123 — Reviewed speech in case reasoning](123_SPEECH_CASE_REASONING.md) — typed work sources, correction-sensitive assessments, search and frozen export lineage; actual acceptance remains explicit.
+
+
+## Integrated platform batch (acceptance in progress)
+
+- [Reviewed speech reasoning, graph, chronology and review attention](123_SPEECH_CASE_REASONING.md)
+- [RDAP and supplied webpage research](124_OSINT_EXPANSION.md)
+- [Field device authority and encrypted recovery](125_FIELD_DEVICE_SYNC.md)
+- [Agency draft invoicing](126_AGENCY_DRAFT_INVOICING.md)
+- [Cited source comparison and follow-up questions](127_CITED_CASE_ANALYSIS.md)
+- [Recipient-bound portal feedback](128_PORTAL_FEEDBACK.md)
+- [Bulk processing and case queue operations](129_BULK_PROCESSING.md)
+- [Legal-entity research and receipt rendering](130_LEGAL_ENTITY_RESEARCH.md)
+- [Desktop batch original intake](131_DESKTOP_BATCH_INTAKE.md)
+- [Reviewed report composition](132_REPORT_COMPOSITION.md)
+- [Case search facets and separate time bounds](133_CASE_SEARCH_FACETS.md)
+- [Frozen Field report provenance](134_FIELD_REPORT_PROVENANCE.md)
+
+These feature documents distinguish implementation/compiler feedback from unrun acceptance. Current combined branch, child assignments, commit evidence and remaining gates are in BUILD_HANDOFF.md. None of this section implies main merge or production readiness.
+
+- [138 — Case sensitivity and handling](138_CASE_SENSITIVITY_HANDLING.md): versioned labels and current recipient-sharing restrictions; runtime acceptance pending.
+
+- [135 — Field sessions and observations](135_FIELD_SESSIONS.md): original-backed sessions, corrections and independent context review; runtime acceptance pending.
+- [137 — Restricted collaborator work](137_RESTRICTED_COLLABORATOR_WORK.md): independently published task instructions and recipient submissions; runtime acceptance pending.
+- [141 — Field records in investigator search](141_FIELD_CASE_SEARCH.md): exact original/correction inspection from case search; runtime acceptance pending.
+
+- [142 — Offline verification kit](142_OFFLINE_VERIFICATION_KIT.md): downloadable standard-library export checkers without case data; runtime acceptance pending.
+
+- [136 — Locked Tika PDF application worker](136_TIKA_APPLICATION_WORKER.md): page-text citations, independent decisions and isolated worker integration; actual acceptance pending.
+- [140 — Reusable case task templates](140_REUSABLE_TASK_TEMPLATES.md): pinned reviewed boilerplate and atomic explicit application; runtime acceptance pending.
+
+- [139 — Field dispatch and manual shift records](139_FIELD_DISPATCH.md): reviewer instructions, recipient check-ins/incidents/handovers and encrypted operational queue; runtime/upgrade/restore acceptance pending.
+
+- [143 — Recipient evidence requests](143_PORTAL_EVIDENCE_REQUESTS.md): independently published requests and quarantined original intake, integrated with mandatory case handling.
+- [144 — Tika frozen report lineage](144_TIKA_REPORT_LINEAGE.md): explicit typed findings, provenance packages, redaction and copied verification; acceptance in progress.
+- [145 — Restored-case quarantine](145_RESTORED_CASE_QUARANTINE.md): scoped non-production recovery, bounded retirement and fresh-authority/handling gates; actual restore acceptance pending.
+
+- [146 — Source-family acceptance and exact rendering evidence](146_SOURCE_FAMILY_ACCEPTANCE.md)
+- [147 — Workflow acceptance and remaining browser gates](147_WORKFLOW_ACCEPTANCE.md)
+
+- [148 — Reproducible local platform runbook](148_LOCAL_PLATFORM_RUNBOOK.md)
+- [149 — Independent Field/platform boundary review](149_INDEPENDENT_FIELD_PLATFORM_REVIEW.md)
+- [150 — Independent agency/portal integrity review](150_AGENCY_PORTAL_REVIEW.md)
+- [151 — Independent Field vault UI review](151_FIELD_VAULT_UI_REVIEW.md)
+
+- [152 — Composition and reusable-template browser acceptance](152_COMPOSITION_TEMPLATE_BROWSER_ACCEPTANCE.md)
+- [153 — Research workbench browser acceptance](153_RESEARCH_WORKBENCH_BROWSER.md)
+- [156 — Field operations browser acceptance](156_FIELD_OPERATIONS_BROWSER.md)

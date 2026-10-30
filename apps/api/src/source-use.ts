@@ -1,3 +1,5 @@
+import {assertCaseSharing} from './case-handling.js';
+import {researchProvenance} from './research-provenance.js';
 import {collectionProvenance} from './collection-provenance.js';
 import {createHash} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
@@ -19,16 +21,24 @@ export async function sourceUseProofs(c:PoolClient,tenantId:string,caseId:string
  LEFT JOIN manual_source_reviews r ON r.tenant_id=h.tenant_id AND r.case_id=h.case_id AND r.source_id=h.id AND r.version=h.version
  LEFT JOIN LATERAL(SELECT * FROM source_use_decisions d WHERE d.tenant_id=h.tenant_id AND d.case_id=h.case_id AND d.source_id=h.id ORDER BY d.sequence DESC LIMIT 1)d ON true
  WHERE h.tenant_id=$1 AND h.case_id=$2 AND h.evidence_id=$3 ORDER BY h.id LIMIT 201`,[tenantId,caseId,evidenceId])).rows;
+ // Portal receipt provenance remains internal. Corrections/withdrawal must be reconsidered before use.
+ const supplied=(await c.query(`SELECT r.id,latest.state,latest.recorded_at FROM portal_evidence_receipts r
+ JOIN portal_evidence_uploads u ON u.tenant_id=r.tenant_id AND u.case_id=r.case_id AND u.upload_id=r.upload_id
+ JOIN LATERAL(SELECT state,recorded_at FROM portal_evidence_responses WHERE tenant_id=u.tenant_id AND case_id=u.case_id AND request_id=u.request_id AND publication_id=u.publication_id ORDER BY sequence DESC LIMIT 1)latest ON true
+ WHERE r.tenant_id=$1 AND r.case_id=$2 AND r.evidence_id=$3`,[tenantId,caseId,evidenceId])).rows[0];
+ if(supplied&&(!rows.length||supplied.state!=='submitted'))throw new ApiError(409,'Recipient-supplied original requires a non-withdrawn response, source registration, independent metadata review and an explicit source-use decision.');
  if(rows.length>200)throw new ApiError(409,'Source-use decision query exceeds the case bound.');
  return rows.map(row=>{const record=row.snapshot;if(record.id!==row.id||record.caseId!==caseId||record.version!==row.version||record.original.id!==evidenceId||record.digest!==row.digest.trim()||manualSourceDigest(record)!==record.digest)throw new ApiError(409,'Registered source metadata integrity failed.');
   if(!row.decision)throw new ApiError(409,'Registered source requires a separate source-use decision.');const raw={...row.decision,recorded_at:new Date(row.decision.recorded_at)},approved=decision(raw),review=row.review;
+  if(supplied&&(!review||Date.parse(record.recordedAt)<=supplied.recorded_at.getTime()||Date.parse(review.recorded_at)<supplied.recorded_at.getTime()))throw new ApiError(409,'Recipient response changed. Correct and independently review source metadata before renewing source use.');
   if(record.withdrawn||!review?.accepted||review.digest.trim()!==record.digest||approved.sourceDigest!==record.digest||approved.sourceVersion!==record.version||approved.evidenceId!==evidenceId||approved.authorityVersion!==record.original.authorityVersion||row.status!=='Active'||!['Active','Review','Released'].includes(row.lifecycle_state)||row.authority_version!==approved.authorityVersion||!row.approver_current||!row.metadata_reviewer_current||approved.permission==='blocked'||use==='release'&&approved.permission!=='analysis_and_release'||!approved.expiresAt||Date.parse(approved.expiresAt)<=row.now.getTime())throw new ApiError(409,'Registered source use is blocked, expired or requires a fresh independent decision.');
   return {decision:approved,record,metadataReview:{id:review.id,digest:review.digest.trim(),accepted:review.accepted,reviewerId:review.reviewer_id,reviewerName:review.reviewer_name,reason:review.reason,recordedAt:new Date(review.recorded_at).toISOString()}};
  });
 }
 export async function reportSourceUse(c:PoolClient,tenantId:string,caseId:string,report:ReportDraft,use:'analysis'|'release'){
- const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id),...(report.speechFindings??[]).map(f=>f.source.id)])].sort(),proofs:SourceUseProof[]=[];
- for(const id of ids){const items=await sourceUseProofs(c,tenantId,caseId,id,use),collection=await collectionProvenance(c,tenantId,caseId,id);if(collection&&!items.length)throw new ApiError(409,'Collected source requires its registered source-use decisions.');proofs.push(...items.map(proof=>({...proof,...(collection?{collection}:{})})));}return proofs.sort((a,b)=>a.record.id.localeCompare(b.record.id));
+ if(use==='release')await assertCaseSharing(c,tenantId,caseId);
+ const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id),...(report.speechFindings??[]).map(f=>f.source.id),...(report.tikaFindings??[]).map(f=>f.source.id)])].sort(),proofs:SourceUseProof[]=[];
+ for(const id of ids){const items=await sourceUseProofs(c,tenantId,caseId,id,use),collection=await collectionProvenance(c,tenantId,caseId,id),research=await researchProvenance(c,tenantId,caseId,id);if((collection||research)&&!items.length)throw new ApiError(409,'Collected source requires its registered source-use decisions.');proofs.push(...items.map(proof=>({...proof,...(collection?{collection}:{}),...(research?{research}:{})})));}return proofs.sort((a,b)=>a.record.id.localeCompare(b.record.id));
 }
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;entry:(c:PoolClient,a:Actor,caseId:string,id:string)=>Promise<ManualSourceEntry>;verify:(c:PoolClient,a:Actor,caseId:string,entry:ManualSourceEntry)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};
 export function registerSourceUse(app:FastifyInstance,s:Services){

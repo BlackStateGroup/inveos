@@ -1,0 +1,8 @@
+export type CollaboratorInstructions={format:'inveos_restricted_work_v1';grantId:string;version:number;title:string;instructions:string;dueDate:string};
+export type CollaboratorPublication={id:string;sequence:number;version:number;action:'published'|'withdrawn';sha256:string;recordedAt:string};
+export type CollaboratorSubmission={id:string;sequence:number;publicationId:string;kind:'progress'|'submitted'|'withdrawn';body:string;reason:string;sha256:string;recordedAt:string};
+export type CollaboratorResult={id:string;submissionId:string;decision:'accepted'|'changes_requested';feedback:string;recordedAt:string};
+/** Explicit external DTO: no case, task, actor, source, draft, private reason or history fields. */
+export type ExternalWork={id:string;expiresAt:string;content:CollaboratorInstructions;sha256:string;publication:CollaboratorPublication;invitation:'pending'|'accepted'|'declined';submission:CollaboratorSubmission|null;result:CollaboratorResult|null};
+export type CollaboratorDraft={content:CollaboratorInstructions;sha256:string;taskId:string;taskVersion:number;taskSha256:string;authorId:string;authorName:string;reason:string;recordedAt:string};
+export type InternalCollaboratorWork={id:string;caseId:string;recipientId:string;recipientName:string;expiresAt:string;authorityVersion:number;draft:CollaboratorDraft;publication:CollaboratorPublication|null;publishedContent:CollaboratorInstructions|null;revoked:boolean;eligible:boolean;taskCurrentVersion:number;taskStatus:string;canPublish:boolean;canReview:boolean;reviewSequence:number;submission:CollaboratorSubmission|null;result:CollaboratorResult|null;invitation:'pending'|'accepted'|'declined'};

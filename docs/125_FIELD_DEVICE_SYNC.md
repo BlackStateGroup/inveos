@@ -1,0 +1,57 @@
+# 125 — Field device authority, sync receipts and recovery
+
+Build handoff, 30 October 2026. Based on `a81ef2612dfd4c55244f4922627073372de6b976` from `feat/speech-casework`, in isolated branch `feat/field-device-sync`. This is implemented browser/API/database work awaiting root's integrated acceptance. No PR, merge, deployment, production changes, live capture, spending or native acceptance.
+
+## Implemented
+
+- Migration070 retains existing device registrations/revocations and adds immutable versioned `active`, `lost`, `revoked` decisions. Device owners control their identities; tenant reviewers can inspect existing internal users and mark their devices lost/revoked. Terminal identities cannot be reactivated. Software IDs do not attest hardware. Registration limits remain50 per account.
+- Migration071 adds append-only case/device grants, pinning device version, authority identity/version and case access version. Explicit offline preparation issues a seven-day grant from current internal membership. Owners/reviewers can withdraw or explicitly restore grants. A withdrawn grant cannot be self-renewed. Authority/access change, expiry, grant replacement, device loss/revocation or loss of membership blocks new versioned acceptance. Case and device row locks serialize these decisions with acceptance.
+- Migration072 adds immutable recovery requests, independent reviews and server acceptance receipts. Requests retain the exact original manifest and fingerprint plus a separately proposed current grant. A different current case reviewer must approve; receipt acceptance rechecks target device/grant/scope and reviewer membership. Recovery does not change original bytes, claimed source time, device capture time, original manifest or original authority. Evidence intake records its current acceptance authority separately. Its existing quarantine and later processing/review gates remain intact.
+- Existing intake computes the original digest, creates evidence, capture, acceptance and audit in one transaction and removes its new object on rollback. Repeated original submissions retain stable evidence identity. Revoked-device POST retries still fail; a separate current-member, original-account receipt GET recovers an already accepted result without accepting more bytes. It reverifies original storage. A revoked case member cannot retrieve the receipt.
+- The existing encrypted IndexedDB queue now freezes the full grant, retains sync-attempt outcomes, distinguishes local/unknown/conflict/auth-required/acknowledged state, verifies bytes and manifest fingerprints when loading, and only acknowledges the exact local revision and matching acceptance. Up to20 recent attempt diagnostics and10 retained recovery requests are bounded local history; authoritative recovery/audit history remains on the server. No capture deletion or remote wipe is implemented.
+- Browser recovery includes exact receipt lookup, independently reviewed recovery requests/replies, explicit original-byte download, encrypted backup/restore, a request for persistent browser storage, and atomic replacement of the software identity/passphrase while retaining all originals, manifests, contexts and receipts. Backup inventory is authenticated; changed/missing encrypted records fail restore. Restore only adds to an empty vault. Replacement re-encrypts records and uses header/revision/count checks to reject concurrent changes; old-tab writes cannot use the new identity. It does not revoke the old server registration automatically.
+- Integrated Field investigator/reviewer controls show device decisions, current grants and their history, original/target recovery provenance, current case scope, independent approval/rejection, and distinct source/device/request/ingest/receipt times. Controls are available while the local vault is locked. All material remains fictional.
+
+## API surface
+
+Existing `/api/field/devices`, `/api/field/devices/:deviceId/revoke`, `/api/cases/:caseId/field-context/:deviceId`, `/api/cases/:caseId/field-captures` remain. New versioned manifests have `sync`; independently approved recovery delivery adds `recoveryId` outside the immutable manifest.
+
+| Route suffix (all begin `/api`) | Behaviour |
+| --- | --- |
+| `GET /field/device-control` | Reviewer account directory; `userId` filters that account's devices, `after` paginates accounts |
+| `GET /field/device-control/:userId/:deviceId/history` | Own/reviewer immutable history with `before` pagination |
+| `POST /field/device-control/:userId/:deviceId/state` | Idempotent request ID, expected version, lost/revoked state, reason |
+| `GET /cases/:caseId/field-grants` | Current latest grants; owner/reviewer sees case grants, investigator sees own; `before` pagination |
+| `POST /cases/:caseId/field-grants/prepare` | Explicit self preparation; returns unchanged current grant or appends eligible renewal |
+| `POST /cases/:caseId/field-grants` | Owner/reviewer versioned grant/withdraw decision |
+| `GET /cases/:caseId/field-grants/:userId/:deviceId/history` | Scoped immutable grant history with `before` pagination |
+| `GET /cases/:caseId/field-captures/:captureId/receipt` | Original account's exact accepted receipt, current case access required |
+| `GET/POST /cases/:caseId/field-recoveries` | Own requests or reviewer case requests; append exact recovery proposal; GET includes current authority |
+| `POST /cases/:caseId/field-recoveries/:id/review` | Different reviewer, explicit scope confirmation, approve/reject, immutable retry identity |
+
+A new browser capture always freezes a versioned grant. Historical unversioned manifests and fingerprints are not rewritten. The legacy API still permits an unversioned capture only on an active v1 device, with current original authority and membership, **before any case/device grant exists**. Once a grant exists, an unversioned capture requires independent recovery. This compatibility path has no historical case-access-version assertion; acceptance must cover it explicitly. New API consumers should use versioned contexts/manifests.
+
+## Useful manual acceptance sequence (UNRUN)
+
+1. On fictional case with approved authority, create/unlock a Field vault; save scope; capture a small fictional note offline; reconnect and deliver. Inspect unchanged bytes and distinct source/device/server times.
+2. Drop the POST response after commit, reload/re-authenticate, then check the exact receipt. Confirm one evidence/capture/acceptance and no premature acknowledgement. Repeat after device revocation: POST denied, current-account receipt GET succeeds. Revoked case/account access must deny reads.
+3. Queue a second original, change case authority/access or withdraw grant, then attempt delivery. Confirm conflict and unchanged encrypted original. Self preparation cannot undo withdrawal; owner/reviewer restoration appends history.
+4. Mark source device lost. Export encrypted backup, restore into a clean browser profile, create replacement identity, register/save current scope, and propose recovery. Reject self-review; independent current reviewer approves exact manifest/target. Deliver unchanged original under separate current acceptance authority. Revoke target/grant/reviewer before acceptance and require denial.
+5. Inject audit failure, concurrent device/grant decisions, lock waits, original-store corruption, altered receipt/hash/manifest/authority, cross-case/tenant/user/client requests, absent CSRF, expired grant/session and duplicate request IDs. Confirm rollback/denials and no lost originals.
+6. Exercise offline launch, lock/hide/reload, interrupted encryption/rotation, wrong passphrase, authenticated-backup inventory deletion/tampering, nonempty restore, browser storage exhaustion, concurrent tabs, retained earlier recovery receipt, narrow layout, keyboard controls and trusted-click downloads. Review real rendered screenshots before accepting UI.
+
+## Verification and integration receipt
+
+Dependencies: existing root lockfile installed with `npm ci --no-audit --no-fund`; no dependency or lockfile edits. All web/contracts/API TypeScript checks and targeted lint passed during implementation after correcting an initial missing `notFound` import and inferred UUID argument type. Final check results are reported in the commit receipt. `git diff --check` inspected. No database migrations, API suite, browser/build matrix, native/device tests, offline outage/restore tests or research runtime benchmarks were run in this build phase, as instructed. No new automated API/browser acceptance tests were authored in this expedited build handoff; root must add/run the meaningful negative and combined scenarios above. Compiler success is not workflow acceptance.
+
+Integration touches: small imports/intake hooks and registration in `apps/api/src/app.ts`; one reviewer prop at `FieldWorkbench` call in `apps/web/src/App.tsx`; optional Field contract fields plus export of dedicated `packages/contracts/src/field-sync.ts`; dedicated Field API/UI/vault files. No changes to central handoff/index/CI/shared test inventory. Migrations070–072 used;073–074 unused. Apply through the existing migration runner; old records stay intact. Never edit applied migrations or remove new append-only history as rollback. Any migration-inventory assertions maintained centrally need root's update. Source/recovery provenance is in Field capture and receipt records; this increment does **not** add frozen report/offline-verifier Field recovery lineage.
+
+Operational limits still apply:256KiB originals,100 captures/contexts per browser vault, bounded400000-byte encrypted records,50 device identities,1000 grant/device revisions and1000 recovery requests per case. Record-capacity errors retain the prior encrypted record. Full device and grant history APIs are paginated; the current UI history view shows latest50 and labels that limit. A lost physical device without an accessible encrypted copy/passphrase cannot be recovered by these controls. Persistent browser storage is discretionary; passphrase handling is not a native secure enclave/keychain.
+
+## Native and licence gates
+
+Inspection found only web/API/contracts workspaces. No Expo/React Native/native SQLite/secure-store dependencies, native app project, iOS/Android directory or Expo configuration exists in this checkout. `xcodebuild`, `xcrun`, `adb`, `emulator`, `gradle`, `java` and `expo` were absent from PATH in this Linux environment. No native tooling was installed and no alternative architecture chosen.
+
+WP04 remains gated on explicit approval of Expo/native dependencies and encrypted store/key lifecycle choices; actual iOS Xcode/signing/provisioning and Android JDK/SDK/build/signing setup; implemented native capture/media permissions; physical iOS/Android hardware; airplane-mode/restart/process termination/storage-pressure/re-auth/conflict/lost-device/receipt drills; separate independent privacy/security and pilot acceptance. No simulator, browser emulation, mock or software UUID result can satisfy these gates.
+
+Existing `fieldAcknowledgement.ts` retains its WatermelonDB MIT adaptation and Nozbe notice at pin `5c463222ecd79928861385bac94b486fcc7623d4`. This build read the retained actual licence and provenance/runtime-scope review in `third_party/watermelondb/`. It introduces no additional upstream code or runtime/library claim; new controls are first-party platform code. No new catalogue source was acquired or executed. Existing research notices and ignored-copy policy remain unchanged.

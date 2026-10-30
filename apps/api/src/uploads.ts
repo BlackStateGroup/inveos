@@ -1,3 +1,4 @@
+import {registerDesktopIntake,checkDesktopIntake} from './desktop-intake.js';
 import {collectionOpen,type LifecycleCase} from './case-lifecycle.js';
 import {randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
@@ -6,7 +7,7 @@ import type {BinaryEvidenceInput,Evidence} from '@inveos/contracts';
 import type {Actor} from './app.js';
 import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
-type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
+type Services={pool:Pool;assertSession:(c:PoolClient,a:Actor)=>Promise<void>;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
  findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<LifecycleCase>;
  audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>;
  receive:(a:Actor,caseId:string,input:BinaryEvidenceInput,uploadId:string)=>Promise<Evidence>;
@@ -16,7 +17,19 @@ const uuid={type:'string',pattern:'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-8][a-fA-F0-
 const caseParams={type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}};
 const params={type:'object',required:['caseId','uploadId'],additionalProperties:false,properties:{caseId:uuid,uploadId:uuid}};
 const empty={type:'object',additionalProperties:false,maxProperties:0};
+// Shared exact-range/canonical encoding primitives; callers retain their own access fences.
+export function decodeUploadChunk(byteLength:number,ordinal:number,encoded:string){
+ const bytes=Buffer.from(encoded,'base64'),length=Math.min(32768,byteLength-ordinal*32768);
+ if(!Number.isInteger(ordinal)||ordinal<0||ordinal>7||length<1||bytes.length!==length||bytes.toString('base64')!==encoded)throw new ApiError(422,'Chunk must match its exact reserved range and canonical encoding.');
+ return bytes;
+}
+export function assembleUploadChunks(byteLength:number,rows:Array<{ordinal:number;bytes:Buffer}>){
+ if(rows.length!==Math.ceil(byteLength/32768)||rows.some((r,i)=>r.ordinal!==i||r.bytes.length!==Math.min(32768,byteLength-i*32768)))throw new ApiError(409,'Upload has missing chunks.');
+ return Buffer.concat(rows.map(r=>r.bytes)).toString('base64');
+}
 export function registerUploads(app:FastifyInstance,s:Services){
+ registerDesktopIntake(app,s);
+ const tx=<T>(actor:Actor,fn:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await s.assertSession(c,actor);const value=await fn(c);await s.assertSession(c,actor);return value;});
  const base='/api/cases/:caseId/uploads';
  // All lifecycle mutations take the same case lock as intake/finalisation.
  // Staging is transient; reservation identity and completed evidence are retained.
@@ -24,7 +37,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
   const actor=request.actor!,{caseId}=request.params as {caseId:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await s.findCase(c,actor,caseId);
    const rows=await c.query(`SELECT id,case_id,status,byte_length,authority_version,expires_at,evidence_id,
      created_by=$3 AS owned,expires_at<=statement_timestamp() AS expired
@@ -37,7 +50,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
   const actor=request.actor!,{caseId}=request.params as {caseId:string},{before,limit=25}=request.query as {before?:string;limit?:number};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await s.findCase(c,actor,caseId);
    // Resolve an opaque cursor inside the same visibility boundary; retain database timestamp precision.
    const scope=[actor.tenantId,caseId,actor.userId,actor.role==='reviewer'];
@@ -58,7 +71,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
  app.get(base+'/by-key/:requestKey',{preHandler:s.authenticate,schema:{params:{type:'object',additionalProperties:false,required:['caseId','requestKey'],properties:{caseId:uuid,requestKey:uuid}}}},async(request,reply)=>{
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,requestKey}=request.params as {caseId:string;requestKey:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await s.findCase(c,actor,caseId);
    const found=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,requestKey]);
    if(!found.rows[0])notFound();return {...dto(found.rows[0]),requestKey};
@@ -68,7 +81,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId}=request.params as {caseId:string};
   if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required for staging maintenance.');
   const {limit}=request.body as {limit:number};
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");
    await s.findCase(c,actor,caseId,true);
    const rows=await c.query(`SELECT id FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2
@@ -86,7 +99,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,uploadId}=request.params as {caseId:string;uploadId:string};
   if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required for staging maintenance.');
   const reason=(request.body as {reason:string}).reason.trim();if(reason.length<10)throw new ApiError(422,'Explain why this pending upload must be cancelled.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");
    await s.findCase(c,actor,caseId,true);const keys=[actor.tenantId,caseId,uploadId];
    const found=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE',keys),row=found.rows[0];if(!row)notFound();
@@ -104,12 +117,13 @@ export function registerUploads(app:FastifyInstance,s:Services){
   const input=request.body as Omit<BinaryEvidenceInput,'contentBase64'>&{byteLength:number};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
   if(!s.validFilename(input.filename,true)||!s.validSourceTime(input.sourceTime))throw new ApiError(422,'Invalid source metadata.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    const kase=await s.findCase(c,actor,caseId,true);
    const metadata={filename:input.filename,sourceTime:input.sourceTime,method:input.method,expectedSha256:input.expectedSha256};
    const prior=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
    if(prior.rows[0]){const row=prior.rows[0];if(row.byte_length!==input.byteLength||Object.entries(metadata).some(([k,v])=>row.metadata[k]!==v))throw new ApiError(409,'Reservation key already used.');return dto(row);}
    if(!collectionOpen(kase))throw new ApiError(409,'Approved authority required.');
+   await checkDesktopIntake(c,actor,caseId,input.idempotencyKey,metadata,input.byteLength,kase.authority_version!);
    const count=await c.query("SELECT count(*)::int AS n FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND status='open'",[actor.tenantId,caseId]);
    if(count.rows[0].n>=10)throw new ApiError(409,'Cancel or complete outstanding reservations before reserving more.');
    const id=randomUUID();const row=await c.query('INSERT INTO upload_reservations(tenant_id,case_id,id,created_by,idempotency_key,authority_version,metadata,byte_length) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[actor.tenantId,caseId,id,actor.userId,input.idempotencyKey,kase.authority_version,metadata,input.byteLength]);
@@ -119,7 +133,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
  for(const action of ['status','chunk','cancel','complete'])app.route({method:action==='status'?'GET':'POST',url:base+'/:uploadId'+(action==='status'?'':'/'+action),preHandler:action==='status'?s.authenticate:s.requireCsrf,schema:{params,...(action==='status'?{}:{body:action==='chunk'?{type:'object',additionalProperties:false,required:['ordinal','contentBase64'],properties:{ordinal:{type:'integer',minimum:0,maximum:7},contentBase64:{type:'string',minLength:4,maxLength:43692}}}:empty})},handler:async(request,reply)=>{
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,uploadId}=request.params as {caseId:string;uploadId:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  const result=await inTransaction(s.pool,async c=>{
+  const result=await tx(actor,async c=>{
    const kase=await s.findCase(c,actor,caseId,true),keys=[actor.tenantId,caseId,uploadId];
    const found=await c.query('SELECT *,expires_at>clock_timestamp() AS live FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND created_by=$4 FOR UPDATE',[...keys,actor.userId]);
    const row=found.rows[0];if(!row)notFound();
@@ -132,17 +146,14 @@ export function registerUploads(app:FastifyInstance,s:Services){
     if(row.status!=='open'||!row.live||!collectionOpen(kase)||kase.authority_version!==row.authority_version)throw new ApiError(409,'Upload is closed, expired or authority changed.');
    }
    if(action==='chunk'){
-    const input=request.body as {ordinal:number;contentBase64:string},bytes=Buffer.from(input.contentBase64,'base64');
-    const length=Math.min(32768,row.byte_length-input.ordinal*32768);
-    if(length<1||bytes.length!==length||bytes.toString('base64')!==input.contentBase64)throw new ApiError(422,'Chunk must match its exact reserved range and canonical encoding.');
+    const input=request.body as {ordinal:number;contentBase64:string},bytes=decodeUploadChunk(row.byte_length,input.ordinal,input.contentBase64);
     const old=await c.query('SELECT bytes FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3 AND ordinal=$4',[...keys,input.ordinal]);
     if(old.rows[0]&&!old.rows[0].bytes.equals(bytes))throw new ApiError(409,'Chunk already received with different bytes.');
     if(!old.rows[0]){await c.query('INSERT INTO upload_chunks VALUES($1,$2,$3,$4,$5)',[...keys,input.ordinal,bytes]);await s.audit(c,actor,caseId,'upload.chunk_received','upload',uploadId,`Chunk ${input.ordinal} received`);}
    }
    const chunks=await c.query('SELECT ordinal,bytes FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3 ORDER BY ordinal',keys);
    if(action==='complete'&&row.status!=='completed'){
-    if(chunks.rows.length!==Math.ceil(row.byte_length/32768)||chunks.rows.some((r,i)=>r.ordinal!==i))throw new ApiError(409,'Upload has missing chunks.');
-    return {input:{...row.metadata,idempotencyKey:row.id,contentBase64:Buffer.concat(chunks.rows.map(r=>r.bytes)).toString('base64')} as BinaryEvidenceInput};
+    return {input:{...row.metadata,idempotencyKey:row.id,contentBase64:assembleUploadChunks(row.byte_length,chunks.rows as Array<{ordinal:number;bytes:Buffer}>)} as BinaryEvidenceInput};
    }
    return {receipt:dto(row),evidenceId:row.evidence_id as string|null,received:chunks.rows.map(r=>r.ordinal as number)};
   });

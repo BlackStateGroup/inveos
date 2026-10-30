@@ -16,7 +16,7 @@ concurrency:
 jobs:
   synthetic-application:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:15
@@ -60,6 +60,7 @@ jobs:
       - name: Typecheck every workspace
         run: npm run typecheck
       - name: Build web application
+        id: web-build
         run: npm run build
       - name: Recreate the fictional disclosure DOCX fixture
         run: node --import tsx tools/make_disclosure_docx_fixture.mjs
@@ -67,23 +68,29 @@ jobs:
         run: npm run test:foundation
       - name: Exercise synthetic reference flow
         run: python3 -m examples.evidence_flow_demo
+      - name: Install actual PDF and Office inspection tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk poppler-utils
       - name: Run API integration tests against real PostgreSQL
         # This existing workspace command reads CI environment variables directly;
         # the root test:api command requires a developer's private .env file.
         # The growing serial suite includes actual database and browser journeys.
         # Individual worker/browser deadlines remain unchanged.
-        run: timeout 360s npm test --workspace @inveos/api
+        env:
+          INVEOS_ACCEPTANCE_ARTIFACTS: ${{ github.workspace }}/output/evals/source-family
+        run: timeout 900s npm test --workspace @inveos/api
       - name: Exercise development effect replay in the actual browser
+        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio|real browser prints collected-source lineage' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio|real browser prints collected-source lineage|real browser links reviewed speech to reasoning|real browser saves desktop batches|real browser declares billing' apps/api/test/api.test.ts
       - name: Render and re-save the fictional DOCX in LibreOffice
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk poppler-utils
           timeout 120s python3 tools/eval_report_docx_office.py --output output/evals/docx-office
           timeout 120s python3 tools/eval_speech_docx_office.py
           timeout 120s python3 tools/eval_speech_docx_office.py --kind collection
+          timeout 180s python3 tools/eval_source_family_copies.py output/evals/source-family
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
@@ -369,3 +376,104 @@ jobs:
             output/evals/collection-office/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Retain reviewed speech reasoning browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: speech-reasoning-browser
+          path: output/evals/speech-reasoning-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Retain desktop batch browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: desktop-batch-browser
+          path: output/evals/desktop-batch-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Retain fictional source-family rendered copies and verifier receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-family-copies
+          path: output/evals/source-family/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Retain fictional invoice browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: invoice-workflow-browser
+          path: output/evals/invoice-workflow-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+  connected-workflows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.11'
+      - name: Install locked dependencies and build the actual application
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build --workspace @inveos/web
+      - name: Create restricted application role in disposable test database
+        run: |
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
+      - name: Exercise connected workflows with real PostgreSQL and sandboxed Chrome
+        # Explicit journeys fail when the browser/database is unavailable; none skip.
+        # Serial execution bounds memory; a separate runner keeps the growing API
+        # suite's existing deadline independent of these longer UI journeys.
+        run: >-
+          timeout 720s node --import tsx --test --test-concurrency=1
+          apps/api/test/workflow-browser.integration.ts
+          apps/api/test/composition-template-browser.integration.ts
+          apps/api/test/research-workbench.integration.ts
+          apps/api/test/field-operations-browser.integration.ts
+      - name: Retain fictional connected workflow renders and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: connected-workflow-browser
+          path: |
+            output/evals/workflow-evidence-*
+            output/evals/composition-templates/
+            output/evals/research-workbench/
+            output/evals/field-operations/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Check tracked sources remain unchanged
+        run: git diff --exit-code

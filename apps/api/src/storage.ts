@@ -88,7 +88,7 @@ export async function removeOriginal(store: OriginalStore, objectPath: string): 
 
 /** Bounded original read: never allocate based on an untrusted replacement file. */
 export async function readOriginalBounded(store: OriginalStore, objectPath: string, maximum: number): Promise<Buffer> {
-  if(!Number.isSafeInteger(maximum)||maximum<1||maximum>262144)throw new Error('Original size limit');
+  if(!Number.isSafeInteger(maximum)||maximum<1||maximum>2097152)throw new Error('Original size limit');
   const root=typeof store==='string'?store:store.rootPath,encrypted=typeof store!=='string';
   if(encrypted!==objectPath.endsWith('.enc'))throw new Error('Original storage mode mismatch.');
   const readLimit=maximum+(encrypted?originalEnvelopeOverhead:0);

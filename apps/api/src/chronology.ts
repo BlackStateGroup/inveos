@@ -20,7 +20,7 @@ const properties = {
  time: {type: 'object', additionalProperties: false, required: ['precision', 'start', 'end', 'timezone', 'note'], properties: {
   precision: {enum: ['instant', 'day', 'month', 'range', 'unknown']}, start: nullableTime, end: nullableTime, timezone: text(100), note: text(1000, 1),
  }},
- source: {type: 'object', additionalProperties: false, required: ['kind', 'findingId'], properties: {kind: {enum: ['text_finding', 'document_finding', 'transcript_finding']}, findingId: uuid}},
+ source: {type: 'object', additionalProperties: false, required: ['kind', 'findingId'], properties: {kind: {enum: ['text_finding', 'document_finding', 'transcript_finding', 'speech_finding']}, findingId: uuid}},
 };
 const caseParams = {type: 'object', additionalProperties: false, required: ['caseId'], properties: {caseId: uuid}};
 const eventParams = {...caseParams, required: ['caseId', 'eventId'], properties: {...caseParams.properties, eventId: uuid}};
@@ -63,7 +63,8 @@ export function registerChronology(app: FastifyInstance, s: Services): void {
   const actor=r.actor!,{caseId}=r.params as {caseId:string};await s.findCase(c,actor,caseId);
   const rows=(await c.query(`SELECT 'text_finding' AS kind,id AS "findingId",text FROM findings WHERE tenant_id=$1 AND case_id=$2
    UNION ALL SELECT 'document_finding',id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2
-   UNION ALL SELECT 'transcript_finding',f.id,p.snapshot->>'text' FROM transcript_findings f JOIN transcript_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 ORDER BY kind,"findingId" LIMIT 1001`,[actor.tenantId,caseId])).rows;
+   UNION ALL SELECT 'transcript_finding',f.id,p.snapshot->>'text' FROM transcript_findings f JOIN transcript_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2
+   UNION ALL SELECT 'speech_finding',f.id,p.snapshot->>'text' FROM speech_findings f JOIN speech_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 ORDER BY kind,"findingId" LIMIT 1001`,[actor.tenantId,caseId])).rows;
   if(rows.length>1000)throw new ApiError(422,'Chronology source limit exceeded.');return rows;
  }));
  app.get(base, {preHandler: internal, schema: {params: caseParams}}, async r => inTransaction(s.pool, async c => {

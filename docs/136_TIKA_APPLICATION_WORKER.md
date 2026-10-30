@@ -1,0 +1,79 @@
+# 136 — Locked Tika PDF application worker and reviewed page-text citations
+
+Build handoff on `feat/tika-application`, based on OSINT commit `d56778eee2ecf4487e26d2a874eeabec245f7b04`. Root owns integration/acceptance, report composition and release. This batch uses migration **105** only; 106–109 remain unused. No central handoff, INDEX or CI/test inventory changes. No PR, merge, deployment, live data, additional agent or new application dependency.
+
+## Inspected boundary and gates
+
+Read docs110, the actual pinned Tika source and its selected PDF/XMP POMs, parser/page-emission/configuration code, root licence/notice and core appended terms. The exact source checkout is `f45b9498f35d55445af28737407586362b2e37fc` in ignored `.research-cache/sources/apache/tika`. Static acquisition/replay of the **unchanged existing** runtime lock verified **18 JAR/source pairs, 66 files, 29,072,338 bytes**, including offline POM/source graph and actual JAR payload/notice checks. No JAR, compiler, parser or container was executed during that inspection.
+
+The locked runtime is **PDF-only**. Root explicitly confirmed this scope after inspection. Office/DOCX/XLSX/PPTX, archives, general text/HTML/XML, images and other formats are rejected by this profile; existing first-party UTF-8 indexing remains a separate existing operation. No Office module, POI, general auto-detection parser, additional runtime artifact, package or licence scope has been added. The inherited PDF wrapper refuses encrypted/over-page/prohibited-extraction inputs and disables OCR, embedded parsing, page images, actions, annotations, bookmarks and forms. It is reused unchanged. Historical 14-fixture results in docs110 do not qualify this new application path or establish representative extraction quality.
+
+Immutable application profile `tika_pdf_text_lab_v1` SHA-256:
+
+`9a31e0678635591dc2caaa5c9379850e5a15a5c33c38bd9cda08885369915c53`
+
+It pins source revision, unchanged wrapper hash, existing runtime lock, the historically built reduced JAR (`9979f7381d200e057f5394e4de3a437932b7bdc7a59acdd98e11511d9adf4258`), JDK manifest/configuration, features, normalization and application limits. Full provenance and exact retained upstream notices are in `research/tika/application-inspection.json` and `third_party/tika/`. The base-image/JDK source/licence closure, signatures, security/distribution approval and production acceptance remain open. This is an opt-in controlled research application integration, not parser or production approval.
+
+## Implemented application path
+
+The existing processing selector/queue API accepts the new profile only with the document lab enabled, a preserved bounded binary PDF, current case authority and the existing source-use analysis check. The queue re-reads and hashes original bytes and rejects a non-PDF signature. Stored originals, their source time and receipt time remain unchanged. The normal SHA/text dispatcher explicitly leaves this isolated kind to its dedicated worker.
+
+`runTikaJob` consumes one explicit tenant/case/job, or `dispatchTikaJobs` performs one bounded pass over at most **five queued jobs in one tenant/case**. There is no global discovery, scheduling, automatic retry or application HTTP process launcher. It reuses existing job leases, membership/source-use/current-authority fencing and immutable attempt events. Claim and heartbeat check current permission; result attachment checks it again and re-reads the original. A lost, expired, cancelled or superseded lease cannot attach a derivative. Existing case/member/source changes continue to block new processing. Historical inspection requires current case access and source-use permission; new citation/review/interpretation writes additionally require matching current active processing authority.
+
+The operator CLI requires `INVEOS_DEV_LAB=1`, `INVEOS_RESEARCH_TIKA=1`, non-production mode and restricted database/original-store configuration. It requires a fresh actual host-probe receipt for the exact already-present JDK image. `prepare_tika_worker.py` checks the existing cached artifacts offline, exact pinned source inventory, unchanged wrapper and existing repeated-build receipt/JAR hash, then stages them as data. It **does not download, install, compile or run them**. Missing or changed artifacts fail closed. An absent/stale host receipt prevents a claim; a staging failure after claim records `tika_runtime_unavailable`.
+
+Execution uses the existing inspected `runResearchContainer`: network none, no pulls, non-root, read-only root and original bundle, no capabilities, no new privileges, 1 GiB memory/no swap, half CPU, 32 PIDs, bounded no-exec scratch/output, process/output deadlines and verified daemon-owned container cleanup. The command is fixed: the unchanged `TikaPdfProbe` parses `/original/input.pdf`; no caller filename or URL reaches a shell. Artifact preparation has a 90-second bound, parser supervision 90 seconds and container kill fallback 100 seconds, within the existing five-minute maximum lease deadline. Original max is 2 MiB, actual PDF pages 1–16, captured raw output 1 MiB, XHTML 512 KiB, derived page text 256 KiB per page, complete derivative 1 MiB. These stricter application output caps can reject output accepted by the research wrapper; no truncation is presented as success.
+
+Successful attachment atomically stores immutable original/job/authority linkage, exact profile text/digest, raw wrapper JSON bytes/digest, XHTML digest, a separately typed derivative and the historical host/artifact-preparation receipt. Raw bytes remain evidence-linked and are never rendered as HTML. The first-party bounded output validator reads only the emitted XHTML, never the PDF: no DTD, custom entities, external resolver, scripts or DOM. It requires the reported page count to match actual direct XHTML page blocks, explicit no-OCR/unencrypted/extraction-permitted metadata and exact source hash. Empty pages stay explicit. Text normalization collapses XML space/tab/CR/LF within each actual page; other characters are preserved. Completeness, reading order, tables, OCR accuracy and truth remain unverified.
+
+Failure states distinguish unavailable runtime, parser rejection/failure, invalid output, timeout, output cap, abort, original integrity failure, changed scope and unconfirmed cleanup. Permission/encryption parser rejections share `tika_parser_rejected_or_failed` with other process rejections because the existing supervisor deliberately does not surface raw parser stderr; no successful-denial classification or benchmark is claimed. SIGINT/SIGTERM stops this worker's process/container through existing supervision. Existing UI cancellation remains available. A new explicit **expired Tika lease reconciliation** records unknown outcome as failed, retains history and prevents a late commit. A later request uses the ordinary explicit queue; an explicitly named expired job can alternatively use the existing bounded three-attempt reclaim contract. The five-job dispatcher selects queued jobs only.
+
+## Typed references and independent human review
+
+This is a distinct `tika_pdf_page_text` family, not the existing native/OCR bounding-box family or original-text byte family. Each citation binds the job/context, original/profile/raw/XHTML/derivative digests, actual emitted page number and path, that page's normalized text digest and one exact UTF-8 byte interval **within that derived page text**. UTF-8 boundary and exact quotation checks reject invalid or ambiguous intervals. No bounding box, visual position or original PDF byte offset is inferred.
+
+The connected inspection workspace shows source/received/processed times separately, profile/runtime/raw/derivative fingerprints, pages without text and escaped page text. It independently hashes the received profile, derivative and each page before showing them. The user chooses a page, quote and exact occurrence (first 100 matching occurrences are presented; refine repetitive quotations). The preserved original remains available for comparison.
+
+Citation selection is unreviewed. A distinct assigned reviewer records append-only acceptance/rejection, a meaningful reason and explicit original comparison before accepting correspondence. Corrections append a consecutive hash-linked decision; previous decisions remain. A human may then propose a separate interpretation bound to that exact accepted correspondence decision. A different reviewer accepts/rejects the interpretation. Superseding/rejecting correspondence makes older interpretations ineligible even if they were accepted historically. Authority changes also remove current eligibility. Bounds: 25 citations per extraction, 20 correspondence decisions per citation and 10 interpretations per citation. All operations retain scoped immutable records and audit entries; idempotent retries cannot alter an existing identity.
+
+Accepted interpretations are shown and exported in this distinct workspace. **No automatic report inclusion or client release is added.** Existing report/graph/chronology finding families and verifier formats are not altered to pretend Tika has bounding boxes. A future report-composition integration must explicitly support this typed family and its current eligibility; it must not coerce these locations into existing document/original-byte formats. This batch supplies reviewed interpretation records and their complete internal export, not a new release mechanism.
+
+## API and storage seams
+
+Migration105 appends the kind to the existing integrity-job constraint using its existing expression, preserving parallel worker-kind additions. It adds `tika_derivatives`, `tika_citations`, `tika_citation_reviews`, `tika_claims` and `tika_claim_decisions`, same-tenant/case/job foreign keys, append-only triggers and an atomic successful-job/result constraint. Existing source/capture/company/RDAP/webpage/native/OCR/speech schemas and receipt formats remain unchanged.
+
+Routes below `/api/cases/:caseId/integrity-jobs/:jobId/tika`:
+
+- `GET /`: verified derivative and bounded human-review history.
+- `POST /citations/:citationId`: exact typed occurrence.
+- `POST /citations/:citationId/reviews`: independent correspondence decision with expected prior digest.
+- `POST /citations/:citationId/claims`: interpretation linked to the latest accepted correspondence.
+- `POST /citations/:citationId/claims/:claimId/decision`: independent interpretation decision.
+- `POST /recover`: explicit expired-running-lease retirement with a reason.
+- `GET /export`: original/raw/derivative bytes, immutable runtime/profile, historical processing authority, source-use snapshot, citations and review/interpretation histories in a bounded 12 MiB envelope.
+
+`tools/verify_tika_context.py` is a standalone standard-library verifier for that export. It checks a trusted outer fingerprint when supplied, original/raw/profile/derivative digests, independently parses inert XHTML page text, validates typed exact locations, historical runtime/authority chronology, source-use snapshot consistency and both independent human-decision chains. It does not authenticate actors, prove parser execution, reparse the PDF, establish current permission, legal approval or release. The UI/export preserves those distinctions. Its actual execution against application-produced output is unrun.
+
+Integration files to reconcile with parallel work: additive changes in `integrity-jobs.ts`, `ProcessingJobs.tsx`, `jobRequest.ts` and contracts `index.ts`. All other application logic is in dedicated `tika-*` files. Existing `app.ts`, report renderers, central acceptance inventories and base research build/experiment tools are unchanged. Root must include the standalone verifier in any later distributed verifier bundle.
+
+## Root acceptance instructions — unrun in this batch
+
+Use a disposable qualified host and fictional PDFs only. Prepare the **existing** source/runtime/JDK/build by docs110's controlled procedure; do not run host Java or bypass failed isolation. This sandbox has inspected source/dependency caches but has not pulled a JDK image, built the JAR or generated a qualification receipt. The application worker never provisions those prerequisites.
+
+On the qualified host, with the exact existing image/artifacts already present, run `python3 tools/qualify_tika_worker.py` to generate `.research-cache/tika-worker-qualification.json`; it runs real isolation probes but no parser. The application requires this receipt within 15 minutes at worker entry. Migrate isolated fresh and populated application schemas through105, enable the existing document lab and create a preserved fictional PDF with current analysis permission. Queue **Tika PDF page text** from Processing. With restricted application database/storage environment set:
+
+```bash
+INVEOS_DEV_LAB=1 INVEOS_RESEARCH_TIKA=1 node --env-file=.env --import tsx apps/api/src/run-tika-job.ts TENANT_UUID CASE_UUID JOB_UUID
+```
+
+For one explicit pass of at most five queued Tika jobs, substitute `--dispatch-five` for the job UUID. `INVEOS_WORKER_SCHEMA` selects the isolated database schema. Refresh job history and inspect the resulting page text. Save an exact occurrence, use a second reviewer for original correspondence, propose an interpretation and use a different reviewer for that interpretation. Exercise a later rejection and authority/source-use withdrawal. Download the context and verify separately:
+
+```bash
+python3 tools/verify_tika_context.py tika-context.json --expected-sha256 TRUSTED_FINGERPRINT
+```
+
+Required **unrun** acceptance: fresh/populated SQL/trigger/role checks; actual locked JDK/build/preparation/container/CLI/dispatch and cleanup; supported PDFs including mixed/empty/raster-only pages, protected/malformed PDFs and 16/17-page boundary; unsupported Office/text/archive inputs; raw/XHTML/depth/UTF-8/output/duplicate-key/metadata/source/profile/runtime corruption; real stdout/stderr/time/memory/PID limits; cancellations, expired leases, crashes, restart, concurrent claims, membership/authority/source-use revocation and ambiguous commits; exact occurrence ambiguity and multibyte boundaries; independent/self/stale/revised review decisions; real export/verifier agreement and semantic rehash mutations; existing application regression and root's combined suites; browser reload, pending-queue recovery, permission loss, keyboard/navigation/mobile layouts and original comparison. Broader extraction quality, representative document coverage and actual base/runtime/licence/security qualification remain gates.
+
+Only compiler/static checks are run in this implementation phase. No new broad tests are written or executed, and no synthetic output is described as a real parser benchmark. Final build-phase compiler/static receipt is appended before commit.
+
+Final receipt, 30 October 2026: all three workspaces passed `npm run typecheck` (`/tmp/tika136-types-complete.log`); targeted ESLint passed for changed TypeScript/TSX (`/tmp/tika136-lint-final.log`); all three new Python tools passed syntax compilation. The unchanged locked-source/runtime inspection returned the 66-file/18-pair result above with `runtimeExecuted:false` and `licenceApproved:false` (`/tmp/tika136-locked-artifacts.log`). Staged whitespace checks pass for first-party implementation/documentation; the full check reports original trailing whitespace in the two exact upstream licence copies, intentionally retained without changing their hashes. No migration, host probe, JAR build, parser/application worker, application test, verifier execution, browser or combined acceptance ran. Root's downloadable offline kit (docs142) needs **only `tools/verify_tika_context.py`** for this new standalone verifier; it has no repository-helper imports. Preparation/qualification tools are not verifier dependencies.

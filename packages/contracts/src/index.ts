@@ -1,3 +1,12 @@
+import type {TikaReportFinding} from './tika.js';
+export * from './case-handling.js';
+export * from './processing-batches.js';
+import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance,FieldProvenance} from './field-sync.js';
+export * from './field-sync.js';
+export type * from './tika.js';
+import type {ResearchProvenance} from './research.js';
+export type * from './research.js';
+export {researchProvenanceRows} from './research.js';
 export const caseStages=['Intake','Scope review','Active','Review','Released','Closed','Archived'] as const;
 export type CaseStage=typeof caseStages[number];
 export type CaseLifecycle={state:CaseStage;version:number;collectionOpen:boolean;canManage:boolean;allowed:CaseStage[];history:{id:string;version:number;from:CaseStage|null;to:CaseStage;actorId:string|null;reason:string;source:string;authorityVersion:number|null;disclosureId:string|null;recordedAt:string}[];nextBefore:number|null;disclosures:{id:string;createdAt:string}[]};
@@ -54,12 +63,12 @@ export type WorkLinkInput = {
   reason: string;
 };
 export type DocumentWorkLinkInput = {id: string; findingId: string; relation: WorkLinkInput['relation']; reason: string};
-export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & ({kind: 'document_finding'} | {kind: 'transcript_finding'}) & {withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
+export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & ({kind: 'document_finding'} | {kind: 'transcript_finding'} | {kind:'speech_finding'}) & {withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
 export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkItem; actor: string; reason: string; at: string};
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
 export type AllegedTime = {precision: 'instant' | 'day' | 'month' | 'range' | 'unknown'; start: string | null; end: string | null; timezone: string; note: string};
-export type ChronologySource = {kind: 'text_finding' | 'document_finding' | 'transcript_finding'; findingId: string};
+export type ChronologySource = {kind: 'text_finding' | 'document_finding' | 'transcript_finding' | 'speech_finding'; findingId: string};
 export type ChronologyInput = {id: string; title: string; account: string; time: AllegedTime; source: ChronologySource; status: 'alleged' | 'disputed' | 'withdrawn'};
 export type ChronologyEvent = ChronologyInput & {caseId: string; version: number; createdBy: string; createdAt: string; recordedAt: string; interpretation: 'recorded_account_not_finding'};
 export type ChronologyEdit = Omit<ChronologyInput, 'id'> & {expectedVersion: number; reason: string};
@@ -130,8 +139,11 @@ export type DocumentReportFinding = {
 };
 
 export type ReportDraft = {
+  composition?: FrozenReportComposition;
   status: 'draft_not_released';
+  fieldProvenance?:FieldProvenance[];
   documentFindings?: DocumentReportFinding[];
+  tikaFindings?: TikaReportFinding[];
   transcriptFindings?: TranscriptReportFinding[];
   speechFindings?: SpeechReportFinding[];
   sourceUse?: SourceUseProof[];
@@ -163,13 +175,14 @@ export type ReportDraft = {
     blockers: WorkItem[];
     documentLinks?: Array<Extract<WorkLink, {kind: 'document_finding'}>>;
     transcriptLinks?: Array<Extract<WorkLink, {kind: 'transcript_finding'}>>;
+    speechLinks?: Array<Extract<WorkLink, {kind:'speech_finding'}>>;
   };
   limitations: string;
 };
 
-export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context'|'transcript'|'transcript_claim'|'transcript_finding';
-export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
-export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
+export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context'|'transcript'|'transcript_claim'|'transcript_finding'|'speech_claim'|'speech_finding'|'field_session'|'field_observation';
+export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string;queryMode?:'phrase'|'all_words'|'any_words';sourceFrom?:string;sourceTo?:string;receivedFrom?:string;receivedTo?:string;evidenceId?:string};
+export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string;speechJobId?:string;sourceTime?:string|null;receivedTime?:string|null;filename?:string|null}>;statusFacets?:{status:string;count:number}[];facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
 
 export type GraphEntityKind = 'person'|'organisation'|'asset'|'place'|'incident'|'document';
@@ -223,13 +236,13 @@ export type ReviewAssignmentPage={current:ReviewAssignment|null;pending:boolean;
 export type ReviewAssignmentContext=Pick<AttentionEntry,'key'|'revision'|'caseId'|'caseRef'|'caseTitle'|'title'>;
 export type ReviewRegisterCursor={caseId:string;key:string;revision:string};
 export type ReviewRegisterPage={items:(ReviewAssignmentContext&{pending:boolean;assignment:ReviewAssignment})[];next:ReviewRegisterCursor|null};
-export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'report_review'|'pdf_review'|'docx_review'|'correspondence_review'|'source_review'|'expense_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;acknowledged?:boolean;assignment?:ReviewOwnership|null};
+export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'speech_review'|'speech_correspondence_review'|'report_review'|'pdf_review'|'docx_review'|'correspondence_review'|'source_review'|'expense_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;segmentIndex?:number;acknowledged?:boolean;assignment?:ReviewOwnership|null};
 export type AttentionPage={items:AttentionEntry[];next:string|null;preferences:AttentionPreferences;asOf:string;interpretation:'personal_attention_not_review'};
 
-export type FieldDevice={id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
-export type FieldContext={tenantId:string;userId:string;caseId:string;device:FieldDevice;authority:AuthorityRecord;checkedAt:string;maxOriginalBytes:number};
-export type FieldManifest={id:string;deviceId:string;authorityId:string;authorityVersion:number;filename:string;sourceTime:string;capturedAt:string;clockUncertaintySeconds:number|null;method:string;expectedSha256:string;byteLength:number;kind:'supplied_file'|'field_note';scopeConfirmed:true};
-export type FieldCaptureReceipt={capture:{id:string;caseId:string;deviceId:string;authorityId:string;authorityVersion:number;manifestSha256:string;receivedAt:string};evidence:Evidence};
+export type FieldDevice={version?:number;state?:FieldDeviceState;userId?:string;userName?:string;id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
+export type FieldContext={grant?:FieldGrant|null;tenantId:string;userId:string;caseId:string;device:FieldDevice;authority:AuthorityRecord;checkedAt:string;maxOriginalBytes:number};
+export type FieldManifest={sync?:FieldSyncAuthority;id:string;deviceId:string;authorityId:string;authorityVersion:number;filename:string;sourceTime:string;capturedAt:string;clockUncertaintySeconds:number|null;method:string;expectedSha256:string;byteLength:number;kind:'supplied_file'|'field_note';scopeConfirmed:true};
+export type FieldCaptureReceipt={acceptance?:FieldAcceptance;capture:{id:string;caseId:string;deviceId:string;authorityId:string;authorityVersion:number;manifestSha256:string;receivedAt:string};evidence:Evidence};
 
 export type TranscriptClaimInput={id:string;transcriptId:string;segmentId:string;expectedVersion:number;text:string;startByte:number;endByte:number;quote:string};
 export type TranscriptClaim={
@@ -243,13 +256,13 @@ export type TranscriptClaimReview={id:string;claimId:string;claimDigest:string;a
 export type TranscriptClaimRecord={claim:TranscriptClaim;review:TranscriptClaimReview|null;findingId:string|null;withdrawal:{id:string;actorId:string;reason:string;recordedAt:string}|null;state:'candidate'|'reviewed'|'rejected'|'needs_review'|'withdrawn';canReview:boolean;canWithdraw:boolean};
 export type TranscriptReportFinding={kind:'reviewed_transcript';id:string;text:string;reviewer:string;reviewedAt:string;claim:TranscriptClaim;review:TranscriptClaimReview;originalBase64:string};
 
-export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding;
+export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding | SpeechReportFinding;
 
 export type CaseInvitation={id:string;caseId:string;caseRef:string;caseTitle:string;recipientId:string;recipientName:string;ownerId:string;ownerName:string;reason:string;authorityVersion:number;approvedScope:string;approvedPurpose:string;offeredAt:string;expiresAt:string;response:{id:string;decision:'accept'|'decline';reason:string;actorId:string;recordedAt:string;accessVersion:number|null}|null;cancellation:{id:string;reason:string;actorId:string;recordedAt:string}|null;hasCurrentMembership:boolean;canAccept:boolean;state:'offered'|'accepted'|'declined'|'cancelled'|'expired'|'scope_changed'|'already_assigned'};
 export type CaseInvitationPage={items:CaseInvitation[];next:string|null};
 
 export type SourceUseDecision={id:string;caseId:string;sourceId:string;evidenceId:string;sequence:number;sourceVersion:number;sourceDigest:string;authorityVersion:number;permission:'blocked'|'analysis'|'analysis_and_release';reason:string;actorId:string;actorName:string;recordedAt:string;expiresAt:string|null;digest:string};
-export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview;collection?:CollectionProvenance};
+export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview;collection?:CollectionProvenance;research?:ResearchProvenance};
 export type SourceUseState={items:SourceUseDecision[];analysisAllowed:boolean;releaseAllowed:boolean;canDecide:boolean;sourceVersion:number;sourceDigest:string};
 
 export type CaseCurrency='GBP'|'EUR'|'USD';
@@ -275,7 +288,7 @@ export type SpeechClaimRecord={claim:SpeechClaim;review:TranscriptClaimReview|nu
 export type SpeechReportFinding={kind:'reviewed_speech';id:string;text:string;reviewer:string;reviewedAt:string;source:TranscriptClaim['source'];claim:SpeechClaim;review:TranscriptClaimReview};
 
 
-export type ConnectorPolicyProposal={id:string;adapterId:'companies_house_profile_v1';expectedVersion:number;profileDigest:string;purpose:string;lawfulBasis:string;termsReference:string;termsSha256:string;minimisation:string;retentionDays:number;requestsPerWindow:number;validUntil:string;reason:string};
+export type ConnectorPolicyProposal={id:string;adapterId:'companies_house_profile_v1'|'rdap_domain_v1'|'supplied_webpage_v1'|'gleif_lei_v1';endpointScope?:string;credentialScope?:'none:controlled-input';expectedVersion:number;profileDigest:string;purpose:string;lawfulBasis:string;termsReference:string;termsSha256:string;minimisation:string;retentionDays:number;requestsPerWindow:number;validUntil:string;reason:string};
 export type ConnectorPolicyVersion=Omit<ConnectorPolicyProposal,'expectedVersion'>&{version:number;proposedBy:string;proposedByName:string;proposedAt:string;review:{id:string;accepted:boolean;reason:string;legalApprovalReference:string;reviewerId:string;reviewerName:string;recordedAt:string}|null;withdrawal:{id:string;actorId:string;actorName:string;reason:string;recordedAt:string}|null;state:'candidate'|'approved'|'rejected'|'withdrawn'|'expired'|'superseded';canReview:boolean};
 
 export type CollectionAuthorisationInput={id:string;policyVersion:number;authorityVersion:number;companyNumber:string;purpose:string;minimisation:string;retentionDays:number;validUntil:string};
@@ -284,3 +297,31 @@ export type CollectionJob={id:string;authorisationId:string;companyNumber:string
 export type CollectionReceipt={schemaVersion:'inveos.collection.v1';captureMode:'fictional_fixture'|'provider';tenantId:string;caseId:string;jobId:string;authorisationId:string;authorityVersion:number;policyVersion:number;profileDigest:string;url:string;companyNumber:string;httpStatus:200;sourceTime:string;sourceTimeBasis:'http_response_date_not_record_creation';receivedAt:string;etag:string|null;contentType:string;originalSha256:string;byteLength:number;fields:{pointer:string;value:string}[];interpretation:'unreviewed_provider_assertions'};
 
 export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-provenance.v1';receipt:CollectionReceipt;receiptSha256:string;authorisation:Record<string,unknown>;caseAuthority:Record<string,unknown>;sourcePolicy:Record<string,unknown>;policyReview:Record<string,unknown>};sha256:string};
+
+export type AnalysisMode='passages'|'question'|'comparison';
+export type AnalysisSource={reference:ChronologySource;fingerprint:string;statement:string;quote:string;original:{id:string;filename:string;sha256:string;sourceTime:string;receivedTime:string};location:string};
+export type AnalysisSuggestion={kind:'amount_difference'|'date_difference'|'wording_difference';sources:[number,number];observed:[string[],string[]];explanation:string;check:string};
+export type AnalysisRun={id:string;caseId:string;authorityVersion:number;createdBy:string;createdAt:string;profile:'cited_rules_v1';mode:AnalysisMode;question:string;sources:AnalysisSource[];passages:{source:number;matchedTerms:string[]}[];suggestions:AnalysisSuggestion[];limitations:string;digest:string};
+export type AnalysisDecision={id:string;suggestion:number;version:number;disposition:'request_check'|'dismiss';reason:string;actorId:string;actorName:string;recordedAt:string};
+export type AnalysisRunRecord={run:AnalysisRun;decisions:AnalysisDecision[];followups:{suggestion:number;decisionVersion:number;workId:string}[];sourceVerification:'current_reviewed_sources_reverified';canDecide:boolean};
+export type AnalysisRunPage={items:{id:string;mode:AnalysisMode;question:string;createdAt:string;createdBy:string;authorityVersion:number;sourceCount:number;suggestionCount:number}[];next:string|null};
+export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,InvoiceLine,InvoiceSnapshot,InvoiceReview,InvoiceRevision,InvoiceSummary,InvoicePage,InvoiceCandidate,InvoiceEligibility,InvoiceExport} from './agency-invoicing.js';
+
+export type DesktopIntakeFile={filename:string;sourceTime:string;method:string;expectedSha256:string;byteLength:number};
+export type DesktopIntakeBatch={id:string;caseId:string;createdAt:string;authorityVersion:number;canTransfer:boolean;entries:(DesktopIntakeFile&{ordinal:number;requestKey:string;reservationId:string|null;state:'pending'|'open'|'completed'|'cancelled'|'expired';evidenceId:string|null})[];interpretation:'saved_metadata_not_original_verification'};
+export type {FeedbackRelease,FeedbackState,FeedbackRequestRevision,FeedbackRequest,FeedbackResponseRevision,FeedbackPublication,FeedbackDetail,FeedbackRequestPage} from './portal-feedback.js';
+
+/** Composition is authored report context and layout, never a new evidential finding. */
+export type CompositionFindingKind='text'|'document'|'transcript'|'speech'|'tika';
+export type CompositionSelection={kind:CompositionFindingKind;id:string;sha256:string};
+export type ReportOutline={name:string;scope:string;method:string;limitations:string;sections:Array<{id:string;title:string;findings:CompositionSelection[]}>};
+export type CompositionPayload={format:'inveos_report_outline_v1';caseId:string;id:string;version:number;state:'active'|'withdrawn';outline:ReportOutline;reason:string};
+export type CompositionReview={id:string;decision:'accepted'|'changes_requested';reason:string;reviewerId:string;reviewerName:string;recordedAt:string};
+export type CompositionRevision={payload:CompositionPayload;sha256:string;authorId:string;authorName:string;recordedAt:string;review:CompositionReview|null;canReview:boolean};
+export type FrozenReportComposition={format:'inveos_report_composition_v1';payload:CompositionPayload;sha256:string;authorId:string;authorName:string;recordedAt:string;review:CompositionReview};
+export type CompositionChoice=CompositionSelection&{text:string;reviewer:string;reviewedAt:string};
+export * from './field-sessions.js';
+export type {CollaboratorInstructions,CollaboratorPublication,CollaboratorSubmission,CollaboratorResult,ExternalWork,CollaboratorDraft,InternalCollaboratorWork} from './collaborator-work.js';
+export type {TemplateEntryKind,TaskTemplateEntry,TaskTemplateFields,TaskTemplatePayload,TaskTemplateReview,TaskTemplateSummary,TaskTemplateRevision,TemplateChoice,TaskTemplatePreviewPayload,TaskTemplatePreview,TaskTemplateApplication} from './task-templates.js';
+export * from './field-dispatch.js';
+export type {EvidenceRequestContent,EvidenceRequestPublication,EvidenceRequestResponse,SuppliedFileDeclaration,SuppliedFileReceipt,PortalEvidenceRequest,PortalUpload,EvidenceRequestDraft,InternalEvidenceRequest,EvidenceRequestSummary} from './portal-evidence-requests.js';

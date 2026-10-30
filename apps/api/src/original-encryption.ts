@@ -24,10 +24,10 @@ export function encryptedOriginalStore(rootPath:string,activeKeyId:string,keyrin
    return Buffer.concat([header,cipher.update(bytes),cipher.final(),cipher.getAuthTag()]);
   },
   unseal(path:string,bytes:Buffer,maximum:number){
-   if(!Number.isSafeInteger(maximum)||maximum<1||maximum>maxPlaintext||bytes.length>maximum+originalEnvelopeOverhead||bytes.length<43||!bytes.subarray(0,8).equals(magic))return fail();
+   if(!Number.isSafeInteger(maximum)||maximum<1||maximum>2097152||bytes.length>Math.min(maximum,maxPlaintext)+originalEnvelopeOverhead||bytes.length<43||!bytes.subarray(0,8).equals(magic))return fail();
    const idLength=bytes[8]!;if(idLength<1||idLength>32)return fail();const end=9+idLength+16;if(bytes.length<end+17)return fail();
    const id=bytes.subarray(9,9+idLength).toString('ascii'),key=keys.get(id);if(!validId(id)||!key||!Buffer.from(id,'ascii').equals(bytes.subarray(9,9+idLength)))return fail();
-   const length=bytes.readUInt32BE(end-4);if(!length||length>maximum||bytes.length!==end+length+16)return fail();
+   const length=bytes.readUInt32BE(end-4);if(!length||length>Math.min(maximum,maxPlaintext)||bytes.length!==end+length+16)return fail();
    let provisional:Buffer|undefined;
    try{const decipher=createDecipheriv('aes-256-gcm',key,bytes.subarray(9+idLength,end-4),{authTagLength:16});decipher.setAAD(aad(path,bytes.subarray(0,end)));decipher.setAuthTag(bytes.subarray(-16));provisional=decipher.update(bytes.subarray(end,-16));const final=decipher.final();return Buffer.concat([provisional,final]);}
    catch{return fail();}finally{provisional?.fill(0);}

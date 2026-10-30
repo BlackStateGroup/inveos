@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
-import { workStatuses, type TaskStatusBatch, type TaskPlanBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskPlanBatch, type TaskStatusBatchResult, type WorkInput, type WorkEdit, type WorkItem, type WorkLink, type WorkLinkInput, type WorkRevision, type DocumentWorkLinkInput, type DocumentReportFinding, type TranscriptReportFinding, type SpeechReportFinding } from '@inveos/contracts';
 import type { Actor } from './app.js';
 import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -13,6 +13,7 @@ type Services = {
   findCase: (client: PoolClient, actor: Actor, id: string, lock?: boolean) => Promise<unknown>;
   verifyDocumentFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<DocumentReportFinding>;
   verifyTranscriptFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<TranscriptReportFinding>;
+  verifySpeechFinding: (client: PoolClient, actor: Actor, caseId: string, findingId: string) => Promise<SpeechReportFinding>;
   verifyClaim: (client: PoolClient, actor: Actor, caseId: string, claimId: string) => Promise<void>;
   audit: (client: PoolClient, actor: Actor, caseId: string, action: string, entityType: string, id: string, summary: string, metadata?: Record<string, unknown>) => Promise<void>;
 };
@@ -40,7 +41,7 @@ export function displayWork(row: QueryResultRow): WorkItem {
 }
 export function displayWorkLink(row: QueryResultRow): WorkLink {
   const source = row.document_finding_id ? {kind:'document_finding' as const,findingId:row.document_finding_id}
-    : row.transcript_finding_id ? {kind:'transcript_finding' as const,findingId:row.transcript_finding_id} : {claimId:row.claim_id};
+    : row.transcript_finding_id ? {kind:'transcript_finding' as const,findingId:row.transcript_finding_id} : row.speech_finding_id ? {kind:'speech_finding' as const,findingId:row.speech_finding_id} : {claimId:row.claim_id};
   return {id:row.id,caseId:row.case_id,itemId:row.item_id,...source,relation:row.relation,reason:row.reason,createdBy:row.created_by,createdAt:iso(row.created_at),
     ...('kind' in source&&row.withdrawn_at?{withdrawal:{reason:row.withdrawal_reason,createdBy:row.withdrawn_by,createdAt:iso(row.withdrawn_at)}}:{})};
 }
@@ -99,6 +100,43 @@ async function recordRevision(client: PoolClient, actor: Actor, item: WorkItem, 
   );
 }
 
+/** Shared guarded creator. Caller owns the transaction; template application requires fresh IDs. */
+export async function createCaseWorkItem(client: PoolClient, actor: Actor, caseId: string, input: WorkInput,
+  services: Pick<Services, 'findCase' | 'audit'>, options: {requireNew?: boolean; revisionReason?: string; applicationId?: string; initialise?: (item:WorkItem)=>Promise<void>} = {}): Promise<WorkItem> {
+  if (actor.role === 'client') throw new ApiError(403, 'Internal case work only.');
+  validateText(input);
+  const requestHash = createHash('sha256').update(JSON.stringify([
+    input.id, input.kind, input.title, input.body, input.ownerId, input.dueDate, input.parentId,
+  ])).digest('hex');
+  await services.findCase(client, actor, caseId, true);
+  const replay = await client.query('SELECT *, due_date::text AS due_date FROM case_work_items WHERE tenant_id = $1 AND case_id = $2 AND id = $3', [actor.tenantId, caseId, input.id]);
+  if (replay.rows[0]) {
+    if (options.requireNew) throw new ApiError(409, 'An application work identity already exists. No work was created.');
+    if (replay.rows[0].created_by !== actor.userId || replay.rows[0].request_hash !== requestHash) {
+      throw new ApiError(409, 'This record identifier has already been used. Refresh before trying again.');
+    }
+    return displayWork(replay.rows[0]);
+  }
+  await checkOwner(client, actor, caseId, input.ownerId);
+  if (input.parentId) {
+    const parent = await findWork(client, actor, caseId, input.parentId);
+    if (!['question', 'objective'].includes(parent.kind)) throw new ApiError(422, 'Link work to a question or objective in this case.');
+    if (input.kind === 'hypothesis' && parent.kind !== 'question') throw new ApiError(422, 'A hypothesis must belong to an investigation question.');
+  } else if (input.kind === 'hypothesis') {
+    throw new ApiError(422, 'A hypothesis must belong to an investigation question.');
+  }
+  const inserted = await client.query(
+    `INSERT INTO case_work_items (tenant_id, case_id, id, kind, title, body, status, owner_id, due_date, parent_id, request_hash, created_by)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *, due_date::text AS due_date`,
+    [actor.tenantId, caseId, input.id, input.kind, input.title, input.body, workStatuses[input.kind][0], input.ownerId, input.dueDate, input.parentId, requestHash, actor.userId],
+  );
+  const item = displayWork(inserted.rows[0]);
+  if(options.initialise)await options.initialise(item);
+  await recordRevision(client, actor, item, options.revisionReason ?? 'Record created');
+  await services.audit(client, actor, caseId, 'work.created', 'case_work', item.id, `${input.kind}: ${input.title}`, {kind: input.kind, version: 1, ...(options.applicationId ? {templateApplicationId: options.applicationId} : {})});
+  return item;
+}
+
 export function registerCaseWork(app: FastifyInstance, services: Services): void {
   const internal = async (request: FastifyRequest) => {
     await services.authenticate(request);
@@ -113,37 +151,7 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     const actor = request.actor!;
     const {caseId} = request.params as {caseId: string};
     const input = request.body as WorkInput;
-    validateText(input);
-    const requestHash = createHash('sha256').update(JSON.stringify([
-      input.id, input.kind, input.title, input.body, input.ownerId, input.dueDate, input.parentId,
-    ])).digest('hex');
-    return inTransaction(services.pool, async (client) => {
-      await services.findCase(client, actor, caseId, true);
-      const replay = await client.query('SELECT *, due_date::text AS due_date FROM case_work_items WHERE tenant_id = $1 AND case_id = $2 AND id = $3', [actor.tenantId, caseId, input.id]);
-      if (replay.rows[0]) {
-        if (replay.rows[0].created_by !== actor.userId || replay.rows[0].request_hash !== requestHash) {
-          throw new ApiError(409, 'This record identifier has already been used. Refresh before trying again.');
-        }
-        return displayWork(replay.rows[0]);
-      }
-      await checkOwner(client, actor, caseId, input.ownerId);
-      if (input.parentId) {
-        const parent = await findWork(client, actor, caseId, input.parentId);
-        if (!['question', 'objective'].includes(parent.kind)) throw new ApiError(422, 'Link work to a question or objective in this case.');
-        if (input.kind === 'hypothesis' && parent.kind !== 'question') throw new ApiError(422, 'A hypothesis must belong to an investigation question.');
-      } else if (input.kind === 'hypothesis') {
-        throw new ApiError(422, 'A hypothesis must belong to an investigation question.');
-      }
-      const inserted = await client.query(
-        `INSERT INTO case_work_items (tenant_id, case_id, id, kind, title, body, status, owner_id, due_date, parent_id, request_hash, created_by)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *, due_date::text AS due_date`,
-        [actor.tenantId, caseId, input.id, input.kind, input.title, input.body, workStatuses[input.kind][0], input.ownerId, input.dueDate, input.parentId, requestHash, actor.userId],
-      );
-      const item = displayWork(inserted.rows[0]);
-      await recordRevision(client, actor, item, 'Record created');
-      await services.audit(client, actor, caseId, 'work.created', 'case_work', item.id, `${input.kind}: ${input.title}`, {kind: input.kind, version: 1});
-      return item;
-    });
+    return inTransaction(services.pool, client => createCaseWorkItem(client, actor, caseId, input, services));
   });
 
   app.post('/api/cases/:caseId/work/:itemId/revise', {
@@ -175,6 +183,7 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
         // Check contrary/context as well as supporting material; no cherry-picked stale sources.
         for (const source of sources) {
           if (source.document_finding_id) await services.verifyDocumentFinding(client, actor, caseId, source.document_finding_id);
+          else if(source.speech_finding_id) await services.verifySpeechFinding(client,actor,caseId,source.speech_finding_id);
           else if(source.transcript_finding_id) await services.verifyTranscriptFinding(client,actor,caseId,source.transcript_finding_id);
           else await services.verifyClaim(client, actor, caseId, source.claim_id);
         }
@@ -259,16 +268,16 @@ export function registerCaseWork(app: FastifyInstance, services: Services): void
     });
   });
 
-  for(const family of ['document','transcript'] as const){
-    const column=family==='document'?'document_finding_id':'transcript_finding_id';
-    const verify=family==='document'?services.verifyDocumentFinding:services.verifyTranscriptFinding;
+  for(const family of ['document','transcript','speech'] as const){
+    const column=family+'_finding_id';
+    const verify=family==='document'?services.verifyDocumentFinding:family==='transcript'?services.verifyTranscriptFinding:services.verifySpeechFinding;
   app.get(`/api/cases/:caseId/work/${family}-findings`, {
     preHandler: internal, schema: {params: caseParams, querystring: {type:'object',additionalProperties:false,properties:{after:uuid}}},
   }, async request => {
     const actor=request.actor!, {caseId}=request.params as {caseId:string}, {after}=request.query as {after?:string};
     return inTransaction(services.pool,async client=>{
       await services.findCase(client,actor,caseId);
-      const rows=(await client.query(family==='document'?'SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51':`SELECT f.id,p.snapshot->>'text' text FROM transcript_findings f JOIN transcript_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 AND ($3::uuid IS NULL OR f.id>$3) ORDER BY f.id LIMIT 51`,[actor.tenantId,caseId,after??null])).rows;
+      const rows=(await client.query(family==='document'?'SELECT id,text FROM document_findings WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id>$3) ORDER BY id LIMIT 51':`SELECT f.id,p.snapshot->>'text' text FROM ${family}_findings f JOIN ${family}_claims p ON p.tenant_id=f.tenant_id AND p.case_id=f.case_id AND p.id=f.claim_id WHERE f.tenant_id=$1 AND f.case_id=$2 AND ($3::uuid IS NULL OR f.id>$3) ORDER BY f.id LIMIT 51`,[actor.tenantId,caseId,after??null])).rows;
       return {items:rows.slice(0,50),nextAfter:rows.length>50?rows[49].id:null, status:'historical_candidates_reverification_required'};
     });
   });

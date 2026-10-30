@@ -1,9 +1,9 @@
 # INVEOS
 
 **Investigation Operating System**  
-**Black State Group** | Product and research foundation, 26 October 2026
+**Black State Group** | Case platform and retained research foundation
 
-> **Status:** Research and engineering foundation with a local interactive web prototype and a working persistent synthetic lab. There is no production INVEOS application or client release. The plans, timelines and commercial assumptions remain hypotheses to validate.
+> **Status:** A working persistent fictional-data lab, with reviewed evidence, document processing, offline browser Field, reports and explicitly approved fictional recipient releases. Delivery remains incomplete. The connected platform batch is in acceptance on draft PR #117; current failures, fixes, merged commits and external gates are in [BUILD_HANDOFF.md](BUILD_HANDOFF.md). No production service or live client deployment is approved.
 
 INVEOS is a case-centred operating environment for lawful private, corporate, legal and insurance investigations. It combines six workspaces in one system: **Cases, Field, Research, Intelligence, Evidence and Results**, plus a restricted **Client Portal** and administrative controls. The product connects assignment through collection, analysis, human verification and report delivery.
 
@@ -11,6 +11,9 @@ INVEOS is a case-centred operating environment for lawful private, corporate, le
 
 | Document | Purpose |
 |---|---|
+| [Run the current local platform](docs/148_LOCAL_PLATFORM_RUNBOOK.md) | Database roles, configuration, startup, acceptance and worker/recovery prerequisites |
+| [Current delivery handoff](BUILD_HANDOFF.md) | Exact implementation, commit, merge, failed/passed and unrun evidence |
+| [Remaining delivery plan](docs/71_REMAINING_DELIVERY_PLAN.md) | Current connected journeys and incomplete requirements |
 | [Foundation delivery status](DELIVERY_STATUS.md) | Publication receipt, original foundation commit and verification results |
 | [Local application](docs/23_LOCAL_APPLICATION.md) | Implemented visual surfaces, synthetic-lab architecture and explicit limitations |
 | [Persistent casework verification](docs/evals/2026-10-27-casework.md) | Saved questions/hypotheses, tasks, notes, handovers, source links, report printing and offline JSON checks |

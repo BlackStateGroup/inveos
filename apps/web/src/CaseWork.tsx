@@ -1,3 +1,4 @@
+import {SpeechWorkSources} from './SpeechWorkSources';
 import {TranscriptWorkSources} from './TranscriptWorkSources';
 import {WorkDiscussion,WorkMentions} from './WorkDiscussion';
 import {DocumentWorkSources} from './DocumentWorkSources';
@@ -16,6 +17,8 @@ export type WorkActions = {
   revise: (id: string, input: WorkEdit) => Promise<void>;
   link: (id: string, input: WorkLinkInput) => Promise<void>;
   documentLink: (id: string, input: DocumentWorkLinkInput) => Promise<void>;
+  speechLink: (id:string,input:DocumentWorkLinkInput)=>Promise<void>;
+  withdrawSpeechLink: (itemId:string,linkId:string,reason:string)=>Promise<void>;
   transcriptLink: (id:string,input:DocumentWorkLinkInput)=>Promise<void>;
   withdrawTranscriptLink: (itemId:string,linkId:string,reason:string)=>Promise<void>;
   withdrawDocumentLink: (itemId:string,linkId:string,reason:string)=>Promise<void>;
@@ -108,6 +111,7 @@ function SourceLinks({p, item}: {p: ViewProps; item: WorkItem}) {
     })}
     <DocumentWorkSources key={item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link&&link.kind==='document_finding')} save={p.work.documentLink} withdraw={p.work.withdrawDocumentLink} inspect={p.inspect}/>
     <TranscriptWorkSources key={'transcript:'+item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link&&link.kind==='transcript_finding')} save={p.work.transcriptLink} withdraw={p.work.withdrawTranscriptLink} inspect={p.inspect}/>
+    <SpeechWorkSources key={'speech:'+item.caseId+':'+item.id} caseId={item.caseId} itemId={item.id} links={links.filter(link=>'kind' in link&&link.kind==='speech_finding')} save={p.work.speechLink} withdraw={p.work.withdrawSpeechLink} inspect={p.inspect}/>
     {adding && (claims.length ? <form className="work-link-form" onSubmit={event => void submit(event)}>
       {error && <div className="form-error" role="alert">{error}</div>}
       <fieldset disabled={busy}>
