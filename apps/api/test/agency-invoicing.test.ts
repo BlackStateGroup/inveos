@@ -80,7 +80,7 @@ test('agency declarations and currency/recipient boundaries invalidate acceptanc
   const mixed=await f.call(f.base+'/invoices',{...f.input,id:randomUUID(),currency:'EUR',lines:[{kind:'expense',id:f.expenseId,version:1}]});assert.equal(mixed.statusCode,409);
   const bad=await f.call(f.base+'/declarations',{...f.fields,id:randomUUID(),expectedVersion:2,taxTreatment:'explicit_zero',reason:'Fictional mismatch cannot silently override declared tax.'});assert.equal(bad.statusCode,422);
   const coerced=await f.call(f.base+'/declarations',{...f.fields,id:randomUUID(),expectedVersion:2,hourlyRateMinor:'100',reason:'Fictional numeric strings must not be coerced into money.'});assert.equal(coerced.statusCode,422);
-  await f.admin.query('DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2',[tenant,f.clientId]);assert.ok((await f.must<InvoiceRevision>(path)).currentIssues.some(x=>x.includes('recipient')));
+  await f.admin.query("UPDATE memberships SET role='investigator' WHERE tenant_id=$1 AND user_id=$2",[tenant,f.clientId]);assert.ok((await f.must<InvoiceRevision>(path)).currentIssues.some(x=>x.includes('recipient')));
   assert.equal((await f.call(f.base+'/declarations',{...f.fields,id:randomUUID(),expectedVersion:2,reason:'Fictional revoked recipient cannot receive a new declaration.'})).statusCode,409);
  }finally{await f.close();}
 });
