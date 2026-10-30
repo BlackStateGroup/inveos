@@ -1,4 +1,4 @@
-import {assertRestoredCaseWork,assertRestoredRetirementComplete,restoredCaseWorkEligibility} from './restored-case-gates.js';
+import {assertRestoredCaseWork,assertRestoredRetirementComplete,restoredCaseWorkOpen} from './restored-case-gates.js';
 import {registerVerificationKit} from './verification-kit.js';
 import {registerCaseHandling,caseSharingEligibility,caseSharingState,assertCaseSharing} from './case-handling.js';
 import {reportFieldProvenance} from './field-provenance.js';
@@ -433,7 +433,7 @@ export async function findCase(
   lock = false,
 ): Promise<CaseRow> {
   const result = await client.query<CaseRow>(
-    `SELECT c.*, (${restoredCaseWorkEligibility}) AS restored_work_open
+    `SELECT c.*
        FROM cases c
        JOIN case_memberships cm
          ON cm.tenant_id = c.tenant_id AND cm.case_id = c.id
@@ -453,7 +453,9 @@ export async function findCase(
      WHERE cm.tenant_id=$1 AND cm.case_id=$2 AND cm.user_id=$3 AND m.role=$4`,
     [actor.tenantId,caseId,actor.userId,actor.role],
   )).rowCount) notFound();
-  return row;
+  // Read recovery eligibility after the lock and fresh membership check, so a
+  // waited lock never carries a stale pre-quarantine permission projection.
+  return {...row,restored_work_open:await restoredCaseWorkOpen(client,actor.tenantId,row.id)};
 }
 
 async function findEvidence(

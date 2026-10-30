@@ -23,7 +23,10 @@ export async function assertRestoredRetirementComplete(c:PoolClient,tenantId:str
  const q=await latestRestoredQuarantine(c,tenantId,caseId);
  if(q&&(!q.batch||q.more_remaining!==false))throw new ApiError(409,'Restored-case quarantine retirement is incomplete. Keep writers stopped and continue the exact operator request.');
 }
-export async function assertRestoredCaseWork(c:PoolClient,tenantId:string,caseId:string){
+export async function restoredCaseWorkOpen(c:PoolClient,tenantId:string,caseId:string){
  const r=await c.query(`SELECT ${restoredCaseWorkEligibility} allowed FROM cases c WHERE tenant_id=$1 AND id=$2`,[tenantId,caseId]);
- if(r.rows[0]?.allowed!==true)throw new ApiError(409,'Restored case requires completed quarantine retirement, explicit reopen, new authority and a fresh handling review under that authority.');
+ return r.rows[0]?.allowed===true;
+}
+export async function assertRestoredCaseWork(c:PoolClient,tenantId:string,caseId:string){
+ if(!await restoredCaseWorkOpen(c,tenantId,caseId))throw new ApiError(409,'Restored case requires completed quarantine retirement, explicit reopen, new authority and a fresh handling review under that authority.');
 }
