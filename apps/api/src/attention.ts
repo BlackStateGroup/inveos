@@ -38,6 +38,27 @@ const candidates=`WITH scope AS (
  WHERE $3='reviewer' AND x.created_by<>$2 AND j.authority_version=c.authority_version AND c.lifecycle_state NOT IN ('Closed','Archived')
  AND NOT EXISTS(SELECT 1 FROM document_claim_decisions d WHERE d.tenant_id=x.tenant_id AND d.case_id=x.case_id AND d.job_id=x.job_id AND d.citation_id=x.citation_id AND d.claim_id=x.id)
  UNION ALL
+ SELECT x.case_id,x.id,'correspondence_review','reviews','Citation '||left(x.id::text,8),NULL,NULL,x.citation_digest::text,'Extraction correspondence awaits independent review',j.evidence_id,x.job_id,':'||x.job_id::text,NULL
+ FROM document_citation_candidates x JOIN scope c ON c.tenant_id=x.tenant_id AND c.id=x.case_id
+ JOIN integrity_jobs j ON j.tenant_id=x.tenant_id AND j.case_id=x.case_id AND j.id=x.job_id
+ WHERE $3='reviewer' AND x.created_by<>$2 AND j.status='succeeded' AND j.authority_version=c.authority_version
+ AND c.status='Active' AND c.lifecycle_state NOT IN ('Closed','Archived')
+ AND NOT EXISTS(SELECT 1 FROM document_citation_reviews r WHERE r.tenant_id=x.tenant_id AND r.case_id=x.case_id AND r.job_id=x.job_id AND r.citation_id=x.id)
+ UNION ALL
+ SELECT h.case_id,h.id,'source_review','reviews',left(r.snapshot->>'publisher',150),NULL,NULL,r.digest::text,'Supplied source metadata awaits independent review',h.evidence_id,NULL,'',NULL
+ FROM manual_sources h JOIN scope c ON c.tenant_id=h.tenant_id AND c.id=h.case_id
+ JOIN manual_source_revisions r ON r.tenant_id=h.tenant_id AND r.case_id=h.case_id AND r.source_id=h.id AND r.version=h.version
+ WHERE $3='reviewer' AND r.snapshot->>'withdrawn'='false' AND r.snapshot->'original'->>'authorityVersion'=c.authority_version::text
+ AND c.status='Active' AND c.lifecycle_state NOT IN ('Closed','Archived')
+ AND NOT EXISTS(SELECT 1 FROM manual_source_revisions a WHERE a.tenant_id=h.tenant_id AND a.case_id=h.case_id AND a.source_id=h.id AND a.actor_id=$2)
+ AND NOT EXISTS(SELECT 1 FROM manual_source_reviews v WHERE v.tenant_id=h.tenant_id AND v.case_id=h.case_id AND v.source_id=h.id AND v.version=h.version)
+ UNION ALL
+ SELECT e.case_id,e.id,'expense_review','reviews',left(r.description,150),NULL,NULL,r.version::text,'Expense declaration awaits independent review',r.receipt_id,NULL,'',NULL
+ FROM case_expenses e JOIN scope c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
+ JOIN case_expense_revisions r ON r.tenant_id=e.tenant_id AND r.case_id=e.case_id AND r.expense_id=e.id AND r.version=e.version
+ WHERE $3='reviewer' AND e.created_by<>$2 AND r.action<>'withdrawn' AND c.status='Active' AND c.lifecycle_state NOT IN ('Closed','Archived')
+ AND NOT EXISTS(SELECT 1 FROM case_expense_reviews v WHERE v.tenant_id=e.tenant_id AND v.case_id=e.case_id AND v.expense_id=e.id AND v.version=e.version)
+ UNION ALL
  SELECT x.case_id,x.id,'transcript_review','reviews',left(x.snapshot->>'text',150),NULL,NULL,x.digest::text,'Transcript interpretation awaits independent review',t.evidence_id,NULL,'',x.transcript_id
  FROM transcript_claims x JOIN scope c ON c.tenant_id=x.tenant_id AND c.id=x.case_id
  JOIN interview_transcripts t ON t.tenant_id=x.tenant_id AND t.case_id=x.case_id AND t.id=x.transcript_id

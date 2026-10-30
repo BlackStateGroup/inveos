@@ -24,3 +24,5 @@
 .work-form .report-redaction-choice{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}.work-form .report-redaction-choice input[type=checkbox]{width:16px;height:16px;flex:0 0 16px;margin:2px 0}.report-redaction-choice span{min-width:0}
 
 .attention-queue{min-width:0;overflow-wrap:anywhere}.attention-queue .work-record-top{flex-wrap:wrap}.attention-queue .work-record-top h4{min-width:0}.attention-queue .badge{max-width:100%;white-space:normal}.attention-queue .work-record-actions button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+
+.document-citation-candidates,.document-review-workspace{min-width:0;overflow-wrap:anywhere}.document-review-form .checkbox-row input[type=checkbox]{width:16px;height:16px;flex:0 0 16px}.document-review-form .checkbox-row span{min-width:0}

@@ -12,7 +12,7 @@ import {Panel,Notice} from './ui';
 type Job={id:string;caseId:string;evidenceId:string;kind:string;status:string;attempt:number;authorityVersion:number;sourceDigest:string;failureCode:string|null};
 type Event={id:string;status:string;attempt:number;failureCode:string|null;recordedAt:string};
 type Page={items:Job[];nextBefore:string|null};
-export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onDenied}:{caseId:string;csrf:string;evidence:Evidence[];requestedJobId?:string;onSource?:(id:string)=>void;onDenied?:()=>Promise<unknown>}){
+export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCitationId,onSource,onDenied}:{caseId:string;csrf:string;evidence:Evidence[];requestedJobId?:string;requestedCitationId?:string;onSource?:(id:string)=>void;onDenied?:()=>Promise<unknown>}){
   const [source,setSource]=useState(evidence[0]?.id||''),[kind,setKind]=useState<JobKind>('original_sha256_v1'),[pending,setPending]=useState<PendingJob|null>(null);
   const [rows,setRows]=useState<Job[]>([]),[next,setNext]=useState<string|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(true);
   const [inspection,setInspection]=useState<InspectedDerivative|null>(null),[linePage,setLinePage]=useState(0);
@@ -116,7 +116,7 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
       <p>Original SHA-256: {document.sourceDigest}</p><p>Derivative SHA-256: {document.derivativeDigest}</p>
       <p>Raw output SHA-256: {document.rawDigest}</p><p>Runtime profile SHA-256: {document.profileDigest}</p>
       <DocumentRegionMap key={document.jobId} document={document}/>
-      <DocumentCitations key={document.jobId+csrf} document={document} csrf={csrf}/>
+      <DocumentCitations key={document.jobId+csrf+(requestedCitationId??'')} document={document} csrf={csrf} focusCitationId={document.jobId===requestedJobId?requestedCitationId:undefined}/>
       <ol start={linePage*100+1}>{document.references.slice(linePage*100,(linePage+1)*100).map(ref=><li key={ref.itemRef}>
         <p>Page {ref.page} · {ref.itemRef} · extracted UTF-8 bytes [{ref.startByte}, {ref.endByte})</p>
         <p>Region: left {ref.bbox.l}, right {ref.bbox.r}, bottom {ref.bbox.b}, top {ref.bbox.t} · origin {ref.bbox.origin}</p>

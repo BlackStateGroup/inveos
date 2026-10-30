@@ -24,17 +24,17 @@ export function CitationReviewPanel({candidate,csrf}:{candidate:CitationReceipt;
   finally{lock.current=false;if(alive.current)setBusy(false);}
  }
  const current=history?.reviews.at(-1);
- return <section aria-label="Citation correspondence review"><h4>Review exact source correspondence</h4>
+ return <section className="document-review-workspace" aria-label="Citation correspondence review"><h4>Review exact source correspondence</h4>
   <p>Candidate {candidate.id} · page {candidate.citation.page} · {candidate.citation.itemRef}. A different reviewer must compare the original. Acceptance concerns this extraction only; it does not establish truth or approve a finding.</p>
   <p role="status">{busy?'Verifying review history…':current?`Current correspondence decision: ${current.decision} · revision ${current.sequence}`:history?'No human correspondence decision recorded.':''}</p>
   {error&&<p role="alert">{error}</p>}
   <button className="secondary" disabled={busy} onClick={()=>void act(false)}>Refresh review history</button>
   <ol>{history?.reviews.map(r=><li key={r.id}>Revision {r.sequence}: {r.decision} · {r.reviewedAt} · reviewer {r.reviewedBy}<p>{r.reason}</p><p>Review SHA-256: {r.digest}</p></li>)}</ol>
-  <form onSubmit={e=>{e.preventDefault();void act(true);}}>
-   <label>Correspondence decision<select disabled={busy||!!pending} value={decision} onChange={e=>setDecision(e.target.value as 'accepted'|'rejected')}><option value="rejected">Reject correspondence</option><option value="accepted">Accept correspondence</option></select></label>
-   <label>Review reason<textarea required maxLength={4096} disabled={busy||!!pending} value={reason} onChange={e=>setReason(e.target.value)}/></label>
-   <label><input type="checkbox" disabled={busy||!!pending} checked={compared} onChange={e=>setCompared(e.target.checked)}/>I compared this exact passage and region with the original source.</label>
-   <button className="primary" disabled={busy||(!pending&&(!history||!reason.trim()||decision==='accepted'&&!compared))}>{pending?'Recover pending review':current?'Record replacement decision':'Record correspondence decision'}</button>
+  <form className="work-form document-review-form" aria-label="Record source correspondence" onSubmit={e=>{e.preventDefault();void act(true);}}>
+   <label className="form-label">Correspondence decision<select disabled={busy||!!pending} value={decision} onChange={e=>setDecision(e.target.value as 'accepted'|'rejected')}><option value="rejected">Reject correspondence</option><option value="accepted">Accept correspondence</option></select></label>
+   <label className="form-label">Review reason<textarea required maxLength={4096} disabled={busy||!!pending} value={reason} onChange={e=>setReason(e.target.value)}/></label>
+   <label className="checkbox-row"><input type="checkbox" disabled={busy||!!pending} checked={compared} onChange={e=>setCompared(e.target.checked)}/><span>I compared this exact passage and region with the original source.</span></label>
+   <div className="work-form-actions"><button className="primary" disabled={busy||(!pending&&(!history||!reason.trim()||decision==='accepted'&&!compared))}>{pending?'Recover pending review':current?'Record replacement decision':'Record correspondence decision'}</button></div>
    <p>Replacement decisions retain all earlier decisions. Unconfirmed submissions can be recovered in this view; after reload, refresh history before submitting again.</p>
   </form>
   {history&&<DocumentClaims key={history.currentReviewId??'none'} candidate={candidate} reviews={history} csrf={csrf}/>}
