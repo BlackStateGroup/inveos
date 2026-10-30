@@ -215,3 +215,5 @@
 - [Registered source-use decisions](106_SOURCE_USE_DECISIONS.md) — separate reviewer permissions, enforced processing/report/release boundaries and frozen proofs; actual acceptance recorded separately.
 
 - [107 — Corresponding Debian source archives](107_OCR_SOURCE_ARCHIVES.md)
+
+- [108 — Case expenses and spending](108_CASE_EXPENSES.md)

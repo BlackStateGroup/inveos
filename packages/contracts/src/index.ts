@@ -243,3 +243,10 @@ export type CaseInvitationPage={items:CaseInvitation[];next:string|null};
 export type SourceUseDecision={id:string;caseId:string;sourceId:string;evidenceId:string;sequence:number;sourceVersion:number;sourceDigest:string;authorityVersion:number;permission:'blocked'|'analysis'|'analysis_and_release';reason:string;actorId:string;actorName:string;recordedAt:string;expiresAt:string|null;digest:string};
 export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview};
 export type SourceUseState={items:SourceUseDecision[];analysisAllowed:boolean;releaseAllowed:boolean;canDecide:boolean;sourceVersion:number;sourceDigest:string};
+
+export type CaseCurrency='GBP'|'EUR'|'USD';
+export type CaseExpenseFields={incurredOn:string;currency:CaseCurrency;amountMinor:number;description:string;receiptId:string|null};
+export type CaseExpenseReview={id:string;accepted:boolean;reason:string;actorId:string;actorName:string;recordedAt:string};
+export type CaseExpense=CaseExpenseFields&{id:string;version:number;action:'recorded'|'corrected'|'withdrawn';reason:string;authorId:string;authorName:string;createdAt:string;actorId:string;actorName:string;recordedAt:string;receipt:ManualSourceOriginal|null;review:CaseExpenseReview|null;canCorrect:boolean;canReview:boolean};
+export type SpendingBudget={id:string;currency:CaseCurrency;version:number;action:'allocated'|'revised'|'withdrawn';amountMinor:number;reason:string;actorId:string;actorName:string;recordedAt:string};
+export type CaseSpending={caseId:string;observedAt:string;currencies:{currency:CaseCurrency;current:SpendingBudget|null;entries:number;declaredMinor:number;acceptedMinor:number;pendingMinor:number;rejectedMinor:number;remainingDeclaredMinor:number|null}[];interpretation:'declared_expenses_and_recorded_reviews_only'};
