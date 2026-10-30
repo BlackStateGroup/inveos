@@ -11,6 +11,14 @@ export const ocrProfile=JSON.stringify({format:'inveos_ocr_profile_v1',tool:'tes
   dpi:144,pageSegmentationMode:6,threads:1,maxPages:2,maxOriginalBytes:65536,maxWords:1000,
   maxRawBytes:1048576,timeoutSeconds:30,approval:'isolated_fictional_research_only'});
 export const ocrProfileDigest=sha256(ocrProfile);
+export const ocrExpandedKind='tesseract_scan_lab_v2';
+export const ocrExpandedProfile=JSON.stringify({...JSON.parse(ocrProfile),format:'inveos_ocr_profile_v2',maxOriginalBytes:262144});
+export const ocrExpandedProfileDigest=sha256(ocrExpandedProfile);
+export function ocrConfiguration(kind:string){
+  if(kind===ocrKind)return {kind,profile:ocrProfile,profileDigest:ocrProfileDigest,maxOriginalBytes:65536};
+  if(kind===ocrExpandedKind)return {kind,profile:ocrExpandedProfile,profileDigest:ocrExpandedProfileDigest,maxOriginalBytes:262144};
+  return undefined;
+}
 export const ocrArtifactLock=JSON.parse(ocrProfile).artifactLock as string;
 function fail():never{throw new Error('Invalid OCR document result');}
 function object(value:unknown):Record<string,unknown>{if(!value||typeof value!=='object'||Array.isArray(value))fail();return value as Record<string,unknown>;}
@@ -36,8 +44,9 @@ export function ocrWords(raw:Buffer,width:number,height:number){
   }
   return words;
 }
-export function makeOcrDerivative(original:Buffer,context:DocumentContext,result:DocumentResult){
-  if(!original.length||original.length>65536||original.subarray(0,5).toString()!=='%PDF-'||sha256(original)!==context.sourceDigest||result.successful!==true||result.profileDigest!==ocrProfileDigest)fail();
+export function makeOcrDerivative(original:Buffer,context:DocumentContext,result:DocumentResult,kind=ocrKind){
+  const config=ocrConfiguration(kind);if(!config)fail();
+  if(!original.length||original.length>config.maxOriginalBytes||original.subarray(0,5).toString()!=='%PDF-'||sha256(original)!==context.sourceDigest||result.successful!==true||result.profileDigest!==config.profileDigest)fail();
   for(const key of ['tenantId','caseId','jobId','evidenceId','sourceDigest','authorityVersion'] as const)if(result.context[key]!==context[key])fail();
   const raw=object(parseDocumentRaw(result.raw));exact(raw,'format originalSha256 runtimeImageId artifactLock pages');
   if(raw.format!=='inveos_tesseract_pages_v1'||raw.originalSha256!==context.sourceDigest||raw.artifactLock!==ocrArtifactLock||typeof raw.runtimeImageId!=='string'||!/^sha256:[a-f0-9]{64}$/.test(raw.runtimeImageId)||!Array.isArray(raw.pages)||raw.pages.length<1||raw.pages.length>2)fail();
@@ -56,7 +65,7 @@ export function makeOcrDerivative(original:Buffer,context:DocumentContext,result
     return {page:index+1,width:width/2,height:height/2};
   });
   const missing=counts.flatMap((n,i)=>n?[]:[i+1]);
-  const derivative={format:'inveos_ocr_document_v1',context,profileDigest:ocrProfileDigest,rawDigest:sha256(result.raw),reviewState:'unreviewed',offsetBasis:'ocr_utf8_not_original_pdf',pages,text,references,
+  const derivative={format:'inveos_ocr_document_v1',context,profileDigest:config.profileDigest,rawDigest:sha256(result.raw),reviewState:'unreviewed',offsetBasis:'ocr_utf8_not_original_pdf',pages,text,references,
     coverage:{pageTextCounts:counts,pagesWithoutText:missing,disposition:missing.length?'needs_page_review':'unreviewed_text',completeExtractionVerified:false},
     ocr:{runtimeImageId:raw.runtimeImageId,artifactLock:ocrArtifactLock,artifacts,limitations:['ocr_may_be_wrong','reading_order_unreviewed','forms_omitted','annotations_omitted','visual_fidelity_unapproved']}};
   const bytes=Buffer.from(JSON.stringify(derivative));if(bytes.length>1048576)fail();return {derivative,bytes,digest:sha256(bytes),rawDigest:sha256(result.raw)};

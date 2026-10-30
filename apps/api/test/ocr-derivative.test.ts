@@ -12,7 +12,7 @@ import {verifyCitation} from '../../web/src/citationRequest.js';
 import {validateNativeQualification} from '../src/native-document-worker.js';
 const root=fileURLToPath(new URL('../../../',import.meta.url));
 test('OCR boundaries preserve exact raw rows, original/render/TSV hashes and independent byte offsets',()=>{
- const f=ocrFixture(),d=f.output.derivative;assert.equal(d.text,'ATLAS\n60');assert.equal(d.offsetBasis,'ocr_utf8_not_original_pdf');assert.equal(d.coverage.completeExtractionVerified,false);
+ const f=ocrFixture(),d=f.output.derivative;assert.equal(f.output.digest,'b116b472db2aa4d768cf8f4c68fa7b64913781e88d7ab804620b52b117cea9eb');assert.equal(d.text,'ATLAS\n60');assert.equal(d.offsetBasis,'ocr_utf8_not_original_pdf');assert.equal(d.coverage.completeExtractionVerified,false);
  assert.deepEqual(d.references[1]?.bbox,{l:16,r:21,b:11,t:6,origin:'TOPLEFT'});assert.equal(d.references[1]?.ocr.tsvRow,4);assert.equal(d.references[1]?.ocr.confidence,89.5);assert.equal(d.references[1]?.startByte,6);
  const c=documentCitation(f.output,{derivativeDigest:f.output.digest,itemRef:'#/texts/1',startByte:6,endByte:8,quote:'60'});assert.equal(c.citation.page,1);assert.equal(c.citation.offsetBasis,'ocr_utf8_not_original_pdf');
  assert.equal(d.ocr.artifacts[0]?.inputPngDigest,sha256(f.png));assert.equal(d.ocr.artifacts[0]?.rawTsvDigest,sha256(f.tsv));assert.equal(sha256(readFileSync(root+'research/runtime_artifacts/tesseract-baseline.lock.json')),ocrArtifactLock);
@@ -36,4 +36,13 @@ test('browser inspection recognises the separately versioned OCR result and cita
 });
 test('OCR qualification requires recent complete actual isolation evidence',()=>{
  assert.throws(()=>validateNativeQualification({},true));assert.throws(()=>validateNativeQualification({status:'host_probe_passed',profile:'runtime-1g',imageId:'sha256:'+'a'.repeat(64),repoDigests:[],checkedAt:new Date().toISOString()},true));
+});
+
+test('expanded OCR keeps v1 immutable, rejects profile substitution and independently replays the larger bound',async()=>{
+ const {ocrExpandedKind,ocrExpandedProfile,ocrExpandedProfileDigest}=await import('../src/ocr-derivative.js');const f=ocrFixture();assert.equal(ocrProfileDigest,'3eaf9e8346c3496729f98a2c846abc75d4afac066f3e8c3c9b4ada6acb323e76');assert.equal(JSON.parse(ocrProfile).maxOriginalBytes,65536);assert.equal(JSON.parse(ocrExpandedProfile).maxOriginalBytes,262144);
+ const original=Buffer.concat([f.original,Buffer.alloc(262144-f.original.length,32)]),context={...f.context,sourceDigest:sha256(original)},raw=Buffer.from(JSON.stringify({...f.envelope,originalSha256:context.sourceDigest})),result={context,profileDigest:ocrExpandedProfileDigest,successful:true,raw};
+ assert.throws(()=>makeOcrDerivative(original,context,result));assert.throws(()=>makeOcrDerivative(f.original,f.context,f.result,ocrExpandedKind));assert.throws(()=>makeOcrDerivative(original,context,{...result,profileDigest:ocrProfileDigest},ocrExpandedKind));assert.throws(()=>makeOcrDerivative(Buffer.concat([original,Buffer.from('x')]),context,result,ocrExpandedKind));assert.throws(()=>makeOcrDerivative(original,context,result,'unknown'));
+ const output=makeOcrDerivative(original,context,result,ocrExpandedKind);assert.equal(output.derivative.text,f.output.derivative.text);assert.equal(output.derivative.profileDigest,ocrExpandedProfileDigest);
+ const replay=spawnSync('python3',['-c','import json,sys,base64;from tools.verify_ocr_derivative import ocr_derivative;v=json.load(sys.stdin);print(json.dumps(ocr_derivative(base64.b64decode(v["raw"]),v["context"],base64.b64decode(v["original"]),v["profile"])))'],{cwd:root,input:JSON.stringify({raw:raw.toString('base64'),original:original.toString('base64'),context,profile:ocrExpandedProfileDigest}),encoding:'utf8'});assert.equal(replay.status,0,replay.stderr);assert.deepEqual(JSON.parse(replay.stdout),output.derivative);
+ const job={id:context.jobId,caseId:context.caseId,evidenceId:context.evidenceId,sourceDigest:context.sourceDigest,authorityVersion:1,kind:ocrExpandedKind,status:'succeeded'},receipt={...context,status:'unreviewed_derivative',processedAt:'2026-10-29T00:00:00Z',profile:JSON.parse(ocrExpandedProfile),profileDigest:ocrExpandedProfileDigest,rawDigest:output.rawDigest,derivativeDigest:output.digest,derivative:output.derivative};assert.equal((await inspectDocumentDerivative(receipt,job)).method,'ocr');await assert.rejects(inspectDocumentDerivative(receipt,{...job,kind:'tesseract_scan_lab_v1'}));
 });

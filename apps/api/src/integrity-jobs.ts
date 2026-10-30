@@ -1,11 +1,10 @@
 import type {OriginalStore} from './original-encryption.js';
-import {ocrKind,ocrProfile,ocrProfileDigest,makeOcrDerivative} from './ocr-derivative.js';
+import {ocrKind,ocrExpandedKind,ocrConfiguration,makeOcrDerivative} from './ocr-derivative.js';
 import {documentReview,type DocumentReviewInput,type ReviewPredecessor} from './document-review.js';
 import type {DocumentReportFinding} from '@inveos/contracts';
 import {documentClaim,documentClaimDecision,type DocumentClaimDecisionInput,type DocumentClaimInput,type ReviewedCitation} from './document-claim.js';
 import {documentCitation,type DocumentSelection} from './document-citation.js';
-import {makeRasterDerivative,rasterProfile,rasterProfileDigest,type RasterResult} from './raster-derivative.js';
-const rasterKind='pdf_raster_lab_v1';
+import {makeRasterDerivative,rasterKind,rasterExpandedKind,rasterConfiguration,type RasterResult} from './raster-derivative.js';
 import {documentKind,documentProfile,documentProfileDigest,makeDocumentDerivative,type DocumentContext,type DocumentResult} from './document-derivative.js';
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -15,6 +14,15 @@ import { inTransaction } from './db.js';
 import { ApiError, notFound } from './errors.js';
 import { readOriginalBounded } from './storage.js';
 import { makeTextDerivative, sha256, textConfiguration, textProcessor, verifyTextDerivative, type DerivativeOutput } from './text-derivative.js';
+const documentKinds=[documentKind,ocrKind,ocrExpandedKind],rasterKinds=[rasterKind,rasterExpandedKind];
+const isolatedKinds=[...documentKinds,...rasterKinds];
+function documentSettings(kind:string){
+ const ocr=ocrConfiguration(kind);if(ocr)return ocr;
+ if(kind===documentKind)return {kind,profile:documentProfile,profileDigest:documentProfileDigest,maxOriginalBytes:65536};
+ throw new ApiError(409,'Unsupported document processing profile.');
+}
+function makeProfileDocument(kind:string,original:Buffer,context:DocumentContext,result:DocumentResult){return ocrConfiguration(kind)?makeOcrDerivative(original,context,result,kind):makeDocumentDerivative(original,context,result);}
+
 
 type Scope = {tenantId: string; caseId: string; jobId: string};
 type Services = {
@@ -174,7 +182,7 @@ async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure:
 }
 export async function runIntegrityJob(pool: Pool, root: OriginalStore, s: Scope) {
   const kind=await pool.query('SELECT kind FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3',values(s));
-  if([documentKind,rasterKind,ocrKind].includes(kind.rows[0]?.kind))return null; // Separate qualified worker required.
+  if(isolatedKinds.includes(kind.rows[0]?.kind))return null; // Separate qualified worker required.
   const lease = await claimIntegrityJob(pool,s);
   if (!lease) return null;
   return processLeasedJob(pool,root,s,lease);
@@ -209,17 +217,17 @@ export async function finishDocumentJob(pool:Pool,root:OriginalStore,s:Scope,tok
     await lockWorkerCase(client,s);
     const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE`,[...values(s),token]);
-    const row=found.rows[0];if(!row||![documentKind,ocrKind].includes(row.kind))return null;
-    const profile=row.kind===ocrKind?ocrProfile:documentProfile,profileDigest=row.kind===ocrKind?ocrProfileDigest:documentProfileDigest;
+    const row=found.rows[0];if(!row||!documentKinds.includes(row.kind))return null;
+    const {profile,profileDigest,maxOriginalBytes}=documentSettings(row.kind);
     if(!await permitted(client,row))return terminal(client,s,'cancelled','scope_changed',token);
     const source=(await client.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[s.tenantId,s.caseId,row.evidence_id])).rows[0];
     let original:Buffer;
     try {
-      original=await readOriginalBounded(root,source.object_path,65536);
+      original=await readOriginalBounded(root,source.object_path,maxOriginalBytes);
       if(source.original_kind!=='opaque_binary'||original.length!==source.byte_length||sha256(original)!==row.source_digest.trim()||source.digest.trim()!==row.source_digest.trim())throw new Error('Original mismatch');
     } catch {return terminal(client,s,'failed','original_unavailable',token);}
     let output;
-    try {output=(row.kind===ocrKind?makeOcrDerivative:makeDocumentDerivative)(original,documentContext(row),result);}
+    try {output=makeProfileDocument(row.kind,original,documentContext(row),result);}
     catch {return terminal(client,s,'failed','document_result_invalid',token);}
     // Final fenced transition occurs after original and output checks, within the same transaction.
     const completed=await terminal(client,s,'succeeded',null,token);
@@ -238,25 +246,26 @@ export async function finishRasterJob(pool:Pool,root:OriginalStore,s:Scope,token
     await lockWorkerCase(client,s);
     const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
       AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE`,[...values(s),token]);
-    const row=found.rows[0];if(!row||row.kind!==rasterKind)return null;
+    const row=found.rows[0];if(!row||!rasterKinds.includes(row.kind))return null;
+    const {profile,profileDigest,maxOriginalBytes}=rasterConfiguration(row.kind)!;
     if(!await permitted(client,row))return terminal(client,s,'cancelled','scope_changed',token);
     const source=(await client.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[s.tenantId,s.caseId,row.evidence_id])).rows[0];
     let original:Buffer;
     try {
-      original=await readOriginalBounded(root,source.object_path,65536);
+      original=await readOriginalBounded(root,source.object_path,maxOriginalBytes);
       if(source.original_kind!=='opaque_binary'||original.length!==source.byte_length||sha256(original)!==row.source_digest.trim()||source.digest.trim()!==row.source_digest.trim())throw new Error('Original mismatch');
     } catch {return terminal(client,s,'failed','original_unavailable',token);}
     let output;
-    try {output=makeRasterDerivative(original,documentContext(row),result);}
+    try {output=makeRasterDerivative(original,documentContext(row),result,row.kind);}
     catch {return terminal(client,s,'failed','raster_result_invalid',token);}
-    const raw=Buffer.from(JSON.stringify({context:documentContext(row),profileDigest:rasterProfileDigest,originalSha256:row.source_digest.trim(),
+    const raw=Buffer.from(JSON.stringify({context:documentContext(row),profileDigest,originalSha256:row.source_digest.trim(),
       pages:output.pages.map(p=>({page:p.page,width:p.width,height:p.height,pngSha256:p.digest,pngBytes:p.byteLength,pngBase64:p.bytes.toString('base64')}))}));
     // Final fenced transition occurs after original and output checks, within the same transaction.
     const completed=await terminal(client,s,'succeeded',null,token);
     if(!completed)return null;
     await client.query(`INSERT INTO raster_derivatives (tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,
       profile,profile_digest,raw_bytes,raw_digest,output_bytes,output_digest) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-      [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,rasterProfile,rasterProfileDigest,raw,sha256(raw),output.bytes,output.digest]);
+      [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,profile,profileDigest,raw,sha256(raw),output.bytes,output.digest]);
     return completed;
   });
 }
@@ -301,12 +310,12 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
   });
   app.post('/api/cases/:caseId/integrity-jobs', {preHandler: svc.requireCsrf, schema: {
     params: {type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
-    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1',documentKind,rasterKind,ocrKind]}}},
+    body: {type:'object',required:['evidenceId','idempotencyKey'],additionalProperties:false,properties:{evidenceId:uuid,idempotencyKey:uuid,kind:{type:'string',enum:['original_sha256_v1','utf8_line_index_v1',...isolatedKinds]}}},
   }}, async request => {
     const actor = request.actor!;
     const {caseId} = request.params as {caseId:string};
     const input = request.body as {evidenceId:string;idempotencyKey:string;kind?:string};
-    if([documentKind,rasterKind,ocrKind].includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
+    if(isolatedKinds.includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
     return inTransaction(svc.pool,async client => {
       await svc.findCase(client,actor,caseId,true);
       const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
@@ -318,7 +327,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
-      if([documentKind,rasterKind,ocrKind].includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>65536))throw new ApiError(409,'Document lab requires a bounded binary original.');
+      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>((ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
       const id = randomUUID();
       const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
@@ -358,14 +367,14 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         FROM document_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
       if(!row)notFound();let output;
-      const profile=row.kind===ocrKind?ocrProfile:documentProfile,profileDigest=row.kind===ocrKind?ocrProfileDigest:documentProfileDigest;
-      if(![documentKind,ocrKind].includes(row.kind))throw new ApiError(409,'Unsupported document processing profile.');
+      const {profile,profileDigest,maxOriginalBytes}=documentSettings(row.kind);
+      if(!documentKinds.includes(row.kind))throw new ApiError(409,'Unsupported document processing profile.');
       try {
-        const original=await readOriginalBounded(svc.storageRoot,row.object_path,65536);
+        const original=await readOriginalBounded(svc.storageRoot,row.object_path,maxOriginalBytes);
         if(original.length!==row.byte_length||row.original_kind!=='opaque_binary'||row.digest.trim()!==row.source_digest.trim()
           ||row.profile!==profile||row.profile_digest.trim()!==profileDigest||sha256(row.raw_bytes)!==row.raw_digest.trim())throw new Error('Lineage mismatch');
         const context=documentContext(row);
-        output=(row.kind===ocrKind?makeOcrDerivative:makeDocumentDerivative)(original,context,{context,profileDigest:row.profile_digest.trim(),successful:true,raw:row.raw_bytes});
+        output=makeProfileDocument(row.kind,original,context,{context,profileDigest:row.profile_digest.trim(),successful:true,raw:row.raw_bytes});
         if(output.digest!==row.output_digest.trim()||!output.bytes.equals(row.output_bytes))throw new Error('Derivative mismatch');
       } catch {throw new ApiError(409,'Original or document derivative integrity verification failed.');}
       return {row,output};
@@ -526,7 +535,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         reference:{citationId:entry.citation_id,citationDigest:state.checked.digest,offsetBasis:c.offsetBasis,itemRef:c.itemRef,page:c.page,bbox:{...c.bbox,origin:String(c.bbox.origin)},startByte:c.startByte,endByte:c.endByte,quote:c.quote},
         correspondence:{id:review.id,digest:review.digest,reviewer:review.reviewedBy,reviewedAt:review.reviewedAt,reason:review.reason},
         interpretation:{claimId:claim.id,claimDigest:claim.digest,decisionId:d.id,decisionDigest:d.digest,reason:d.reason},
-        limitations:r.kind===ocrKind?'Human-reviewed OCR passage; offsets refer to OCR UTF-8, not original PDF bytes. Isolated fictional research profile only; OCR can be wrong. No completeness, source-truth or visual-fidelity certification.':'Human-reviewed extracted passage; offsets refer to extracted UTF-8, not original PDF bytes. Native-PDF research profile only; no completeness or source-truth certification.'};
+        limitations:ocrConfiguration(r.kind)?'Human-reviewed OCR passage; offsets refer to OCR UTF-8, not original PDF bytes. Isolated fictional research profile only; OCR can be wrong. No completeness, source-truth or visual-fidelity certification.':'Human-reviewed extracted passage; offsets refer to extracted UTF-8, not original PDF bytes. Native-PDF research profile only; no completeness or source-truth certification.'};
     }
   }
   async function* documentReportExhibits(client:PoolClient,actor:Actor,caseId:string,findings:DocumentReportFinding[]){
@@ -534,7 +543,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       const s=await verifiedDocumentClaims(client,actor,caseId,finding.extraction.jobId,finding.reference.citationId);
       const claim=s.claims.find(c=>c.finding?.id===finding.id);
       if(!claim||!claim.correspondenceCurrent||claim.digest!==finding.interpretation.claimDigest||claim.decision?.digest!==finding.interpretation.decisionDigest)throw new ApiError(409,'Document exhibit no longer matches the frozen finding.');
-      const original=await readOriginalBounded(svc.storageRoot,s.row.object_path,65536);
+      const original=await readOriginalBounded(svc.storageRoot,s.row.object_path,documentSettings(s.row.kind).maxOriginalBytes);
       if(sha256(original)!==finding.source.sha256)throw new ApiError(409,'Document exhibit original changed.');
       const stored=(await client.query('SELECT claim_bytes FROM document_claims WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND id=$5',[...s.key,claim.id])).rows[0];
       const decision=(await client.query('SELECT decision_bytes FROM document_claim_decisions WHERE tenant_id=$1 AND case_id=$2 AND job_id=$3 AND citation_id=$4 AND claim_id=$5',[...s.key,claim.id])).rows[0];
@@ -593,11 +602,13 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         FROM raster_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
       if(!row)notFound();let output;
+      const config=rasterConfiguration(row.kind);if(!config)throw new ApiError(409,'Unsupported raster processing profile.');
+      const {profile,profileDigest,maxOriginalBytes}=config;
       try{
-        const original=await readOriginalBounded(svc.storageRoot,row.object_path,65536);
+        const original=await readOriginalBounded(svc.storageRoot,row.object_path,maxOriginalBytes);
         if(original.length!==row.byte_length||row.original_kind!=='opaque_binary'||row.digest.trim()!==row.source_digest.trim()||
-          row.profile!==rasterProfile||row.profile_digest.trim()!==rasterProfileDigest||sha256(row.raw_bytes)!==row.raw_digest.trim())throw new Error('Raster lineage mismatch');
-        output=makeRasterDerivative(original,documentContext(row),JSON.parse(row.raw_bytes.toString('utf8')));
+          row.profile!==profile||row.profile_digest.trim()!==profileDigest||sha256(row.raw_bytes)!==row.raw_digest.trim())throw new Error('Raster lineage mismatch');
+        output=makeRasterDerivative(original,documentContext(row),JSON.parse(row.raw_bytes.toString('utf8')),row.kind);
         if(output.digest!==row.output_digest.trim()||!output.bytes.equals(row.output_bytes))throw new Error('Raster manifest mismatch');
       }catch{throw new ApiError(409,'Original or raster derivative integrity verification failed.');}
       await svc.audit(client,actor,caseId,'raster_derivative.read','integrity_job',jobId,'Verified unreviewed raster derivative read');

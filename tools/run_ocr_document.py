@@ -1,4 +1,5 @@
 """First-party bounded runner. Imports native libraries only inside isolation."""
+import argparse
 import base64
 import hashlib
 import io
@@ -9,8 +10,11 @@ from bounded_process import run_bounded
 from pdf_render_limits import render_size
 
 
-def extract(original):
-    if not 0 < len(original) <= 65536 or not original.startswith(b'%PDF-'):
+def extract(original, profile_version=1):
+    if type(profile_version) is not int or profile_version not in (1,2):
+        raise ValueError('Unknown OCR profile version')
+    maximum = 65536 if profile_version == 1 else 262144
+    if not 0 < len(original) <= maximum or not original.startswith(b'%PDF-'):
         raise ValueError('Original exceeds the OCR profile')
     import pypdfium2 as pdfium
     doc = pdfium.PdfDocument(original)
@@ -53,11 +57,13 @@ def extract(original):
 
 
 if __name__ == '__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--profile-version',type=int,choices=(1,2),default=1)
+    args=parser.parse_args()
     os.environ['OMP_THREAD_LIMIT']='1'
     os.environ['OMP_NUM_THREADS']='1'
     with Path('/original/input.pdf').open('rb') as stream:
-        original = stream.read(65537)
-    output = json.dumps(extract(original), separators=(',', ':'))
+        original = stream.read((65536 if args.profile_version == 1 else 262144)+1)
+    output = json.dumps(extract(original,args.profile_version), separators=(',', ':'))
     if len(output.encode()) > 1000000:
         raise ValueError('OCR result size bound')
     print(output)

@@ -16,10 +16,10 @@ import sys
 
 if __package__:
     from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology
-    from .verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE
+    from .verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE, EXPANDED_PROFILE as OCR_EXPANDED_PROFILE
 else:
     from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology
-    from verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE
+    from verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE, EXPANDED_PROFILE as OCR_EXPANDED_PROFILE
 
 MAX_PACKAGE = 64 * 1024 * 1024
 PROFILE = '3598b04aaddec299619919cb1f54922d6f3b0431929cc9124e23bb2b013d27a3'
@@ -173,7 +173,9 @@ def verify_exhibit(f, exhibit, case_id):
     require(type(f['source']['authorityVersion']) is int and f['source']['authorityVersion'] > 0
             and type(f['extraction']['attempt']) is int and f['extraction']['attempt'] > 0, 'Authority or attempt metadata')
     timestamp(f['extraction']['processedAt'])
-    original = blob(exhibit['originalBase64'], 65536)
+    profile = f['extraction']['profileDigest']
+    require(profile in (PROFILE, OCR_PROFILE, OCR_EXPANDED_PROFILE) and sha(f['extraction']['profile'].encode('utf-8')) == profile, 'Unsupported processing profile')
+    original = blob(exhibit['originalBase64'], 262144 if profile == OCR_EXPANDED_PROFILE else 65536)
     require(original.startswith(b'%PDF-') and sha(original) == f['source']['sha256'], 'Original fingerprint')
     raw, derivative_bytes, citation_bytes = [blob(exhibit[key], 1048576) for key in ('rawBase64', 'derivativeBase64', 'citationBase64')]
     d, c = parse(derivative_bytes), parse(citation_bytes)
@@ -185,10 +187,8 @@ def verify_exhibit(f, exhibit, case_id):
             and context['evidenceId'] == f['source']['id'] and context['sourceDigest'] == sha(original)
             and type(context['authorityVersion']) is int and context['authorityVersion'] > 0
             and context['authorityVersion'] == f['extraction']['authorityVersion'], 'Extraction scope')
-    profile = f['extraction']['profileDigest']
-    require(profile in (PROFILE, OCR_PROFILE) and sha(f['extraction']['profile'].encode('utf-8')) == profile, 'Unsupported processing profile')
     require(sha(raw) == f['extraction']['rawDigest'] and sha(derivative_bytes) == f['extraction']['derivativeDigest'], 'Extraction fingerprints')
-    require(same(d, ocr_derivative(raw, context, original) if profile == OCR_PROFILE else native_derivative(raw, context)), 'Normalised extraction does not replay')
+    require(same(d, ocr_derivative(raw, context, original, profile) if profile in (OCR_PROFILE, OCR_EXPANDED_PROFILE) else native_derivative(raw, context)), 'Normalised extraction does not replay')
     ref = f['reference']
     selected = next((r for r in d['references'] if r['itemRef'] == ref['itemRef']), None)
     require(selected is not None, 'Missing selected occurrence')

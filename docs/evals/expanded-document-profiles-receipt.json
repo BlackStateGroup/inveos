@@ -1,0 +1,1418 @@
+{
+  "format": "inveos.expanded_document_profiles_receipt.v1",
+  "repository": "BlackStateGroup/inveos",
+  "commit": "052a6401a1e3dcbae0340a28092783ca40a79b72",
+  "checks": {
+    "run": 40977462888,
+    "job": 123808934666,
+    "nodePassed": 343,
+    "pythonPassed": 125,
+    "browserJourneys": 30,
+    "failed": 0,
+    "skipped": 0
+  },
+  "research": {
+    "run": 40977462609,
+    "job": 123808933541,
+    "artifactId": 12944000245,
+    "artifactArchiveSha256": "93a2e74c693d3fff50be49b30eb8fb092df011858e9030d94fe64175369a7a42",
+    "completeReportSha256": "a7400564ce455db671670a419a1dd35d6873cd8cf79fa8be2daf0c3753cf1722",
+    "imageId": "sha256:ea010461c93ecf7061c3bcab4c83da974e9a6c67fd4430ddd47127ca94f08bd0",
+    "runtimeLockSha256": "bfcdba20feb42105845bbce39b243925dd12133e9358630ab1384125c84e1172",
+    "rasterIntegrationPassed": 1,
+    "daemonFailureIntegrationPassed": 5
+  },
+  "legacyMeasurement": {
+    "runnerSha256": "7ef8ec6dea2c3bb5c45cbad63cb6160fb9bb8b900f367880210e41f0a04b7f78",
+    "extractorSha256": "a6119c0ba5762b502317419368184cb08ff5095f91af9192705de65c64fcdebf",
+    "fixtureGeneratorSha256": "505fdaf09decb152b380073ad800c36cbe38bbb3514e8ea19ddf81db388fa9e6",
+    "format": "inveos.ocr_adversity_measurement.v1",
+    "profileVersion": 1,
+    "maxOriginalBytes": 65536,
+    "cases": [
+      {
+        "case": "clean",
+        "fictional": true,
+        "originalSha256": "575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393",
+        "originalBytes": 40501,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "7413fc7939185140828c917e011056b0ff7102f5c16a008b22052592d38d3f58",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.781016,
+            "rawSha256": "b87273e9e57acc4e36f0365ea7a048c464be5cdf08be2faf6545c471b8ef5f1d",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjc1NTk3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi40Njc4MjcJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjMxMzgyOAlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NC40ODYwMjMJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5NC40ODYwMjMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni42ODgxMTgJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTYuNjYwNTY4CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNzgxNzIzCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjY0ODQwNwlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjIzODk2OAlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjA4Mjg3MAlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk1Ljk2MjE5Ngk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni40NzA2MTIJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuMzk1MzI1CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMzU1Mzc3CURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDY0NDg1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTg4NjkyCTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2Ljg3MjEzMQlQRVJDRU5UCg==",
+                "tsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.682393,
+            "rawSha256": "b87273e9e57acc4e36f0365ea7a048c464be5cdf08be2faf6545c471b8ef5f1d",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjc1NTk3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi40Njc4MjcJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjMxMzgyOAlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NC40ODYwMjMJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5NC40ODYwMjMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni42ODgxMTgJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTYuNjYwNTY4CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNzgxNzIzCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjY0ODQwNwlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjIzODk2OAlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjA4Mjg3MAlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk1Ljk2MjE5Ngk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni40NzA2MTIJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuMzk1MzI1CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMzU1Mzc3CURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDY0NDg1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTg4NjkyCTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2Ljg3MjEzMQlQRVJDRU5UCg==",
+                "tsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "small_type",
+        "fictional": true,
+        "originalSha256": "92b9f6cd440c192ea85f27cddc41ed5ef4989ee396932ea5936ff9d4d0a3bd7c",
+        "originalBytes": 24479,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "5008bf5918b05fa98cb0593e11f2619826ac32741540102a2d66f46e2c7e84a0",
+          "digitalSha256": "89b7851e70715413db171fd1e82fdee725a6aa3a27e0635976813e6f208a3346"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.61058,
+            "rawSha256": "bfd19975a79f44216d0d68dcad0c848818a9062c7e3dc73639efdd4719088860",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMzIJMjk0CTIzNgktMQkKMwkxCTEJMQkwCTAJOTYJMTMyCTI5NAkyMzYJLTEJCjQJMQkxCTEJMQkwCTk3CTEzMgkyMzMJMTIJLTEJCjUJMQkxCTEJMQkxCTk3CTEzMgk4MgkxMgk5Mi44Nzk3MzAJRklDVElPTkFMCjUJMQkxCTEJMQkyCTE4NQkxMzIJMTQ1CTEyCTkwLjk3Nzc4MwlTWU4tU1VQUExJRVItMDAxCjQJMQkxCTEJMgkwCTk3CTE4OAkyMzQJMTIJLTEJCjUJMQkxCTEJMgkxCTk3CTE4OAk5OAkxMgk5Ni4yMjMxODMJTk9SVEhTVEFSCjUJMQkxCTEJMgkyCTIwMQkxODgJNDYJMTIJOTUuMjIwMDM5CURFTU8KNQkxCTEJMQkyCTMJMjUzCTE4OAk3OAkxMgk5My44NjU0MzMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTcJMjQ0CTI0MwkxMgktMQkKNQkxCTEJMQkzCTEJOTcJMjQ0CTgwCTEyCTk1Ljg2NzA1MAlSRUdJU1RFUgo1CTEJMQkxCTMJMgkxODMJMjQ0CTc0CTEyCTk1Ljg2NzA1MAlFWFRSQUNUCjUJMQkxCTEJMwkzCTI2MgkyNDUJNzgJMTEJOTYuNzAwODM2CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMzAwCTI5NAkxMgktMQkKNQkxCTEJMQk0CTEJOTYJMzAwCTUwCTEyCTk2LjU2NTgzNAlBVExBUwo1CTEJMQkxCTQJMgkxNTIJMzAwCTQ3CTEyCTk0LjY0NjQwMAlERU1PCjUJMQkxCTEJNAkzCTIwNAkzMDAJODIJMTIJOTYuMjE5NzExCUhPTERJTkdTCjUJMQkxCTEJNAk0CTI5MgkzMDEJMTcJMTEJOTYuNDIxOTA2CTYwCjUJMQkxCTEJNAk1CTMxNQkzMDAJNzUJMTIJOTIuNjk0NTcyCVBFUkNFTlQKNAkxCTEJMQk1CTAJOTcJMzU2CTI5MgkxMgktMQkKNQkxCTEJMQk1CTEJOTcJMzU2CTQ4CTEyCTk2LjQ0NTA2MQlCSVJDSAo1CTEJMQkxCTUJMgkxNTEJMzU2CTQ3CTEyCTk2LjY0MTM1NwlERU1PCjUJMQkxCTEJNQkzCTIwNAkzNTYJODEJMTIJOTYuMjk2ODE0CUhPTERJTkdTCjUJMQkxCTEJNQk0CTI5MQkzNTcJMTcJMTEJOTYuNzIyMDE1CTQwCjUJMQkxCTEJNQk1CTMxNAkzNTYJNzUJMTIJODcuMzY4NDQ2CVBFUkNFTlQK",
+                "tsvSha256": "c56a537a6e4f31f56c276188a458c2ac212ca303b3556da4aa8e76ed10399edb"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.667256,
+            "rawSha256": "bfd19975a79f44216d0d68dcad0c848818a9062c7e3dc73639efdd4719088860",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMzIJMjk0CTIzNgktMQkKMwkxCTEJMQkwCTAJOTYJMTMyCTI5NAkyMzYJLTEJCjQJMQkxCTEJMQkwCTk3CTEzMgkyMzMJMTIJLTEJCjUJMQkxCTEJMQkxCTk3CTEzMgk4MgkxMgk5Mi44Nzk3MzAJRklDVElPTkFMCjUJMQkxCTEJMQkyCTE4NQkxMzIJMTQ1CTEyCTkwLjk3Nzc4MwlTWU4tU1VQUExJRVItMDAxCjQJMQkxCTEJMgkwCTk3CTE4OAkyMzQJMTIJLTEJCjUJMQkxCTEJMgkxCTk3CTE4OAk5OAkxMgk5Ni4yMjMxODMJTk9SVEhTVEFSCjUJMQkxCTEJMgkyCTIwMQkxODgJNDYJMTIJOTUuMjIwMDM5CURFTU8KNQkxCTEJMQkyCTMJMjUzCTE4OAk3OAkxMgk5My44NjU0MzMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTcJMjQ0CTI0MwkxMgktMQkKNQkxCTEJMQkzCTEJOTcJMjQ0CTgwCTEyCTk1Ljg2NzA1MAlSRUdJU1RFUgo1CTEJMQkxCTMJMgkxODMJMjQ0CTc0CTEyCTk1Ljg2NzA1MAlFWFRSQUNUCjUJMQkxCTEJMwkzCTI2MgkyNDUJNzgJMTEJOTYuNzAwODM2CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMzAwCTI5NAkxMgktMQkKNQkxCTEJMQk0CTEJOTYJMzAwCTUwCTEyCTk2LjU2NTgzNAlBVExBUwo1CTEJMQkxCTQJMgkxNTIJMzAwCTQ3CTEyCTk0LjY0NjQwMAlERU1PCjUJMQkxCTEJNAkzCTIwNAkzMDAJODIJMTIJOTYuMjE5NzExCUhPTERJTkdTCjUJMQkxCTEJNAk0CTI5MgkzMDEJMTcJMTEJOTYuNDIxOTA2CTYwCjUJMQkxCTEJNAk1CTMxNQkzMDAJNzUJMTIJOTIuNjk0NTcyCVBFUkNFTlQKNAkxCTEJMQk1CTAJOTcJMzU2CTI5MgkxMgktMQkKNQkxCTEJMQk1CTEJOTcJMzU2CTQ4CTEyCTk2LjQ0NTA2MQlCSVJDSAo1CTEJMQkxCTUJMgkxNTEJMzU2CTQ3CTEyCTk2LjY0MTM1NwlERU1PCjUJMQkxCTEJNQkzCTIwNAkzNTYJODEJMTIJOTYuMjk2ODE0CUhPTERJTkdTCjUJMQkxCTEJNQk0CTI5MQkzNTcJMTcJMTEJOTYuNzIyMDE1CTQwCjUJMQkxCTEJNQk1CTMxNAkzNTYJNzUJMTIJODcuMzY4NDQ2CVBFUkNFTlQK",
+                "tsvSha256": "c56a537a6e4f31f56c276188a458c2ac212ca303b3556da4aa8e76ed10399edb"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "low_resolution",
+        "fictional": true,
+        "originalSha256": "b48b1f42d7b8f9dc02294b4d274c2a5e3fba45b1df4b0f80eab50e7c3a1a4ab7",
+        "originalBytes": 21372,
+        "render": {
+          "width": 612,
+          "height": 792,
+          "rgbSha256": "6aae3ebbfa08f7483f6c5204b5455c58779def8fe0864d7e7e74033dfc8a3e7d",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.692021,
+            "rawSha256": "2f950d69819dd205f786adbbe85957c893165b0458247eecf921595cf7b850bd",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE1CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNQkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMDE4NzIzCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5MS4wMzY3NTgJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5NwkxNzkJNDEwCTIyCS0xCQo1CTEJMQkxCTIJMQk5NwkxNzkJMTcxCTIyCTk1Ljk1NTE5MwlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjc5CTE3OQk4MwkyMgk5NS45MzAzNjcJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni42Mjc2MDIJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNgkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni4zMjcwMzQJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ4CTIzNQkxMzAJMjIJOTYuNjM5OTIzCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzgJMjEJOTYuODMxMjYxCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNQkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg4CTIyCTk1LjUxMDI2OQlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjI3MTU2MQlERU1PCjUJMQkxCTEJNAkzCTI4NQkyOTEJMTQ1CTIyCTk2LjI3MTU2MQlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzgJMjkyCTMxCTIxCTk1LjUxNjU3MQk2MAo1CTEJMQkxCTQJNQk0NzgJMjkxCTEzMwkyMgk5NS41MTY1NzEJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5NwkzNDcJNTEyCTIyCS0xCQo1CTEJMQkxCTUJMQk5NwkzNDcJODUJMjIJOTYuMzU2NjUxCUJJUkNICjUJMQkxCTEJNQkyCTE5MgkzNDcJODIJMjIJOTYuMDA0NDAyCURFTU8KNQkxCTEJMQk1CTMJMjg0CTM0NwkxNDQJMjIJOTYuMjg5NjY1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTUuNjE5NDM4CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk1LjYxOTQzOAlQRVJDRU5UCg==",
+                "tsvSha256": "b5bae4c13f5802270438a4d066c99f569385827bf9857db9045808d201f6a91a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.697002,
+            "rawSha256": "2f950d69819dd205f786adbbe85957c893165b0458247eecf921595cf7b850bd",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE1CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNQkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMDE4NzIzCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5MS4wMzY3NTgJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5NwkxNzkJNDEwCTIyCS0xCQo1CTEJMQkxCTIJMQk5NwkxNzkJMTcxCTIyCTk1Ljk1NTE5MwlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjc5CTE3OQk4MwkyMgk5NS45MzAzNjcJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni42Mjc2MDIJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNgkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni4zMjcwMzQJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ4CTIzNQkxMzAJMjIJOTYuNjM5OTIzCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzgJMjEJOTYuODMxMjYxCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNQkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg4CTIyCTk1LjUxMDI2OQlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjI3MTU2MQlERU1PCjUJMQkxCTEJNAkzCTI4NQkyOTEJMTQ1CTIyCTk2LjI3MTU2MQlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzgJMjkyCTMxCTIxCTk1LjUxNjU3MQk2MAo1CTEJMQkxCTQJNQk0NzgJMjkxCTEzMwkyMgk5NS41MTY1NzEJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5NwkzNDcJNTEyCTIyCS0xCQo1CTEJMQkxCTUJMQk5NwkzNDcJODUJMjIJOTYuMzU2NjUxCUJJUkNICjUJMQkxCTEJNQkyCTE5MgkzNDcJODIJMjIJOTYuMDA0NDAyCURFTU8KNQkxCTEJMQk1CTMJMjg0CTM0NwkxNDQJMjIJOTYuMjg5NjY1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTUuNjE5NDM4CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk1LjYxOTQzOAlQRVJDRU5UCg==",
+                "tsvSha256": "b5bae4c13f5802270438a4d066c99f569385827bf9857db9045808d201f6a91a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "skew_plus_2",
+        "fictional": true,
+        "originalSha256": "000a6b852ead1a8785af882534ffcc7f9662462221bb5ad5333fd28e245d8339",
+        "originalBytes": 68334,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "a090bc9a1af285f493492586fdb2d37ed927e96b148f265b0318ecdf9f18dacf",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 1.2e-05,
+            "reason": "Original exceeds the OCR profile"
+          },
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 3e-06,
+            "reason": "Original exceeds the OCR profile"
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "skew_minus_2",
+        "fictional": true,
+        "originalSha256": "e226704d3452558f0a1e97938cf3a820d0d8714f2b2c6a5c0581156592584681",
+        "originalBytes": 68039,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "fdbaf027e5e49b6ab54124bce85c0a408fe753880a81d688384e73f1f84dae84",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 8e-06,
+            "reason": "Original exceeds the OCR profile"
+          },
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 1e-06,
+            "reason": "Original exceeds the OCR profile"
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "skew_plus_7",
+        "fictional": true,
+        "originalSha256": "c2517a73953ae200fc8fd46cc7aefa19a9680202ad4e3864c1081916f4df7c20",
+        "originalBytes": 73062,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "a7644b9aecbec3bfb82bd9225a5273829bfb7fb4b2432d9409e595af7c593f77",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 1.1e-05,
+            "reason": "Original exceeds the OCR profile"
+          },
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 1e-06,
+            "reason": "Original exceeds the OCR profile"
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "low_contrast",
+        "fictional": true,
+        "originalSha256": "96a3a799a6052016ec2689d38f2e977ac24a946d932adcf0f5783acbb03f5970",
+        "originalBytes": 29692,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "9e7ce0aa2818021c65877d60cb763c91a164f1c7ef25cbc9dea33cbdb971b776",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.678453,
+            "rawSha256": "313e410140356aeabdb25c1dc09b96a911dd754a46b654e271b353932e45ae2c",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjgwMzI3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi4zNjIzNTAJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjE3NTE3OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NS44OTk4MjYJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni4yNjA5MTgJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5NS43MzgyNTEJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTUuNzM4MjUxCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNDc2ODQ1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjgxNzIwMAlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjAwMjAwNwlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjAwMjAwNwlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk2LjI0OTMxMwk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni41MTI1NTAJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuNjkxNjk2CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMTQwNjYzCURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDE1NDU5CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTk2NDM2CTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2LjY4OTE0MAlQRVJDRU5UCg==",
+                "tsvSha256": "9c1103f30bc51214818daa682212ea350c4ad6ad0d474481e96bed46e8c028ac"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.626552,
+            "rawSha256": "313e410140356aeabdb25c1dc09b96a911dd754a46b654e271b353932e45ae2c",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjgwMzI3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi4zNjIzNTAJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjE3NTE3OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NS44OTk4MjYJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni4yNjA5MTgJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5NS43MzgyNTEJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTUuNzM4MjUxCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNDc2ODQ1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjgxNzIwMAlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjAwMjAwNwlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjAwMjAwNwlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk2LjI0OTMxMwk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni41MTI1NTAJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuNjkxNjk2CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMTQwNjYzCURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDE1NDU5CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTk2NDM2CTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2LjY4OTE0MAlQRVJDRU5UCg==",
+                "tsvSha256": "9c1103f30bc51214818daa682212ea350c4ad6ad0d474481e96bed46e8c028ac"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "blur",
+        "fictional": true,
+        "originalSha256": "c3a356412bea54b6358cf74601775e981e6dd070890a0e3111716c62f7cc2a5b",
+        "originalBytes": 73213,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "8ce2e375a4a9f19e789b8b069638715a0b226dd12ee8249bf620ad91634caa83",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 9e-06,
+            "reason": "Original exceeds the OCR profile"
+          },
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 1e-06,
+            "reason": "Original exceeds the OCR profile"
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "jpeg_compression",
+        "fictional": true,
+        "originalSha256": "a93e7918ab63c4ac49c717e7abc0851d539937441de35c8c4422300d2937b25d",
+        "originalBytes": 75544,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "04e61b42a47cdf2301fa8b3c5304807f0665e7fda7c990a32a9eb6d31d4fb0df",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 8e-06,
+            "reason": "Original exceeds the OCR profile"
+          },
+          {
+            "outcome": "rejected_without_confirmed_ocr_output",
+            "elapsedSeconds": 1e-06,
+            "reason": "Original exceeds the OCR profile"
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "speckles",
+        "fictional": true,
+        "originalSha256": "3c4004037ead453b410e4e5569a9690ff4b55cae4975b65ae2450dbe2399743d",
+        "originalBytes": 43667,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "af36f9071cf3d6c712ee673f2510d965c7de3481603f0073a90faf75e8d10b83",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.811951,
+            "rawSha256": "6589d2baeffb3058c13b2e1b5192a9581343d443e980c69328dfd906d82629ec",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkyCTEwMgkxMjE3CTI4MAktMQkKMwkxCTEJMQkwCTAJMgkxMDIJMTIxNwkyODAJLTEJCjQJMQkxCTEJMQkwCTI4CTEwMgkxMTU5CTU0CS0xCQo1CTEJMQkxCTEJMQkyOAkxMDIJMjE0CTUzCTM1LjUxMTc0OQkiRklDVElPTkFMCjUJMQkxCTEJMQkyCTI1MQkxMDIJMjU1CTQ3CTczLjIzMDA4NwlTWU4tU1VQUExJRVItMDAxCjUJMQkxCTEJMQkzCTU2MgkxMzQJODAJMjIJMjUuNjkzNjcyCXw9CjUJMQkxCTEJMQk0CTc0NAkxMDQJOAkzNAkyNi42MzU5MjUJOwo1CTEJMQkxCTEJNQkxMDg1CTExMAkxMDIJNDAJMTYuMTA0ODgxCW9vCjQJMQkxCTEJMgkwCTI4CTE1OAkxMTU5CTU1CS0xCQo1CTEJMQkxCTIJMQkyOAkxODcJMzYJOQkwLjAwMDAwMAktLgo1CTEJMQkxCTIJMgk5OAkxNTgJNDA5CTQ3CTk2Ljk2MzE1OAlOT1JUSFNUQVIKNQkxCTEJMQkyCTMJMjgyCTE1NAk3Mwk2Mgk5Ni45NjMxNTgJREVNTwo1CTEJMQkxCTIJNAkzNzAJMTU4CTEzNwk0Nwk5NC40NTg3NjMJU1VQUExJRVIKNQkxCTEJMQkyCTUJNjM3CTE1OQk1NTAJNTQJMC4wMDAwMDAJQlMKNAkxCTEJMQkzCTAJMgkyMTQJMTIxNwk1NwktMQkKNQkxCTEJMQkzCTEJMgkyMTQJMjM2CTQ3CTM5Ljg1NTYyMQlSRUdJU1RFUgo1CTEJMQkxCTMJMgkyNDkJMjIzCTEyMgk0OAkyNS45NzU5NTIJRVhUUkFDVAo1CTEJMQkxCTMJMwkzODEJMjE2CTE1MQk0MQkyNS45NzU5NTIJMjAyNi0wOS0wMQo1CTEJMQkxCTMJNAk1NTkJMjMzCTgxCTM3CTAuMDAwMDAwCW9vCjUJMQkxCTEJMwk1CTkyNgkyMzMJMzkJMzMJMC4wMDAwMDAJU28KNAkxCTEJMQk0CTAJOAkyNzIJMTIwOAk1NQktMQkKNQkxCTEJMQk0CTEJOAkzMjMJMgkyCTIxLjk2ODk0MQlfCjUJMQkxCTEJNAkyCTk2CTI5MQk4NwkzNgkyMS45Njg5NDEJQVRMQVMKNQkxCTEJMQk0CTMJMTk0CTI5MQk4MQkzNgk5Ni40OTIzNTUJREVNTwo1CTEJMQkxCTQJNAkyODYJMjcyCTE4Mgk1Mwk5Ni4yOTQwMjkJSE9MRElOR1MKNQkxCTEJMQk0CTUJNDQ0CTI2OAkzMgk2MQk1NC45OTkxMTkJNjAKNQkxCTEJMQk0CTYJNDc5CTI4MQkxNDIJNDQJMS4wNzkwODYJUEVSQ0VOVAo1CTEJMQkxCTQJNwk3MzQJMjgxCTMwNQk0Ngk4LjU1NDExNQlyZQo1CTEJMQkxCTQJOAkxMTAyCTI3MwkxMTQJNTEJMC4wMDAwMDAJb28KNAkxCTEJMQk1CTAJMwkzMjYJMTIxMAk1NgktMQkKNQkxCTEJMQk1CTEJMwkzNDAJMjQJMjIJMC4wMDAwMDAJXwo1CTEJMQkxCTUJMgkyNAkzMjgJMzQJNTgJMC4wMDAwMDAJfAo1CTEJMQkxCTUJMwk5OAkzMzMJODQJMzkJODIuNzY1MDgzCUJJUkNICjUJMQkxCTEJNQk0CTE5MwkzMzMJODEJMzYJOTMuOTA0MDIyCURFTU8KNQkxCTEJMQk1CTUJMjg1CTMzMgkxODIJMzcJOTQuNjUwNTgxCUhPTERJTkdTCjUJMQkxCTEJNQk2CTQzOQkzMjgJMzAJNTgJOTUuOTk0MTI1CTQwCjUJMQkxCTEJNQk3CTQ3OAkzNDcJMTMxCTI1CTI1LjQ3MDQ0NAlQRVJDRU5UCjUJMQkxCTEJNQk4CTg4NAkzMjYJMzI5CTU0CTAuMDAwMDAwCVNlCg==",
+                "tsvSha256": "d5609475fe89869fa98530ceb8b85000633b790cb4ad7a8e8f05f909920e779a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 29,
+              "wordErrors": 7,
+              "wordErrorRate": 0.3181818181818182,
+              "characterErrors": 21,
+              "characterErrorRate": 0.15,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": false,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 OO NORTHSTAR DEMO SUPPLIER BS REGISTER EXTRACT 2026 09 01 OO SO ATLAS DEMO HOLDINGS 60 PERCENT RE OO BIRCH DEMO HOLDINGS 40 PERCENT SE"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.869048,
+            "rawSha256": "6589d2baeffb3058c13b2e1b5192a9581343d443e980c69328dfd906d82629ec",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkyCTEwMgkxMjE3CTI4MAktMQkKMwkxCTEJMQkwCTAJMgkxMDIJMTIxNwkyODAJLTEJCjQJMQkxCTEJMQkwCTI4CTEwMgkxMTU5CTU0CS0xCQo1CTEJMQkxCTEJMQkyOAkxMDIJMjE0CTUzCTM1LjUxMTc0OQkiRklDVElPTkFMCjUJMQkxCTEJMQkyCTI1MQkxMDIJMjU1CTQ3CTczLjIzMDA4NwlTWU4tU1VQUExJRVItMDAxCjUJMQkxCTEJMQkzCTU2MgkxMzQJODAJMjIJMjUuNjkzNjcyCXw9CjUJMQkxCTEJMQk0CTc0NAkxMDQJOAkzNAkyNi42MzU5MjUJOwo1CTEJMQkxCTEJNQkxMDg1CTExMAkxMDIJNDAJMTYuMTA0ODgxCW9vCjQJMQkxCTEJMgkwCTI4CTE1OAkxMTU5CTU1CS0xCQo1CTEJMQkxCTIJMQkyOAkxODcJMzYJOQkwLjAwMDAwMAktLgo1CTEJMQkxCTIJMgk5OAkxNTgJNDA5CTQ3CTk2Ljk2MzE1OAlOT1JUSFNUQVIKNQkxCTEJMQkyCTMJMjgyCTE1NAk3Mwk2Mgk5Ni45NjMxNTgJREVNTwo1CTEJMQkxCTIJNAkzNzAJMTU4CTEzNwk0Nwk5NC40NTg3NjMJU1VQUExJRVIKNQkxCTEJMQkyCTUJNjM3CTE1OQk1NTAJNTQJMC4wMDAwMDAJQlMKNAkxCTEJMQkzCTAJMgkyMTQJMTIxNwk1NwktMQkKNQkxCTEJMQkzCTEJMgkyMTQJMjM2CTQ3CTM5Ljg1NTYyMQlSRUdJU1RFUgo1CTEJMQkxCTMJMgkyNDkJMjIzCTEyMgk0OAkyNS45NzU5NTIJRVhUUkFDVAo1CTEJMQkxCTMJMwkzODEJMjE2CTE1MQk0MQkyNS45NzU5NTIJMjAyNi0wOS0wMQo1CTEJMQkxCTMJNAk1NTkJMjMzCTgxCTM3CTAuMDAwMDAwCW9vCjUJMQkxCTEJMwk1CTkyNgkyMzMJMzkJMzMJMC4wMDAwMDAJU28KNAkxCTEJMQk0CTAJOAkyNzIJMTIwOAk1NQktMQkKNQkxCTEJMQk0CTEJOAkzMjMJMgkyCTIxLjk2ODk0MQlfCjUJMQkxCTEJNAkyCTk2CTI5MQk4NwkzNgkyMS45Njg5NDEJQVRMQVMKNQkxCTEJMQk0CTMJMTk0CTI5MQk4MQkzNgk5Ni40OTIzNTUJREVNTwo1CTEJMQkxCTQJNAkyODYJMjcyCTE4Mgk1Mwk5Ni4yOTQwMjkJSE9MRElOR1MKNQkxCTEJMQk0CTUJNDQ0CTI2OAkzMgk2MQk1NC45OTkxMTkJNjAKNQkxCTEJMQk0CTYJNDc5CTI4MQkxNDIJNDQJMS4wNzkwODYJUEVSQ0VOVAo1CTEJMQkxCTQJNwk3MzQJMjgxCTMwNQk0Ngk4LjU1NDExNQlyZQo1CTEJMQkxCTQJOAkxMTAyCTI3MwkxMTQJNTEJMC4wMDAwMDAJb28KNAkxCTEJMQk1CTAJMwkzMjYJMTIxMAk1NgktMQkKNQkxCTEJMQk1CTEJMwkzNDAJMjQJMjIJMC4wMDAwMDAJXwo1CTEJMQkxCTUJMgkyNAkzMjgJMzQJNTgJMC4wMDAwMDAJfAo1CTEJMQkxCTUJMwk5OAkzMzMJODQJMzkJODIuNzY1MDgzCUJJUkNICjUJMQkxCTEJNQk0CTE5MwkzMzMJODEJMzYJOTMuOTA0MDIyCURFTU8KNQkxCTEJMQk1CTUJMjg1CTMzMgkxODIJMzcJOTQuNjUwNTgxCUhPTERJTkdTCjUJMQkxCTEJNQk2CTQzOQkzMjgJMzAJNTgJOTUuOTk0MTI1CTQwCjUJMQkxCTEJNQk3CTQ3OAkzNDcJMTMxCTI1CTI1LjQ3MDQ0NAlQRVJDRU5UCjUJMQkxCTEJNQk4CTg4NAkzMjYJMzI5CTU0CTAuMDAwMDAwCVNlCg==",
+                "tsvSha256": "d5609475fe89869fa98530ceb8b85000633b790cb4ad7a8e8f05f909920e779a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 29,
+              "wordErrors": 7,
+              "wordErrorRate": 0.3181818181818182,
+              "characterErrors": 21,
+              "characterErrorRate": 0.15,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": false,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 OO NORTHSTAR DEMO SUPPLIER BS REGISTER EXTRACT 2026 09 01 OO SO ATLAS DEMO HOLDINGS 60 PERCENT RE OO BIRCH DEMO HOLDINGS 40 PERCENT SE"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "three_columns",
+        "fictional": true,
+        "originalSha256": "83a78d8e746191ba596d49f0e7579a790d6bf5c5f5f17b67d0223f4c0b46eaf2",
+        "originalBytes": 25458,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "2dadc252962e890686cb4164562cab0f095845d9450526839781f0ed1045758c",
+          "digitalSha256": "15c9462eab7c9255557fba104f19313ea56d3243a1481c6972bb5ae50166de2a"
+        },
+        "expectedText": "FICTIONAL WORK RECORD\nITEM     MINUTES     QUANTITY\nALPHA       15          30\nBIRCH       25          40\nTOTAL       40          70",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.591126,
+            "rawSha256": "54d5af254fb677f78dd7c55f1b101df8f2c9f1c4dab13d45b57a0fb9a8b15f62",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNDExCTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTQxMQkxMzQJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwkzNjcJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTYuNTg1MDM3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTAJMTIzCTg3CTIyCTk2LjI2NzYzOQlXT1JLCjUJMQkxCTEJMQkzCTM0NwkxMjMJMTE4CTIyCTk2LjUzNjUzNwlSRUNPUkQKNAkxCTEJMQkyCTAJOTgJMTc5CTQwOQkyMgktMQkKNQkxCTEJMQkyCTEJOTgJMTgwCTYzCTIwCTg2Ljg2MTAyMwlJVEVNCjUJMQkxCTEJMgkyCTIwNAkxNzkJMTIyCTIyCTg2Ljg2MTAyMwlNSU5VVEVTCjUJMQkxCTEJMgkzCTM2OAkxNzkJMTM5CTIyCTg4LjUyODA2MQlRVUFOVElUWQo0CTEJMQkxCTMJMAk5NgkyMzYJMjg1CTIxCS0xCQo1CTEJMQkxCTMJMQk5NgkyMzYJOTEJMjAJOTYuODM2NTYzCUFMUEhBCjUJMQkxCTEJMwkyCTI0NQkyMzYJMjcJMjEJOTYuOTExNjkwCTE1CjUJMQkxCTEJMwkzCTM1MgkyMzYJMjkJMjEJOTYuOTQxMzY4CTMwCjMJMQkxCTIJMAkwCTk4CTI5MQkyNzkJMjIJLTEJCjQJMQkxCTIJMQkwCTk4CTI5MQkyNzkJMjIJLTEJCjUJMQkxCTIJMQkxCTk4CTI5MQk4MwkyMgk5Ni40NDI5NzgJQklSQ0gKNQkxCTEJMgkxCTIJMjM4CTI5MgkyOQkyMQk5Ni45ODU2NzIJMjUKNQkxCTEJMgkxCTMJMzQ3CTI5MgkzMAkyMQk5Ni44OTY2MTQJNDAKMwkxCTEJMwkwCTAJOTYJMzQ3CTI4NAkyMgktMQkKNAkxCTEJMwkxCTAJOTYJMzQ3CTI4NAkyMgktMQkKNQkxCTEJMwkxCTEJOTYJMzQ3CTkwCTIyCTgzLjc1ODIyNAlUT1RBTAo1CTEJMQkzCTEJMgkyNDEJMzQ4CTMwCTIxCTgzLjc1ODIyNAk0MAo1CTEJMQkzCTEJMwkzNTEJMzQ4CTI5CTIxCTk2LjUwNTgzNgk3MAo=",
+                "tsvSha256": "9b9dad6ac80ae3d6e2960c40c36e0ee6529f4b0ae85dcc6074eb7f0217dad14c"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 15,
+              "observedWords": 15,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL WORK RECORD ITEM MINUTES QUANTITY ALPHA 15 30 BIRCH 25 40 TOTAL 40 70"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.588867,
+            "rawSha256": "54d5af254fb677f78dd7c55f1b101df8f2c9f1c4dab13d45b57a0fb9a8b15f62",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNDExCTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTQxMQkxMzQJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwkzNjcJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTYuNTg1MDM3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTAJMTIzCTg3CTIyCTk2LjI2NzYzOQlXT1JLCjUJMQkxCTEJMQkzCTM0NwkxMjMJMTE4CTIyCTk2LjUzNjUzNwlSRUNPUkQKNAkxCTEJMQkyCTAJOTgJMTc5CTQwOQkyMgktMQkKNQkxCTEJMQkyCTEJOTgJMTgwCTYzCTIwCTg2Ljg2MTAyMwlJVEVNCjUJMQkxCTEJMgkyCTIwNAkxNzkJMTIyCTIyCTg2Ljg2MTAyMwlNSU5VVEVTCjUJMQkxCTEJMgkzCTM2OAkxNzkJMTM5CTIyCTg4LjUyODA2MQlRVUFOVElUWQo0CTEJMQkxCTMJMAk5NgkyMzYJMjg1CTIxCS0xCQo1CTEJMQkxCTMJMQk5NgkyMzYJOTEJMjAJOTYuODM2NTYzCUFMUEhBCjUJMQkxCTEJMwkyCTI0NQkyMzYJMjcJMjEJOTYuOTExNjkwCTE1CjUJMQkxCTEJMwkzCTM1MgkyMzYJMjkJMjEJOTYuOTQxMzY4CTMwCjMJMQkxCTIJMAkwCTk4CTI5MQkyNzkJMjIJLTEJCjQJMQkxCTIJMQkwCTk4CTI5MQkyNzkJMjIJLTEJCjUJMQkxCTIJMQkxCTk4CTI5MQk4MwkyMgk5Ni40NDI5NzgJQklSQ0gKNQkxCTEJMgkxCTIJMjM4CTI5MgkyOQkyMQk5Ni45ODU2NzIJMjUKNQkxCTEJMgkxCTMJMzQ3CTI5MgkzMAkyMQk5Ni44OTY2MTQJNDAKMwkxCTEJMwkwCTAJOTYJMzQ3CTI4NAkyMgktMQkKNAkxCTEJMwkxCTAJOTYJMzQ3CTI4NAkyMgktMQkKNQkxCTEJMwkxCTEJOTYJMzQ3CTkwCTIyCTgzLjc1ODIyNAlUT1RBTAo1CTEJMQkzCTEJMgkyNDEJMzQ4CTMwCTIxCTgzLjc1ODIyNAk0MAo1CTEJMQkzCTEJMwkzNTEJMzQ4CTI5CTIxCTk2LjUwNTgzNgk3MAo=",
+                "tsvSha256": "9b9dad6ac80ae3d6e2960c40c36e0ee6529f4b0ae85dcc6074eb7f0217dad14c"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 15,
+              "observedWords": 15,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL WORK RECORD ITEM MINUTES QUANTITY ALPHA 15 30 BIRCH 25 40 TOTAL 40 70"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "blank",
+        "fictional": true,
+        "originalSha256": "27c98009da70ea1762d82eca431af555aead1b8584f65b40b9ba2ac3cd3599b2",
+        "originalBytes": 6355,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "9e42baaf9b7de8fe155b6cb9c373d068b8cde6d3177f2d6735791942d78515cb",
+          "digitalSha256": "ea8b5c6d105b172866510830f1dcb8dcee8936b30f73b46f87ead0713a2a0ea2"
+        },
+        "expectedText": "",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.43118,
+            "rawSha256": "47c93edc43903a5492e865899923cea94c3d99dbc8afbea99476976d441f7717",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQo=",
+                "tsvSha256": "0e35719be49f9866a059d5af5214c8bfcc3539daa95ee030d75e07366d94a9e0"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 0,
+              "observedWords": 0,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": ""
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.48395,
+            "rawSha256": "47c93edc43903a5492e865899923cea94c3d99dbc8afbea99476976d441f7717",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQo=",
+                "tsvSha256": "0e35719be49f9866a059d5af5214c8bfcc3539daa95ee030d75e07366d94a9e0"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 0,
+              "observedWords": 0,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": ""
+            }
+          }
+        ],
+        "repeatStable": true
+      }
+    ],
+    "attemptCount": 24,
+    "successfulOcrAttempts": 14,
+    "metric": "uppercase ASCII alphanumeric tokens; punctuation excluded; edit rates may exceed one",
+    "professionalApproval": false,
+    "productionApproval": false,
+    "limitations": "Controlled fictional English pages only. No representative client scans, multilingual/handwritten accuracy, semantic table reconstruction, provenance authenticity or legal acceptance."
+  },
+  "expandedMeasurement": {
+    "runnerSha256": "7ef8ec6dea2c3bb5c45cbad63cb6160fb9bb8b900f367880210e41f0a04b7f78",
+    "extractorSha256": "a6119c0ba5762b502317419368184cb08ff5095f91af9192705de65c64fcdebf",
+    "fixtureGeneratorSha256": "505fdaf09decb152b380073ad800c36cbe38bbb3514e8ea19ddf81db388fa9e6",
+    "format": "inveos.ocr_adversity_measurement.v1",
+    "profileVersion": 2,
+    "maxOriginalBytes": 262144,
+    "cases": [
+      {
+        "case": "clean",
+        "fictional": true,
+        "originalSha256": "575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393",
+        "originalBytes": 40501,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "7413fc7939185140828c917e011056b0ff7102f5c16a008b22052592d38d3f58",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.769588,
+            "rawSha256": "b87273e9e57acc4e36f0365ea7a048c464be5cdf08be2faf6545c471b8ef5f1d",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjc1NTk3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi40Njc4MjcJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjMxMzgyOAlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NC40ODYwMjMJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5NC40ODYwMjMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni42ODgxMTgJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTYuNjYwNTY4CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNzgxNzIzCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjY0ODQwNwlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjIzODk2OAlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjA4Mjg3MAlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk1Ljk2MjE5Ngk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni40NzA2MTIJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuMzk1MzI1CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMzU1Mzc3CURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDY0NDg1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTg4NjkyCTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2Ljg3MjEzMQlQRVJDRU5UCg==",
+                "tsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.681807,
+            "rawSha256": "b87273e9e57acc4e36f0365ea7a048c464be5cdf08be2faf6545c471b8ef5f1d",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjc1NTk3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi40Njc4MjcJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjMxMzgyOAlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NC40ODYwMjMJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5NC40ODYwMjMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni42ODgxMTgJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTYuNjYwNTY4CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNzgxNzIzCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjY0ODQwNwlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjIzODk2OAlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjA4Mjg3MAlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk1Ljk2MjE5Ngk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni40NzA2MTIJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuMzk1MzI1CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMzU1Mzc3CURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDY0NDg1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTg4NjkyCTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2Ljg3MjEzMQlQRVJDRU5UCg==",
+                "tsvSha256": "c3a91b0227da8bf28ee30a2fdd4544adc252cd2eeb239bc9b566943122cabf99"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "small_type",
+        "fictional": true,
+        "originalSha256": "92b9f6cd440c192ea85f27cddc41ed5ef4989ee396932ea5936ff9d4d0a3bd7c",
+        "originalBytes": 24479,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "5008bf5918b05fa98cb0593e11f2619826ac32741540102a2d66f46e2c7e84a0",
+          "digitalSha256": "89b7851e70715413db171fd1e82fdee725a6aa3a27e0635976813e6f208a3346"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.608836,
+            "rawSha256": "bfd19975a79f44216d0d68dcad0c848818a9062c7e3dc73639efdd4719088860",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMzIJMjk0CTIzNgktMQkKMwkxCTEJMQkwCTAJOTYJMTMyCTI5NAkyMzYJLTEJCjQJMQkxCTEJMQkwCTk3CTEzMgkyMzMJMTIJLTEJCjUJMQkxCTEJMQkxCTk3CTEzMgk4MgkxMgk5Mi44Nzk3MzAJRklDVElPTkFMCjUJMQkxCTEJMQkyCTE4NQkxMzIJMTQ1CTEyCTkwLjk3Nzc4MwlTWU4tU1VQUExJRVItMDAxCjQJMQkxCTEJMgkwCTk3CTE4OAkyMzQJMTIJLTEJCjUJMQkxCTEJMgkxCTk3CTE4OAk5OAkxMgk5Ni4yMjMxODMJTk9SVEhTVEFSCjUJMQkxCTEJMgkyCTIwMQkxODgJNDYJMTIJOTUuMjIwMDM5CURFTU8KNQkxCTEJMQkyCTMJMjUzCTE4OAk3OAkxMgk5My44NjU0MzMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTcJMjQ0CTI0MwkxMgktMQkKNQkxCTEJMQkzCTEJOTcJMjQ0CTgwCTEyCTk1Ljg2NzA1MAlSRUdJU1RFUgo1CTEJMQkxCTMJMgkxODMJMjQ0CTc0CTEyCTk1Ljg2NzA1MAlFWFRSQUNUCjUJMQkxCTEJMwkzCTI2MgkyNDUJNzgJMTEJOTYuNzAwODM2CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMzAwCTI5NAkxMgktMQkKNQkxCTEJMQk0CTEJOTYJMzAwCTUwCTEyCTk2LjU2NTgzNAlBVExBUwo1CTEJMQkxCTQJMgkxNTIJMzAwCTQ3CTEyCTk0LjY0NjQwMAlERU1PCjUJMQkxCTEJNAkzCTIwNAkzMDAJODIJMTIJOTYuMjE5NzExCUhPTERJTkdTCjUJMQkxCTEJNAk0CTI5MgkzMDEJMTcJMTEJOTYuNDIxOTA2CTYwCjUJMQkxCTEJNAk1CTMxNQkzMDAJNzUJMTIJOTIuNjk0NTcyCVBFUkNFTlQKNAkxCTEJMQk1CTAJOTcJMzU2CTI5MgkxMgktMQkKNQkxCTEJMQk1CTEJOTcJMzU2CTQ4CTEyCTk2LjQ0NTA2MQlCSVJDSAo1CTEJMQkxCTUJMgkxNTEJMzU2CTQ3CTEyCTk2LjY0MTM1NwlERU1PCjUJMQkxCTEJNQkzCTIwNAkzNTYJODEJMTIJOTYuMjk2ODE0CUhPTERJTkdTCjUJMQkxCTEJNQk0CTI5MQkzNTcJMTcJMTEJOTYuNzIyMDE1CTQwCjUJMQkxCTEJNQk1CTMxNAkzNTYJNzUJMTIJODcuMzY4NDQ2CVBFUkNFTlQK",
+                "tsvSha256": "c56a537a6e4f31f56c276188a458c2ac212ca303b3556da4aa8e76ed10399edb"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.60943,
+            "rawSha256": "bfd19975a79f44216d0d68dcad0c848818a9062c7e3dc73639efdd4719088860",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMzIJMjk0CTIzNgktMQkKMwkxCTEJMQkwCTAJOTYJMTMyCTI5NAkyMzYJLTEJCjQJMQkxCTEJMQkwCTk3CTEzMgkyMzMJMTIJLTEJCjUJMQkxCTEJMQkxCTk3CTEzMgk4MgkxMgk5Mi44Nzk3MzAJRklDVElPTkFMCjUJMQkxCTEJMQkyCTE4NQkxMzIJMTQ1CTEyCTkwLjk3Nzc4MwlTWU4tU1VQUExJRVItMDAxCjQJMQkxCTEJMgkwCTk3CTE4OAkyMzQJMTIJLTEJCjUJMQkxCTEJMgkxCTk3CTE4OAk5OAkxMgk5Ni4yMjMxODMJTk9SVEhTVEFSCjUJMQkxCTEJMgkyCTIwMQkxODgJNDYJMTIJOTUuMjIwMDM5CURFTU8KNQkxCTEJMQkyCTMJMjUzCTE4OAk3OAkxMgk5My44NjU0MzMJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTcJMjQ0CTI0MwkxMgktMQkKNQkxCTEJMQkzCTEJOTcJMjQ0CTgwCTEyCTk1Ljg2NzA1MAlSRUdJU1RFUgo1CTEJMQkxCTMJMgkxODMJMjQ0CTc0CTEyCTk1Ljg2NzA1MAlFWFRSQUNUCjUJMQkxCTEJMwkzCTI2MgkyNDUJNzgJMTEJOTYuNzAwODM2CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMzAwCTI5NAkxMgktMQkKNQkxCTEJMQk0CTEJOTYJMzAwCTUwCTEyCTk2LjU2NTgzNAlBVExBUwo1CTEJMQkxCTQJMgkxNTIJMzAwCTQ3CTEyCTk0LjY0NjQwMAlERU1PCjUJMQkxCTEJNAkzCTIwNAkzMDAJODIJMTIJOTYuMjE5NzExCUhPTERJTkdTCjUJMQkxCTEJNAk0CTI5MgkzMDEJMTcJMTEJOTYuNDIxOTA2CTYwCjUJMQkxCTEJNAk1CTMxNQkzMDAJNzUJMTIJOTIuNjk0NTcyCVBFUkNFTlQKNAkxCTEJMQk1CTAJOTcJMzU2CTI5MgkxMgktMQkKNQkxCTEJMQk1CTEJOTcJMzU2CTQ4CTEyCTk2LjQ0NTA2MQlCSVJDSAo1CTEJMQkxCTUJMgkxNTEJMzU2CTQ3CTEyCTk2LjY0MTM1NwlERU1PCjUJMQkxCTEJNQkzCTIwNAkzNTYJODEJMTIJOTYuMjk2ODE0CUhPTERJTkdTCjUJMQkxCTEJNQk0CTI5MQkzNTcJMTcJMTEJOTYuNzIyMDE1CTQwCjUJMQkxCTEJNQk1CTMxNAkzNTYJNzUJMTIJODcuMzY4NDQ2CVBFUkNFTlQK",
+                "tsvSha256": "c56a537a6e4f31f56c276188a458c2ac212ca303b3556da4aa8e76ed10399edb"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "low_resolution",
+        "fictional": true,
+        "originalSha256": "b48b1f42d7b8f9dc02294b4d274c2a5e3fba45b1df4b0f80eab50e7c3a1a4ab7",
+        "originalBytes": 21372,
+        "render": {
+          "width": 612,
+          "height": 792,
+          "rgbSha256": "6aae3ebbfa08f7483f6c5204b5455c58779def8fe0864d7e7e74033dfc8a3e7d",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.689497,
+            "rawSha256": "2f950d69819dd205f786adbbe85957c893165b0458247eecf921595cf7b850bd",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE1CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNQkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMDE4NzIzCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5MS4wMzY3NTgJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5NwkxNzkJNDEwCTIyCS0xCQo1CTEJMQkxCTIJMQk5NwkxNzkJMTcxCTIyCTk1Ljk1NTE5MwlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjc5CTE3OQk4MwkyMgk5NS45MzAzNjcJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni42Mjc2MDIJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNgkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni4zMjcwMzQJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ4CTIzNQkxMzAJMjIJOTYuNjM5OTIzCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzgJMjEJOTYuODMxMjYxCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNQkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg4CTIyCTk1LjUxMDI2OQlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjI3MTU2MQlERU1PCjUJMQkxCTEJNAkzCTI4NQkyOTEJMTQ1CTIyCTk2LjI3MTU2MQlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzgJMjkyCTMxCTIxCTk1LjUxNjU3MQk2MAo1CTEJMQkxCTQJNQk0NzgJMjkxCTEzMwkyMgk5NS41MTY1NzEJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5NwkzNDcJNTEyCTIyCS0xCQo1CTEJMQkxCTUJMQk5NwkzNDcJODUJMjIJOTYuMzU2NjUxCUJJUkNICjUJMQkxCTEJNQkyCTE5MgkzNDcJODIJMjIJOTYuMDA0NDAyCURFTU8KNQkxCTEJMQk1CTMJMjg0CTM0NwkxNDQJMjIJOTYuMjg5NjY1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTUuNjE5NDM4CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk1LjYxOTQzOAlQRVJDRU5UCg==",
+                "tsvSha256": "b5bae4c13f5802270438a4d066c99f569385827bf9857db9045808d201f6a91a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.683803,
+            "rawSha256": "2f950d69819dd205f786adbbe85957c893165b0458247eecf921595cf7b850bd",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE1CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNQkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMDE4NzIzCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5MS4wMzY3NTgJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5NwkxNzkJNDEwCTIyCS0xCQo1CTEJMQkxCTIJMQk5NwkxNzkJMTcxCTIyCTk1Ljk1NTE5MwlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjc5CTE3OQk4MwkyMgk5NS45MzAzNjcJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni42Mjc2MDIJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNgkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5Ni4zMjcwMzQJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ4CTIzNQkxMzAJMjIJOTYuNjM5OTIzCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzgJMjEJOTYuODMxMjYxCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNQkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg4CTIyCTk1LjUxMDI2OQlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjI3MTU2MQlERU1PCjUJMQkxCTEJNAkzCTI4NQkyOTEJMTQ1CTIyCTk2LjI3MTU2MQlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzgJMjkyCTMxCTIxCTk1LjUxNjU3MQk2MAo1CTEJMQkxCTQJNQk0NzgJMjkxCTEzMwkyMgk5NS41MTY1NzEJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5NwkzNDcJNTEyCTIyCS0xCQo1CTEJMQkxCTUJMQk5NwkzNDcJODUJMjIJOTYuMzU2NjUxCUJJUkNICjUJMQkxCTEJNQkyCTE5MgkzNDcJODIJMjIJOTYuMDA0NDAyCURFTU8KNQkxCTEJMQk1CTMJMjg0CTM0NwkxNDQJMjIJOTYuMjg5NjY1CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTUuNjE5NDM4CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk1LjYxOTQzOAlQRVJDRU5UCg==",
+                "tsvSha256": "b5bae4c13f5802270438a4d066c99f569385827bf9857db9045808d201f6a91a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "skew_plus_2",
+        "fictional": true,
+        "originalSha256": "000a6b852ead1a8785af882534ffcc7f9662462221bb5ad5333fd28e245d8339",
+        "originalBytes": 68334,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "a090bc9a1af285f493492586fdb2d37ed927e96b148f265b0318ecdf9f18dacf",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.705271,
+            "rawSha256": "377828bf9882905f363e44eb3402bbd3f863176be66deed5c1d83a879e663add",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk3NQkxMjgJNTE5CTI1OAktMQkKMwkxCTEJMQkwCTAJNzUJMTI4CTUxOQkyNTgJLTEJCjQJMQkxCTEJMQkwCTc1CTEyOAk0MDgJMzQJLTEJCjUJMQkxCTEJMQkxCTc1CTEzOAkxNDUJMjQJOTMuMDg4NTMxCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyMjkJMTI4CTI1NAkyOQk3NC4xOTc5NTIJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk3NwkxODQJNDA5CTM0CS0xCQo1CTEJMQkxCTIJMQk3NwkxOTMJMTcxCTI1CTk2Ljc0NTA3OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjU5CTE4OQk4MQkyMwk5Ni4wNDQyNTAJREVNTwo1CTEJMQkxCTIJMwkzNTAJMTg0CTEzNgkyNQk5Ni43MjcyNDkJU1VQUExJRVIKNAkxCTEJMQkzCTAJNzkJMjQwCTQyNgkzNAktMQkKNQkxCTEJMQkzCTEJNzkJMjUwCTE0MAkyNAk5Ni40MjA0ODYJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjMwCTI0NAkxMjgJMjUJOTYuNTE2OTE0CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzY3CTI0MAkxMzgJMjQJOTUuNzczODY1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJODAJMjkyCTUxMwkzOAktMQkKNQkxCTEJMQk0CTEJODAJMzA3CTg3CTIzCTk1Ljk0NzU3MQlBVExBUwo1CTEJMQkxCTQJMgkxNzcJMzA0CTgyCTIzCTk1Ljk0NzU3MQlERU1PCjUJMQkxCTEJNAkzCTI2OQkyOTgJMTQzCTI2CTk2LjIyMDYyNwlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MjIJMjk4CTI5CTIxCTk2Ljk2MTM3Mgk2MAo1CTEJMQkxCTQJNQk0NjIJMjkyCTEzMQkyNQk5Ni4zOTU0OTMJUEVSQ0VOVAo0CTEJMQkxCTUJMAk4MwkzNDgJNTExCTM4CS0xCQo1CTEJMQkxCTUJMQk4MwkzNjMJODMJMjMJOTYuMDcwNjc5CUJJUkNICjUJMQkxCTEJNQkyCTE3OAkzNjAJODEJMjMJOTYuMjc4MjY3CURFTU8KNQkxCTEJMQk1CTMJMjY5CTM1NAkxNDQJMjYJOTUuNjYzNjQzCUhPTERJTkdTCjUJMQkxCTEJNQk0CTQyMgkzNTQJMzAJMjAJOTYuOTU3NTk2CTQwCjUJMQkxCTEJNQk1CTQ2MgkzNDgJMTMyCTI1CTk2LjIwMDg3NAlQRVJDRU5UCg==",
+                "tsvSha256": "c8a26321a1e954ed70df058b5a152b2f76e4c70cb95d2d081678c1ff44c97e83"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.680498,
+            "rawSha256": "377828bf9882905f363e44eb3402bbd3f863176be66deed5c1d83a879e663add",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk3NQkxMjgJNTE5CTI1OAktMQkKMwkxCTEJMQkwCTAJNzUJMTI4CTUxOQkyNTgJLTEJCjQJMQkxCTEJMQkwCTc1CTEyOAk0MDgJMzQJLTEJCjUJMQkxCTEJMQkxCTc1CTEzOAkxNDUJMjQJOTMuMDg4NTMxCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyMjkJMTI4CTI1NAkyOQk3NC4xOTc5NTIJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk3NwkxODQJNDA5CTM0CS0xCQo1CTEJMQkxCTIJMQk3NwkxOTMJMTcxCTI1CTk2Ljc0NTA3OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjU5CTE4OQk4MQkyMwk5Ni4wNDQyNTAJREVNTwo1CTEJMQkxCTIJMwkzNTAJMTg0CTEzNgkyNQk5Ni43MjcyNDkJU1VQUExJRVIKNAkxCTEJMQkzCTAJNzkJMjQwCTQyNgkzNAktMQkKNQkxCTEJMQkzCTEJNzkJMjUwCTE0MAkyNAk5Ni40MjA0ODYJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjMwCTI0NAkxMjgJMjUJOTYuNTE2OTE0CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzY3CTI0MAkxMzgJMjQJOTUuNzczODY1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJODAJMjkyCTUxMwkzOAktMQkKNQkxCTEJMQk0CTEJODAJMzA3CTg3CTIzCTk1Ljk0NzU3MQlBVExBUwo1CTEJMQkxCTQJMgkxNzcJMzA0CTgyCTIzCTk1Ljk0NzU3MQlERU1PCjUJMQkxCTEJNAkzCTI2OQkyOTgJMTQzCTI2CTk2LjIyMDYyNwlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MjIJMjk4CTI5CTIxCTk2Ljk2MTM3Mgk2MAo1CTEJMQkxCTQJNQk0NjIJMjkyCTEzMQkyNQk5Ni4zOTU0OTMJUEVSQ0VOVAo0CTEJMQkxCTUJMAk4MwkzNDgJNTExCTM4CS0xCQo1CTEJMQkxCTUJMQk4MwkzNjMJODMJMjMJOTYuMDcwNjc5CUJJUkNICjUJMQkxCTEJNQkyCTE3OAkzNjAJODEJMjMJOTYuMjc4MjY3CURFTU8KNQkxCTEJMQk1CTMJMjY5CTM1NAkxNDQJMjYJOTUuNjYzNjQzCUhPTERJTkdTCjUJMQkxCTEJNQk0CTQyMgkzNTQJMzAJMjAJOTYuOTU3NTk2CTQwCjUJMQkxCTEJNQk1CTQ2MgkzNDgJMTMyCTI1CTk2LjIwMDg3NAlQRVJDRU5UCg==",
+                "tsvSha256": "c8a26321a1e954ed70df058b5a152b2f76e4c70cb95d2d081678c1ff44c97e83"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "skew_minus_2",
+        "fictional": true,
+        "originalSha256": "e226704d3452558f0a1e97938cf3a820d0d8714f2b2c6a5c0581156592584681",
+        "originalBytes": 68039,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "fdbaf027e5e49b6ab54124bce85c0a408fe753880a81d688384e73f1f84dae84",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.682028,
+            "rawSha256": "6c5833ac75bf3dcb1c6e55901ad59dddd65b84617cc0871963ac61645b535efe",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkxMTMJMTA2CTUxNQkyNjIJLTEJCjMJMQkxCTEJMAkwCTExMwkxMDYJNTE1CTI2MgktMQkKNAkxCTEJMQkxCTAJMTIxCTEwNgk0MDgJMzUJLTEJCjUJMQkxCTEJMQkxCTEyMQkxMDYJMTQ0CTI2CTkzLjI3NzU1MAlGSUNUSU9OQUwKNQkxCTEJMQkxCTIJMjc0CTExMQkyNTUJMzAJOTEuNTYxMDI4CVNZTi1TVVBQTElFUi0wMDEKNAkxCTEJMQkyCTAJMTE5CTE2Mgk0MDkJMzUJLTEJCjUJMQkxCTEJMgkxCTExOQkxNjIJMTcwCTI2CTk1Ljk2NTA2NQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMzAxCTE2OQk4MQkyMwk5NS44ODQ5NjQJREVNTwo1CTEJMQkxCTIJMwkzOTIJMTcxCTEzNgkyNgk5Ni4yMzExMTcJU1VQUExJRVIKNAkxCTEJMQkzCTAJMTE3CTIxOAk0MjYJMzUJLTEJCjUJMQkxCTEJMwkxCTExNwkyMTgJMTQwCTI1CTk2LjAzNDg2NglSRUdJU1RFUgo1CTEJMQkxCTMJMgkyNjgJMjI0CTEyOQkyNAk5Ni43NjI0ODIJRVhUUkFDVAo1CTEJMQkxCTMJMwk0MDUJMjI5CTEzOAkyNAk5Ni42MzA0NzgJMjAyNi0wOS0wMQo0CTEJMQkxCTQJMAkxMTQJMjc0CTUxNAkzOAktMQkKNQkxCTEJMQk0CTEJMTE0CTI3NAk4NwkyNAk5Ni4yMjAwMzIJQVRMQVMKNQkxCTEJMQk0CTIJMjExCTI3OAk4MgkyMwk5NS42NTk3MTQJREVNTwo1CTEJMQkxCTQJMwkzMDMJMjgxCTE0MwkyNQk5NS42NTk3MTQJSE9MRElOR1MKNQkxCTEJMQk0CTQJNDU2CTI4NwkzMAkyMQk5NS44NDAzMTcJNjAKNQkxCTEJMQk0CTUJNDk2CTI4OAkxMzIJMjQJOTYuODAzNjg4CVBFUkNFTlQKNAkxCTEJMQk1CTAJMTEzCTMzMAk1MTEJMzgJLTEJCjUJMQkxCTEJNQkxCTExMwkzMzAJODQJMjMJOTUuOTExNDkxCUJJUkNICjUJMQkxCTEJNQkyCTIwOAkzMzMJODEJMjQJOTUuNTIzNjA1CURFTU8KNQkxCTEJMQk1CTMJMzAwCTMzNwkxNDMJMjUJOTYuNDkyODY3CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQ1MgkzNDMJMzAJMjEJOTYuNDA1OTgzCTQwCjUJMQkxCTEJNQk1CTQ5MgkzNDMJMTMyCTI1CTk2LjczODM4MAlQRVJDRU5UCg==",
+                "tsvSha256": "d63eac20ca5bec8e679cef71c7c106f3d845e03389c095aac86703a127f0fb76"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.681634,
+            "rawSha256": "6c5833ac75bf3dcb1c6e55901ad59dddd65b84617cc0871963ac61645b535efe",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkxMTMJMTA2CTUxNQkyNjIJLTEJCjMJMQkxCTEJMAkwCTExMwkxMDYJNTE1CTI2MgktMQkKNAkxCTEJMQkxCTAJMTIxCTEwNgk0MDgJMzUJLTEJCjUJMQkxCTEJMQkxCTEyMQkxMDYJMTQ0CTI2CTkzLjI3NzU1MAlGSUNUSU9OQUwKNQkxCTEJMQkxCTIJMjc0CTExMQkyNTUJMzAJOTEuNTYxMDI4CVNZTi1TVVBQTElFUi0wMDEKNAkxCTEJMQkyCTAJMTE5CTE2Mgk0MDkJMzUJLTEJCjUJMQkxCTEJMgkxCTExOQkxNjIJMTcwCTI2CTk1Ljk2NTA2NQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMzAxCTE2OQk4MQkyMwk5NS44ODQ5NjQJREVNTwo1CTEJMQkxCTIJMwkzOTIJMTcxCTEzNgkyNgk5Ni4yMzExMTcJU1VQUExJRVIKNAkxCTEJMQkzCTAJMTE3CTIxOAk0MjYJMzUJLTEJCjUJMQkxCTEJMwkxCTExNwkyMTgJMTQwCTI1CTk2LjAzNDg2NglSRUdJU1RFUgo1CTEJMQkxCTMJMgkyNjgJMjI0CTEyOQkyNAk5Ni43NjI0ODIJRVhUUkFDVAo1CTEJMQkxCTMJMwk0MDUJMjI5CTEzOAkyNAk5Ni42MzA0NzgJMjAyNi0wOS0wMQo0CTEJMQkxCTQJMAkxMTQJMjc0CTUxNAkzOAktMQkKNQkxCTEJMQk0CTEJMTE0CTI3NAk4NwkyNAk5Ni4yMjAwMzIJQVRMQVMKNQkxCTEJMQk0CTIJMjExCTI3OAk4MgkyMwk5NS42NTk3MTQJREVNTwo1CTEJMQkxCTQJMwkzMDMJMjgxCTE0MwkyNQk5NS42NTk3MTQJSE9MRElOR1MKNQkxCTEJMQk0CTQJNDU2CTI4NwkzMAkyMQk5NS44NDAzMTcJNjAKNQkxCTEJMQk0CTUJNDk2CTI4OAkxMzIJMjQJOTYuODAzNjg4CVBFUkNFTlQKNAkxCTEJMQk1CTAJMTEzCTMzMAk1MTEJMzgJLTEJCjUJMQkxCTEJNQkxCTExMwkzMzAJODQJMjMJOTUuOTExNDkxCUJJUkNICjUJMQkxCTEJNQkyCTIwOAkzMzMJODEJMjQJOTUuNTIzNjA1CURFTU8KNQkxCTEJMQk1CTMJMzAwCTMzNwkxNDMJMjUJOTYuNDkyODY3CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQ1MgkzNDMJMzAJMjEJOTYuNDA1OTgzCTQwCjUJMQkxCTEJNQk1CTQ5MgkzNDMJMTMyCTI1CTk2LjczODM4MAlQRVJDRU5UCg==",
+                "tsvSha256": "d63eac20ca5bec8e679cef71c7c106f3d845e03389c095aac86703a127f0fb76"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "skew_plus_7",
+        "fictional": true,
+        "originalSha256": "c2517a73953ae200fc8fd46cc7aefa19a9680202ad4e3864c1081916f4df7c20",
+        "originalBytes": 73062,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "a7644b9aecbec3bfb82bd9225a5273829bfb7fb4b2432d9409e595af7c593f77",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.678357,
+            "rawSha256": "3b4ebb0ebf0aa1719e5597b71168a7d7b500104a1f91336e732c610bbd77ebea",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkyMQkxMzgJNTM0CTI5NgktMQkKMwkxCTEJMQkwCTAJMjEJMTM4CTUzNAkyOTYJLTEJCjQJMQkxCTEJMQkwCTIxCTEzOAk0MDcJNzMJLTEJCjUJMQkxCTEJMQkxCTIxCTE3NQkxNDUJMzYJOTYuNTU5Njg1CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkxNzQJMTM4CTE2CTU5CTE1LjY0MzQyNQlHZwo1CTEJMQkxCTEJMwkxOTQJMTQ5CTE4Mgk0MQkxNS42NDM0MjUJWU4tU1VQUExJRVIKNQkxCTEJMQkxCTQJMzkxCTE0MgkzNwkyNAk3Mi4yMjk4NjYJMDAlCjQJMQkxCTEJMgkwCTI3CTE5NAk0MDgJNzMJLTEJCjUJMQkxCTEJMgkxCTI3CTIyNwkxNzIJNDAJOTYuMjAwMTgwCU5PUlRIU1RBUgo1CTEJMQkxCTIJMgkyMDgJMjE2CTgxCTI5CTk2LjU4MTQ1MQlERU1PCjUJMQkxCTEJMgkzCTI5OQkxOTQJMTM2CTQ0CTk2LjA3MDg2MglTVVBQTElFUgo0CTEJMQkxCTMJMAkzNAkyNTEJNDI0CTcyCS0xCQo1CTEJMQkxCTMJMQkzNAkyODcJMTQxCTM2CTk2LjQ1OTEyOQlSRUdJU1RFUgo1CTEJMQkxCTMJMgkxODQJMjY5CTEyNwkzNQk5Ni40ODc1MzQJRVhUUkFDVAo1CTEJMQkxCTMJMwkzMjEJMjUxCTEzNwkzNgk5MS44ODQ5NTYJMjAyNi0wOS0wMQo0CTEJMQkxCTQJMAk0MgkyOTYJNTA4CTgyCS0xCQo1CTEJMQkxCTQJMQk0MgkzNDgJODYJMzAJOTYuNTQ1ODQ1CUFUTEFTCjUJMQkxCTEJNAkyCTEzNwkzMzcJODEJMjkJOTYuNDc0Mzk2CURFTU8KNQkxCTEJMQk0CTMJMjI4CTMxOAkxNDMJMzcJOTYuODgwNjYxCUhPTERJTkdTCjUJMQkxCTEJNAk0CTM4MAkzMTQJMzAJMjMJOTYuNzUwMTE0CTYwCjUJMQkxCTEJNAk1CTQxOQkyOTYJMTMxCTM2CTgzLjcxNTA4MAlQRVJDRU5UCjQJMQkxCTEJNQkwCTQ4CTM1Mgk1MDcJODIJLTEJCjUJMQkxCTEJNQkxCTQ4CTQwNAk4NAkzMAk5NS44MzYyOTYJQklSQ0gKNQkxCTEJMQk1CTIJMTQyCTM5Mwk4MgkyOQk5Ni43MTY0NTQJREVNTwo1CTEJMQkxCTUJMwkyMzMJMzc0CTE0NAkzNwk5Ni4xOTE0ODMJSE9MRElOR1MKNQkxCTEJMQk1CTQJMzg2CTM3MAkyOQkyMQk5Ni42NTAzMzAJNDAKNQkxCTEJMQk1CTUJNDI1CTM1MgkxMzAJMzUJOTEuMjkzOTQ1CVBFUkNFTlQK",
+                "tsvSha256": "9dfca2055de05dfa5acc44105274b74425771d5615e3a57c09aa0a2c9f14e61e"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 23,
+              "wordErrors": 3,
+              "wordErrorRate": 0.13636363636363635,
+              "characterErrors": 4,
+              "characterErrorRate": 0.02857142857142857,
+              "missingNumericTokens": {
+                "001": 1
+              },
+              "unexpectedNumericTokens": {
+                "00": 1
+              },
+              "normalisedExact": false,
+              "normalisedText": "FICTIONAL GG YN SUPPLIER 00 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.627614,
+            "rawSha256": "3b4ebb0ebf0aa1719e5597b71168a7d7b500104a1f91336e732c610bbd77ebea",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkyMQkxMzgJNTM0CTI5NgktMQkKMwkxCTEJMQkwCTAJMjEJMTM4CTUzNAkyOTYJLTEJCjQJMQkxCTEJMQkwCTIxCTEzOAk0MDcJNzMJLTEJCjUJMQkxCTEJMQkxCTIxCTE3NQkxNDUJMzYJOTYuNTU5Njg1CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkxNzQJMTM4CTE2CTU5CTE1LjY0MzQyNQlHZwo1CTEJMQkxCTEJMwkxOTQJMTQ5CTE4Mgk0MQkxNS42NDM0MjUJWU4tU1VQUExJRVIKNQkxCTEJMQkxCTQJMzkxCTE0MgkzNwkyNAk3Mi4yMjk4NjYJMDAlCjQJMQkxCTEJMgkwCTI3CTE5NAk0MDgJNzMJLTEJCjUJMQkxCTEJMgkxCTI3CTIyNwkxNzIJNDAJOTYuMjAwMTgwCU5PUlRIU1RBUgo1CTEJMQkxCTIJMgkyMDgJMjE2CTgxCTI5CTk2LjU4MTQ1MQlERU1PCjUJMQkxCTEJMgkzCTI5OQkxOTQJMTM2CTQ0CTk2LjA3MDg2MglTVVBQTElFUgo0CTEJMQkxCTMJMAkzNAkyNTEJNDI0CTcyCS0xCQo1CTEJMQkxCTMJMQkzNAkyODcJMTQxCTM2CTk2LjQ1OTEyOQlSRUdJU1RFUgo1CTEJMQkxCTMJMgkxODQJMjY5CTEyNwkzNQk5Ni40ODc1MzQJRVhUUkFDVAo1CTEJMQkxCTMJMwkzMjEJMjUxCTEzNwkzNgk5MS44ODQ5NTYJMjAyNi0wOS0wMQo0CTEJMQkxCTQJMAk0MgkyOTYJNTA4CTgyCS0xCQo1CTEJMQkxCTQJMQk0MgkzNDgJODYJMzAJOTYuNTQ1ODQ1CUFUTEFTCjUJMQkxCTEJNAkyCTEzNwkzMzcJODEJMjkJOTYuNDc0Mzk2CURFTU8KNQkxCTEJMQk0CTMJMjI4CTMxOAkxNDMJMzcJOTYuODgwNjYxCUhPTERJTkdTCjUJMQkxCTEJNAk0CTM4MAkzMTQJMzAJMjMJOTYuNzUwMTE0CTYwCjUJMQkxCTEJNAk1CTQxOQkyOTYJMTMxCTM2CTgzLjcxNTA4MAlQRVJDRU5UCjQJMQkxCTEJNQkwCTQ4CTM1Mgk1MDcJODIJLTEJCjUJMQkxCTEJNQkxCTQ4CTQwNAk4NAkzMAk5NS44MzYyOTYJQklSQ0gKNQkxCTEJMQk1CTIJMTQyCTM5Mwk4MgkyOQk5Ni43MTY0NTQJREVNTwo1CTEJMQkxCTUJMwkyMzMJMzc0CTE0NAkzNwk5Ni4xOTE0ODMJSE9MRElOR1MKNQkxCTEJMQk1CTQJMzg2CTM3MAkyOQkyMQk5Ni42NTAzMzAJNDAKNQkxCTEJMQk1CTUJNDI1CTM1MgkxMzAJMzUJOTEuMjkzOTQ1CVBFUkNFTlQK",
+                "tsvSha256": "9dfca2055de05dfa5acc44105274b74425771d5615e3a57c09aa0a2c9f14e61e"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 23,
+              "wordErrors": 3,
+              "wordErrorRate": 0.13636363636363635,
+              "characterErrors": 4,
+              "characterErrorRate": 0.02857142857142857,
+              "missingNumericTokens": {
+                "001": 1
+              },
+              "unexpectedNumericTokens": {
+                "00": 1
+              },
+              "normalisedExact": false,
+              "normalisedText": "FICTIONAL GG YN SUPPLIER 00 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "low_contrast",
+        "fictional": true,
+        "originalSha256": "96a3a799a6052016ec2689d38f2e977ac24a946d932adcf0f5783acbb03f5970",
+        "originalBytes": 29692,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "9e7ce0aa2818021c65877d60cb763c91a164f1c7ef25cbc9dea33cbdb971b776",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.682318,
+            "rawSha256": "313e410140356aeabdb25c1dc09b96a911dd754a46b654e271b353932e45ae2c",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjgwMzI3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi4zNjIzNTAJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjE3NTE3OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NS44OTk4MjYJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni4yNjA5MTgJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5NS43MzgyNTEJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTUuNzM4MjUxCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNDc2ODQ1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjgxNzIwMAlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjAwMjAwNwlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjAwMjAwNwlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk2LjI0OTMxMwk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni41MTI1NTAJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuNjkxNjk2CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMTQwNjYzCURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDE1NDU5CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTk2NDM2CTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2LjY4OTE0MAlQRVJDRU5UCg==",
+                "tsvSha256": "9c1103f30bc51214818daa682212ea350c4ad6ad0d474481e96bed46e8c028ac"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.625842,
+            "rawSha256": "313e410140356aeabdb25c1dc09b96a911dd754a46b654e271b353932e45ae2c",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjgwMzI3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi4zNjIzNTAJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjE3NTE3OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NS44OTk4MjYJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni4yNjA5MTgJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTE0MAkyMgk5NS43MzgyNTEJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTUuNzM4MjUxCUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNDc2ODQ1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg3CTIyCTk2LjgxNzIwMAlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgxCTIyCTk2LjAwMjAwNwlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk2LjAwMjAwNwlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk2LjI0OTMxMwk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMQkyMgk5Ni41MTI1NTAJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuNjkxNjk2CUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMTQwNjYzCURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDIJMjIJOTYuNDE1NDU5CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuNTk2NDM2CTQwCjUJMQkxCTEJNQk1CTQ3OAkzNDcJMTMxCTIyCTk2LjY4OTE0MAlQRVJDRU5UCg==",
+                "tsvSha256": "9c1103f30bc51214818daa682212ea350c4ad6ad0d474481e96bed46e8c028ac"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "blur",
+        "fictional": true,
+        "originalSha256": "c3a356412bea54b6358cf74601775e981e6dd070890a0e3111716c62f7cc2a5b",
+        "originalBytes": 73213,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "8ce2e375a4a9f19e789b8b069638715a0b226dd12ee8249bf620ad91634caa83",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.688059,
+            "rawSha256": "929aaa37eb86c220ec57181057026ee53240d13f87948b192b0e7294f933a7c1",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE1CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNQkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjY2ODg0CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi41NjY2MjgJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcwCTIyCTk1LjYzNzc0OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NC43MjA1OTYJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5NC43MjA1OTYJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNgkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTEzOQkyMgk5NS45NDU1MDMJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ4CTIzNQkxMjkJMjIJOTYuNTU5NjE2CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzgJMjEJOTYuODY2MDM1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNQkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg4CTIyCTk2LjQ3NTQ0MQlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjM5MzIxOQlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQ0CTIyCTk1LjE4NzAxMglIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzgJMjkyCTMxCTIxCTk2LjI0ODYyNwk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMgkyMgk5Ni4yNDYyMzEJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5NwkzNDcJNTEyCTIyCS0xCQo1CTEJMQkxCTUJMQk5NwkzNDcJODQJMjIJOTYuOTYyMjk2CUJJUkNICjUJMQkxCTEJNQkyCTE5MgkzNDcJODIJMjIJOTYuNDk2NjUxCURFTU8KNQkxCTEJMQk1CTMJMjg0CTM0NwkxNDQJMjIJOTYuMDc5Mjc3CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTUuOTkxMDg5CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk2LjM5NzA3MglQRVJDRU5UCg==",
+                "tsvSha256": "ee643fb336ee70afc9facca75dec37db74685ec3336c0d17412fd93fae497699"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.685448,
+            "rawSha256": "929aaa37eb86c220ec57181057026ee53240d13f87948b192b0e7294f933a7c1",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNTE1CTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTUxNQkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTMuMjY2ODg0CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5Mi41NjY2MjgJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcwCTIyCTk1LjYzNzc0OQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5NC43MjA1OTYJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5NC43MjA1OTYJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNgkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTEzOQkyMgk5NS45NDU1MDMJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ4CTIzNQkxMjkJMjIJOTYuNTU5NjE2CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzgJMjEJOTYuODY2MDM1CTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTYJMjkxCTUxNQkyMgktMQkKNQkxCTEJMQk0CTEJOTYJMjkxCTg4CTIyCTk2LjQ3NTQ0MQlBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjM5MzIxOQlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQ0CTIyCTk1LjE4NzAxMglIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzgJMjkyCTMxCTIxCTk2LjI0ODYyNwk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMgkyMgk5Ni4yNDYyMzEJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5NwkzNDcJNTEyCTIyCS0xCQo1CTEJMQkxCTUJMQk5NwkzNDcJODQJMjIJOTYuOTYyMjk2CUJJUkNICjUJMQkxCTEJNQkyCTE5MgkzNDcJODIJMjIJOTYuNDk2NjUxCURFTU8KNQkxCTEJMQk1CTMJMjg0CTM0NwkxNDQJMjIJOTYuMDc5Mjc3CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTUuOTkxMDg5CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk2LjM5NzA3MglQRVJDRU5UCg==",
+                "tsvSha256": "ee643fb336ee70afc9facca75dec37db74685ec3336c0d17412fd93fae497699"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "jpeg_compression",
+        "fictional": true,
+        "originalSha256": "a93e7918ab63c4ac49c717e7abc0851d539937441de35c8c4422300d2937b25d",
+        "originalBytes": 75544,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "04e61b42a47cdf2301fa8b3c5304807f0665e7fda7c990a32a9eb6d31d4fb0df",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.687782,
+            "rawSha256": "275efaa2808b0230bc12df427a68bb073f8303b35634be94d50905a524c78839",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NwkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTcJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTEuNTkxOTQyCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5MS4yNDE4NzUJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjM1MjM0MQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5Ni4zNjY4NzUJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni40NjYyNDgJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTEzOQkyMgk5Ni42MDE5MjEJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTYuMzMzNzE3CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNzkzOTAwCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTcJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTcJMjkxCTg3CTIyCTk2LjYxNzg4MglBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjAwODg4OAlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk1LjczNjAwOAlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk2LjA0NDYyNAk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMgkyMgk5Ni43MDE4MjgJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuOTYwMjUxCUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMzA1MDk5CURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDMJMjIJOTYuMDczOTY3CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuMDczOTY3CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk2LjY0MDEyMQlQRVJDRU5UCg==",
+                "tsvSha256": "85bee0bd97c1d262c2a38ff70ee1db8239d60e48a0cb83906dddd07177b582ff"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.686746,
+            "rawSha256": "275efaa2808b0230bc12df427a68bb073f8303b35634be94d50905a524c78839",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NwkxMjMJNTE0CTI0NgktMQkKMwkxCTEJMQkwCTAJOTcJMTIzCTUxNAkyNDYJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwk0MDgJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTEuNTkxOTQyCUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTEJMTIzCTI1NQkyMgk5MS4yNDE4NzUJU1lOLVNVUFBMSUVSLTAwMQo0CTEJMQkxCTIJMAk5OAkxNzkJNDA5CTIyCS0xCQo1CTEJMQkxCTIJMQk5OAkxNzkJMTcxCTIyCTk2LjM1MjM0MQlOT1JUSFNUQVIKNQkxCTEJMQkyCTIJMjgwCTE3OQk4MQkyMgk5Ni4zNjY4NzUJREVNTwo1CTEJMQkxCTIJMwkzNzEJMTc5CTEzNgkyMgk5Ni40NjYyNDgJU1VQUExJRVIKNAkxCTEJMQkzCTAJOTgJMjM1CTQyNQkyMgktMQkKNQkxCTEJMQkzCTEJOTgJMjM1CTEzOQkyMgk5Ni42MDE5MjEJUkVHSVNURVIKNQkxCTEJMQkzCTIJMjQ5CTIzNQkxMjgJMjIJOTYuMzMzNzE3CUVYVFJBQ1QKNQkxCTEJMQkzCTMJMzg2CTIzNgkxMzcJMjEJOTYuNzkzOTAwCTIwMjYtMDktMDEKNAkxCTEJMQk0CTAJOTcJMjkxCTUxNAkyMgktMQkKNQkxCTEJMQk0CTEJOTcJMjkxCTg3CTIyCTk2LjYxNzg4MglBVExBUwo1CTEJMQkxCTQJMgkxOTQJMjkxCTgyCTIyCTk2LjAwODg4OAlERU1PCjUJMQkxCTEJNAkzCTI4NgkyOTEJMTQzCTIyCTk1LjczNjAwOAlIT0xESU5HUwo1CTEJMQkxCTQJNAk0MzkJMjkyCTI5CTIxCTk2LjA0NDYyNAk2MAo1CTEJMQkxCTQJNQk0NzkJMjkxCTEzMgkyMgk5Ni43MDE4MjgJUEVSQ0VOVAo0CTEJMQkxCTUJMAk5OAkzNDcJNTExCTIyCS0xCQo1CTEJMQkxCTUJMQk5OAkzNDcJODMJMjIJOTYuOTYwMjUxCUJJUkNICjUJMQkxCTEJNQkyCTE5MwkzNDcJODEJMjIJOTYuMzA1MDk5CURFTU8KNQkxCTEJMQk1CTMJMjg1CTM0NwkxNDMJMjIJOTYuMDczOTY3CUhPTERJTkdTCjUJMQkxCTEJNQk0CTQzNwkzNDgJMzAJMjEJOTYuMDczOTY3CTQwCjUJMQkxCTEJNQk1CTQ3NwkzNDcJMTMyCTIyCTk2LjY0MDEyMQlQRVJDRU5UCg==",
+                "tsvSha256": "85bee0bd97c1d262c2a38ff70ee1db8239d60e48a0cb83906dddd07177b582ff"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 22,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 NORTHSTAR DEMO SUPPLIER REGISTER EXTRACT 2026 09 01 ATLAS DEMO HOLDINGS 60 PERCENT BIRCH DEMO HOLDINGS 40 PERCENT"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "speckles",
+        "fictional": true,
+        "originalSha256": "3c4004037ead453b410e4e5569a9690ff4b55cae4975b65ae2450dbe2399743d",
+        "originalBytes": 43667,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "af36f9071cf3d6c712ee673f2510d965c7de3481603f0073a90faf75e8d10b83",
+          "digitalSha256": "b8e49872f63ff303fb465998356365a31dd25aa489296e996f8eb431633e1338"
+        },
+        "expectedText": "FICTIONAL SYN-SUPPLIER-001\nNORTHSTAR DEMO SUPPLIER\nREGISTER EXTRACT 2026-09-01\nATLAS DEMO HOLDINGS 60 PERCENT\nBIRCH DEMO HOLDINGS 40 PERCENT",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.860615,
+            "rawSha256": "6589d2baeffb3058c13b2e1b5192a9581343d443e980c69328dfd906d82629ec",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkyCTEwMgkxMjE3CTI4MAktMQkKMwkxCTEJMQkwCTAJMgkxMDIJMTIxNwkyODAJLTEJCjQJMQkxCTEJMQkwCTI4CTEwMgkxMTU5CTU0CS0xCQo1CTEJMQkxCTEJMQkyOAkxMDIJMjE0CTUzCTM1LjUxMTc0OQkiRklDVElPTkFMCjUJMQkxCTEJMQkyCTI1MQkxMDIJMjU1CTQ3CTczLjIzMDA4NwlTWU4tU1VQUExJRVItMDAxCjUJMQkxCTEJMQkzCTU2MgkxMzQJODAJMjIJMjUuNjkzNjcyCXw9CjUJMQkxCTEJMQk0CTc0NAkxMDQJOAkzNAkyNi42MzU5MjUJOwo1CTEJMQkxCTEJNQkxMDg1CTExMAkxMDIJNDAJMTYuMTA0ODgxCW9vCjQJMQkxCTEJMgkwCTI4CTE1OAkxMTU5CTU1CS0xCQo1CTEJMQkxCTIJMQkyOAkxODcJMzYJOQkwLjAwMDAwMAktLgo1CTEJMQkxCTIJMgk5OAkxNTgJNDA5CTQ3CTk2Ljk2MzE1OAlOT1JUSFNUQVIKNQkxCTEJMQkyCTMJMjgyCTE1NAk3Mwk2Mgk5Ni45NjMxNTgJREVNTwo1CTEJMQkxCTIJNAkzNzAJMTU4CTEzNwk0Nwk5NC40NTg3NjMJU1VQUExJRVIKNQkxCTEJMQkyCTUJNjM3CTE1OQk1NTAJNTQJMC4wMDAwMDAJQlMKNAkxCTEJMQkzCTAJMgkyMTQJMTIxNwk1NwktMQkKNQkxCTEJMQkzCTEJMgkyMTQJMjM2CTQ3CTM5Ljg1NTYyMQlSRUdJU1RFUgo1CTEJMQkxCTMJMgkyNDkJMjIzCTEyMgk0OAkyNS45NzU5NTIJRVhUUkFDVAo1CTEJMQkxCTMJMwkzODEJMjE2CTE1MQk0MQkyNS45NzU5NTIJMjAyNi0wOS0wMQo1CTEJMQkxCTMJNAk1NTkJMjMzCTgxCTM3CTAuMDAwMDAwCW9vCjUJMQkxCTEJMwk1CTkyNgkyMzMJMzkJMzMJMC4wMDAwMDAJU28KNAkxCTEJMQk0CTAJOAkyNzIJMTIwOAk1NQktMQkKNQkxCTEJMQk0CTEJOAkzMjMJMgkyCTIxLjk2ODk0MQlfCjUJMQkxCTEJNAkyCTk2CTI5MQk4NwkzNgkyMS45Njg5NDEJQVRMQVMKNQkxCTEJMQk0CTMJMTk0CTI5MQk4MQkzNgk5Ni40OTIzNTUJREVNTwo1CTEJMQkxCTQJNAkyODYJMjcyCTE4Mgk1Mwk5Ni4yOTQwMjkJSE9MRElOR1MKNQkxCTEJMQk0CTUJNDQ0CTI2OAkzMgk2MQk1NC45OTkxMTkJNjAKNQkxCTEJMQk0CTYJNDc5CTI4MQkxNDIJNDQJMS4wNzkwODYJUEVSQ0VOVAo1CTEJMQkxCTQJNwk3MzQJMjgxCTMwNQk0Ngk4LjU1NDExNQlyZQo1CTEJMQkxCTQJOAkxMTAyCTI3MwkxMTQJNTEJMC4wMDAwMDAJb28KNAkxCTEJMQk1CTAJMwkzMjYJMTIxMAk1NgktMQkKNQkxCTEJMQk1CTEJMwkzNDAJMjQJMjIJMC4wMDAwMDAJXwo1CTEJMQkxCTUJMgkyNAkzMjgJMzQJNTgJMC4wMDAwMDAJfAo1CTEJMQkxCTUJMwk5OAkzMzMJODQJMzkJODIuNzY1MDgzCUJJUkNICjUJMQkxCTEJNQk0CTE5MwkzMzMJODEJMzYJOTMuOTA0MDIyCURFTU8KNQkxCTEJMQk1CTUJMjg1CTMzMgkxODIJMzcJOTQuNjUwNTgxCUhPTERJTkdTCjUJMQkxCTEJNQk2CTQzOQkzMjgJMzAJNTgJOTUuOTk0MTI1CTQwCjUJMQkxCTEJNQk3CTQ3OAkzNDcJMTMxCTI1CTI1LjQ3MDQ0NAlQRVJDRU5UCjUJMQkxCTEJNQk4CTg4NAkzMjYJMzI5CTU0CTAuMDAwMDAwCVNlCg==",
+                "tsvSha256": "d5609475fe89869fa98530ceb8b85000633b790cb4ad7a8e8f05f909920e779a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 29,
+              "wordErrors": 7,
+              "wordErrorRate": 0.3181818181818182,
+              "characterErrors": 21,
+              "characterErrorRate": 0.15,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": false,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 OO NORTHSTAR DEMO SUPPLIER BS REGISTER EXTRACT 2026 09 01 OO SO ATLAS DEMO HOLDINGS 60 PERCENT RE OO BIRCH DEMO HOLDINGS 40 PERCENT SE"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.808157,
+            "rawSha256": "6589d2baeffb3058c13b2e1b5192a9581343d443e980c69328dfd906d82629ec",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAkyCTEwMgkxMjE3CTI4MAktMQkKMwkxCTEJMQkwCTAJMgkxMDIJMTIxNwkyODAJLTEJCjQJMQkxCTEJMQkwCTI4CTEwMgkxMTU5CTU0CS0xCQo1CTEJMQkxCTEJMQkyOAkxMDIJMjE0CTUzCTM1LjUxMTc0OQkiRklDVElPTkFMCjUJMQkxCTEJMQkyCTI1MQkxMDIJMjU1CTQ3CTczLjIzMDA4NwlTWU4tU1VQUExJRVItMDAxCjUJMQkxCTEJMQkzCTU2MgkxMzQJODAJMjIJMjUuNjkzNjcyCXw9CjUJMQkxCTEJMQk0CTc0NAkxMDQJOAkzNAkyNi42MzU5MjUJOwo1CTEJMQkxCTEJNQkxMDg1CTExMAkxMDIJNDAJMTYuMTA0ODgxCW9vCjQJMQkxCTEJMgkwCTI4CTE1OAkxMTU5CTU1CS0xCQo1CTEJMQkxCTIJMQkyOAkxODcJMzYJOQkwLjAwMDAwMAktLgo1CTEJMQkxCTIJMgk5OAkxNTgJNDA5CTQ3CTk2Ljk2MzE1OAlOT1JUSFNUQVIKNQkxCTEJMQkyCTMJMjgyCTE1NAk3Mwk2Mgk5Ni45NjMxNTgJREVNTwo1CTEJMQkxCTIJNAkzNzAJMTU4CTEzNwk0Nwk5NC40NTg3NjMJU1VQUExJRVIKNQkxCTEJMQkyCTUJNjM3CTE1OQk1NTAJNTQJMC4wMDAwMDAJQlMKNAkxCTEJMQkzCTAJMgkyMTQJMTIxNwk1NwktMQkKNQkxCTEJMQkzCTEJMgkyMTQJMjM2CTQ3CTM5Ljg1NTYyMQlSRUdJU1RFUgo1CTEJMQkxCTMJMgkyNDkJMjIzCTEyMgk0OAkyNS45NzU5NTIJRVhUUkFDVAo1CTEJMQkxCTMJMwkzODEJMjE2CTE1MQk0MQkyNS45NzU5NTIJMjAyNi0wOS0wMQo1CTEJMQkxCTMJNAk1NTkJMjMzCTgxCTM3CTAuMDAwMDAwCW9vCjUJMQkxCTEJMwk1CTkyNgkyMzMJMzkJMzMJMC4wMDAwMDAJU28KNAkxCTEJMQk0CTAJOAkyNzIJMTIwOAk1NQktMQkKNQkxCTEJMQk0CTEJOAkzMjMJMgkyCTIxLjk2ODk0MQlfCjUJMQkxCTEJNAkyCTk2CTI5MQk4NwkzNgkyMS45Njg5NDEJQVRMQVMKNQkxCTEJMQk0CTMJMTk0CTI5MQk4MQkzNgk5Ni40OTIzNTUJREVNTwo1CTEJMQkxCTQJNAkyODYJMjcyCTE4Mgk1Mwk5Ni4yOTQwMjkJSE9MRElOR1MKNQkxCTEJMQk0CTUJNDQ0CTI2OAkzMgk2MQk1NC45OTkxMTkJNjAKNQkxCTEJMQk0CTYJNDc5CTI4MQkxNDIJNDQJMS4wNzkwODYJUEVSQ0VOVAo1CTEJMQkxCTQJNwk3MzQJMjgxCTMwNQk0Ngk4LjU1NDExNQlyZQo1CTEJMQkxCTQJOAkxMTAyCTI3MwkxMTQJNTEJMC4wMDAwMDAJb28KNAkxCTEJMQk1CTAJMwkzMjYJMTIxMAk1NgktMQkKNQkxCTEJMQk1CTEJMwkzNDAJMjQJMjIJMC4wMDAwMDAJXwo1CTEJMQkxCTUJMgkyNAkzMjgJMzQJNTgJMC4wMDAwMDAJfAo1CTEJMQkxCTUJMwk5OAkzMzMJODQJMzkJODIuNzY1MDgzCUJJUkNICjUJMQkxCTEJNQk0CTE5MwkzMzMJODEJMzYJOTMuOTA0MDIyCURFTU8KNQkxCTEJMQk1CTUJMjg1CTMzMgkxODIJMzcJOTQuNjUwNTgxCUhPTERJTkdTCjUJMQkxCTEJNQk2CTQzOQkzMjgJMzAJNTgJOTUuOTk0MTI1CTQwCjUJMQkxCTEJNQk3CTQ3OAkzNDcJMTMxCTI1CTI1LjQ3MDQ0NAlQRVJDRU5UCjUJMQkxCTEJNQk4CTg4NAkzMjYJMzI5CTU0CTAuMDAwMDAwCVNlCg==",
+                "tsvSha256": "d5609475fe89869fa98530ceb8b85000633b790cb4ad7a8e8f05f909920e779a"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 22,
+              "observedWords": 29,
+              "wordErrors": 7,
+              "wordErrorRate": 0.3181818181818182,
+              "characterErrors": 21,
+              "characterErrorRate": 0.15,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": false,
+              "normalisedText": "FICTIONAL SYN SUPPLIER 001 OO NORTHSTAR DEMO SUPPLIER BS REGISTER EXTRACT 2026 09 01 OO SO ATLAS DEMO HOLDINGS 60 PERCENT RE OO BIRCH DEMO HOLDINGS 40 PERCENT SE"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "three_columns",
+        "fictional": true,
+        "originalSha256": "83a78d8e746191ba596d49f0e7579a790d6bf5c5f5f17b67d0223f4c0b46eaf2",
+        "originalBytes": 25458,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "2dadc252962e890686cb4164562cab0f095845d9450526839781f0ed1045758c",
+          "digitalSha256": "15c9462eab7c9255557fba104f19313ea56d3243a1481c6972bb5ae50166de2a"
+        },
+        "expectedText": "FICTIONAL WORK RECORD\nITEM     MINUTES     QUANTITY\nALPHA       15          30\nBIRCH       25          40\nTOTAL       40          70",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.600827,
+            "rawSha256": "54d5af254fb677f78dd7c55f1b101df8f2c9f1c4dab13d45b57a0fb9a8b15f62",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNDExCTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTQxMQkxMzQJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwkzNjcJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTYuNTg1MDM3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTAJMTIzCTg3CTIyCTk2LjI2NzYzOQlXT1JLCjUJMQkxCTEJMQkzCTM0NwkxMjMJMTE4CTIyCTk2LjUzNjUzNwlSRUNPUkQKNAkxCTEJMQkyCTAJOTgJMTc5CTQwOQkyMgktMQkKNQkxCTEJMQkyCTEJOTgJMTgwCTYzCTIwCTg2Ljg2MTAyMwlJVEVNCjUJMQkxCTEJMgkyCTIwNAkxNzkJMTIyCTIyCTg2Ljg2MTAyMwlNSU5VVEVTCjUJMQkxCTEJMgkzCTM2OAkxNzkJMTM5CTIyCTg4LjUyODA2MQlRVUFOVElUWQo0CTEJMQkxCTMJMAk5NgkyMzYJMjg1CTIxCS0xCQo1CTEJMQkxCTMJMQk5NgkyMzYJOTEJMjAJOTYuODM2NTYzCUFMUEhBCjUJMQkxCTEJMwkyCTI0NQkyMzYJMjcJMjEJOTYuOTExNjkwCTE1CjUJMQkxCTEJMwkzCTM1MgkyMzYJMjkJMjEJOTYuOTQxMzY4CTMwCjMJMQkxCTIJMAkwCTk4CTI5MQkyNzkJMjIJLTEJCjQJMQkxCTIJMQkwCTk4CTI5MQkyNzkJMjIJLTEJCjUJMQkxCTIJMQkxCTk4CTI5MQk4MwkyMgk5Ni40NDI5NzgJQklSQ0gKNQkxCTEJMgkxCTIJMjM4CTI5MgkyOQkyMQk5Ni45ODU2NzIJMjUKNQkxCTEJMgkxCTMJMzQ3CTI5MgkzMAkyMQk5Ni44OTY2MTQJNDAKMwkxCTEJMwkwCTAJOTYJMzQ3CTI4NAkyMgktMQkKNAkxCTEJMwkxCTAJOTYJMzQ3CTI4NAkyMgktMQkKNQkxCTEJMwkxCTEJOTYJMzQ3CTkwCTIyCTgzLjc1ODIyNAlUT1RBTAo1CTEJMQkzCTEJMgkyNDEJMzQ4CTMwCTIxCTgzLjc1ODIyNAk0MAo1CTEJMQkzCTEJMwkzNTEJMzQ4CTI5CTIxCTk2LjUwNTgzNgk3MAo=",
+                "tsvSha256": "9b9dad6ac80ae3d6e2960c40c36e0ee6529f4b0ae85dcc6074eb7f0217dad14c"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 15,
+              "observedWords": 15,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL WORK RECORD ITEM MINUTES QUANTITY ALPHA 15 30 BIRCH 25 40 TOTAL 40 70"
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.590383,
+            "rawSha256": "54d5af254fb677f78dd7c55f1b101df8f2c9f1c4dab13d45b57a0fb9a8b15f62",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQoyCTEJMQkwCTAJMAk5NgkxMjMJNDExCTI0NgktMQkKMwkxCTEJMQkwCTAJOTYJMTIzCTQxMQkxMzQJLTEJCjQJMQkxCTEJMQkwCTk4CTEyMwkzNjcJMjIJLTEJCjUJMQkxCTEJMQkxCTk4CTEyMwkxNDQJMjIJOTYuNTg1MDM3CUZJQ1RJT05BTAo1CTEJMQkxCTEJMgkyNTAJMTIzCTg3CTIyCTk2LjI2NzYzOQlXT1JLCjUJMQkxCTEJMQkzCTM0NwkxMjMJMTE4CTIyCTk2LjUzNjUzNwlSRUNPUkQKNAkxCTEJMQkyCTAJOTgJMTc5CTQwOQkyMgktMQkKNQkxCTEJMQkyCTEJOTgJMTgwCTYzCTIwCTg2Ljg2MTAyMwlJVEVNCjUJMQkxCTEJMgkyCTIwNAkxNzkJMTIyCTIyCTg2Ljg2MTAyMwlNSU5VVEVTCjUJMQkxCTEJMgkzCTM2OAkxNzkJMTM5CTIyCTg4LjUyODA2MQlRVUFOVElUWQo0CTEJMQkxCTMJMAk5NgkyMzYJMjg1CTIxCS0xCQo1CTEJMQkxCTMJMQk5NgkyMzYJOTEJMjAJOTYuODM2NTYzCUFMUEhBCjUJMQkxCTEJMwkyCTI0NQkyMzYJMjcJMjEJOTYuOTExNjkwCTE1CjUJMQkxCTEJMwkzCTM1MgkyMzYJMjkJMjEJOTYuOTQxMzY4CTMwCjMJMQkxCTIJMAkwCTk4CTI5MQkyNzkJMjIJLTEJCjQJMQkxCTIJMQkwCTk4CTI5MQkyNzkJMjIJLTEJCjUJMQkxCTIJMQkxCTk4CTI5MQk4MwkyMgk5Ni40NDI5NzgJQklSQ0gKNQkxCTEJMgkxCTIJMjM4CTI5MgkyOQkyMQk5Ni45ODU2NzIJMjUKNQkxCTEJMgkxCTMJMzQ3CTI5MgkzMAkyMQk5Ni44OTY2MTQJNDAKMwkxCTEJMwkwCTAJOTYJMzQ3CTI4NAkyMgktMQkKNAkxCTEJMwkxCTAJOTYJMzQ3CTI4NAkyMgktMQkKNQkxCTEJMwkxCTEJOTYJMzQ3CTkwCTIyCTgzLjc1ODIyNAlUT1RBTAo1CTEJMQkzCTEJMgkyNDEJMzQ4CTMwCTIxCTgzLjc1ODIyNAk0MAo1CTEJMQkzCTEJMwkzNTEJMzQ4CTI5CTIxCTk2LjUwNTgzNgk3MAo=",
+                "tsvSha256": "9b9dad6ac80ae3d6e2960c40c36e0ee6529f4b0ae85dcc6074eb7f0217dad14c"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 15,
+              "observedWords": 15,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": "FICTIONAL WORK RECORD ITEM MINUTES QUANTITY ALPHA 15 30 BIRCH 25 40 TOTAL 40 70"
+            }
+          }
+        ],
+        "repeatStable": true
+      },
+      {
+        "case": "blank",
+        "fictional": true,
+        "originalSha256": "27c98009da70ea1762d82eca431af555aead1b8584f65b40b9ba2ac3cd3599b2",
+        "originalBytes": 6355,
+        "render": {
+          "width": 1224,
+          "height": 1584,
+          "rgbSha256": "9e42baaf9b7de8fe155b6cb9c373d068b8cde6d3177f2d6735791942d78515cb",
+          "digitalSha256": "ea8b5c6d105b172866510830f1dcb8dcee8936b30f73b46f87ead0713a2a0ea2"
+        },
+        "expectedText": "",
+        "attempts": [
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.479144,
+            "rawSha256": "47c93edc43903a5492e865899923cea94c3d99dbc8afbea99476976d441f7717",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQo=",
+                "tsvSha256": "0e35719be49f9866a059d5af5214c8bfcc3539daa95ee030d75e07366d94a9e0"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 0,
+              "observedWords": 0,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": ""
+            }
+          },
+          {
+            "outcome": "actual_ocr_output",
+            "elapsedSeconds": 0.428641,
+            "rawSha256": "47c93edc43903a5492e865899923cea94c3d99dbc8afbea99476976d441f7717",
+            "tsvPages": [
+              {
+                "page": 1,
+                "tsvBase64": "bGV2ZWwJcGFnZV9udW0JYmxvY2tfbnVtCXBhcl9udW0JbGluZV9udW0Jd29yZF9udW0JbGVmdAl0b3AJd2lkdGgJaGVpZ2h0CWNvbmYJdGV4dAoxCTEJMAkwCTAJMAkwCTAJMTIyNAkxNTg0CS0xCQo=",
+                "tsvSha256": "0e35719be49f9866a059d5af5214c8bfcc3539daa95ee030d75e07366d94a9e0"
+              }
+            ],
+            "metrics": {
+              "referenceWords": 0,
+              "observedWords": 0,
+              "wordErrors": 0,
+              "wordErrorRate": 0.0,
+              "characterErrors": 0,
+              "characterErrorRate": 0.0,
+              "missingNumericTokens": {},
+              "unexpectedNumericTokens": {},
+              "normalisedExact": true,
+              "normalisedText": ""
+            }
+          }
+        ],
+        "repeatStable": true
+      }
+    ],
+    "attemptCount": 24,
+    "successfulOcrAttempts": 24,
+    "metric": "uppercase ASCII alphanumeric tokens; punctuation excluded; edit rates may exceed one",
+    "professionalApproval": false,
+    "productionApproval": false,
+    "limitations": "Controlled fictional English pages only. No representative client scans, multilingual/handwritten accuracy, semantic table reconstruction, provenance authenticity or legal acceptance."
+  },
+  "caseAcceptanceTap": "TAP version 13\n# Subtest: actual isolated supplier profile 1 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 1 - actual isolated supplier profile 1 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 36069.971195\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"profileVersion\":1,\"originalBytes\":40501,\"encryptedOriginals\":true,\"scanSha256\":\"575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"3c620b2e6d6b1efd8f932db067d4db93b8768a5369f7f0e913ffb88f114ccea3\",\"ocrDerivativeDigest\":\"8d7b4eecc82be35f0e6e8f4eb4a841261c882003498849a1e0e536964308d8e6\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n# Subtest: actual isolated supplier profile 2 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 2 - actual isolated supplier profile 2 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 34426.733839\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"profileVersion\":2,\"originalBytes\":126518,\"encryptedOriginals\":true,\"scanSha256\":\"80e1e2797ce0f3eb3aee4950facafef257bb4bc0ea49ab9a12ae78bc4ea6f7bd\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"976801307854ad3ac7fad3fabbdf044aba66e5a45504f487a4c26b2a095c51ba\",\"ocrDerivativeDigest\":\"cf17600e98c97a00532df588134a100b5ca596945a3a74e1d64f498297af3c15\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n1..2\n# tests 2\n# suites 0\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 71065.945837\n",
+  "review": {
+    "retainedTsvDigestsAndMetricsReplayed": true,
+    "realProfessionalApproval": false,
+    "legalOrLicenceApproval": false,
+    "productionReady": false
+  }
+}

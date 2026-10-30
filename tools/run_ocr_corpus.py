@@ -3,6 +3,7 @@
 The worker extraction code is reused unchanged. Metrics describe this small
 controlled English corpus, not representative scan accuracy or legal approval.
 """
+import argparse
 import base64
 import csv
 import hashlib
@@ -118,7 +119,8 @@ def observed_text(result):
     return ' '.join(words)
 
 
-def run():
+def run(profile_version=1):
+    if type(profile_version) is not int or profile_version not in (1,2):raise ValueError('Unknown OCR profile version')
     from run_ocr_document import extract
     cases=[]
     for name in CASES:
@@ -127,7 +129,7 @@ def run():
         for _ in range(2):
             started=time.monotonic()
             try:
-                result=extract(original)
+                result=extract(original,profile_version)
             except ValueError as error:
                 if str(error) not in {'Original exceeds the OCR profile','OCR page bound','OCR raster dimensions','OCR PNG bound'}:
                     raise  # Process failures, malformed output and metric failures fail the experiment.
@@ -151,7 +153,7 @@ def run():
     return {'runnerSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             'extractorSha256':hashlib.sha256(Path('/original/run_ocr_document.py').read_bytes()).hexdigest(),
             'fixtureGeneratorSha256':hashlib.sha256(Path('/original/supplier_scan_fixture.py').read_bytes()).hexdigest(),
-            'format':'inveos.ocr_adversity_measurement.v1','cases':cases,'attemptCount':len(CASES)*2,
+            'format':'inveos.ocr_adversity_measurement.v1','profileVersion':profile_version,'maxOriginalBytes':65536 if profile_version==1 else 262144,'cases':cases,'attemptCount':len(CASES)*2,
             'successfulOcrAttempts':sum(a['outcome']=='actual_ocr_output' for item in cases for a in item['attempts']),
             'metric':'uppercase ASCII alphanumeric tokens; punctuation excluded; edit rates may exceed one',
             'professionalApproval':False,'productionApproval':False,
@@ -159,4 +161,6 @@ def run():
 
 
 if __name__=='__main__':
-    print(json.dumps(run(),separators=(',',':')))
+    parser=argparse.ArgumentParser();parser.add_argument('--profile-version',type=int,choices=(1,2),default=1)
+    args=parser.parse_args()
+    print(json.dumps(run(args.profile_version),separators=(',',':')))

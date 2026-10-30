@@ -153,6 +153,7 @@ jobs:
           corpus=report['adversityCorpus']
           retained={'imageId':report['imageId'],'measurement':corpus}
           Path('.research-cache/ocr-adversity-measurement.json').write_text(json.dumps(retained,indent=2)+'\n')
+          Path('.research-cache/ocr-expanded-adversity-measurement.json').write_text(json.dumps({'imageId':report['imageId'],'measurement':report['expandedAdversityCorpus']},indent=2)+'\n')
           print(json.dumps({'attemptCount':corpus['attemptCount'],'successfulOcrAttempts':corpus['successfulOcrAttempts'],
             'cases':[{'case':c['case'],'bytes':c['originalBytes'],'repeatStable':c['repeatStable'],
               'attempts':[{'outcome':a['outcome'],'reason':a.get('reason'),'metrics':a.get('metrics')} for a in c['attempts']]} for c in corpus['cases']]},indent=2))
@@ -171,6 +172,8 @@ jobs:
           path: |
             .research-cache/ocr-research-output.json
             .research-cache/ocr-adversity-measurement.json
+            .research-cache/ocr-expanded-adversity-measurement.json
+            output/evals/ocr-expanded-comparison.png
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14

@@ -6,9 +6,11 @@ import pypdfium2 as pdfium
 from PIL import ImageChops
 from pdf_render_limits import render_size
 
-def render(path):
-    original=path.read_bytes()
-    if not 1<=len(original)<=65536:raise ValueError('Original byte bound')
+def render(path, profile_version=1):
+    if type(profile_version) is not int or profile_version not in (1,2):raise ValueError('Unknown raster profile version')
+    maximum=65536 if profile_version==1 else 262144
+    with path.open('rb') as source:original=source.read(maximum+1)
+    if not 1<=len(original)<=maximum:raise ValueError('Original byte bound')
     before=hashlib.sha256(original).hexdigest()
     rows=[]
     with pdfium.PdfDocument(original) as document:
