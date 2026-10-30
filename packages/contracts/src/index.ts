@@ -301,3 +301,4 @@ export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,Invoic
 
 export type DesktopIntakeFile={filename:string;sourceTime:string;method:string;expectedSha256:string;byteLength:number};
 export type DesktopIntakeBatch={id:string;caseId:string;createdAt:string;authorityVersion:number;canTransfer:boolean;entries:(DesktopIntakeFile&{ordinal:number;requestKey:string;reservationId:string|null;state:'pending'|'open'|'completed'|'cancelled'|'expired';evidenceId:string|null})[];interpretation:'saved_metadata_not_original_verification'};
+export type {FeedbackRelease,FeedbackState,FeedbackRequestRevision,FeedbackRequest,FeedbackResponseRevision,FeedbackPublication,FeedbackDetail,FeedbackRequestPage} from './portal-feedback.js';

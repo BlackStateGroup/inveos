@@ -1,4 +1,5 @@
 import {registerCaseAnalysis} from './case-analysis.js';
+import {registerPortalFeedback} from './portal-feedback.js';
 import {registerAgencyInvoicing} from './agency-invoicing.js';
 import {registerCollectionJobs} from './collection-jobs.js';
 import {registerConnectorPolicies} from './connector-policies.js';
@@ -1996,6 +1997,50 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     const embedded=Buffer.from(encoded,'base64');if(embedded.toString('base64')!==encoded||!embedded.equals(row.report_bytes)||createHash('sha256').update(embedded).digest('hex')!==reportDigest)throw new ApiError(409,'Released document package report binding failed.');
     return {bytes,digest:packageDigest,deliverable:'document_package' as const,header:'X-INVEOS-Package-SHA256'};
   }
+  registerPortalFeedback(app,{pool:options.pool,authenticate,requireSessionCsrf,audit:writeAudit,
+    assertCurrent:async(client,actor,scope)=>{
+      if(actor.role!=='client')await findCase(client,actor,scope.caseId,true);
+      const eligible=(await client.query(`SELECT 1 FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id ${renditionDisclosureJoin}
+        WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.id=$3 AND d.recipient_id=$4 AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}
+        AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')
+        AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=$5 AND m.role=$6)
+        AND EXISTS(SELECT 1 FROM sessions ss LEFT JOIN identity_bindings ib ON ib.id=ss.identity_id AND ib.tenant_id=ss.tenant_id AND ib.user_id=ss.user_id WHERE ss.tenant_id=d.tenant_id AND ss.user_id=$5 AND ss.token_hash=$7 AND ss.expires_at>clock_timestamp() AND ss.revoked_at IS NULL AND ss.epoch=$8 AND (($9::text IS NULL AND ss.identity_id IS NULL) OR ($9::text IS NOT NULL AND ib.issuer=$9 AND ib.revoked_at IS NULL AND ss.identity_profile_hash=$10)))`,[actor.tenantId,scope.caseId,scope.disclosureId,scope.recipientId,actor.userId,actor.role,actor.tokenHash,epoch,options.identity?.issuer??null,options.identity?.fingerprint??null])).rowCount;
+      if(!eligible)notFound();
+    },
+    listReleases:async(client,actor,caseId,after)=>{
+      await findCase(client,actor,caseId,true);
+      if(after&&!(await client.query('SELECT 1 FROM report_disclosures WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,after])).rowCount)notFound();
+      const rows=(await client.query(`SELECT d.*,p.package_digest,dr.rendition_id,pr.pdf_digest,ed.rendition_id AS editable_rendition_id,er.docx_digest
+        FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+        LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${renditionDisclosureJoin}
+        WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR d.id>$3) AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}
+        AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')
+        AND EXISTS(SELECT 1 FROM portal_feedback_requests f WHERE f.tenant_id=d.tenant_id AND f.disclosure_id=d.id)
+        ORDER BY d.id LIMIT 11`,[actor.tenantId,caseId,after??null])).rows;
+      // This is a release locator only. Opening feedback rechecks source-use,
+      // exact bytes and current access before returning any request/response text.
+      return {items:rows.slice(0,10).map(r=>{const v=disclosureReceipt(r);return {disclosureId:v.id,revisionId:v.revisionId,sha256:v.sha256,reportSha256:v.reportSha256,deliverable:v.deliverable as 'report_json'|'document_package'|'report_pdf'|'report_docx',renditionId:v.renditionId??null,expiresAt:v.expiresAt};}),next:rows.length>10?rows[9].id:null};
+    },loadRelease:async(client,actor,disclosureId,caseId)=>{
+    // Feedback reuses the actual release policy and byte verifier. A client has
+    // no internal case membership; match the recipient before taking its lock.
+    if(actor.role==='client'){
+      if(caseId)notFound();
+      const owned=(await client.query('SELECT case_id FROM report_disclosures WHERE tenant_id=$1 AND recipient_id=$2 AND id=$3',[actor.tenantId,actor.userId,disclosureId])).rows[0];
+      if(!owned)notFound();caseId=owned.case_id;
+      await client.query('SELECT id FROM cases WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,caseId]);
+      if(!(await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role='client'",[actor.tenantId,actor.userId])).rowCount)notFound();
+    }else{if(!caseId)notFound();await findCase(client,actor,caseId,true);}
+    const row=(await client.query(`SELECT d.*,r.report_bytes,p.report_digest,p.package_digest,p.package_bytes,dr.rendition_id,pr.pdf_digest,ed.rendition_id AS editable_rendition_id,er.docx_digest
+      FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id
+      JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id
+      LEFT JOIN report_disclosure_packages p ON p.tenant_id=d.tenant_id AND p.disclosure_id=d.id ${renditionDisclosureJoin}
+      WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.id=$3 AND ($4::uuid IS NULL OR d.recipient_id=$4)
+      AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}
+      AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')`,[actor.tenantId,caseId,disclosureId,actor.role==='client'?actor.userId:null])).rows[0];
+    if(!row)notFound();
+    let delivery;try{delivery=await disclosureDelivery(client,row);}catch(error){if(actor.role==='client'&&error instanceof ApiError)throw new ApiError(409,'This release is currently unavailable for feedback. Refresh disclosures.');throw error;}
+    return {caseId:row.case_id,recipientId:row.recipient_id,disclosureId:row.id,revisionId:row.revision_id,sha256:delivery.digest,reportSha256:row.digest.trim(),deliverable:delivery.deliverable,renditionId:row.editable_rendition_id??row.rendition_id??null,expiresAt:iso(row.expires_at)};
+  }});
   app.post('/api/portal/disclosures/:disclosureId/acknowledge',{preHandler:requireSessionCsrf,schema:{params:{type:'object',additionalProperties:false,required:['disclosureId'],properties:{disclosureId:uuidSchema}},body:{type:'object',additionalProperties:false,required:['sha256','confirmReceipt'],properties:{sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},confirmReceipt:{const:true}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store');const actor=request.actor!,{disclosureId}=request.params as {disclosureId:string};
     if(actor.role!=='client')throw new ApiError(403,'Client recipient required.');

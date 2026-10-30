@@ -1,0 +1,12 @@
+.feedback-workflow { margin-top: 22px; padding: 20px; border: 1px solid var(--border, #dce1e7); border-radius: 8px; min-width: 0; }
+.feedback-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; }
+.feedback-workflow fieldset { border: 0; padding: 0; min-width: 0; }
+.feedback-workflow .form-label { min-width: 0; }
+.feedback-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+.feedback-digest { overflow-wrap: anywhere; word-break: break-word; display: block; }
+.feedback-inspection,.feedback-published { padding: 18px; border-left: 3px solid #417565; background: #f4f8f6; margin-block: 18px; }
+.feedback-detail { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border, #dce1e7); }
+.feedback-release-list { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 16px; }
+.feedback-workflow summary { cursor: pointer; overflow-wrap: anywhere; }
+.feedback-workflow details { margin-block: 14px; }
+@media (max-width: 600px) { .feedback-workflow { padding: 12px; } .feedback-inspection,.feedback-published { padding: 12px; } }
