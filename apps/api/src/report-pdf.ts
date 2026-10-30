@@ -59,6 +59,9 @@ export function reportLines(report:ReportDraft,redacted:Set<string>,reason:strin
   for(const finding of report.findings){
     number++;if(redacted.has(finding.id)){lines.push(`FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
     lines.push(`FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Source',finding.source.filename),...format('Source SHA-256',finding.source.sha256),...format('Citation',`${finding.source.startByte}-${finding.source.endByte}: ${finding.source.quote}`),...format('Authority',`${finding.source.policy.authorityId} v${finding.source.policy.authorityVersion}; ${finding.source.policy.lawfulBasis}`),'');
+    const collection=report.sourceUse?.find(p=>p.record.original.id===finding.source.id&&p.collection)?.collection;
+    if(collection){const c=collection.payload,r=c.receipt;lines.push(...format('Collection',`${r.captureMode==='fictional_fixture'?'Fictional fixture; provider not contacted':'Provider response'}; ${r.url}`),...format('Collection receipt',`${r.jobId}; SHA-256 ${c.receiptSha256}`),...format('Collection permission',`${r.authorisationId}; case authority v${r.authorityVersion}; source policy v${r.policyVersion}`),...format('Collection time',`response ${r.sourceTime} (not record creation); received ${r.receivedAt}`),'');}
+
   }
   for(const finding of report.documentFindings??[]){
     number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
