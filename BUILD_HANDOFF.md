@@ -1,3 +1,9 @@
+## Next connected build: cited source analysis
+
+Root adds migration080 and docs/127: saved source selection, exact cited passages, word-matched question retrieval, literal amount/date/negation comparisons and independent versioned triage. First-party deterministic rules; no semantic AI/inference or external collection claim. Web/contracts/API compile; all new runtime/database/browser/quality acceptance is unrun. No PR/merge yet.
+
+Agency child completed `feat/agency-draft-invoicing` at `4cf5a391329584e72b0e02d4d45e6e7ef83c2c5a` (migrations075–077, docs126). Compiler/narrow lint passed in its sandbox; API/migration/browser/offline verification unrun. Root is integrating it. The child continues release-scoped portal feedback on a new stacked branch, reserved migrations081–084/docs128. Field and OSINT remain actively implementing their assigned ranges. Preserve their source-specific handoffs; no broad acceptance is claimed from compiler feedback.
+
 ## Active parallel build phase — 30 October 2026
 
 User explicitly requested implementation first, parallel agents, then combined testing. Root branch `feat/speech-casework` now adds speech chronology/graph and exact-version attention/navigation after its earlier reasoning/search implementation. Migration064 is reserved for root; compiler feedback passes, new acceptance checks remain unrun. See docs/123. Do not treat previous reasoning-only counts as verification of these additions. No new PR or merge for this batch yet.

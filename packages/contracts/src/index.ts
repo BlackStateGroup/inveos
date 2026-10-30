@@ -285,3 +285,11 @@ export type CollectionJob={id:string;authorisationId:string;companyNumber:string
 export type CollectionReceipt={schemaVersion:'inveos.collection.v1';captureMode:'fictional_fixture'|'provider';tenantId:string;caseId:string;jobId:string;authorisationId:string;authorityVersion:number;policyVersion:number;profileDigest:string;url:string;companyNumber:string;httpStatus:200;sourceTime:string;sourceTimeBasis:'http_response_date_not_record_creation';receivedAt:string;etag:string|null;contentType:string;originalSha256:string;byteLength:number;fields:{pointer:string;value:string}[];interpretation:'unreviewed_provider_assertions'};
 
 export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-provenance.v1';receipt:CollectionReceipt;receiptSha256:string;authorisation:Record<string,unknown>;caseAuthority:Record<string,unknown>;sourcePolicy:Record<string,unknown>;policyReview:Record<string,unknown>};sha256:string};
+
+export type AnalysisMode='passages'|'question'|'comparison';
+export type AnalysisSource={reference:ChronologySource;fingerprint:string;statement:string;quote:string;original:{id:string;filename:string;sha256:string;sourceTime:string;receivedTime:string};location:string};
+export type AnalysisSuggestion={kind:'amount_difference'|'date_difference'|'wording_difference';sources:[number,number];observed:[string[],string[]];explanation:string;check:string};
+export type AnalysisRun={id:string;caseId:string;authorityVersion:number;createdBy:string;createdAt:string;profile:'cited_rules_v1';mode:AnalysisMode;question:string;sources:AnalysisSource[];passages:{source:number;matchedTerms:string[]}[];suggestions:AnalysisSuggestion[];limitations:string;digest:string};
+export type AnalysisDecision={id:string;suggestion:number;version:number;disposition:'request_check'|'dismiss';reason:string;actorId:string;actorName:string;recordedAt:string};
+export type AnalysisRunRecord={run:AnalysisRun;decisions:AnalysisDecision[];sourceVerification:'current_reviewed_sources_reverified';canDecide:boolean};
+export type AnalysisRunPage={items:{id:string;mode:AnalysisMode;question:string;createdAt:string;createdBy:string;authorityVersion:number;sourceCount:number;suggestionCount:number}[];next:string|null};

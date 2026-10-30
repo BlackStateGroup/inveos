@@ -1,3 +1,4 @@
+import {registerCaseAnalysis} from './case-analysis.js';
 import {registerCollectionJobs} from './collection-jobs.js';
 import {registerConnectorPolicies} from './connector-policies.js';
 import {registerSpeechFindings} from './speech-findings.js';
@@ -699,6 +700,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return finding;
   };
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
+  registerCaseAnalysis(app,investigationServices);
   registerCaseInvitations(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseAccess(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerSourceUse(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,...manualSourceService});
