@@ -317,3 +317,4 @@ export type CompositionReview={id:string;decision:'accepted'|'changes_requested'
 export type CompositionRevision={payload:CompositionPayload;sha256:string;authorId:string;authorName:string;recordedAt:string;review:CompositionReview|null;canReview:boolean};
 export type FrozenReportComposition={format:'inveos_report_composition_v1';payload:CompositionPayload;sha256:string;authorId:string;authorName:string;recordedAt:string;review:CompositionReview};
 export type CompositionChoice=CompositionSelection&{text:string;reviewer:string;reviewedAt:string};
+export * from './field-sessions.js';
