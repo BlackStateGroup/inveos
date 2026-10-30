@@ -13,6 +13,13 @@ on:
       - 'tools/probe_worker_isolation.py'
       - 'tools/bounded_process.py'
       - 'tests/test_whisper_research.py'
+      - 'apps/api/src/speech-*.ts'
+      - 'apps/api/src/run-speech-job.ts'
+      - 'apps/api/src/integrity-jobs.ts'
+      - 'apps/api/test/api.test.ts'
+      - 'research/runtime_artifacts/whisper-runtime.lock.json'
+      - 'tools/qualify_speech_worker.py'
+      - 'tools/verify_speech*.py'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +29,23 @@ jobs:
   isolated-whisper:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -29,6 +53,17 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked application and prepare disposable restricted PostgreSQL
+        run: |
+          npm ci --no-audit --no-fund
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
       - name: Acquire exact catalogue source without executing it
         run: |
           df -h .
@@ -46,6 +81,12 @@ jobs:
         run: python3 -m tools.build_whisper_research
       - name: Run actual CPU inference repetitions and malformed-input cancellation checks
         run: python3 -m tools.experiment_whisper
+      - name: Freshly qualify the measured application speech runtime
+        run: python3 -m tools.qualify_speech_worker
+      - name: Exercise actual durable speech jobs and cancellation with PostgreSQL
+        env:
+          INVEOS_TEST_SPEECH_WORKER: "1"
+        run: node --import tsx --test --test-concurrency=1 --test-name-pattern='^actual speech worker' apps/api/test/api.test.ts
       - name: Keep receipts and fictional recognised output without model or upstream binaries
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -56,6 +97,8 @@ jobs:
             .research-cache/whisper-built/build-receipt.json
             .research-cache/whisper-built/*-probe.json
             output/evals/whisper/
+            .research-cache/speech-worker-qualification.json
+            output/evals/speech-worker/
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14

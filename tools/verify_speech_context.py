@@ -51,6 +51,9 @@ def audio(data):
 
 
 def rebuild(original, raw_bytes, context):
+    # JSONB and exported object order do not define the derivative byte encoding.
+    # Reconstruct the profile's fixed field order before checking its byte digest.
+    context = {k: context[k] for k in ('tenantId', 'caseId', 'jobId', 'evidenceId', 'sourceDigest', 'authorityVersion')}
     pcm = audio(original)
     raw = decode(raw_bytes.decode('utf-8'))
     keys(raw, {'format', 'sampleRate', 'samples', 'segments'})

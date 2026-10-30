@@ -1,3 +1,4 @@
+import {SpeechFindings} from './SpeechFindings';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {SpeechTranscript,SpeechCorrection,SpeechSegment,SpeechSegmentReview} from '@inveos/contracts';
 import {Panel,Notice} from './ui';
@@ -34,5 +35,6 @@ export function SpeechTranscripts({caseId,csrf,requestedJobId}:{caseId:string;cs
  {history&&<section aria-label="Speech correction history"><h4>Retained corrections</h4>{!history.items.length&&<p>No corrections to this segment.</p>}{history.items.map(h=><article className="work-record" key={h.version}><h5>Correction v{h.version}</h5><p className="work-body">{h.hasSpeech?h.text:'Explicit no-speech correction'}</p><p>{h.startMs}–{h.endMs} ms · {h.actorName} · {h.recordedAt}</p><p>{h.reason}</p></article>)}{history.reviews.map(r=><p key={r.id}>Review of v{r.version}: {r.accepted?'accepted':'rejected'} · {r.reviewerName} · {r.reason}</p>)}{history.next&&<button className="secondary" disabled={busy} onClick={()=>void run(async c=>{const h=await request<History>(c,`/${record.jobId}/segments/${selected}/history?before=${history.next}`);if(live.current&&!c.signal.aborted)setHistory(h);})}>Earlier speech history</button>}</section>}
  </section>}
  </article>}
+ <SpeechFindings key={caseId+csrf} caseId={caseId} csrf={csrf} transcript={record} segmentIndex={selected} onDenied={()=>{setRecord(null);setPage(null);setHistory(null);setSelected(null);}}/>
  </div></Panel>;
 }

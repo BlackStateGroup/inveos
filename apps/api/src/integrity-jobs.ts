@@ -164,7 +164,7 @@ export async function dispatchIntegrityJobs(pool: Pool, root: OriginalStore, sco
 export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'unsupported_media' | 'digest_mismatch' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | null) {
   return finishProcessingJob(pool,s,token,failure);
 }
-type Failure = 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed';
+type Failure = 'unsupported_media' | 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed';
 async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure: Failure | null, output?: DerivativeOutput) {
   return inTransaction(pool, async client => {
     await lockWorkerCase(client,s);
