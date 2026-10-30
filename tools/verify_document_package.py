@@ -270,15 +270,17 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         legacy, findings, exhibits = report['findings'], report['documentFindings'], package['exhibits']
         require(isinstance(legacy, list) and isinstance(findings, list) and isinstance(exhibits, list)
                 and 1 <= len(findings) == len(exhibits) and len(legacy) + len(findings) <= 1000, 'Finding count limit')
-        if legacy:
+        transcripts = report.get('transcriptFindings', [])
+        require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) <= 1000, 'Mixed finding count limit')
+        if legacy or transcripts:
             original_report = {key: value for key, value in report.items() if key != 'documentFindings'}
             # The complete mixed-source chronology is validated below, after both source families.
             original_report['investigation'] = {key: value for key, value in report.get('investigation', {}).items() if key != 'chronology'}
             verify_report(json.dumps(original_report, ensure_ascii=False).encode('utf-8'))
-        ids = [f['id'] for f in legacy + findings]
+        ids = [f['id'] for f in legacy + findings + transcripts]
         require(len(set(ids)) == len(ids), 'Duplicate finding identity')
         sources = {}
-        original_ids = {f['source']['id'] for f in legacy}
+        original_ids = {f['source']['id'] for f in legacy} | {f['claim']['source']['id'] for f in transcripts}
         for finding in findings:
             source = finding['source']
             require(source['id'] not in original_ids, 'Conflicting original representation')

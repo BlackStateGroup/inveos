@@ -205,3 +205,5 @@
 - [101 — Case-scoped bulk task status changes](101_BULK_TASK_STATUS.md)
 
 - [Field, team workload and entity attributes](102_FIELD_TEAM_ENTITY_BATCH.md) — combined browser Field/platform increment; acceptance and native gates recorded separately.
+
+- [Reviewed transcript findings and report lineage](103_TRANSCRIPT_FINDINGS.md) — active combined review/export/delivery batch; exact acceptance status recorded separately.

@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {Evidence,InterviewTranscript,SuppliedTranscriptSegment,TranscriptCorrection} from '@inveos/contracts';
+import {TranscriptFindings} from './TranscriptFindings';
 import {Badge,Notice,Panel,SectionTitle} from './ui';
 import template from '../../../examples/fictional-supplied-transcript.txt?raw';
 import './interviews.css';
@@ -23,7 +24,7 @@ export function InterviewTranscripts({caseId,csrf,evidence,inspect}:{caseId:stri
  async function showHistory(segmentId:string,before?:number){if(!record)return;setHistory(null);setHistoryId(segmentId);setHistory(await api('/'+record.id+'/segments/'+segmentId+'/history'+(before?'?before='+before:'')));}
  const editing=record?.segments.find(s=>s.id===editor),current=editing&&(editing.current??editing.raw);
  return <><SectionTitle eyebrow="INTERVIEW / SUPPLIED RECORDS" title="Keep every word in context." description="Compare supplied transcript segments with attributed, reasoned corrections."/>
- <Notice>Declared timecodes and speaker labels are supplied assertions. No audio alignment, speech recognition or finding review has been performed. Corrections preserve the original account; exports are internal context.</Notice>
+ <Notice>Declared timecodes and speaker labels are supplied assertions. Registration and correction do not verify audio alignment or speech recognition. Review interpretations separately below; corrections preserve the original account and context exports remain internal.</Notice>
  <Panel title="Supplied transcripts" meta={<Badge>Case records</Badge>} className="transcript-panel"><div className="panel-body">
  {error&&<p role="alert" className="form-error">{error} Retry an unchanged submission after a lost response, or refresh to compare the saved record. Refresh discards unsaved edits.</p>}{notice&&<p role="status">{notice}</p>}{busy&&<p role="status">Checking transcript records…</p>}
  <div className="work-record-actions"><button className="primary" disabled={busy||denied} onClick={()=>{createId.current=crypto.randomUUID();setRegister(true);setRecord(null);setHistory(null);}}>Register supplied transcript</button><button className="secondary" disabled={busy} onClick={()=>void act(()=>page())}>Refresh transcripts</button><button className="text-button" onClick={()=>download(template,'fictional-supplied-transcript.txt')}>Download fictional format example</button></div>
@@ -37,5 +38,5 @@ export function InterviewTranscripts({caseId,csrf,evidence,inspect}:{caseId:stri
  {history&&historyId===segment.id&&<section className="work-history" aria-label="Transcript correction history"><h4>Retained correction history</h4><p className="small">Historical records; original bytes are not rechecked by this history view.</p>{!history.items.length&&<p>No corrections recorded.</p>}{history.items.map(v=><details key={v.version}><summary>Version {v.version} · {v.actorName} · {v.recordedAt}</summary><Segment value={v}/><p className="work-body">{v.reason}</p></details>)}<div className="work-record-actions"><button className="text-button" disabled={busy} onClick={()=>void act(()=>showHistory(segment.id))}>Latest corrections</button>{history.next&&<button className="text-button" disabled={busy} onClick={()=>void act(()=>showHistory(segment.id,history.next!))}>Earlier corrections</button>}</div></section>}
  </section>)}
  </article>}
- </div></Panel></>;
+ </div></Panel>{!denied&&<TranscriptFindings caseId={caseId} csrf={csrf} transcript={record} inspect={inspect} onDenied={clear}/>}</>;
 }

@@ -1,4 +1,5 @@
 import {registerWorkload} from './workload.js';
+import {registerTranscriptFindings} from './transcript-findings.js';
 import {registerFieldCapture,checkFieldDevice,fieldManifestHash,fieldReceipt} from './field-capture.js';
 import type {FieldManifest,FieldCaptureReceipt} from '@inveos/contracts';
 import {registerAttention} from './attention.js';
@@ -671,7 +672,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
 
-  registerInterviews(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);if(row.original_kind!=='original_utf8')throw new ApiError(422,'A preserved supplied transcript text original is required.');const bytes=await verifiedBytes(options.storageRoot,row);return {bytes,digest:row.digest.trim(),authorityVersion:row.authority_version,sourceTime:row.source_time,receivedTime:iso(row.received_time),filename:row.filename};}});
+  const transcriptService=registerInterviews(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);if(row.original_kind!=='original_utf8')throw new ApiError(422,'A preserved supplied transcript text original is required.');const bytes=await verifiedBytes(options.storageRoot,row);return {bytes,digest:row.digest.trim(),authorityVersion:row.authority_version,sourceTime:row.source_time,receivedTime:iso(row.received_time),filename:row.filename};}});
+  const {reportFindings:reportTranscriptFindings}=registerTranscriptFindings(app,{pool:options.pool,authenticate,requireCsrf,findCase,load:transcriptService.load,audit:writeAudit});
 
   registerAttention(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerTimeLedger(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
@@ -1363,7 +1365,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     await client.query(`CLOSE ${name}`);
   }
 
-  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[]): Promise<ReportDraft> {
+  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[],selectedTranscripts?:string[]): Promise<ReportDraft> {
       await findCase(client,actor,caseId);
       const caseResult = await client.query<CaseRow>(
         `SELECT c.*, u.display_name AS owner_name
@@ -1478,7 +1480,12 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         if(report.findings.length+report.documentFindings.length>=REPORT_MAX_ITEMS)throw new ApiError(422,'Report finding limit exceeded.');
         budget.add(finding,0,report.documentFindings.length>0);report.documentFindings.push(finding);
       }
-      if (!report.findings.length&&!report.documentFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
+      for await(const finding of reportTranscriptFindings(client,actor,caseId,selectedTranscripts??(selectedFindings?[]:undefined))){
+        if(!report.transcriptFindings){budget.add({transcriptFindings:[]},0,true);report.transcriptFindings=[];}
+        if(report.findings.length+(report.documentFindings?.length??0)+report.transcriptFindings.length>=REPORT_MAX_ITEMS)throw new ApiError(422,'Report finding limit exceeded.');
+        budget.add(finding,0,report.transcriptFindings.length>0);report.transcriptFindings.push(finding);
+      }
+      if (!report.findings.length&&!report.documentFindings?.length&&!report.transcriptFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
       if(selectedFindings)return report; // Verification inspects only the frozen finding set, not later working context.
       for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
@@ -1565,7 +1572,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const inserted=await client.query(`INSERT INTO report_revisions (tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest)
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);
       if(!inserted.rows[0]) throw Object.assign(new Error('Concurrent revision retry'),{code:'40001'});
-      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[]});
+      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[],transcriptFindingIds:report.transcriptFindings?.map(f=>f.id)??[]});
       return revisionReceipt(inserted.rows[0],caseId);
     });
   });
@@ -1581,13 +1588,14 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(expected!==revision.digest.trim())throw new ApiError(409,'Verification fingerprint does not match the frozen revision.');
       let frozen:ReportDraft;
       try{frozen=JSON.parse(revision.report_bytes.toString('utf8'));}catch{throw new ApiError(409,'Frozen report structure is invalid.');}
-      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||frozen.documentFindings!==undefined&&!Array.isArray(frozen.documentFindings))throw new ApiError(409,'Frozen report structure is invalid.');
+      if(!frozen||frozen.status!=='draft_not_released'||frozen.case?.id!==caseId||!Array.isArray(frozen.findings)||frozen.documentFindings!==undefined&&!Array.isArray(frozen.documentFindings)||frozen.transcriptFindings!==undefined&&!Array.isArray(frozen.transcriptFindings))throw new ApiError(409,'Frozen report structure is invalid.');
       const ids=frozen.findings.map(f=>f?.id);
-      const documentIds=frozen.documentFindings?.map(f=>f?.id)??[],allIds=[...ids,...documentIds];
+      const documentIds=frozen.documentFindings?.map(f=>f?.id)??[],transcriptIds=frozen.transcriptFindings?.map(f=>f?.id)??[],allIds=[...ids,...documentIds,...transcriptIds];
       if(!allIds.length||allIds.length>1000||allIds.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))||new Set(allIds).size!==allIds.length)throw new ApiError(409,'Frozen finding identities are invalid.');
-      const current=await buildReport(client,actor,caseId,ids,documentIds);
+      const current=await buildReport(client,actor,caseId,ids,documentIds,transcriptIds);
       // Preserve the exact frozen claim/review/source/policy representation, including byte spans and embedded originals.
       if(JSON.stringify(current.findings)!==JSON.stringify(frozen.findings))throw new ApiError(409,'Frozen findings no longer match their current source records.');
+      if(JSON.stringify(current.transcriptFindings??[])!==JSON.stringify(frozen.transcriptFindings??[]))throw new ApiError(409,'Frozen transcript findings no longer match their reviewed versions.');
       if(JSON.stringify(current.documentFindings??[])!==JSON.stringify(frozen.documentFindings??[]))throw new ApiError(409,'Frozen document findings no longer match their current source records.');
       return {ids:allIds,revision};
   }

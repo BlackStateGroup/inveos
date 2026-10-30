@@ -27,6 +27,7 @@ else:
                                reject_constant, require, verify_report)
 
 SCHEMA = 'inveos.internal-exhibit-package.v1'
+TRANSCRIPT_SCHEMA = 'inveos.internal-exhibit-package.v2'
 MAX_PACKAGE_BYTES = 64 * 1024 * 1024
 MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 MAX_ENTRIES = 1002  # report, manifest and up to 1,000 distinct cited originals
@@ -77,6 +78,10 @@ def package_payloads(report_raw, exported_at):
     report = load_json(report_raw)
     exported_at = export_time(exported_at)
     sources = {finding['source']['id']: finding['source'] for finding in report['findings']}
+    transcripts = report.get('transcriptFindings', [])
+    for finding in transcripts:
+        source = {**finding['claim']['source'], 'contentBase64': finding['originalBase64']}
+        sources[source['id']] = source
     payloads = {REPORT_PATH: report_raw}
     exhibits, exhibit_ids = [], {}
     for number, evidence_id in enumerate(sorted(sources), 1):
@@ -95,11 +100,19 @@ def package_payloads(report_raw, exported_at):
         'findingId': finding['id'], 'exhibitId': exhibit_ids[finding['source']['id']],
         'kind': 'original_utf8', **{key: finding['source'][key] for key in ('startByte', 'endByte', 'quote')},
     } for finding in report['findings']]
+    citations.extend({'findingId': finding['id'], 'exhibitId': exhibit_ids[finding['claim']['source']['id']],
+                      'kind': 'selected_transcript_utf8_not_original_media',
+                      'transcriptId': finding['claim']['transcript']['id'],
+                      'segmentId': finding['claim']['transcript']['segmentId'],
+                      'sourcePointer': finding['claim']['transcript']['sourcePointer'],
+                      'version': finding['claim']['transcript']['version'],
+                      **{key: finding['claim']['reference'][key] for key in ('startByte', 'endByte', 'quote', 'startMs', 'endMs', 'speakerLabel', 'speakerUncertain')}}
+                     for finding in transcripts)
     manifest = {
-        'schemaVersion': SCHEMA, 'digestAlgorithm': 'sha256',
+        'schemaVersion': TRANSCRIPT_SCHEMA if transcripts else SCHEMA, 'digestAlgorithm': 'sha256',
         'status': 'draft_not_released', 'caseId': checked['caseId'],
         'exportedAt': exported_at, 'reportPath': REPORT_PATH,
-        'reportFormat': 'inveos.internal-report.legacy-utf8',
+        'reportFormat': 'inveos.internal-report.transcript-v1' if transcripts else 'inveos.internal-report.legacy-utf8',
         'exhibits': exhibits, 'citations': citations,
         'files': [{'path': path, 'byteLength': len(raw), 'sha256': sha256(raw)}
                   for path, raw in sorted(payloads.items())],
@@ -200,7 +213,7 @@ def verify_package(raw, expected_manifest_sha256=None, expected_case_id=None):
                 and re.fullmatch('[0-9a-f]{64}', expected_manifest_sha256), 'Invalid trusted manifest digest')
         require(actual == expected_manifest_sha256, 'Manifest digest mismatch')
     manifest = load_json(manifest_raw)
-    require(isinstance(manifest, dict) and manifest.get('schemaVersion') == SCHEMA,
+    require(isinstance(manifest, dict) and manifest.get('schemaVersion') in (SCHEMA, TRANSCRIPT_SCHEMA),
             'Unsupported manifest schema')
     checked = verify_report(members[REPORT_PATH], expected_case_id=expected_case_id)
     expected = package_payloads(members[REPORT_PATH], manifest.get('exportedAt'))
@@ -210,7 +223,7 @@ def verify_package(raw, expected_manifest_sha256=None, expected_case_id=None):
     require(set(members) == set(expected), 'Missing or unexpected package member')
     for path, original in expected.items():
         require(members[path] == original, 'Package member content mismatch')
-    return {'status': 'integrity_checks_passed', 'schemaVersion': SCHEMA,
+    return {'status': 'integrity_checks_passed', 'schemaVersion': manifest['schemaVersion'],
             'manifestSha256': actual, 'packageSha256': sha256(raw),
             'trustedManifestDigestMatched': expected_manifest_sha256 is not None,
             'caseId': checked['caseId'], 'findingsChecked': checked['findingsChecked'],
