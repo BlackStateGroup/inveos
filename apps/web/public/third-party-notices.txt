@@ -1,0 +1,78 @@
+INVEOS third-party notices
+
+These narrow adaptations retain upstream attribution. Full package/runtime incorporation is not claimed.
+
+
+watermelondb
+# WatermelonDB acknowledgement adaptation
+
+Repository: https://github.com/Nozbe/WatermelonDB
+Pinned revision: `5c463222ecd79928861385bac94b486fcc7623d4` (existing INVEOS catalogue pin).
+
+The actual root MIT licence was inspected and is retained in [LICENSE](LICENSE). Source copies remain in ignored `.research-cache/sources/Nozbe/WatermelonDB`; upstream build/install scripts were not executed. Its package manifest includes Babel runtime, Nozbe SQLite/simdjson/LokiJS, RxJS and other dependencies. None of those packages or native backends is incorporated by this adaptation, and no licence/security clearance for the entire library is claimed.
+
+[INVEOS acknowledgement code](../../apps/web/src/fieldAcknowledgement.ts) adapts the record-selection pattern in `src/sync/impl/markAsSynced.js` (`recordsToMarkAsSynced`) and the equality rule in `src/utils/fp/areRecordsEqual/index.js`. It retains Nozbe copyright and the MIT notice. INVEOS replaces database-model/table coupling with a bounded capture identity/revision/fingerprint, accepts only explicitly matching server fingerprints, omits deletion and applies an atomic encrypted-store compare-and-swap. This prevents a late response from acknowledging a different local capture state. It does not reproduce WatermelonDB's database engine, imply native SQLite encryption or transfer its tests' results to INVEOS.
+
+Review scope: pure iteration/equality/Map/Set logic; no dependencies, network, filesystem, dynamic evaluation or privileged execution. Actual INVEOS queue/delivery/device validation is tracked separately in the Field evaluation.
+
+MIT License
+
+Copyright (c) Nozbe
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+followthemoney
+# FollowTheMoney adaptation
+
+Source: https://github.com/alephdata/followthemoney at `c70a89ffa59ea785956f6095643310da3735b7fb`. Actual MIT licence and Python manifest inspected before adaptation. Original copyright and permission notice retained in LICENSE.
+
+INVEOS adapts eight property names/labels from Thing, LegalEntity and Company into its own bounded, versioned, source-linked entity attributes. No upstream entity resolver, automatic matching, datasets or executable Python package is incorporated. Ambiguous identities remain separate; every attribute binds a reviewed finding and exact authority/source hash. Attribution does not imply upstream endorsement.
+
+The upstream manifest requires Python >=3.10 and Babel, PyYAML/types, SQLAlchemy/stubs, banal, rigour, click, requests, normality, countrynames, prefixdate, fingerprints, phonenumbers, pytz, rdflib, networkx, openpyxl and orjson. None is installed or added by this adaptation; existing TypeScript/React/PostgreSQL code executes it. No new runtime dependency or external service. The ignored pinned checkout is research evidence, not shipped application code.
+
+Inspected file SHA-256:
+
+- `LICENSE`: `ded7e69a4f51b53d5e87aedaf8d0d1c1c98e2f3ced6c2b6a9475ba3b553dd990`
+- `pyproject.toml`: `e202284c7b5ea0f82e353dd860ad6c90e2cfaf3c48a5ab5675b09d6f283040f8`
+- `followthemoney/schema/Thing.yaml`: `216569ca1506baf47ac797b239b3e3274784232607bb0d452d618b7ba69a35ab`
+- `followthemoney/schema/LegalEntity.yaml`: `d40a2e3aef7b95b29e2cfd5535aa6b37fa0009d4ef729b461e86fe59b91cd7b4`
+- `followthemoney/schema/Company.yaml`: `a335cffcf1e5cbf70e6b7c632a4c5a5279705dcfb48ec2d8b7febcd80baa978f`
+
+MIT License
+
+Copyright (c) 2017-2024 Journalism Development Network, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

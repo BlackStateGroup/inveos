@@ -195,3 +195,13 @@ jobs:
           path: output/evals/document-search-*.png
           if-no-files-found: ignore
           retention-days: 14
+      - name: Retain fictional Field and entity browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: field-team-entity-browser
+          path: |
+            output/evals/field-workspace-desktop.png
+            output/evals/entity-attributes-desktop.png
+          if-no-files-found: ignore
+          retention-days: 14
