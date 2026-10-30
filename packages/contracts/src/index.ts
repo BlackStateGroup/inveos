@@ -293,6 +293,6 @@ export type AnalysisSource={reference:ChronologySource;fingerprint:string;statem
 export type AnalysisSuggestion={kind:'amount_difference'|'date_difference'|'wording_difference';sources:[number,number];observed:[string[],string[]];explanation:string;check:string};
 export type AnalysisRun={id:string;caseId:string;authorityVersion:number;createdBy:string;createdAt:string;profile:'cited_rules_v1';mode:AnalysisMode;question:string;sources:AnalysisSource[];passages:{source:number;matchedTerms:string[]}[];suggestions:AnalysisSuggestion[];limitations:string;digest:string};
 export type AnalysisDecision={id:string;suggestion:number;version:number;disposition:'request_check'|'dismiss';reason:string;actorId:string;actorName:string;recordedAt:string};
-export type AnalysisRunRecord={run:AnalysisRun;decisions:AnalysisDecision[];sourceVerification:'current_reviewed_sources_reverified';canDecide:boolean};
+export type AnalysisRunRecord={run:AnalysisRun;decisions:AnalysisDecision[];followups:{suggestion:number;decisionVersion:number;workId:string}[];sourceVerification:'current_reviewed_sources_reverified';canDecide:boolean};
 export type AnalysisRunPage={items:{id:string;mode:AnalysisMode;question:string;createdAt:string;createdBy:string;authorityVersion:number;sourceCount:number;suggestionCount:number}[];next:string|null};
 export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,InvoiceLine,InvoiceSnapshot,InvoiceReview,InvoiceRevision,InvoiceSummary,InvoicePage,InvoiceCandidate,InvoiceEligibility,InvoiceExport} from './agency-invoicing.js';

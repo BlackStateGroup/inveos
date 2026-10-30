@@ -1,3 +1,5 @@
+import {randomUUID} from 'node:crypto';
+import {createWorkItem,displayWork} from './casework.js';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient,QueryResultRow} from 'pg';
 import type {AnalysisDecision,AnalysisMode,AnalysisRun,AnalysisRunRecord,AnalysisSource,ChronologySource,ReviewedSourceFinding} from '@inveos/contracts';
@@ -29,7 +31,8 @@ export function registerCaseAnalysis(app:FastifyInstance,s:Services){
   const computed=analyseSources(run.sources,run.mode,run.question);if(hash(computed)!==hash({passages:run.passages,suggestions:run.suggestions,limitations:run.limitations}))throw new ApiError(409,'Stored rule output differs from its declared profile.');
   const decisions=(await c.query('SELECT DISTINCT ON(suggestion) * FROM case_analysis_decisions WHERE tenant_id=$1 AND case_id=$2 AND run_id=$3 ORDER BY suggestion,version DESC',[a.tenantId,caseId,id])).rows.map(displayDecision);
   if(decisions.some(d=>!run.suggestions[d.suggestion]))throw new ApiError(409,'Analysis decision refers to a missing suggestion.');
-  return {run,decisions,sourceVerification:'current_reviewed_sources_reverified',canDecide:a.role==='reviewer'&&a.userId!==run.createdBy};
+  const followups=(await c.query('SELECT suggestion,decision_version,work_id FROM case_analysis_followups WHERE tenant_id=$1 AND case_id=$2 AND run_id=$3 ORDER BY suggestion',[a.tenantId,caseId,id])).rows.map(v=>({suggestion:v.suggestion,decisionVersion:v.decision_version,workId:v.work_id}));
+  return {run,decisions,followups,sourceVerification:'current_reviewed_sources_reverified',canDecide:a.role==='reviewer'&&a.userId!==run.createdBy};
  }
  app.get(base,{preHandler:read,schema:{params,querystring:{type:'object',additionalProperties:false,properties:{after:uuid}}}},r=>tx(async c=>{
   const a=r.actor!,{caseId}=r.params as {caseId:string},{after}=r.query as {after?:string};await s.findCase(c,a,caseId);
@@ -49,7 +52,7 @@ export function registerCaseAnalysis(app:FastifyInstance,s:Services){
   if(Buffer.byteLength(JSON.stringify(run))>200000)throw new ApiError(422,'Selected analysis exceeds its context bound. Select fewer passages.');
   await c.query('INSERT INTO case_analysis_runs(tenant_id,case_id,id,authority_version,created_by,created_at,request_hash,snapshot,digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9)',[a.tenantId,caseId,q.id,kase.authority_version,a.userId,at,requestHash,JSON.stringify(run),run.digest]);
   for(const [ordinal,ref] of q.sources.entries())await c.query('INSERT INTO case_analysis_sources(tenant_id,case_id,run_id,ordinal,text_finding_id,document_finding_id,transcript_finding_id,speech_finding_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[a.tenantId,caseId,q.id,ordinal,...(['text_finding','document_finding','transcript_finding','speech_finding'] as const).map(kind=>kind===ref.kind?ref.findingId:null)]);
-  await s.audit(c,a,caseId,'analysis.created','case_analysis',q.id,'Cited rule suggestions saved separately from claims and findings');return {run,decisions:[],sourceVerification:'current_reviewed_sources_reverified',canDecide:false} satisfies AnalysisRunRecord;
+  await s.audit(c,a,caseId,'analysis.created','case_analysis',q.id,'Cited rule suggestions saved separately from claims and findings');return {run,decisions:[],followups:[],sourceVerification:'current_reviewed_sources_reverified',canDecide:false} satisfies AnalysisRunRecord;
  }));
  app.post(base+'/:id/suggestions/:suggestion/decisions',{preHandler:[s.requireCsrf,read],schema:{params:suggestionParams,body:{type:'object',additionalProperties:false,required:['id','expectedVersion','disposition','reason'],properties:{id:uuid,expectedVersion:{type:'integer',minimum:0,maximum:99},disposition:{enum:['request_check','dismiss']},reason:{type:'string',minLength:10,maxLength:2000}}}}},r=>tx(async c=>{
   const a=r.actor!,{caseId,id,suggestion}=r.params as {caseId:string;id:string;suggestion:number},q=r.body as {id:string;expectedVersion:number;disposition:'request_check'|'dismiss';reason:string};
@@ -59,6 +62,22 @@ export function registerCaseAnalysis(app:FastifyInstance,s:Services){
   const current=record.decisions.find(v=>v.suggestion===suggestion);if((current?.version??0)!==q.expectedVersion)throw new ApiError(409,'Suggestion triage changed. Refresh its retained history.');
   const row=(await c.query('INSERT INTO case_analysis_decisions(tenant_id,case_id,run_id,suggestion,version,id,disposition,reason,actor_id,actor_name,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',[a.tenantId,caseId,id,suggestion,q.expectedVersion+1,q.id,q.disposition,q.reason,a.userId,a.displayName,requestHash])).rows[0];
   await s.audit(c,a,caseId,'analysis.triaged','case_analysis',id,'Suggestion triage recorded; no finding, task or release created automatically');return displayDecision(row);
+ }));
+ app.post(base+'/:id/suggestions/:suggestion/followup',{preHandler:[s.requireCsrf,read],schema:{params:suggestionParams,body:{type:'object',additionalProperties:false,required:['id','decisionVersion','title','body','ownerId','dueDate'],properties:{id:uuid,decisionVersion:{type:'integer',minimum:1,maximum:100},title:{type:'string',minLength:3,maxLength:200},body:{type:'string',maxLength:10000},ownerId:{anyOf:[uuid,{type:'null'}]},dueDate:{anyOf:[{type:'string',pattern:'^[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}$'},{type:'null'}]}}}}},r=>tx(async c=>{
+  const a=r.actor!,{caseId,id,suggestion}=r.params as {caseId:string;id:string;suggestion:number},q=r.body as {id:string;decisionVersion:number;title:string;body:string;ownerId:string|null;dueDate:string|null};
+  const record=await load(c,a,caseId,id),candidate=record.run.suggestions[suggestion];if(!candidate)notFound();
+  const requestHash=hash({runId:id,suggestion,...q}),old=(await c.query('SELECT * FROM case_analysis_followups WHERE tenant_id=$1 AND case_id=$2 AND run_id=$3 AND suggestion=$4',[a.tenantId,caseId,id,suggestion])).rows[0];
+  if(old){if(old.created_by!==a.userId||old.request_hash.trim()!==requestHash)throw new ApiError(409,'This suggestion already has a follow-up question. Open its saved work record.');const item=(await c.query('SELECT *,due_date::text AS due_date FROM case_work_items WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,old.work_id])).rows[0];if(!item)notFound();return displayWork(item);}
+  const decision=record.decisions.find(d=>d.suggestion===suggestion);if(!decision||decision.version!==q.decisionVersion||decision.disposition!=='request_check')throw new ApiError(409,'A current independent request for a follow-up check is required. Refresh the suggestion.');
+  if((await c.query('SELECT 1 FROM case_work_items WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,q.id])).rowCount)throw new ApiError(409,'Choose a new work request identity.');
+  const body=q.body+'\n\nAnalysis run '+id+'; suggestion '+(suggestion+1)+'; triage v'+decision.version+'. Rule suggestions are not findings. '+candidate.check;
+  const item=await createWorkItem(c,a,caseId,{id:q.id,kind:'question',title:q.title,body,ownerId:q.ownerId,dueDate:q.dueDate,parentId:null},s,async work=>{
+   for(const index of candidate.sources){const ref=record.run.sources[index]!.reference;let claimId:string|null=null;if(ref.kind==='text_finding'){const row=(await c.query('SELECT claim_id FROM findings WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,ref.findingId])).rows[0];if(!row)notFound();claimId=row.claim_id;}
+    await c.query('INSERT INTO case_work_links(tenant_id,case_id,id,item_id,claim_id,document_finding_id,transcript_finding_id,speech_finding_id,relation,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[a.tenantId,caseId,randomUUID(),work.id,claimId,ref.kind==='document_finding'?ref.findingId:null,ref.kind==='transcript_finding'?ref.findingId:null,ref.kind==='speech_finding'?ref.findingId:null,'context','Context for human follow-up of analysis '+id+', suggestion '+(suggestion+1)+'. No contradiction or factual truth inferred.',a.userId]);
+   }
+  });
+  await c.query('INSERT INTO case_analysis_followups(tenant_id,case_id,run_id,suggestion,decision_version,work_id,created_by,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[a.tenantId,caseId,id,suggestion,decision.version,item.id,a.userId,requestHash]);
+  await s.audit(c,a,caseId,'analysis.followup_created','case_analysis',id,'Investigator explicitly created a question with both contextual source links');return item;
  }));
  app.get(base+'/:id/suggestions/:suggestion/history',{preHandler:read,schema:{params:suggestionParams,querystring:{type:'object',additionalProperties:false,properties:{before:{type:'integer',minimum:1,maximum:101}}}}},r=>tx(async c=>{
   const a=r.actor!,{caseId,id,suggestion}=r.params as {caseId:string;id:string;suggestion:number},{before}=r.query as {before?:number};const record=await load(c,a,caseId,id);if(!record.run.suggestions[suggestion])notFound();

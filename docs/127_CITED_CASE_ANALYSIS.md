@@ -14,7 +14,7 @@ Three modes are available:
 
 The run, request identity and rule profile are immutable. Repeated requests reuse the saved result only for the same actor and input. Inspection regenerates the deterministic output and checks current source fingerprints. Authority changes, new speech/transcript corrections, source withdrawal, blocked source use or original corruption prevent reuse. The earlier run remains retained rather than silently rewritten.
 
-An independent case reviewer may request a human check or dismiss a suggestion with a reason. Each decision has an expected version, stable retry identity and append-only history. Decisions do not create findings, tasks or client releases. Investigators create and assign follow-up work explicitly using Brief/Tasks. This separation avoids treating a comparison hint as evidence or a resolved allegation.
+An independent case reviewer may request a human check or dismiss a suggestion with a reason. Each decision has an expected version, stable retry identity and append-only history. Decisions do not create findings, tasks or client releases. After an independent request for a check, an investigator can explicitly create an assigned follow-up question from the suggestion. Migration089 binds the exact triage version to one question; the question, both contextual source links, initial version snapshot and audit are written atomically. Stable retries recover the question, and later work edits remain in the normal Brief/Tasks history. This separation avoids treating a comparison hint as evidence or a resolved allegation.
 
 The interface includes source filtering/selection, saved-run pages, exact passage locations, original navigation, side-by-side comparisons and triage history. Errors clear loaded source context. The API and interface use the existing locked dependencies and first-party source/review patterns; no new model, library, external service or upstream code was incorporated. No source text is executed as instructions or sent externally.
 
@@ -29,3 +29,6 @@ Required acceptance includes same-case foreign keys; original tamper; cross-case
 ## Remaining
 
 Semantic Q&A, model-generated summaries/entities/events, domain-qualified fraud rules, prompt-injection evaluation against an actual inference runtime, multilingual semantics, representative quality/cost evidence, broader source retrieval, model/provider/runtime/licence approval and professional acceptance remain open. No rule suggestion is an allegation, legal conclusion, independently verified truth or automatic client disclosure. Production/native/device/recovery gates remain in the delivery plan.
+
+
+Follow-up implementation compiler feedback passes (`/tmp/inveos-analysis-followup-compile.log`). The shared work-creation routine is reused, including current owner membership/date validation and immutable initial history. Acceptance must additionally exercise transaction rollback after source-link/audit failure, concurrent/replayed follow-up creation, version-changed/dismissed triage, revoked assignees, exact links in the first question revision and navigation after reload. These checks are unrun.

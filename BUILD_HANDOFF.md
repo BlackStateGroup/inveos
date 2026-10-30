@@ -1,3 +1,9 @@
+## Combined implementation branch
+
+Active root branch is now `feat/platform-build-batch`, in `/code/inveos-speech-casework`. It retains speech/analysis work and integrates agency4cf5a391 via e810d1dc and Field5063d975 via b5db2f22. Combined TypeScript checks pass (`/tmp/inveos-platform-{agency,field}-compile.log`); runtime acceptance remains unrun. Root adds migration089 for explicit source-linked analysis follow-up questions, with compilation passing and all new transactional/browser checks deferred.
+
+OSINT first batch completed171f0ac3b4d4d520be151502fa28dbb83caa54a1 on feat/osint-expansion-124 (migration065/docs124), compiler/narrow lint only; root is integrating it. Its next task completes PDF/DOCX provenance and adds bounded legal-entity research if official API/licence review supports it (090–093/docs130). Field continues bulk processing(085–088/docs129); agency continues portal feedback(081–084/docs128). No main merges or PRs from this parallel build batch yet.
+
 ## Next connected build: cited source analysis
 
 Root adds migration080 and docs/127: saved source selection, exact cited passages, word-matched question retrieval, literal amount/date/negation comparisons and independent versioned triage. First-party deterministic rules; no semantic AI/inference or external collection claim. Web/contracts/API compile; all new runtime/database/browser/quality acceptance is unrun. No PR/merge yet.
