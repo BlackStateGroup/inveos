@@ -8,3 +8,10 @@
 .field-capture code { display: block; font-size: 11px; margin: 12px 0; }
 .field-scope-load { display: grid; gap: 12px; }
 @media(max-width: 600px) { .field-workbench { padding: 20px 12px 64px; gap: 18px; } .field-workbench .work-record-actions { flex-wrap: wrap; } }
+.field-workbench details { min-width: 0; }
+.field-workbench details summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+.field-workbench .field-recovery { margin-top: 14px; border-left: 3px solid var(--line); padding-left: 16px; }
+.field-workbench .field-recovery li { margin: 10px 0; overflow-wrap: anywhere; }
+.field-workbench .work-record-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.field-workbench .panel-body > p,.field-workbench details p { overflow-wrap: anywhere; }
+.field-workbench input,.field-workbench select,.field-workbench textarea { max-width: 100%; }
