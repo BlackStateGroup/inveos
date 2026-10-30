@@ -2826,7 +2826,7 @@ test('real browser creates a case, enforces authority and restores versioned sco
  await withBrowserApp(async(b,origin)=>{
   t.diagnostic('Investigator browser runtime: '+JSON.stringify(await b.send('Browser.getVersion')));
   const text=()=>b.evaluate<string>("document.body?.innerText||''");
-  const click=async(label:string)=>{await b.evaluate(`(()=>{const buttons=[...document.querySelectorAll('button')].filter(b=>b.textContent===${JSON.stringify(label)});const button=buttons.find(b=>b.getClientRects().length);if(!button||button.disabled)throw new Error('Button unavailable: '+${JSON.stringify(label)});button.click();})()`);};
+  const click=async(label:string)=>{await eventually(async()=>b.evaluate<boolean>(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)}&&b.getClientRects().length);return Boolean(button&&!button.disabled);})()`),'enabled visible button: '+label);await b.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)}&&b.getClientRects().length);if(!button||button.disabled)throw new Error('Button unavailable: '+${JSON.stringify(label)});button.click();})()`);};
   const fill=async(name:string,value:string)=>{await b.evaluate(`(()=>{const field=document.querySelector('dialog [name="'+${JSON.stringify(name)}+'"]');if(!field)throw new Error('Missing field');field.value=${JSON.stringify(value)};field.dispatchEvent(new Event('input',{bubbles:true}));})()`);};
   await b.send('Page.navigate',{url:origin+'/'});
   await eventually(async()=> (await text()).includes('Open persistent lab'),'prototype render');await click('Open persistent lab');
