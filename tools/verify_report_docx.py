@@ -105,7 +105,7 @@ def verify(data, expected_docx_sha256=None, expected_report_sha256=None):
     document = DECLARATION + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
     for paragraph in paragraphs:
         text = escape(paragraph).replace('\t', '</w:t><w:tab/><w:t xml:space="preserve">')
-        bold = '<w:b/>' if re.match(r'^(INVEOS INTERNAL REPORT|EDITABLE INTERNAL COPY|FINDING \d|DOCUMENT FINDING \d|TRANSCRIPT FINDING \d|WORKING CONTEXT|REPORT LIMITATIONS|ALLEGED EVENTS|TRANSCRIPT REASONING LINKS)', paragraph) else ''
+        bold = '<w:b/>' if re.match(r'^(INVEOS INTERNAL REPORT|EDITABLE INTERNAL COPY|FINDING \d|DOCUMENT FINDING \d|TRANSCRIPT FINDING \d|WORKING CONTEXT|REPORT LIMITATIONS|ALLEGED EVENTS|TRANSCRIPT REASONING LINKS|DOCUMENT REASONING LINKS)', paragraph) else ''
         document += '<w:p><w:pPr><w:spacing w:after="80"/></w:pPr><w:r><w:rPr><w:sz w:val="22"/>' + bold + '</w:rPr><w:t xml:space="preserve">' + text + '</w:t></w:r></w:p>'
     document += '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>'
     require(parts[2] == document, 'Visible document differs from the redacted semantic model')
