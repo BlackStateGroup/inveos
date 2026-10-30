@@ -1,0 +1,170 @@
+{
+  "renderer": "LibreOffice 7.4.7.2 40(Build:2)",
+  "actualOfficeAndPopplerExecution": true,
+  "copies": [
+    {
+      "family": "rdap_domain_v1",
+      "variant": "full",
+      "renderedFrom": "pdf",
+      "pdfSha256": "c10f8050374548a88e530d0f8a728f5f2ee121e8a06b977203653d334ae68cc6",
+      "sourceDocxSha256": "39565dea350e1cb884ffd1a205dfc995ac80ac0b9b8f0836cbeabf00ca0b6f0c",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "rdap_domain_v1",
+      "variant": "full",
+      "renderedFrom": "docx",
+      "pdfSha256": "003c8080e04ef3bb2cbcb91f6f828b36c38f487241a1d960260cfc6f4cc9f731",
+      "sourceDocxSha256": "39565dea350e1cb884ffd1a205dfc995ac80ac0b9b8f0836cbeabf00ca0b6f0c",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "rdap_domain_v1",
+      "variant": "redacted",
+      "renderedFrom": "pdf",
+      "pdfSha256": "5b1bf852120f8454a5d1674de3ab320e2e4c8767c6264f052cc2856f05b609ef",
+      "sourceDocxSha256": "982d2be8aaceff161bcfec11baee8f9c51301e013ea578eb1da58f008ac24182",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "rdap_domain_v1",
+      "variant": "redacted",
+      "renderedFrom": "docx",
+      "pdfSha256": "56adffd9bc9e967e794937040c91873a1df34b2af361e487af2f4de517640cb8",
+      "sourceDocxSha256": "982d2be8aaceff161bcfec11baee8f9c51301e013ea578eb1da58f008ac24182",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "supplied_webpage_v1",
+      "variant": "full",
+      "renderedFrom": "pdf",
+      "pdfSha256": "1790ce23fb67c1daba20c3f4c72a243c38ebcb0550e9e3110d9f902953377381",
+      "sourceDocxSha256": "5bdea20a2d30e490e18d379876c5188711547941d1cd89f34455cce9444c01f9",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "supplied_webpage_v1",
+      "variant": "full",
+      "renderedFrom": "docx",
+      "pdfSha256": "7c9f95d6a8b68bb84d2cc4f93298eb0d2000f07177cdd24de777ab51e0df2517",
+      "sourceDocxSha256": "5bdea20a2d30e490e18d379876c5188711547941d1cd89f34455cce9444c01f9",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "supplied_webpage_v1",
+      "variant": "redacted",
+      "renderedFrom": "pdf",
+      "pdfSha256": "cc4348da563fe086d3679481a6578afead08f3421f8543380bf1bc231c9608b2",
+      "sourceDocxSha256": "256624f2edb0dde4cb4cab54583e17ce918bf952790f14fe87e2de4d233ba767",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "supplied_webpage_v1",
+      "variant": "redacted",
+      "renderedFrom": "docx",
+      "pdfSha256": "d8f79576a6c3e2b759675484816286bb862977b1d0fc3512488662718a978d62",
+      "sourceDocxSha256": "256624f2edb0dde4cb4cab54583e17ce918bf952790f14fe87e2de4d233ba767",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "gleif_lei_v1",
+      "variant": "full",
+      "renderedFrom": "pdf",
+      "pdfSha256": "2dcb8c0468622c68e0e48aca5592e0fbdc10bc43a7d8f0463b7c54b1a07c5286",
+      "sourceDocxSha256": "2de6cf8bf068111c6ce8e63c61ebb753fde403d90e7503647b65b8e9741dc3f8",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "gleif_lei_v1",
+      "variant": "full",
+      "renderedFrom": "docx",
+      "pdfSha256": "f4a534928b7fa951041a82b94f445d336fe65c58c72670db75ecf3b537df882d",
+      "sourceDocxSha256": "2de6cf8bf068111c6ce8e63c61ebb753fde403d90e7503647b65b8e9741dc3f8",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "gleif_lei_v1",
+      "variant": "redacted",
+      "renderedFrom": "pdf",
+      "pdfSha256": "f3bab49399f82773e8fe4b72c3367e7671ad1e76d392d0fb7cc87e4e006516ff",
+      "sourceDocxSha256": "13ce580760595803624177496a3e3544f480d6a355bac257f48464e2584c2719",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "gleif_lei_v1",
+      "variant": "redacted",
+      "renderedFrom": "docx",
+      "pdfSha256": "9ad8227da00b526c1c7da9805e2f8d426fbe3807bd587853d1bf8185196d9fce",
+      "sourceDocxSha256": "13ce580760595803624177496a3e3544f480d6a355bac257f48464e2584c2719",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika",
+      "variant": "full",
+      "renderedFrom": "pdf",
+      "pdfSha256": "69bfdeafa31cf21496f1d0aabdb30c868616fff2854ef0c4b045a94edb9457a5",
+      "sourceDocxSha256": "bdf57ee215fa923203e3ddc1aca011450a9c0182bf02cd2a08f544c9e9393035",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika",
+      "variant": "full",
+      "renderedFrom": "docx",
+      "pdfSha256": "ee77630c247115e2c5c14d641d95b548b6138cb5402f662745aad286e84c5360",
+      "sourceDocxSha256": "bdf57ee215fa923203e3ddc1aca011450a9c0182bf02cd2a08f544c9e9393035",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika",
+      "variant": "redacted",
+      "renderedFrom": "pdf",
+      "pdfSha256": "fe533247160b0f67621bf15b06be40c98f773f1cae0e981aa66128149d7d0d89",
+      "sourceDocxSha256": "28c7fe79b5a28fc29bf123c204d229e5bc74020a8fe419f03398577f1e6a8ef1",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika",
+      "variant": "redacted",
+      "renderedFrom": "docx",
+      "pdfSha256": "6fa0a205197adf22b0b7acecd454552b58ff06b8f30fe0d3ff2fae25c4868d25",
+      "sourceDocxSha256": "28c7fe79b5a28fc29bf123c204d229e5bc74020a8fe419f03398577f1e6a8ef1",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika_field",
+      "variant": "full",
+      "renderedFrom": "pdf",
+      "pdfSha256": "d45e20c5b1d39d555b19e33b67d4ba435968c95480e11d0674956c42d4af47b9",
+      "sourceDocxSha256": "8e5ffc37535e87e3fd72bead4d7ebf6f664d94e471bacb1ebab2e72af9497c7f",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika_field",
+      "variant": "full",
+      "renderedFrom": "docx",
+      "pdfSha256": "f0865c9ac7550c24241c6ca95e261063c0f9ea3114d726d39a50e1d09525da91",
+      "sourceDocxSha256": "8e5ffc37535e87e3fd72bead4d7ebf6f664d94e471bacb1ebab2e72af9497c7f",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika_field",
+      "variant": "redacted",
+      "renderedFrom": "pdf",
+      "pdfSha256": "3fd9565a5b41105d5fd15caf7eafed380d17c91e8dcbef972872be239553817b",
+      "sourceDocxSha256": "c436afaf14dedc5796fea6b4cb9b0070b5b84891c1443f20f96dd81eba4aa0f1",
+      "textAndRedactionChecked": true
+    },
+    {
+      "family": "tika_field",
+      "variant": "redacted",
+      "renderedFrom": "docx",
+      "pdfSha256": "4d6a3027d6e903c767ddba3623b35c22c6df9a9ce3d037c90140d6578c41db32",
+      "sourceDocxSha256": "c436afaf14dedc5796fea6b4cb9b0070b5b84891c1443f20f96dd81eba4aa0f1",
+      "textAndRedactionChecked": true
+    }
+  ],
+  "officeResaveTrustedDigestRejected": true,
+  "actualParserExecuted": false,
+  "browserInteractionChecked": false,
+  "limitation": "Fictional fixtures only; visually inspect pages. No native runtime, legal or production approval."
+}
