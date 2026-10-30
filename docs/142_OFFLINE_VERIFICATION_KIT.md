@@ -1,0 +1,17 @@
+# Downloadable offline verification kit
+
+Implementation in the combined platform build, with no migration or new dependency. Runtime acceptance is **unrun**.
+
+`GET /api/verification-kit` supplies a deterministic STORE ZIP after normal session authentication. Its fixed source allowlist contains the current first-party report, document-package, PDF, DOCX, Field, composition, collection, research, speech, transcript and internal-invoice checkers plus their helper dependency closure. It never walks a directory or incorporates research copies, parser/model runtimes, credentials, case records or exports. The new Tika helper must be added when that concurrent branch is integrated. Missing/oversized/non-UTF-8 source fails the complete download rather than returning a partial kit.
+
+The kit contains `README.txt` with Python3.11+ standard-library commands, supported verification boundaries and independently retained fingerprint instructions. A deterministic `manifest.json` inventories each file's exact length and SHA-256. The ZIP has a fixed date and no compression, scripts or auto-extraction step in the application. API responses carry separate whole-ZIP and manifest fingerprints, no-store and nosniff headers, and download disposition. ZIP limit is4MiB, each file512KiB, at most32 members. No export bytes or personal data are appended. Audit records identify the static kit digest rather than a case.
+
+Saved report revisions and the restricted recipient portal expose a shared download control. The browser requires the expected ZIP media type, bounded bytes and matching header SHA-256 before saving, then shows that fingerprint for separate retention. This confirms receipt consistency only. The kit is not digitally signed and cannot itself establish a trusted identity or source of its own fingerprint. It cannot attest factual truth, legal clearance, current access or admissibility. PDF/DOCX verification does not require disclosing a hidden internal report to a recipient, and cannot check original bytes omitted from that recipient copy. Editing a DOCX changes its bytes and does not transfer the old approval.
+
+The API caches one complete kit per app instance; restarting after a software update yields the new exact source inventory. Preserve a supplied kit alongside the historical exports it supports. This does not mutate previously frozen reports, rendition formats or legacy verifier behaviour. Existing first-party ZIP-writing conventions are reused without altering the DOCX writer.
+
+## Verification
+
+All web/contracts/API typechecks passed (`/tmp/inveos-verification-kit-compile.log`), and diff checks are clean. No endpoint/database/audit test, ZIP extraction, copied-kit verifier execution, exported fixture mutation, browser download/rendering or full acceptance has run.
+
+After the combined feature build, run actual authenticated API download and audit/denial checks, independent ZIP inventory/CRC/content hash checks, repeated byte equality and complete Python helper closure from a clean temporary directory without this checkout on its module path. Exercise current full report/document/Field/composition/research/speech/invoice exports and rejected tampering. Include legacy byte parity and copied-kit checks. Actual browser download, abort/retry, unauthorised response, incorrect type/digest/bounds, portal isolation and narrow layout remain required. Add Tika's standalone helper and check its real output separately; synthetic fixtures do not constitute a parser benchmark.

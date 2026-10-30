@@ -1,3 +1,4 @@
+import {registerVerificationKit} from './verification-kit.js';
 import {registerCaseHandling,caseSharingEligibility,caseSharingState,assertCaseSharing} from './case-handling.js';
 import {reportFieldProvenance} from './field-provenance.js';
 import {registerCaseAnalysis} from './case-analysis.js';
@@ -687,6 +688,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerConnectorPolicies(app,{pool:options.pool,authenticate,requireCsrf});
   registerCollectionJobs(app,{pool:options.pool,storage:options.storageRoot,authenticate,requireCsrf});
   const manualSourceService=registerManualSources(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
+  registerVerificationKit(app,{pool:options.pool,authenticate,audit:writeAudit});
   registerRestrictedWork(app,{assertSharing:assertCaseSharing,pool:options.pool,authenticate,csrf:requireSessionCsrf,findCase,audit:writeAudit,
     assertSession:async(client,actor)=>{
       const valid=(await client.query(`SELECT 1 FROM sessions ss JOIN memberships m ON m.tenant_id=ss.tenant_id AND m.user_id=ss.user_id

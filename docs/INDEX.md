@@ -271,3 +271,5 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 - [135 — Field sessions and observations](135_FIELD_SESSIONS.md): original-backed sessions, corrections and independent context review; runtime acceptance pending.
 - [137 — Restricted collaborator work](137_RESTRICTED_COLLABORATOR_WORK.md): independently published task instructions and recipient submissions; runtime acceptance pending.
 - [141 — Field records in investigator search](141_FIELD_CASE_SEARCH.md): exact original/correction inspection from case search; runtime acceptance pending.
+
+- [142 — Offline verification kit](142_OFFLINE_VERIFICATION_KIT.md): downloadable standard-library export checkers without case data; runtime acceptance pending.

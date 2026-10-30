@@ -1,3 +1,9 @@
+## Latest root build: downloadable verification kit
+
+Root adds docs142 and authenticated `/api/verification-kit`: fixed source allowlist, deterministic ZIP/manifest, no case data/runtime copies, audited download and shared investigator/recipient UI with receipt fingerprint. Compilation passed (`/tmp/inveos-verification-kit-compile.log`); actual ZIP/standalone/API/browser acceptance is unrun. Add the Tika helper to the whitelist when its branch lands. Case handling now also requires explicitly typed input versions before schema coercion. No new migration/dependency, PR or main merge.
+
+Field dispatch116–119/docs139, task templates120–124/docs140 and pinned PDF-only Tika105–109/docs136 remain active. Continue substantive integration/build first, then the combined acceptance phase. The current work is not production-ready or accepted merely because it compiles.
+
 ## Current combined build: Field sessions, collaborator work and source inspection
 
 Branch feat/platform-build-batch integrates Field sessions9a235c92 at7f015ae9 and collaborator30c84d19 at1ba121b3. Case handling80b69649 provides a mandatory shared external-access helper, wired into collaborator publication/review retries, external routes and final rechecks. The internal eligibility UI reflects that gate. ADR009 attribution is corrected to delegated implementation authority, not a fabricated separate user sign-off.
