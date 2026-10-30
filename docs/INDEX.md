@@ -249,7 +249,7 @@
 - [123 — Reviewed speech in case reasoning](123_SPEECH_CASE_REASONING.md) — typed work sources, correction-sensitive assessments, search and frozen export lineage; actual acceptance remains explicit.
 
 
-## Active parallel implementation (acceptance pending)
+## Integrated platform batch (acceptance in progress)
 
 - [Reviewed speech reasoning, graph, chronology and review attention](123_SPEECH_CASE_REASONING.md)
 - [RDAP and supplied webpage research](124_OSINT_EXPANSION.md)
@@ -278,3 +278,7 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 - [140 — Reusable case task templates](140_REUSABLE_TASK_TEMPLATES.md): pinned reviewed boilerplate and atomic explicit application; runtime acceptance pending.
 
 - [139 — Field dispatch and manual shift records](139_FIELD_DISPATCH.md): reviewer instructions, recipient check-ins/incidents/handovers and encrypted operational queue; runtime/upgrade/restore acceptance pending.
+
+- [143 — Recipient evidence requests](143_PORTAL_EVIDENCE_REQUESTS.md): independently published requests and quarantined original intake, integrated with mandatory case handling.
+- [144 — Tika frozen report lineage](144_TIKA_REPORT_LINEAGE.md): explicit typed findings, provenance packages, redaction and copied verification; acceptance in progress.
+- [145 — Restored-case quarantine](145_RESTORED_CASE_QUARANTINE.md): scoped non-production recovery, bounded retirement and fresh-authority/handling gates; actual restore acceptance pending.

@@ -32,3 +32,8 @@ Semantic Q&A, model-generated summaries/entities/events, domain-qualified fraud 
 
 
 Follow-up implementation compiler feedback passes (`/tmp/inveos-analysis-followup-compile.log`). The shared work-creation routine is reused, including current owner membership/date validation and immutable initial history. Acceptance must additionally exercise transaction rollback after source-link/audit failure, concurrent/replayed follow-up creation, version-changed/dismissed triage, revoked assignees, exact links in the first question revision and navigation after reload. These checks are unrun.
+
+
+### Acceptance follow-through, 30 October 2026
+
+Actual restricted-PostgreSQL acceptance passes for immutable run replay, independent triage, no automatic findings, explicit follow-up with both contextual links in its first revision, stable retry, current role/authority checks, and atomic work/link/history/receipt rollback on audit failure. This is deterministic rule acceptance, not semantic AI qualification. Root command: restricted test/admin database URLs with `node --import tsx --test --test-concurrency=1 apps/api/test/case-handling.test.ts`; the combined root file passed eight tests, zero failures/skips. Receipt: `/tmp/inveos-platform-root-workflows-first.log`.

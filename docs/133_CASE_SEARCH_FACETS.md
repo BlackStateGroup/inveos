@@ -9,3 +9,8 @@ Word modes use at most twelve whitespace-separated literal fragments, without st
 Saved filters preserve optional modes/ranges/source identities in versioned snapshots. Old filters still mean phrase matching with no time/source restriction, and their original idempotency hash shape remains unchanged. The UI exposes the optional controls, per-hit source/receipt metadata and filter history.
 
 Web, contracts and API compilation passed (`/tmp/inveos-search-facets-compile.log`). Database/API/browser/performance checks are **unrun**. Acceptance must cover offsets/date boundaries, source versus receipt differences, null-linked records, exact-source cross-case guessing, word/phrase distinctions, literal punctuation, invalid ranges/offsets, inherited older filters, altered retries, saved-history changes, permission/source-use revocation, pagination/facet consistency, query limits, desktop/narrow renders and representative large-case timing. This increment does not establish production search performance or full semantic retrieval.
+
+
+### Acceptance follow-through, 30 October 2026
+
+Actual restricted-PostgreSQL acceptance passes for phrase/all-word/any-word distinction, literal percentage matching, inclusive equivalent-offset source instants, separate receipt-time bounds, exact original identity, invalid dates/unknown offsets/reversed ranges/word limits, facet counts and preserved legacy saved-filter hashes plus revision history. Browser and representative scale acceptance remain open. Root command: restricted test/admin database URLs with `node --import tsx --test --test-concurrency=1 apps/api/test/case-handling.test.ts`; the combined root file passed eight tests, zero failures/skips. Receipt: `/tmp/inveos-platform-root-workflows-first.log`.

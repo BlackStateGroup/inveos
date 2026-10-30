@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createApp} from '../src/app.js';
 import {createPool,runMigrations} from '../src/db.js';
-import type {AnalysisRunRecord,CaseHandling,WorkItem} from '@inveos/contracts';
+import type {AnalysisRunRecord,CaseHandling,CaseSearchResult,DesktopIntakeBatch,Evidence,SavedCaseView,WorkItem} from '@inveos/contracts';
 
 const tenant='00000000-0000-4000-8000-000000000001',owner='00000000-0000-4000-8000-000000000002',origin='http://localhost:5173';
 const sha=(v:string|Buffer)=>createHash('sha256').update(v).digest('hex');
@@ -120,5 +120,60 @@ test('analysis follow-up audit failure rolls back its work, both links, history 
    for(const [table,key] of [['case_work_items','id'],['case_work_links','item_id'],['case_work_revisions','item_id'],['case_analysis_followups','work_id']])assert.equal((await f.pool.query(`SELECT count(*)::int n FROM ${table} WHERE case_id=$1 AND ${key}=$2`,[f.caseId,input.id])).rows[0].n,0,table);
   }finally{await f.admin.query('DROP TRIGGER reject_analysis_audit ON audit_events;DROP FUNCTION reject_analysis_audit()');}
   await f.must(path+'/followup',input);assert.equal((await f.pool.query('SELECT count(*)::int n FROM case_work_links WHERE case_id=$1 AND item_id=$2',[f.caseId,input.id])).rows[0].n,2);
+ }finally{await f.close();}
+});
+
+
+test('desktop batch intake resumes exact chunks and retains independent completed, cancelled and pending originals',{timeout:30000},async()=>{
+ const f=await fixture();try{
+  const bytes=Buffer.alloc(32769,97);bytes.write('Fictional batch original.');
+  const files=['first.bin','second.bin','third.bin'].map(filename=>({filename,sourceTime:'2020-01-02T09:00:00+01:00',method:'Fictional supplied binary original',expectedSha256:sha(bytes),byteLength:bytes.length})),input={id:randomUUID(),files},url=f.base+'/intake-batches';
+  const batch=await f.must<DesktopIntakeBatch>(url,input);assert.deepEqual(await f.must(url,input),batch);assert.equal(new Set(batch.entries.map(e=>e.requestKey)).size,3);
+  assert.equal((await f.call(url,{...input,files:[{...files[0]!,sourceTime:'2020-01-02T08:00:00Z'},...files.slice(1)]})).statusCode,409);
+  const reserve=(ordinal:number)=>({...files[ordinal]!,idempotencyKey:batch.entries[ordinal]!.requestKey});
+  assert.equal((await f.call(f.base+'/uploads',{...reserve(0),expectedSha256:'0'.repeat(64)})).statusCode,409);
+  const first=await f.must<{id:string}>(f.base+'/uploads',reserve(0)),path=f.base+'/uploads/'+first.id;
+  assert.equal((await f.must<{id:string}>(f.base+'/uploads',reserve(0))).id,first.id);
+  assert.equal((await f.call(path+'/chunk',{ordinal:0,contentBase64:bytes.subarray(0,10).toString('base64')})).statusCode,422);
+  for(const ordinal of [0,0,1])await f.must(path+'/chunk',{ordinal,contentBase64:bytes.subarray(ordinal*32768,Math.min((ordinal+1)*32768,bytes.length)).toString('base64')});
+  assert.deepEqual((await f.must<{received:number[]}>(path)).received,[0,1]);
+  const completions=await Promise.all([f.call(path+'/complete',{}),f.call(path+'/complete',{})]);for(const r of completions)assert.equal(r.statusCode,200,r.body);
+  const original=completions[0]!.json<Evidence>();assert.equal(completions[1]!.json<Evidence>().id,original.id);assert.equal(original.sourceTime,files[0]!.sourceTime);assert.equal(original.status,'Quarantined');assert.equal(original.digest,sha(bytes));
+  const second=await f.must<{id:string}>(f.base+'/uploads',reserve(1));await f.must(f.base+'/uploads/'+second.id+'/chunk',{ordinal:0,contentBase64:bytes.subarray(0,32768).toString('base64')});await f.must(f.base+'/uploads/'+second.id+'/cancel',{});
+  const retained=await f.must<DesktopIntakeBatch>(url+'/'+batch.id);assert.deepEqual(retained.entries.map(e=>e.state),['completed','cancelled','pending']);assert.equal((await f.pool.query('SELECT count(*)::int n FROM upload_chunks WHERE upload_id=$1',[second.id])).rows[0].n,0);
+  assert.equal((await f.call(f.base+'/uploads/'+second.id+'/complete',{})).statusCode,409);
+  await f.must(f.base+'/authority',f.authority);assert.equal((await f.must<DesktopIntakeBatch>(url+'/'+batch.id)).canTransfer,false);assert.equal((await f.call(f.base+'/uploads',reserve(2))).statusCode,409);
+  assert.equal((await f.must<Evidence>(path+'/complete',{})).id,original.id);assert.equal((await f.pool.query('SELECT count(*)::int n FROM evidence WHERE case_id=$1',[f.caseId])).rows[0].n,1);
+ }finally{await f.close();}
+});
+
+test('desktop manifests fail closed on scope, audit rollback and administrative corruption',{timeout:30000},async()=>{
+ const f=await fixture();try{
+  const input={id:randomUUID(),files:[{filename:'fictional.bin',sourceTime:'2020-01-02T09:00:00+01:00',method:'Fictional supplied original',expectedSha256:sha('fictional'),byteLength:9}]},url=f.base+'/intake-batches';
+  assert.equal((await f.call(url,input,f.client.headers)).statusCode,403);
+  await f.admin.query("CREATE FUNCTION reject_batch_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='intake.batch_registered' THEN RAISE EXCEPTION 'fictional batch audit failure'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_batch_audit BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION reject_batch_audit()");
+  try{assert.equal((await f.call(url,input)).statusCode,500);assert.equal((await f.pool.query('SELECT count(*)::int n FROM desktop_intake_entries WHERE case_id=$1',[f.caseId])).rows[0].n,0);}finally{await f.admin.query('DROP TRIGGER reject_batch_audit ON audit_events;DROP FUNCTION reject_batch_audit()');}
+  const saved=await f.must<DesktopIntakeBatch>(url,input);assert.equal((await f.call(url+'/'+saved.id,undefined,f.investigator.headers)).statusCode,404);const stranger=await f.member('reviewer');assert.equal((await f.call(url+'/'+saved.id,undefined,stranger.headers)).statusCode,404);
+  await assert.rejects(f.pool.query("UPDATE desktop_intake_entries SET byte_length=10 WHERE case_id=$1",[f.caseId]),/permission denied|immutable/);
+  await f.admin.query('ALTER TABLE desktop_intake_entries DISABLE TRIGGER desktop_intake_entries_immutable');try{await f.admin.query("UPDATE desktop_intake_entries SET metadata=jsonb_set(metadata,'{method}',to_jsonb('Altered fictional source context'::text)) WHERE case_id=$1",[f.caseId]);}finally{await f.admin.query('ALTER TABLE desktop_intake_entries ENABLE TRIGGER desktop_intake_entries_immutable');}
+  assert.equal((await f.call(url+'/'+saved.id)).statusCode,409);assert.equal((await f.call(f.base+'/uploads',{...input.files[0]!,idempotencyKey:saved.entries[0]!.requestKey})).statusCode,409);
+  assert.equal((await f.pool.query('SELECT count(*)::int n FROM upload_reservations WHERE case_id=$1',[f.caseId])).rows[0].n,0);
+ }finally{await f.close();}
+});
+
+test('search separates literal word modes, source instants, receipt instants and preserved saved-filter meaning',{timeout:30000},async()=>{
+ const f=await fixture();try{
+  async function original(method:string,sourceTime:string){return f.must<Evidence>(f.base+'/evidence',{filename:'fictional-source.txt',text:'Fictional original for search boundaries.',method,sourceTime,idempotencyKey:randomUUID(),expectedSha256:sha('Fictional original for search boundaries.')});}
+  const first=await original('Fictional alpha beta delta 100% supplied note','2020-01-02T09:00:00+01:00'),second=await original('Fictional gamma delta supplied note','2021-01-02T08:00:00Z');
+  const base={query:'alpha delta',kind:'original',status:''},search=(extra:object={})=>f.must<CaseSearchResult>(f.base+'/search',{...base,...extra});
+  assert.equal((await search()).items.length,0);assert.deepEqual((await search({queryMode:'all_words'})).items.map(i=>i.id),[first.id]);assert.equal((await search({queryMode:'any_words'})).items.length,2);
+  assert.deepEqual((await search({query:'%'})).items.map(i=>i.id),[first.id]);
+  const bound=await search({query:'',sourceFrom:'2020-01-02T08:00:00Z',sourceTo:'2020-01-02T08:00:00Z'});assert.deepEqual(bound.items.map(i=>i.id),[first.id]);assert.equal(bound.items[0]!.sourceTime,first.sourceTime);assert.equal(bound.facets.find(i=>i.kind==='original')!.count,1);
+  assert.equal((await search({query:'',receivedTo:'2025-01-01T00:00:00Z'})).items.length,0);assert.deepEqual((await search({query:'',evidenceId:second.id})).items.map(i=>i.id),[second.id]);
+  for(const extra of [{sourceFrom:'2020-02-30T00:00:00Z'},{sourceTo:'2020-01-02T08:00:00-00:00'},{sourceFrom:'2021-01-01T00:00:00Z',sourceTo:'2020-01-01T00:00:00Z'},{queryMode:'all_words',query:Array.from({length:13},(_,i)=>'word'+i).join(' ')}])assert.equal((await f.call(f.base+'/search',{...base,...extra})).statusCode,422);
+  const old={id:randomUUID(),name:'Fictional retained phrase view',filter:base,withdrawn:false},saved=await f.must<SavedCaseView>(f.base+'/saved-views',old);
+  const expected=sha(JSON.stringify([old.name,base.query,base.kind,base.status,false]));assert.equal((await f.pool.query('SELECT request_hash FROM saved_case_views WHERE id=$1',[old.id])).rows[0].request_hash.trim(),expected);assert.deepEqual(await f.must(f.base+'/saved-views',old),saved);
+  const filter={...base,queryMode:'all_words',evidenceId:first.id,sourceFrom:'2020-01-02T08:00:00Z'};await f.must(f.base+'/saved-views/'+old.id+'/revise',{expectedVersion:1,name:old.name,filter,withdrawn:false});const history=await f.must<{snapshot:SavedCaseView}[]>(f.base+'/saved-views/'+old.id+'/history');assert.deepEqual(history.map(v=>v.snapshot.filter),[filter,base]);
+  assert.equal((await f.call(f.base+'/search',base,f.client.headers)).statusCode,403);
  }finally{await f.close();}
 });
