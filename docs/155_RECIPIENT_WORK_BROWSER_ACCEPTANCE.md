@@ -86,11 +86,117 @@ node --import tsx --test --test-concurrency=1 \
 `npm run build -w @inveos/web` passed, with the existing large-bundle Vite warning.
 That build predates the API-only acknowledgement fix; no web product file changed.
 
+After the fix, the existing real HTTP acknowledgement checks also completed:
+**3 pass / 0 fail / 0 skipped**, 5.588 seconds. They cover exact fingerprints,
+restart/retry, scope/role/CSRF/origin/attestation denials, audit rollback, foreign
+tenants, expired grants and corrupted snapshots. No shared test file was edited.
+
+```sh
+INVEOS_TEST_DATABASE_URL=postgres://inveos_app@127.0.0.1:55471/inveos_test \
+INVEOS_TEST_ADMIN_DATABASE_URL=postgres://inveos_admin@127.0.0.1:55471/inveos_test \
+node --import tsx --test --test-concurrency=1 \
+  --test-name-pattern='^(recipient acknowledgement|acknowledgements fail closed)' \
+  apps/api/test/api.test.ts
+```
+
+Log: `.local-data/recipient-work-review/existing-ack-http-fixed.log` (ignored).
+Together with the new support file, this is six distinct focused checks passing
+after the fix. Compiler/scoped lint/whitespace checks passed again for the final
+browser definitions. These counts contain no browser test execution.
+
 ## Browser execution gate
 
-The focused browser definitions are delivered separately from the reproduced
-route fix. **No browser journey was executed locally.** Root explicitly forbids
-another local Chrome attempt and owns hosted execution and render inspection.
-Compiler and PostgreSQL successes are not browser passes. Full regression,
-expiry timers, real providers, native devices, restore operations and production
-readiness are not claimed.
+The route fix and its executing tests were pushed separately as
+`fe80f8cd2362778c73ecbc9692457326e5c66f36`. The subsequent browser definition is
+`apps/api/test/recipient-work-browser.integration.ts`; its dedicated support is
+`apps/api/test/support/recipient-work-browser.ts` and the fixture files above.
+Root owns adding explicit hosted commands; no shared inventory or CI file changed.
+
+**No browser journey was executed locally.** Root explicitly forbids another
+local Chrome attempt and owns hosted execution and render inspection. Compiler
+and PostgreSQL successes are not browser passes. No synthetic route, mocked
+response, React-state injection, skipped-browser success or sandbox fallback is
+used. The launcher fails if sandboxed Chrome is unavailable. Missing database
+configuration or built web assets also fails the explicit journeys.
+
+The helper serves the built application, forwards actual HTTP to the real API,
+and reuses `workflowFixture` with actual isolated PostgreSQL and original storage.
+It switches fixture sessions through cookies and a new document between roles;
+browser forms use visible controls, mouse input, text insertion and native select
+keyboard events. Checkbox actions establish checked state rather than invert an
+already checked acknowledgement retained by the current collaborator form. They
+do not claim a separate fresh-checkbox consent gate beyond the current product.
+
+### Defined feedback journey — UNRUN
+
+- Fixture setup creates one frozen report/PDF, rejects author self-review, records
+  independent exact-copy acceptance and creates one explicit recipient grant.
+  It then adds an unreleased finding with private marker text. Release creation
+  is setup through real APIs, not a browser claim for the release workbench.
+- An unrelated recipient sees no release and cannot fetch its identifier. The
+  intended recipient verifies/downloads and acknowledges the exact PDF through
+  the portal. The persisted acknowledgement must name the recipient/copy digest.
+- The recipient creates and corrects a release-scoped change request, retaining
+  both versions and the separate report/copy fingerprints.
+- Investigator saves a response draft, which is absent from recipient DTO and
+  page; investigator corrects it. Independent reviewer opens the exact proposed
+  digest and publishes it. Only the approved response and public correction reason
+  reach the recipient; private review reason and unreleased source markers do not.
+- Recipient resolves and reopens explicitly, inspects four immutable request
+  revisions and the one published response. The released PDF is byte-identical.
+- Revocation occurs through the real internal API while the feedback is loaded.
+  Refresh must clear the entire portal's loaded request, histories, response and
+  release identifiers/digests; server access is denied and database history stays.
+
+### Defined collaborator journey — UNRUN
+
+- Fixture setup creates an open saved internal task and private draft grant.
+  Neither draft nor task context appears externally. The author cannot publish;
+  a distinct reviewer publishes instructions through the internal UI.
+- Only the named recipient sees the assignment, acknowledges its exact publication
+  and records progress/submission. It acquires no case membership and does not
+  complete the internal task.
+- Investigator corrects/rebinds instructions through the UI. The draft leaves
+  the prior publication unchanged. Independent publication of v2 resets invitation
+  acceptance; old-publication acknowledgement is rejected and new acknowledgement
+  is required before submission.
+- Reviewer requests changes with separate public feedback/private reason; the
+  recipient corrects its submission; reviewer accepts that exact record. External
+  UI/history/DTOs omit internal task identifiers, private snapshot digest, actors,
+  private reasons and task body. Acceptance still leaves the internal task open.
+- Explicit `internal_only` handling while the recipient page is loaded denies
+  access and refresh clears instructions, submissions, feedback and history.
+  A fresh enabling handling decision restores access. Terminal grant revocation
+  then clears the loaded content again while retaining immutable internal records.
+
+The definitions capture desktop1440×1000 and narrow390×844 PNGs under ignored
+`output/evals/recipient-work/` and assert no document horizontal overflow. Browser
+downloads use that directory's `downloads/` subdirectory. On journey failure,
+best-effort screenshot and rendered-page diagnostics are retained without dumping
+cookies/tokens/storage. Root must inspect actual hosted images; merely producing
+screenshots is not visual acceptance. No local render artifacts are claimed.
+
+Hosted browser command after configuring a sandbox-capable Chrome and restricted
+disposable PostgreSQL (the same URL variables as above, with the runner's port):
+
+```sh
+npm run build -w @inveos/web
+node --import tsx --test --test-concurrency=1 \
+  apps/api/test/recipient-work-browser.integration.ts
+```
+
+There is no `INVEOS_TEST_BROWSER` skip flag in this explicit file. Root may select
+its existing Chrome via `INVEOS_CHROME_PATH`; no sandbox-disabling option is added.
+
+## Remaining gates
+
+Both browser journeys, screenshots, keyboard/select behavior and responsive
+rendering remain **unrun**. The narrow negative assertions exercise explicit
+refresh after policy/revocation, not real-time cross-tab erasure or recall of
+previously downloaded files. Grant/disclosure expiry timers, browser session
+revocation during an in-flight response, offline/lost-response browser recovery,
+multi-tab races, every finding family, copied-verifier/Office rendering and full
+regression remain separate gates. New grant drafting with date pickers and
+initial report/copy release controls are fixture setup here, not browser coverage.
+Real providers, native devices, restore operations and production readiness are
+not claimed.
