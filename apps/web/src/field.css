@@ -15,3 +15,5 @@
 .field-workbench .work-record-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .field-workbench .panel-body > p,.field-workbench details p { overflow-wrap: anywhere; }
 .field-workbench input,.field-workbench select,.field-workbench textarea { max-width: 100%; }
+
+.field-record-json { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 440px; overflow: auto; padding: 12px; background: var(--surface); font-size: 12px; }

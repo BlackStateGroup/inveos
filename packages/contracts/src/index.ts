@@ -288,3 +288,4 @@ export type CollectionJob={id:string;authorisationId:string;companyNumber:string
 export type CollectionReceipt={schemaVersion:'inveos.collection.v1';captureMode:'fictional_fixture'|'provider';tenantId:string;caseId:string;jobId:string;authorisationId:string;authorityVersion:number;policyVersion:number;profileDigest:string;url:string;companyNumber:string;httpStatus:200;sourceTime:string;sourceTimeBasis:'http_response_date_not_record_creation';receivedAt:string;etag:string|null;contentType:string;originalSha256:string;byteLength:number;fields:{pointer:string;value:string}[];interpretation:'unreviewed_provider_assertions'};
 
 export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-provenance.v1';receipt:CollectionReceipt;receiptSha256:string;authorisation:Record<string,unknown>;caseAuthority:Record<string,unknown>;sourcePolicy:Record<string,unknown>;policyReview:Record<string,unknown>};sha256:string};
+export * from './field-sessions.js';
