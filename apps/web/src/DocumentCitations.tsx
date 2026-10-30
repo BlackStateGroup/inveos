@@ -39,7 +39,7 @@ export function DocumentCitations({document:d,csrf,focusCitationId}:{document:In
     if(!alive.current)return;await load();if(alive.current)setMessage(`Candidate ${receipt.id} saved as unreviewed. No finding was approved.`);
   }
   const ref=d.references.find(r=>r.itemRef===(pending?.itemRef??selected));
-  return <section aria-label="Document citation candidates"><h3>Unreviewed citation candidates</h3>
+  return <section className="document-citation-candidates" aria-label="Document citation candidates"><h3>Unreviewed citation candidates</h3>
     <p>Save an exact extracted passage for later human review. Saving does not approve its accuracy, clear quarantine or make it report eligible. The region covers the whole extracted item.</p>
     <label>Candidate passage<select value={pending?.itemRef??selected} disabled={busy||!!pending} onChange={e=>setSelected(e.target.value)}>{d.references.map(r=><option key={r.itemRef} value={r.itemRef}>Page {r.page} · {r.itemRef} · bytes {r.startByte}–{r.endByte}</option>)}</select></label>
     {ref&&<div><p>Candidate page {ref.page} · extracted UTF-8 bytes [{ref.startByte}, {ref.endByte})</p><pre className="source-excerpt">{ref.text}</pre></div>}

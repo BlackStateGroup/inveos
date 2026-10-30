@@ -41,3 +41,5 @@ npm test --workspace @inveos/api
 ```
 
 Only enable `INVEOS_TEST_BROWSER=1` where sandboxed Chrome is actually qualified. Local isolation remains unavailable and is not bypassed. The Checks workflow runs the new browser journey in both the production bundle and development effect replay. Historical failures remain in earlier receipts; unrun acceptance is not passed evidence.
+
+Initial head `4a0cd532bf36db7fdd139182692217526c958206`, Checks41029398630 / job123975213919, passed443Node/179Python,zero failures/skips,44production+7development browsers,both office profiles,host/lint/types/build. All three context renders were inspected. Correspondence/interpretation controls used cramped unstyled native fields; the existing workspace form/label/action styles now lay them out explicitly, with scoped checkbox geometry and text wrapping. A narrow form geometry check/render is added. Final corrected-head browser/render acceptance remains pending; no decision semantics change.
