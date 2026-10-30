@@ -1,3 +1,13 @@
+## Integrated report/bulk/research checkpoint
+
+Root branch `feat/platform-build-batch` in `/code/inveos-speech-casework` now integrates bulk246007c6 at534e5bc5, research/GLEIFd56778ee at7f8bb781, and report compositioncfe1d8f6 at96d11cf9. All shared Field/research provenance rows remain inside each visible finding's redaction guard after composition refactoring. Both independent verifiers preserve Field and composition checks. Composition helper imports are optional for legacy reports; mixed document verification strips both added proof/composition fields only from its temporary partial source-family sub-report, then verifies the full package. Source-family rendering now also resolves speech-backed chronology.
+
+Combined web/contracts/API compilation passes (`/tmp/inveos-platform-bulk-gleif-compile.log`, `/tmp/inveos-platform-composition-compile.log`). New Field/composition/main verifier Python syntax compilation passed. **No runtime verification, PostgreSQL migration/API, renderer/Office/browser or broad acceptance has run for this combined batch.** No PR/main merge or readiness claim.
+
+Still-building children: @thread:thr_gzfv5czq7n restricted collaborator work on feat/contractor-work,110–114/docs137, using separately approved task grants to the existing external principal rather than a broad new internal role; @thread:thr_2fsytqdbkm Field sessions/observations100–104/docs135; @thread:thr_d5kgavmfyc Tika application worker105–109/docs136. Actual inspected pinned Tika scope is PDF-only, so preserve that boundary; Office support was only a candidate, not established. Native dependencies/tooling/device access, semantic AI/runtime/model approvals, malware scanner/provider/storage/recovery/sign-offs remain open. ClamAV CLI is absent here; none was installed or incorporated.
+
+Continue substantive implementation/integration first. Once that connected build batch is ready, write missing meaningful negative/combined tests and run actual acceptance, fix defects, then review and merge suitable PRs. Do not treat compiler feedback or synthetic adapters as completed acceptance.
+
 ## Field report lineage and next integration
 
 Root adds docs134 / `field-provenance.ts` / `verify_field_provenance.py`: Field capture/recovery joins into new frozen reports, independent verification and shared PDF/DOCX/print. No migration. Final web/contracts/API compilation passes; all runtime/export/render/mutation acceptance is unrun. Preserve historical report bytes and distinguish software identity from device attestation.

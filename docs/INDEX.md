@@ -247,3 +247,21 @@
 - [122 — Collected-source report lineage](122_COLLECTION_REPORT_LINEAGE.md) — frozen collection permissions, original-linked offline verification and redaction; actual acceptance is recorded separately.
 
 - [123 — Reviewed speech in case reasoning](123_SPEECH_CASE_REASONING.md) — typed work sources, correction-sensitive assessments, search and frozen export lineage; actual acceptance remains explicit.
+
+
+## Active parallel implementation (acceptance pending)
+
+- [Reviewed speech reasoning, graph, chronology and review attention](123_SPEECH_CASE_REASONING.md)
+- [RDAP and supplied webpage research](124_OSINT_EXPANSION.md)
+- [Field device authority and encrypted recovery](125_FIELD_DEVICE_SYNC.md)
+- [Agency draft invoicing](126_AGENCY_DRAFT_INVOICING.md)
+- [Cited source comparison and follow-up questions](127_CITED_CASE_ANALYSIS.md)
+- [Recipient-bound portal feedback](128_PORTAL_FEEDBACK.md)
+- [Bulk processing and case queue operations](129_BULK_PROCESSING.md)
+- [Legal-entity research and receipt rendering](130_LEGAL_ENTITY_RESEARCH.md)
+- [Desktop batch original intake](131_DESKTOP_BATCH_INTAKE.md)
+- [Reviewed report composition](132_REPORT_COMPOSITION.md)
+- [Case search facets and separate time bounds](133_CASE_SEARCH_FACETS.md)
+- [Frozen Field report provenance](134_FIELD_REPORT_PROVENANCE.md)
+
+These feature documents distinguish implementation/compiler feedback from unrun acceptance. Current combined branch, child assignments, commit evidence and remaining gates are in BUILD_HANDOFF.md. None of this section implies main merge or production readiness.
