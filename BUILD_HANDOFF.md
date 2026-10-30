@@ -1,3 +1,9 @@
+## Latest build checkpoint: desktop batch intake
+
+Root adds migration094/docs131: saved20-file manifests, per-original declared metadata, stable server retry identities, current-authority fencing, exact original reselection and bounded sequential chunk transfer with per-file outcomes/pause/cancel controls. Compilation passes before the final manifest guard; runtime/browser acceptance remains unrun. The combined branch already integrates OSINT171f0ac3 at55db2af9 and is pushed as `feat/platform-build-batch`; integrated web/contracts/API compile passed (`/tmp/inveos-platform-osint-compile.log`).
+
+Continue build-first work. Portal feedback, bulk processing and legal-entity/PDF-DOCX OSINT follow-through remain active child assignments. Root must finish implementation integration before broad acceptance, add meaningful missing tests then run actual checks; do not mark any new compiler-only batch verified/merged. Native apps/device, semantic AI/runtime, production providers/storage/recovery and independent sign-offs remain open.
+
 ## Combined implementation branch
 
 Active root branch is now `feat/platform-build-batch`, in `/code/inveos-speech-casework`. It retains speech/analysis work and integrates agency4cf5a391 via e810d1dc and Field5063d975 via b5db2f22. Combined TypeScript checks pass (`/tmp/inveos-platform-{agency,field}-compile.log`); runtime acceptance remains unrun. Root adds migration089 for explicit source-linked analysis follow-up questions, with compilation passing and all new transactional/browser checks deferred.

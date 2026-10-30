@@ -1,3 +1,4 @@
+import {registerDesktopIntake,checkDesktopIntake} from './desktop-intake.js';
 import {collectionOpen,type LifecycleCase} from './case-lifecycle.js';
 import {randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
@@ -17,6 +18,7 @@ const caseParams={type:'object',required:['caseId'],additionalProperties:false,p
 const params={type:'object',required:['caseId','uploadId'],additionalProperties:false,properties:{caseId:uuid,uploadId:uuid}};
 const empty={type:'object',additionalProperties:false,maxProperties:0};
 export function registerUploads(app:FastifyInstance,s:Services){
+ registerDesktopIntake(app,s);
  const base='/api/cases/:caseId/uploads';
  // All lifecycle mutations take the same case lock as intake/finalisation.
  // Staging is transient; reservation identity and completed evidence are retained.
@@ -110,6 +112,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
    const prior=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
    if(prior.rows[0]){const row=prior.rows[0];if(row.byte_length!==input.byteLength||Object.entries(metadata).some(([k,v])=>row.metadata[k]!==v))throw new ApiError(409,'Reservation key already used.');return dto(row);}
    if(!collectionOpen(kase))throw new ApiError(409,'Approved authority required.');
+   await checkDesktopIntake(c,actor,caseId,input.idempotencyKey,metadata,input.byteLength,kase.authority_version!);
    const count=await c.query("SELECT count(*)::int AS n FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND status='open'",[actor.tenantId,caseId]);
    if(count.rows[0].n>=10)throw new ApiError(409,'Cancel or complete outstanding reservations before reserving more.');
    const id=randomUUID();const row=await c.query('INSERT INTO upload_reservations(tenant_id,case_id,id,created_by,idempotency_key,authority_version,metadata,byte_length) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[actor.tenantId,caseId,id,actor.userId,input.idempotencyKey,kase.authority_version,metadata,input.byteLength]);

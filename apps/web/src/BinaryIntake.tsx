@@ -1,3 +1,4 @@
+import {DesktopIntake} from './DesktopIntake';
 import {UploadMaintenance} from './UploadMaintenance';
 import {binaryUploadRoute,uploadBinaryChunks,type UploadProgress} from './chunkUpload';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
@@ -41,7 +42,7 @@ export function BinaryIntake({caseId,csrf,onSaved}:{caseId:string;csrf:string;on
       }finally{if(alive.current)setPending(!!pendingBinary(sessionStorage,oldScope)||!!pendingBinary(sessionStorage,oldScope+':chunks-v1'));}
     }catch(e){if(alive.current)setError(controller.signal.aborted?'Transfer paused. Keep your original file and exact metadata; recover the receipt to resume.':(e as Error).message);}finally{locked.current=false;if(alive.current)setBusy(false);}
   }
-  return <><Panel title="Register a binary original"><div className="panel-body"><Notice>Fictional files only, up to 256 KiB. Originals remain quarantined: no malware scan, OCR, preview or findings are implied. Keep your original file.</Notice>
+  return <><DesktopIntake caseId={caseId} csrf={csrf} onSaved={onSaved}/><Panel title="Register a binary original"><div className="panel-body"><Notice>Fictional files only, up to 256 KiB. Originals remain quarantined: no malware scan, OCR, preview or findings are implied. Keep your original file.</Notice>
     {pending&&<p role="status">Unconfirmed intake: reselect the same file and enter its exact original timestamp and method to recover the receipt.</p>}
     {pending&&<button className="secondary" disabled={busy||maintaining} onClick={()=>void reconcileCancellation()}>Confirm cancellation and clear this retry</button>}
     <form aria-label="Binary original intake" className="work-form" onSubmit={e=>void submit(e)}><fieldset disabled={busy||maintaining}><label className="form-label">Original file<input name="file" type="file" required/></label><label className="form-label">Source timestamp including timezone<input name="sourceTime" placeholder="2026-01-12T09:00:00Z" required maxLength={64}/></label><label className="form-label">Acquisition method<input name="method" required minLength={5} maxLength={500}/></label><button className="primary" type="submit">{busy?'Confirming intake…':pending?'Recover original receipt':'Register in quarantine'}</button></fieldset></form>{busy&&<button className="secondary" onClick={()=>transfer.current?.abort()}>Pause transfer</button>}{progress&&<p role="status">Reservation {progress.id}: {progress.receivedBytes} of {progress.totalBytes} bytes acknowledged. Expires {progress.expiresAt}.</p>}

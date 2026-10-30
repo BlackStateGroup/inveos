@@ -298,3 +298,6 @@ export type AnalysisDecision={id:string;suggestion:number;version:number;disposi
 export type AnalysisRunRecord={run:AnalysisRun;decisions:AnalysisDecision[];followups:{suggestion:number;decisionVersion:number;workId:string}[];sourceVerification:'current_reviewed_sources_reverified';canDecide:boolean};
 export type AnalysisRunPage={items:{id:string;mode:AnalysisMode;question:string;createdAt:string;createdBy:string;authorityVersion:number;sourceCount:number;suggestionCount:number}[];next:string|null};
 export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,InvoiceLine,InvoiceSnapshot,InvoiceReview,InvoiceRevision,InvoiceSummary,InvoicePage,InvoiceCandidate,InvoiceEligibility,InvoiceExport} from './agency-invoicing.js';
+
+export type DesktopIntakeFile={filename:string;sourceTime:string;method:string;expectedSha256:string;byteLength:number};
+export type DesktopIntakeBatch={id:string;caseId:string;createdAt:string;authorityVersion:number;canTransfer:boolean;entries:(DesktopIntakeFile&{ordinal:number;requestKey:string;reservationId:string|null;state:'pending'|'open'|'completed'|'cancelled'|'expired';evidenceId:string|null})[];interpretation:'saved_metadata_not_original_verification'};

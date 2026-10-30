@@ -24,7 +24,7 @@ export async function sendBinaryRecoverably(store:Store,scope:string,caseId:stri
   if(pending&&pending.fingerprint!==fingerprint)throw new Error('An unconfirmed intake exists. Reselect the same file and restore the exact source timestamp and method.');
   if(!pending){pending={key:crypto.randomUUID(),fingerprint};const raw=JSON.stringify(pending);store.setItem(scope,raw);if(store.getItem(scope)!==raw)throw new Error('Retry storage unavailable. Nothing was sent.');}
   const value=await send({...input,idempotencyKey:pending.key}) as Evidence;
-  if(!value||typeof value.id!=='string'||!uuid.test(value.id)||value.caseId!==caseId||value.filename!==input.filename||value.digest!==input.expectedSha256||value.bytes!==atob(input.contentBase64).length||value.sourceTime!==input.sourceTime||value.method!==input.method||value.originalKind!=='opaque_binary'||value.status!=='Quarantined'||value.text!=='')throw new Error('Original receipt could not be confirmed. Recover the pending intake.');
+  validateBinaryReceipt(value,caseId,input);
   if(pendingBinary(store,scope)?.key===pending.key){store.removeItem(scope);if(pendingBinary(store,scope)?.key===pending.key)throw new Error('Original saved; retry record could not be cleared. Recover its receipt.');}
   return value;
 }
@@ -38,4 +38,8 @@ export async function clearCancelledBinary(store:Store,scope:string,caseId:strin
  const current=pendingBinary(store,scope);
  if(current?.key!==pending.key||current.fingerprint!==pending.fingerprint)throw new Error('Pending request changed; nothing cleared.');
  store.removeItem(scope);if(store.getItem(scope)!==null)throw new Error('Retry storage could not be cleared.');
+}
+
+export function validateBinaryReceipt(value:Evidence,caseId:string,input:BinaryInput):void{
+  if(!value||typeof value.id!=='string'||!uuid.test(value.id)||value.caseId!==caseId||value.filename!==input.filename||value.digest!==input.expectedSha256||value.bytes!==atob(input.contentBase64).length||value.sourceTime!==input.sourceTime||value.method!==input.method||value.originalKind!=='opaque_binary'||value.status!=='Quarantined'||value.text!=='')throw new Error('Original receipt could not be confirmed. Recover the pending intake.');
 }
