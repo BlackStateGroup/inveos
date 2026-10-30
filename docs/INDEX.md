@@ -211,3 +211,5 @@
 - [Transcript casework and search](104_TRANSCRIPT_CASEWORK_SEARCH.md) — connected typed reasoning/history/frozen export and case discovery.
 
 - [Existing-account case invitations](105_CASE_INVITATIONS.md) — explicit owner offers, recipient decisions, expiry and retained access history; acceptance recorded separately.
+
+- [Registered source-use decisions](106_SOURCE_USE_DECISIONS.md) — separate reviewer permissions, enforced processing/report/release boundaries and frozen proofs; actual acceptance recorded separately.

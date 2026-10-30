@@ -251,6 +251,61 @@ def verify_transcript_work_links(report):
     return len(links)
 
 
+def verify_source_use(report):
+    """Check retained declarations, not present permission or legal sufficiency."""
+    proofs = report.get('sourceUse', [])
+    require(isinstance(proofs, list) and len(proofs) <= 200, 'Source-use proof limit')
+    sources = {f['source']['id']: f['source'] for f in report.get('findings', []) + report.get('documentFindings', [])}
+    sources.update({f['claim']['source']['id']: f['claim']['source'] for f in report.get('transcriptFindings', [])})
+    seen_sources, seen_decisions = set(), set()
+
+    def identifier(value):
+        require(isinstance(value, str) and re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', value), 'Invalid source-use identity')
+
+    def stamp(value):
+        require(isinstance(value, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z', value), 'Invalid source-use recorded time')
+        return datetime.fromisoformat(value.replace('Z', '+00:00'))
+
+    def hashed(value):
+        raw = json.dumps({k: v for k, v in value.items() if k != 'digest'}, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+        require(hashlib.sha256(raw).hexdigest() == value.get('digest'), 'Source-use record digest mismatch')
+
+    for proof in proofs:
+        require(isinstance(proof, dict) and set(proof) == {'decision', 'record', 'metadataReview'}, 'Invalid source-use proof')
+        d, r, review = (object_field(proof, key) for key in ('decision', 'record', 'metadataReview'))
+        require(set(d) == set('id caseId sourceId evidenceId sequence sourceVersion sourceDigest authorityVersion permission reason actorId actorName recordedAt expiresAt digest'.split()), 'Source-use decision fields')
+        require(set(r) == set('url publisher retrievedAt method trustGrade termsReference purpose lawfulBasis scope retentionDays minimisation annotation id caseId version original recordedBy recordedAt withdrawn digest'.split()), 'Source context fields')
+        require(set(review) == set('id digest accepted reviewerId reviewerName reason recordedAt'.split()), 'Source metadata review fields')
+        hashed(d); hashed(r)
+        for value in [d[k] for k in ('id', 'caseId', 'sourceId', 'evidenceId', 'actorId')] + [r['recordedBy'], review['id'], review['reviewerId']]:
+            identifier(value)
+        require(d['caseId'] == r['caseId'] == report['case']['id'] and d['sourceId'] == r['id'], 'Source-use case/context mismatch')
+        require(r['id'] not in seen_sources and d['id'] not in seen_decisions, 'Duplicate source-use decision')
+        seen_sources.add(r['id']); seen_decisions.add(d['id'])
+        require(type(d['sequence']) is int and 1 <= d['sequence'] <= 100 and type(r['version']) is int and 1 <= r['version'] <= 100 and d['sourceVersion'] == r['version'] and type(d['sourceVersion']) is int, 'Source-use version mismatch')
+        require(d['sourceDigest'] == r['digest'] == review['digest'] and review['accepted'] is True and r['withdrawn'] is False, 'Source-use requires accepted current metadata')
+        require(d['permission'] in ('analysis', 'analysis_and_release') and d['actorId'] != r['recordedBy'] and review['reviewerId'] != r['recordedBy'], 'Source-use permission/independence')
+        for obj, keys in ((d, ('reason', 'actorName')), (r, ('url', 'publisher', 'retrievedAt', 'method', 'trustGrade', 'termsReference', 'purpose', 'lawfulBasis', 'scope', 'minimisation', 'annotation')), (review, ('reviewerName', 'reason'))):
+            for key in keys:
+                value = text_field(obj, key)
+                require(len(value) <= 4000 and not re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', value), 'Invalid source-use text')
+        original = object_field(r, 'original')
+        require(set(original) == set('id filename sha256 sourceTime receivedTime authorityId authorityVersion status'.split()), 'Source context original fields')
+        source = sources.get(d['evidenceId'])
+        require(source is not None and original['id'] == d['evidenceId'], 'Uncited source-use original')
+        for key in ('filename', 'sha256', 'sourceTime', 'receivedTime'):
+            require(original[key] == source[key], 'Source-use original identity mismatch')
+        policy = source.get('policy', source)
+        require(original['authorityId'] == policy['authorityId'] and type(d['authorityVersion']) is int and type(original['authorityVersion']) is int and 0 < d['authorityVersion'] == original['authorityVersion'] == policy['authorityVersion'], 'Source-use authority mismatch')
+        require(type(r['retentionDays']) is int and 1 <= r['retentionDays'] <= 3650, 'Source-use retention limit')
+        if 'retentionDays' in policy:
+            require(r['retentionDays'] <= policy['retentionDays'], 'Source-use retention exceeds case authority')
+        at, expiry = stamp(d['recordedAt']), stamp(d['expiresAt'])
+        require(stamp(r['recordedAt']) <= stamp(review['recordedAt']) <= at < expiry and (expiry - at).total_seconds() <= 720 * 3600, 'Source-use decision chronology')
+        require((expiry - stamp(original['receivedTime'])).total_seconds() <= r['retentionDays'] * 86400, 'Source-use expiry exceeds retention')
+    return len(proofs)
+
+
 def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
     require(0 < len(raw) <= MAX_REPORT_BYTES, 'Report size limit')
     actual = hashlib.sha256(raw).hexdigest()
@@ -321,10 +376,11 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         require(0 < len(findings) + transcript_count <= MAX_FINDINGS, 'Finding count limit')
         chronology_count = verify_chronology(report)
         transcript_links = verify_transcript_work_links(report)
+        source_use_count = verify_source_use(report)
     except (ValueError, TypeError, KeyError, UnicodeError, IndexError, AttributeError, binascii.Error) as exc:
         raise InvalidReport('Invalid frozen chronology or transcript lineage') from exc
     return {'status': 'integrity_checks_passed', 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
-            'trustedReportDigestMatched': expected_sha256 is not None,
+            'trustedReportDigestMatched': expected_sha256 is not None, **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}),
             'caseId': case_id, 'findingsChecked': len(findings) + transcript_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
             **({'transcriptWorkLinksChecked': transcript_links} if transcript_links else {}), 'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',
             'limitations': 'No signature, reviewer authentication, lawful-authority validation, custody-chain verification or factual truth check. An unanchored result establishes internal consistency only.'}

@@ -1,3 +1,4 @@
+import {SourceUse} from './SourceUse';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {ManualSourceEntry,ManualSourceFields,ManualSourceOriginal,ManualSourceRecord} from '@inveos/contracts';
 import {Badge,Notice,Panel,SectionTitle} from './ui';
@@ -36,6 +37,7 @@ export function ManualSources({caseId,csrf,inspect}:{caseId:string;csrf:string;i
  {entry.review&&<p>Metadata decision: {entry.review.accepted?'accepted':'rejected'} by {entry.review.reviewerName}, {entry.review.recordedAt}. {entry.review.reason}</p>}
  {entry.canReview&&<form className="work-form" aria-label="Source metadata review" key={entry.record.digest} onSubmit={e=>void review(e)}><fieldset disabled={busy}><label className="form-label">Independent metadata review reason<textarea name="reason" required maxLength={3000}/></label><p className="small">Review the attribution, terms reference, source purpose and limitations. Acceptance is a record review, not legal approval or evidence of source truth.</p><div className="work-form-actions"><button className="secondary" value="reject">Reject source record</button><button className="primary" value="accept" disabled={entry.state==='authority_changed'}>Accept source record</button></div></fieldset></form>}
  {!entry.record.withdrawn&&<details className="work-detail"><summary>Withdraw source context</summary><form aria-label="Source context withdrawal" onSubmit={e=>{e.preventDefault();const reason=new FormData(e.currentTarget).get('reason');void act(async()=>{await api('/'+entry.record.id+'/withdraw',{expectedVersion:entry.record.version,reason:String(reason)});await refresh();});}}><fieldset disabled={busy}><label className="form-label">Withdrawal reason<textarea name="reason" required maxLength={3000}/></label><button className="secondary">Record source withdrawal</button></fieldset></form></details>}
+ <SourceUse key={entry.record.digest+entry.review?.id} caseId={caseId} sourceId={entry.record.id} csrf={csrf} onDenied={clear}/>
  </article>}
  {history&&<section className="work-history" aria-label="Source context history">{history.map(e=><details key={e.record.version}><summary>Source version {e.record.version}: {e.reason}</summary><Context record={e.record}/><p>{e.record.withdrawn?'Withdrawn':e.review?`Metadata ${e.review.accepted?'accepted':'rejected'} by ${e.review.reviewerName}: ${e.review.reason}`:'No metadata decision'}</p></details>)}</section>}
  </div></Panel></>;

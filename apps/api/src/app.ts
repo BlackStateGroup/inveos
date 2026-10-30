@@ -1,3 +1,4 @@
+import {registerSourceUse,sourceUseProofs,reportSourceUse} from './source-use.js';
 import {registerCaseInvitations} from './case-invitations.js';
 import {registerWorkload} from './workload.js';
 import {registerTranscriptFindings} from './transcript-findings.js';
@@ -646,6 +647,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     verifyClaim: async (client, actor, caseId, claimId) => {
       const claim = await findClaim(client, actor, caseId, claimId);
       const source = await findEvidence(client, actor, caseId, claim.evidence_id);
+      await sourceUseProofs(client,actor.tenantId,caseId,source.id,'analysis');
       requireTextOriginal(source);
       const bytes = await verifiedBytes(options.storageRoot, source);
       const quoteBytes = Buffer.from(claim.quote, 'utf8');
@@ -658,7 +660,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   });
 
-  registerManualSources(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
+  const manualSourceService=registerManualSources(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
   registerWorkDiscussions(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   const verifiedFinding=async(client:PoolClient,actor:Actor,caseId:string,reference:ChronologySource)=>{
@@ -680,6 +682,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
   registerCaseInvitations(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseAccess(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerSourceUse(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,...manualSourceService});
   registerPreservationHolds(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);return {id:row.id,digest:row.digest.trim(),filename:row.filename,authorityVersion:row.authority_version};}});
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
@@ -1192,6 +1195,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       const claim = await inTransaction(options.pool, async (client) => {
         await findCase(client, actor, caseId, true);
         const evidence = await findEvidence(client, actor, caseId, input.evidenceId);
+        await sourceUseProofs(client,actor.tenantId,caseId,evidence.id,'analysis');
         requireTextOriginal(evidence);
         const bytes = await verifiedBytes(options.storageRoot, evidence);
         const {startByte,endByte}=selectSourceSpan(bytes,input.quote,input.sourceStartByte,input.sourceEndByte);
@@ -1264,6 +1268,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           }
           if (input.accepted) {
             const evidence = await findEvidence(client, actor, caseId, claim.evidence_id);
+            await sourceUseProofs(client,actor.tenantId,caseId,evidence.id,'analysis');
             requireTextOriginal(evidence);
             const bytes = await verifiedBytes(options.storageRoot, evidence);
             if (
@@ -1290,6 +1295,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         let bytes: Buffer | undefined;
         if (input.accepted) {
           evidence = await findEvidence(client, actor, caseId, claim.evidence_id);
+          await sourceUseProofs(client,actor.tenantId,caseId,evidence.id,'analysis');
           requireTextOriginal(evidence);
           bytes = await verifiedBytes(options.storageRoot, evidence);
 
@@ -1498,6 +1504,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         budget.add(finding,0,report.transcriptFindings.length>0);report.transcriptFindings.push(finding);
       }
       if (!report.findings.length&&!report.documentFindings?.length&&!report.transcriptFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
+      const sourceUse=await reportSourceUse(client,actor.tenantId,caseId,report,'analysis');if(sourceUse.length){budget.add({sourceUse},0,true);report.sourceUse=sourceUse;}
       if(selectedFindings)return report; // Verification inspects only the frozen finding set, not later working context.
       for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
@@ -1602,7 +1609,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   function checkRevision(row: QueryResultRow) {
     if(createHash('sha256').update(row.report_bytes).digest('hex')!==row.digest.trim()) throw new ApiError(409,'Stored report revision integrity failed.');
   }
-  async function verifyFrozenSources(client:PoolClient,actor:Actor,caseId:string,revisionId:string,expected:string){
+  async function verifyFrozenSources(client:PoolClient,actor:Actor,caseId:string,revisionId:string,expected:string,use:'analysis'|'release'='analysis'){
       const revision=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];
       if(!revision)notFound();checkRevision(revision);
       if(expected!==revision.digest.trim())throw new ApiError(409,'Verification fingerprint does not match the frozen revision.');
@@ -1617,6 +1624,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(JSON.stringify(current.findings)!==JSON.stringify(frozen.findings))throw new ApiError(409,'Frozen findings no longer match their current source records.');
       if(JSON.stringify(current.transcriptFindings??[])!==JSON.stringify(frozen.transcriptFindings??[]))throw new ApiError(409,'Frozen transcript findings no longer match their reviewed versions.');
       if(JSON.stringify(current.documentFindings??[])!==JSON.stringify(frozen.documentFindings??[]))throw new ApiError(409,'Frozen document findings no longer match their current source records.');
+      const permissions=use==='release'?await reportSourceUse(client,actor.tenantId,caseId,current,'release'):current.sourceUse??[];
+      if(JSON.stringify(permissions)!==JSON.stringify(frozen.sourceUse??[]))throw new ApiError(409,'Frozen source-use decisions require a new report revision.');
       return {ids:allIds,revision};
   }
   const reviewParams={type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}};
@@ -1673,7 +1682,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   });
   const renditionParams={type:'object',additionalProperties:false,required:['caseId','revisionId','renditionId'],properties:{caseId:uuidSchema,revisionId:uuidSchema,renditionId:uuidSchema}};
   app.get('/api/cases/:caseId/report-revisions/:revisionId/renditions/:renditionId',{preHandler:authenticate,schema:{params:renditionParams}},async(request,reply)=>{
-    const actor=request.actor!,{caseId,revisionId,renditionId}=request.params as {caseId:string;revisionId:string;renditionId:string};const built=await reportTransaction(async client=>{await reportAccess(client,actor,caseId);const row=(await client.query(`SELECT rr.*,r.report_bytes FROM report_renditions rr JOIN report_revisions r ON r.tenant_id=rr.tenant_id AND r.case_id=rr.case_id AND r.id=rr.revision_id WHERE rr.tenant_id=$1 AND rr.case_id=$2 AND rr.revision_id=$3 AND rr.id=$4`,[actor.tenantId,caseId,revisionId,renditionId])).rows[0];if(!row)notFound();const checked=checkedPdf(row.report_bytes,row);await writeAudit(client,actor,caseId,'report.rendition_downloaded','report_rendition',renditionId,'Verified internal PDF rendition downloaded',{revisionId,pdfDigest:checked.digest,redactionDigest:checked.redactionDigest});return checked;});
+    const actor=request.actor!,{caseId,revisionId,renditionId}=request.params as {caseId:string;revisionId:string;renditionId:string};const built=await reportTransaction(async client=>{const {built:checked}=await loadRendition(client,actor,caseId,revisionId,renditionId);await writeAudit(client,actor,caseId,'report.rendition_downloaded','report_rendition',renditionId,'Verified internal PDF rendition downloaded',{revisionId,pdfDigest:checked.digest,redactionDigest:checked.redactionDigest});return checked;});
     return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('X-INVEOS-PDF-SHA256',built.digest).header('X-INVEOS-Report-SHA256',built.model.sourceReportSha256).header('X-INVEOS-Redaction-SHA256',built.redactionDigest).header('Content-Disposition',`attachment; filename="internal-report-${renditionId}.pdf"`).type('application/pdf').send(built.bytes);
   });
   const disclosureParams={type:'object',additionalProperties:false,required:['caseId','disclosureId'],properties:{caseId:uuidSchema,disclosureId:uuidSchema}};
@@ -1683,7 +1692,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   async function loadRendition(client:PoolClient,actor:Actor,caseId:string,revisionId:string,renditionId:string){
     await reportAccess(client,actor,caseId);
     const row=(await client.query(`SELECT rr.*,r.report_bytes,r.created_by AS report_created_by FROM report_renditions rr JOIN report_revisions r ON r.tenant_id=rr.tenant_id AND r.case_id=rr.case_id AND r.id=rr.revision_id WHERE rr.tenant_id=$1 AND rr.case_id=$2 AND rr.revision_id=$3 AND rr.id=$4`,[actor.tenantId,caseId,revisionId,renditionId])).rows[0];
-    if(!row)notFound();const built=checkedPdf(row.report_bytes,row);return {row,built};
+    if(!row)notFound();const built=checkedPdf(row.report_bytes,row);await reportSourceUse(client,actor.tenantId,caseId,JSON.parse(row.report_bytes.toString('utf8')),'analysis');return {row,built};
   }
   for(const method of ['GET','POST'] as const)app.route({method,url:'/api/cases/:caseId/report-revisions/:revisionId/renditions/:renditionId/reviews',preHandler:method==='GET'?authenticate:requireCsrf,
     schema:{params:renditionParams,...(method==='POST'?{body:{type:'object',additionalProperties:false,required:['pdfSha256','redactionSha256','decision','reason','confirmInspected'],properties:{pdfSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},redactionSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},decision:{enum:['accept_for_disclosure','request_changes']},reason:{type:'string',minLength:10,maxLength:2000},confirmInspected:{const:true}}}}:{})},handler:async(request,reply)=>{
@@ -1712,7 +1721,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(old){if(old.revision_id!==revisionId||old.rendition_id!==renditionId||old.pdf_digest?.trim()!==input.pdfSha256||old.recipient_id!==input.recipientId||iso(old.expires_at)!==new Date(expiry).toISOString()||old.reason!==reason)throw new ApiError(409,'Disclosure retry differs.');return disclosureReceipt(old);}
       if(kase.status!=='Active'||!kase.authority_version||!['Active','Review','Released'].includes(kase.lifecycle_state))throw new ApiError(409,'Active approved authority and an open case stage required.');
       const {built}=await loadRendition(client,actor,caseId,revisionId,renditionId);if(built.digest!==input.pdfSha256)throw new ApiError(409,'PDF disclosure fingerprint mismatch.');
-      await verifyFrozenSources(client,actor,caseId,revisionId,built.model.sourceReportSha256);
+      await verifyFrozenSources(client,actor,caseId,revisionId,built.model.sourceReportSha256,'release');
       const clock=(await client.query('SELECT clock_timestamp() AS now')).rows[0].now.getTime();if(expiry<=clock||expiry>clock+7*86400000)throw new ApiError(422,'Expiry must be within seven days.');
       if(!(await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role='client'",[actor.tenantId,input.recipientId])).rowCount)throw new ApiError(422,'Recipient must be a client in this tenant.');
       const accepted=await client.query(`SELECT 1 FROM report_rendition_reviews rr JOIN memberships m ON m.tenant_id=rr.tenant_id AND m.user_id=rr.reviewer_id JOIN case_memberships cm ON cm.tenant_id=rr.tenant_id AND cm.case_id=rr.case_id AND cm.user_id=rr.reviewer_id WHERE rr.tenant_id=$1 AND rr.case_id=$2 AND rr.rendition_id=$3 AND rr.authority_version=$4 AND rr.pdf_digest=$5 AND rr.redaction_digest=$6 AND rr.decision='accept_for_disclosure' AND m.role='reviewer'`,[actor.tenantId,caseId,renditionId,kase.authority_version,built.digest,built.redactionDigest]);
@@ -1744,7 +1753,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
        WHERE r.tenant_id=$1 AND r.case_id=$2 AND r.revision_id=$3 AND m.role='reviewer' AND r.authority_version=$4 AND r.digest=$5`,[actor.tenantId,caseId,revisionId,kase.authority_version,input.sha256]);
       const rejected=await client.query("SELECT 1 FROM report_revision_reviews WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND decision='request_changes' LIMIT 1",[actor.tenantId,caseId,revisionId]);
       if(rejected.rowCount||!reviews.rows.some(r=>r.decision==='accept_internal'))throw new ApiError(409,'Current independent acceptance and no change requests required.');
-      const verified=await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256);
+      const verified=await verifyFrozenSources(client,actor,caseId,revisionId,input.sha256,'release');
       const documentFindings=(JSON.parse(verified.revision.report_bytes.toString('utf8')) as ReportDraft).documentFindings;
       let documentPackage:Awaited<ReturnType<typeof buildDocumentPackage>>|undefined;
       if(documentFindings?.length){
@@ -1816,6 +1825,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   });
   async function disclosureDelivery(client:PoolClient,row:QueryResultRow){
     checkRevision(row);const reportDigest=row.digest.trim();
+    const frozen=JSON.parse(row.report_bytes.toString('utf8')) as ReportDraft,permissions=await reportSourceUse(client,row.tenant_id,row.case_id,frozen,'release');
+    if(JSON.stringify(permissions)!==JSON.stringify(frozen.sourceUse??[]))throw new ApiError(409,'Released source-use decisions are no longer current.');
     if(row.rendition_id){
       if(row.package_bytes)throw new ApiError(409,'Disclosure has conflicting deliverables.');
       const rendition=(await client.query('SELECT * FROM report_renditions WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND id=$4',[row.tenant_id,row.case_id,row.revision_id,row.rendition_id])).rows[0];
@@ -1912,6 +1923,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       await reportAccess(client,actor,caseId);
       const result=await client.query('SELECT * FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId]);
       if(!result.rows[0]) notFound();checkRevision(result.rows[0]);
+      await reportSourceUse(client,actor.tenantId,caseId,JSON.parse(result.rows[0].report_bytes.toString('utf8')),'analysis');
       await writeAudit(client,actor,caseId,'report_revision.downloaded','report_revision',revisionId,'Frozen internal draft downloaded');
       return result.rows[0];
     });

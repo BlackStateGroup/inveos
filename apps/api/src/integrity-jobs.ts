@@ -1,3 +1,4 @@
+import {sourceUseProofs} from './source-use.js';
 import type {OriginalStore} from './original-encryption.js';
 import {ocrKind,ocrExpandedKind,ocrConfiguration,makeOcrDerivative} from './ocr-derivative.js';
 import {documentReview,type DocumentReviewInput,type ReviewPredecessor} from './document-review.js';
@@ -51,7 +52,9 @@ async function permitted(client: PoolClient, row: QueryResultRow): Promise<boole
     JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id
     WHERE c.tenant_id=$1 AND c.id=$2 AND cm.user_id=$3 AND m.role <> 'client'
       AND c.status='Active' AND c.lifecycle_state IN ('Active','Review') AND c.authority_version=$4 FOR SHARE OF c`, [row.tenant_id,row.case_id,row.requested_by,row.authority_version]);
-  return r.rowCount === 1;
+  if(r.rowCount!==1)return false;
+  if(row.kind!=='original_sha256_v1')try{await sourceUseProofs(client,row.tenant_id,row.case_id,row.evidence_id,'analysis');}catch(e){if(e instanceof ApiError&&e.statusCode===409)return false;throw e;}
+  return true;
 }
 async function terminal(client: PoolClient, s: Scope, status: string, code: string | null, token: string | null = null) {
   const result = await client.query(`UPDATE integrity_jobs SET status=$4,failure_code=$5,lease_token=NULL,lease_until=NULL,finished_at=clock_timestamp()
@@ -328,6 +331,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
       if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>((ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
+      if(input.kind&&input.kind!=='original_sha256_v1')await sourceUseProofs(client,actor.tenantId,caseId,input.evidenceId,'analysis');
       const id = randomUUID();
       const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);
@@ -347,6 +351,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         FROM text_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId]);
       const row=result.rows[0];if (!row) notFound();
+      await sourceUseProofs(client,actor.tenantId,caseId,row.evidence_id,'analysis');
       let derivative;
       try {
         const original=await readOriginalBounded(svc.storageRoot,row.object_path,262144);
@@ -366,7 +371,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time,e.filename,e.authority_id,e.authority_version AS source_authority_version
         FROM document_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
-      if(!row)notFound();let output;
+      if(!row)notFound();await sourceUseProofs(client,actor.tenantId,caseId,row.evidence_id,'analysis');let output;
       const {profile,profileDigest,maxOriginalBytes}=documentSettings(row.kind);
       if(!documentKinds.includes(row.kind))throw new ApiError(409,'Unsupported document processing profile.');
       try {
@@ -601,7 +606,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
       const row=(await client.query(`SELECT d.*,e.object_path,e.byte_length,e.digest,e.original_kind,e.source_time,e.received_time
         FROM raster_derivatives d JOIN evidence e ON e.tenant_id=d.tenant_id AND e.case_id=d.case_id AND e.id=d.evidence_id
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.job_id=$3`,[actor.tenantId,caseId,jobId])).rows[0];
-      if(!row)notFound();let output;
+      if(!row)notFound();await sourceUseProofs(client,actor.tenantId,caseId,row.evidence_id,'analysis');let output;
       const config=rasterConfiguration(row.kind);if(!config)throw new ApiError(409,'Unsupported raster processing profile.');
       const {profile,profileDigest,maxOriginalBytes}=config;
       try{
