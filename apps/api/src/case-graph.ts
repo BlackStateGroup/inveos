@@ -1,7 +1,8 @@
 import {createHash} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
-import type {CaseGraph,ChronologySource,DocumentReportFinding,GraphEntity,GraphEntityInput,GraphEntityRef,GraphProposal,GraphProposalInput,GraphRelationship,GraphReview,GraphSource,ReportDraft} from '@inveos/contracts';
+import {entityAttributeLabels} from '@inveos/contracts';
+import type {EntityAttribute,CaseGraph,ChronologySource,DocumentReportFinding,GraphEntity,GraphEntityInput,GraphEntityRef,GraphProposal,GraphProposalInput,GraphRelationship,GraphReview,GraphSource,ReportDraft} from '@inveos/contracts';
 import type {Actor} from './app.js';
 import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
@@ -13,6 +14,9 @@ const params={type:'object',additionalProperties:false,required:['caseId'],prope
 const itemParams={...params,required:['caseId','id'],properties:{...params.properties,id:uuid}};
 const sourceSchema={type:'object',additionalProperties:false,required:['kind','findingId'],properties:{kind:{enum:['text_finding','document_finding']},findingId:uuid}};
 const endpoint={type:'object',additionalProperties:false,required:['id','version'],properties:{id:uuid,version}};
+const attributeSchema={type:'array',maxItems:20,items:{type:'object',additionalProperties:false,required:['property','value','source'],properties:{property:{enum:Object.keys(entityAttributeLabels)},value:text(300),source:sourceSchema}}};
+const entityBody=(properties:Record<string,unknown>)=>({...body(properties),properties:{...properties,attributes:attributeSchema}});
+const attributeTypes=async(r:FastifyRequest)=>{const attrs=(r.body as GraphEntityInput)?.attributes;if(attrs!==undefined&&(!Array.isArray(attrs)||attrs.some(a=>!a||typeof a.property!=='string'||typeof a.value!=='string'||!a.source||typeof a.source.kind!=='string'||typeof a.source.findingId!=='string')))throw new ApiError(422,'Entity attributes require explicit text and source identities.');};
 const entityFields={label:text(200,3),detail:text(2000)};
 const edgeFields={from:endpoint,to:endpoint,relationship:text(100,3),account:text(4000),sources:{type:'array',minItems:1,maxItems:5,items:sourceSchema}};
 const body=(properties:Record<string,unknown>)=>({type:'object',additionalProperties:false,required:Object.keys(properties),properties});
@@ -65,16 +69,22 @@ export function registerCaseGraph(app:FastifyInstance,s:Services){
  }));
  const saveEntity=async(r:FastifyRequest,edit:boolean)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");
   const a=r.actor!;internal(a);const {caseId,id:routeId}=r.params as {caseId:string;id?:string},input=r.body as GraphEntityInput&{expectedVersion:number;reason:string;withdrawn:boolean};validate(input.label,input.detail,...(edit?[input.reason]:[]));
-  const kase=await s.findCase(c,a,caseId,true),nodes=await entities(c,a,caseId),id=edit?routeId!:input.id,old=nodes.find(e=>e.id===id),requestHash=hash([input.kind,input.label,input.detail]);
+  const kase=await s.findCase(c,a,caseId,true),nodes=await entities(c,a,caseId),id=edit?routeId!:input.id,old=nodes.find(e=>e.id===id),requestHash=hash([input.kind,input.label,input.detail,...(input.attributes?.length?[input.attributes]:[])]);
   if(!edit&&old){const row=(await c.query('SELECT request_hash,created_by FROM graph_entities WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,id])).rows[0];if(row.created_by!==a.userId||row.request_hash!==requestHash)throw new ApiError(409,'Entity identity already used.');return old;}
   if(edit&&!old)notFound();if(edit&&old!.version!==input.expectedVersion)throw new ApiError(409,'Entity changed. Refresh and compare.');if(edit&&old!.version>=100)throw new ApiError(422,'Entity revision limit reached.');if(!edit&&nodes.length>=200)throw new ApiError(422,'Graph entity limit reached.');
   if(!edit||!input.withdrawn)active(kase);
-  const at=(await c.query('SELECT clock_timestamp() at')).rows[0].at.toISOString(),snapshot:GraphEntity={id,caseId,kind:old?.kind??input.kind,label:input.label,detail:input.detail,version:old?old.version+1:1,withdrawn:edit?input.withdrawn:false,createdBy:old?.createdBy??a.userId,recordedAt:at};
+  const proposed=input.attributes??old?.attributes??[];let attributes:EntityAttribute[]=[];
+  if(edit&&input.withdrawn){if(input.attributes!==undefined&&hash(input.attributes.map(a=>({...a,source:sourceRef(a.source as GraphSource)})))!==hash((old!.attributes??[]).map(a=>({...a,source:sourceRef(a.source)}))))throw new ApiError(422,'Withdraw the existing attributes without changing them.');attributes=old!.attributes??[];}else{
+   if(new Set(proposed.map(a=>JSON.stringify([a.property,a.value,a.source.kind,a.source.findingId]))).size!==proposed.length)throw new ApiError(422,'Entity attributes must be distinct.');
+   for(const attribute of proposed){validate(attribute.value);if(attribute.value!==attribute.value.trim())throw new ApiError(422,'Remove surrounding attribute whitespace.');if(attribute.property==='incorporationDate'&&(!/^\d{4}-\d{2}-\d{2}$/.test(attribute.value)||!Number.isFinite(Date.parse(attribute.value))||new Date(attribute.value).toISOString().slice(0,10)!==attribute.value))throw new ApiError(422,'Use an exact incorporation date or retain uncertainty in the entity account.');const checked=await verifySources(c,a,caseId,[sourceRef(attribute.source as GraphSource)]);attributes.push({property:attribute.property,value:attribute.value,source:checked.sources[0]!});}
+  }
+  const at=(await c.query('SELECT clock_timestamp() at')).rows[0].at.toISOString(),snapshot:GraphEntity={id,caseId,kind:old?.kind??input.kind,label:input.label,detail:input.detail,version:old?old.version+1:1,withdrawn:edit?input.withdrawn:false,createdBy:old?.createdBy??a.userId,recordedAt:at,...(attributes.length||input.attributes!==undefined?{attributes}:{})};
   if(old)await c.query('UPDATE graph_entities SET version=$4 WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[a.tenantId,caseId,id,snapshot.version]);else await c.query('INSERT INTO graph_entities(tenant_id,case_id,id,request_hash,created_by) VALUES($1,$2,$3,$4,$5)',[a.tenantId,caseId,id,requestHash,a.userId]);
   await c.query('INSERT INTO graph_entity_revisions(tenant_id,case_id,entity_id,version,snapshot,actor_id,reason,recorded_at) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8)',[a.tenantId,caseId,id,snapshot.version,JSON.stringify(snapshot),a.userId,edit?input.reason:'Entity candidate recorded',at]);await s.audit(c,a,caseId,'graph.entity_revised','graph_entity',id,`Entity revision ${snapshot.version}`);return snapshot;
  });
- app.post(base+'/entities',{preHandler:s.requireCsrf,schema:{params,body:body({id:uuid,kind:{enum:['person','organisation','asset','place','incident','document']},...entityFields})}},r=>saveEntity(r,false));
- app.post(base+'/entities/:id/revise',{preHandler:s.requireCsrf,schema:{params:itemParams,body:body({...entityFields,withdrawn:{type:'boolean'},expectedVersion:version,reason:text(3000)})}},r=>saveEntity(r,true));
+ app.post(base+'/entities',{preHandler:s.requireCsrf,preValidation:attributeTypes,schema:{params,body:entityBody({id:uuid,kind:{enum:['person','organisation','asset','place','incident','document']},...entityFields})}},r=>saveEntity(r,false));
+ app.post(base+'/entities/:id/revise',{preHandler:s.requireCsrf,preValidation:attributeTypes,schema:{params:itemParams,body:entityBody({...entityFields,withdrawn:{type:'boolean'},expectedVersion:version,reason:text(3000)})}},r=>saveEntity(r,true));
+ app.get(base+'/entities/:id/sources',{preHandler:read,schema:{params:itemParams}},r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");const a=r.actor!,{caseId,id}=r.params as {caseId:string;id:string};await s.findCase(c,a,caseId);const entity=(await entities(c,a,caseId)).find(e=>e.id===id);if(!entity)notFound();const findings:Finding[]=[];for(const attribute of entity.attributes??[]){const checked=await verifySources(c,a,caseId,[sourceRef(attribute.source)]);if(hash(checked.sources[0])!==hash(attribute.source))throw new ApiError(409,'An entity attribute source changed. Compare and revise the entity.');findings.push(checked.findings[0]!);}return findings;}));
  app.get(base+'/entities/:id/history',{preHandler:read,schema:{params:itemParams}},async r=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");const a=r.actor!,{caseId,id}=r.params as {caseId:string;id:string};await s.findCase(c,a,caseId);const rows=(await c.query('SELECT snapshot,reason,actor_id AS "actorId",recorded_at AS "recordedAt" FROM graph_entity_revisions WHERE tenant_id=$1 AND case_id=$2 AND entity_id=$3 ORDER BY version DESC LIMIT 100',[a.tenantId,caseId,id])).rows;if(!rows.length)notFound();return rows;}));
  const saveProposal=async(r:FastifyRequest,edit:boolean,withdraw=false)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");
   const a=r.actor!;internal(a);const {caseId,id:routeId}=r.params as {caseId:string;id?:string},input=r.body as GraphProposalInput&{expectedVersion:number;reason:string};if(edit)validate(input.reason);if(!withdraw)validate(input.relationship,input.account);

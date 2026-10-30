@@ -1,3 +1,6 @@
+import {registerWorkload} from './workload.js';
+import {registerFieldCapture,checkFieldDevice,fieldManifestHash,fieldReceipt} from './field-capture.js';
+import type {FieldManifest,FieldCaptureReceipt} from '@inveos/contracts';
 import {registerAttention} from './attention.js';
 import {registerPreservationHolds} from './preservation-holds.js';
 import {registerCaseAccess} from './case-access.js';
@@ -673,6 +676,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerAttention(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerTimeLedger(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseBudgets(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerWorkload(app,{pool:options.pool,authenticate,findCase});
 
   app.post(
     '/api/session/start',
@@ -982,7 +986,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     },
   );
 
-  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string) {
+  async function receiveEvidence(actor:Actor,caseId:string,input:EvidenceInput|BinaryEvidenceInput,binary:boolean,uploadId?:string,field?:FieldManifest) {
         rejectClientRole(actor);
         const originalKind = binary ? 'opaque_binary' : 'original_utf8';
         if (!validFilename(input.filename, binary)) {
@@ -1005,6 +1009,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
           sourceTime: input.sourceTime,
           method: input.method,
           idempotencyKey: input.idempotencyKey,
+          ...(field?{fieldManifestSha256:fieldManifestHash(field)}:{}),
         }));
         let stored: StoredOriginal | undefined;
         try {
@@ -1019,13 +1024,19 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
                 WHERE tenant_id = $1 AND case_id = $2 AND created_by = $3 AND idempotency_key = $4`,
               [actor.tenantId, caseId, actor.userId, input.idempotencyKey],
             );
+            if(field){
+              await checkFieldDevice(client,actor,field.deviceId);
+              if(!prior.rows[0]&&field.authorityVersion!==kase.authority_version)throw new ApiError(409,'Offline authority changed. Keep this capture for an explicit scope review.');
+            }
             if (prior.rows[0]) {
               if (prior.rows[0].request_hash.trim() !== requestHash) {
                 throw new ApiError(409, 'Idempotency key was already used for a different request.');
               }
               if(uploadId){const saved=await client.query("SELECT 1 FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND status='completed' AND evidence_id=$4",[actor.tenantId,caseId,uploadId,prior.rows[0].id]);if(!saved.rowCount)throw new ApiError(409,'Upload key conflicts with another intake.');}
               const existingBytes = await verifiedBytes(options.storageRoot, prior.rows[0]);
-              return {row: prior.rows[0], bytes: existingBytes};
+              const capture=field?(await client.query('SELECT * FROM field_captures WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND user_id=$4 AND evidence_id=$5',[actor.tenantId,caseId,field.id,actor.userId,prior.rows[0].id])).rows[0]:undefined;
+              if(field&&(!capture||capture.manifest_sha256.trim()!==fieldManifestHash(field)))throw new ApiError(409,'Frozen field receipt does not match this original.');
+              return {row: prior.rows[0], bytes: existingBytes,capture};
             }
             if(uploadId){
               const upload=await client.query('SELECT *,expires_at>clock_timestamp() AS live FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND created_by=$4 FOR UPDATE',[actor.tenantId,caseId,uploadId,actor.userId]);
@@ -1045,6 +1056,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               throw new ApiError(409, 'The current immutable authority record is unavailable.');
             }
 
+            if(field&&field.authorityId!==authority.id)throw new ApiError(409,'Offline authority identity no longer matches.');
             const evidenceId = randomUUID();
             stored = await writeOriginal(options.storageRoot, actor.tenantId, caseId, evidenceId, bytes, binary ? 'bin' : 'txt');
             const inserted = await client.query<EvidenceRow>(
@@ -1093,13 +1105,19 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               await client.query('DELETE FROM upload_chunks WHERE tenant_id=$1 AND case_id=$2 AND upload_id=$3',keys);
               await writeAudit(client,actor,caseId,'upload.completed','upload',uploadId,'Upload verified and attached as quarantined original');
             }
-            return {row, bytes};
+            let capture:QueryResultRow|undefined;
+            if(field){
+              capture=(await client.query('INSERT INTO field_captures(tenant_id,case_id,id,user_id,device_id,evidence_id,authority_id,authority_version,manifest,manifest_sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *',[actor.tenantId,caseId,field.id,actor.userId,field.deviceId,evidenceId,authority.id,authority.version,JSON.stringify(field),fieldManifestHash(field)])).rows[0];
+              await writeAudit(client,actor,caseId,'field.capture_received','field_capture',field.id,'Frozen field manifest and verified original received',{evidenceId,deviceId:field.deviceId,manifestSha256:fieldManifestHash(field)});
+            }
+            return {row,bytes,capture};
           });
           if (stored && result.row.object_path !== stored.objectPath) {
             await stored.remove();
             stored = undefined;
           }
-          return evidenceDtoWithText(result.row, result.bytes);
+          const evidence=evidenceDtoWithText(result.row,result.bytes);
+          return field?{capture:fieldReceipt(result.capture!),evidence}:evidence;
         } catch (error) {
           await stored?.remove();
           throw error;
@@ -1108,8 +1126,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   for(const binary of [false,true])app.post(binary?'/api/cases/:caseId/evidence/binary':'/api/cases/:caseId/evidence',
     {preHandler:requireCsrf,schema:{params:caseParamsSchema,body:binary?binaryEvidenceBodySchema:evidenceBodySchema}},
     request=>receiveEvidence(request.actor!,(request.params as {caseId:string}).caseId,request.body as EvidenceInput|BinaryEvidenceInput,binary));
+  registerFieldCapture(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
+    receive:async(actor,caseId,manifest,contentBase64)=>await receiveEvidence(actor,caseId,{filename:manifest.filename,sourceTime:manifest.sourceTime,method:manifest.method,expectedSha256:manifest.expectedSha256,idempotencyKey:manifest.id,contentBase64},true,undefined,manifest) as FieldCaptureReceipt});
   registerUploads(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validFilename,validSourceTime,
-    receive:(actor,caseId,input,uploadId)=>receiveEvidence(actor,caseId,input,true,uploadId),
+    receive:async(actor,caseId,input,uploadId)=>await receiveEvidence(actor,caseId,input,true,uploadId) as Evidence,
     receipt:(actor,caseId,id)=>inTransaction(options.pool,async c=>{const row=await findEvidence(c,actor,caseId,id);return evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));})});
 
   app.get(

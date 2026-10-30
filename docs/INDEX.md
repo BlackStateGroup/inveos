@@ -203,3 +203,5 @@
 - [100 — Versioned case time budgets](100_CASE_TIME_BUDGETS.md)
 
 - [101 — Case-scoped bulk task status changes](101_BULK_TASK_STATUS.md)
+
+- [Field, team workload and entity attributes](102_FIELD_TEAM_ENTITY_BATCH.md) — combined browser Field/platform increment; acceptance and native gates recorded separately.

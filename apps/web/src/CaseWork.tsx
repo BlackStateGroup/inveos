@@ -199,8 +199,8 @@ export function CaseTaskboard(p: ViewProps) {
   async function refresh(){clear();setNotice('');setDenied(true);await p.work.refresh();setDenied(false);}
   async function save(event?:FormEvent){event?.preventDefault();await act(async()=>{
     const input=pending??{id:crypto.randomUUID(),items:selected.map(item=>({id:item.id,expectedVersion:item.version})),status,reason};
-    setPending(input);const result=await p.work.batchStatus(input);clear();setNotice(`Recorded status changes for ${result.applied.length} tasks. Individual histories retain the decision.`);
-    await p.work.refresh();
+    setNotice('');setPending(input);const result=await p.work.batchStatus(input);clear();setDenied(true);setNotice('Task status receipt confirmed. Loading current task records…');
+    await p.work.refresh();setDenied(false);setNotice(`Recorded status changes for ${result.applied.length} tasks. Individual histories retain the decision.`);
   });}
   if(!p.work.enabled)return <WorkSection p={p} kind="task" title="Case tasks" description="Save assignments, deadlines, blockers and completion decisions with the case."/>;
   const tasks=p.data.workItems.filter(w=>w.caseId===p.active.id&&w.kind==='task'&&`${w.title} ${w.body}`.toLowerCase().includes(query.toLowerCase()));

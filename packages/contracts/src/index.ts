@@ -168,8 +168,14 @@ export type CaseSearchResult = {interpretation:'stored_records_reverify_sources'
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};
 
 export type GraphEntityKind = 'person'|'organisation'|'asset'|'place'|'incident'|'document';
-export type GraphEntityInput = {id:string;kind:GraphEntityKind;label:string;detail:string};
-export type GraphEntity = GraphEntityInput & {caseId:string;version:number;withdrawn:boolean;createdBy:string;recordedAt:string};
+// Property names adapted from FollowTheMoney at c70a89ffa59ea785956f6095643310da3735b7fb.
+// Copyright (c) 2017-2024 Journalism Development Network, Inc.; MIT, third_party/followthemoney/LICENSE.
+export const entityAttributeLabels = {alias:'Other name',previousName:'Previous name',registrationNumber:'Registration number',jurisdiction:'Jurisdiction',legalForm:'Legal form',incorporationDate:'Incorporation date',idNumber:'Identifier',website:'Website'} as const;
+export type EntityAttributeProperty=keyof typeof entityAttributeLabels;
+export type EntityAttributeInput={property:EntityAttributeProperty;value:string;source:ChronologySource};
+export type EntityAttribute=Omit<EntityAttributeInput,'source'>&{source:GraphSource};
+export type GraphEntityInput = {id:string;kind:GraphEntityKind;label:string;detail:string;attributes?:EntityAttributeInput[]};
+export type GraphEntity = Omit<GraphEntityInput,'attributes'> & {attributes?:EntityAttribute[]} & {caseId:string;version:number;withdrawn:boolean;createdBy:string;recordedAt:string};
 export type GraphEntityRef = Pick<GraphEntity,'id'|'version'|'kind'|'label'>;
 export type GraphSource = ChronologySource & {sha256:string;authorityVersion:number};
 export type GraphProposalInput = {id:string;from:Pick<GraphEntityRef,'id'|'version'>;to:Pick<GraphEntityRef,'id'|'version'>;relationship:string;account:string;sources:ChronologySource[]};
@@ -208,3 +214,8 @@ export type CaseTimeEntry=CaseTimeFields&{id:string;version:number;startedAtUtc:
 export type AttentionPreferences={version:number;deadlines:boolean;failures:boolean;reviews:boolean;recordedAt:string|null};
 export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;acknowledged?:boolean};
 export type AttentionPage={items:AttentionEntry[];next:string|null;preferences:AttentionPreferences;asOf:string;interpretation:'personal_attention_not_review'};
+
+export type FieldDevice={id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
+export type FieldContext={tenantId:string;userId:string;caseId:string;device:FieldDevice;authority:AuthorityRecord;checkedAt:string;maxOriginalBytes:number};
+export type FieldManifest={id:string;deviceId:string;authorityId:string;authorityVersion:number;filename:string;sourceTime:string;capturedAt:string;clockUncertaintySeconds:number|null;method:string;expectedSha256:string;byteLength:number;kind:'supplied_file'|'field_note';scopeConfirmed:true};
+export type FieldCaptureReceipt={capture:{id:string;caseId:string;deviceId:string;authorityId:string;authorityVersion:number;manifestSha256:string;receivedAt:string};evidence:Evidence};
