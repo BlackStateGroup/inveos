@@ -16,7 +16,7 @@ No originals, prior decisions, report bytes, release records or custody entries 
 - Database sequential insert/current-reviewer guards and append-only update/delete trigger; restricted application role receives SELECT/INSERT only. History pages contain25 records, at most1000 versions.
 - Shared source-use release gate covers JSON, document packages, PDF and DOCX release creation and delivery, including feedback's exact-release loader. Existing portal eligibility also excludes current internal-only/stale decisions from discovery, acknowledgement and feedback. Recipient downloads acquire the case lock before rechecking policy and current client membership.
 - Case brief exposes current instructions, sharing state and decision history. Failed access clears retained form/history context. No classification instructions are sent to recipients.
-- Restricted collaborator work is a concurrent feature; root must wire `assertCaseSharing` into its publication/external scope after integration. Do not claim that unintegrated route is covered yet.
+- Restricted collaborator work (docs137) is integrated with mandatory `assertCaseSharing` hooks covering publication/review retries, external access and final transaction rechecks. Internal eligibility controls reflect the same restriction. Runtime acceptance of this wiring is unrun.
 
 ## Source and privacy decisions
 
