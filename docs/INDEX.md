@@ -219,3 +219,5 @@
 - [108 — Case expenses and spending](108_CASE_EXPENSES.md)
 
 - [109 — Frozen editable report copies](109_EDITABLE_REPORTS.md)
+
+- `110_TIKA_PDF_COMPARISON.md` — pinned source/runtime acquisition, isolated reduced Tika build and actual comparison protocol.

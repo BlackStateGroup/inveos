@@ -1,0 +1,1255 @@
+{
+  "format": "inveos.tika_research_artifacts.v1",
+  "sourceRevision": "f45b9498f35d55445af28737407586362b2e37fc",
+  "origin": "https://repo.maven.apache.org/maven2/",
+  "modules": [
+    "tika-annotation-processor",
+    "tika-core",
+    "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-xmp-commons",
+    "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module"
+  ],
+  "sourceInputs": {
+    "LICENSE.txt": {
+      "bytes": 32149,
+      "sha256": "ad5f4c4d0d4a04ac264ee55539191e1d36eb5d43ff63bbfc2cf97d541dc7ce8c"
+    },
+    "NOTICE.txt": {
+      "bytes": 848,
+      "sha256": "407c430392d86b3eca6df93f62d9c07625f1968f4ed0bd68d817e00da44945aa"
+    },
+    "tika-parent/pom.xml": {
+      "bytes": 72604,
+      "sha256": "19febc27feb784ade943e52c642d84f1a4876355cc1b5c538ca2d2ef54a5598b"
+    },
+    "tika-annotation-processor/pom.xml": {
+      "bytes": 2327,
+      "sha256": "cb65ee587e871cbfa244338145c7a13708a5c12b46a64a64f8028797118f1607"
+    },
+    "tika-core/pom.xml": {
+      "bytes": 14255,
+      "sha256": "8182fa3fe1a93e8c8c5789d00b7adfb249a9b8ec8a2c7b6ac66d956954717c66"
+    },
+    "tika-parsers/pom.xml": {
+      "bytes": 7416,
+      "sha256": "df6442645aa8c56ce9f9b0e750df9346757bd6d52ec0a09e995ed3930a49990e"
+    },
+    "tika-parsers/tika-parsers-standard/pom.xml": {
+      "bytes": 4705,
+      "sha256": "d5cd64655cc4cefa63acf75a9b2bbdc78ccceffde3691165b99048a07b3aa564"
+    },
+    "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/pom.xml": {
+      "bytes": 5762,
+      "sha256": "c8c0cbfc22dd810207eb5009137b4cc88e9d62763662cc47b3125140e9a1e24c"
+    },
+    "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-xmp-commons/pom.xml": {
+      "bytes": 2319,
+      "sha256": "7c82e7bf3248566fb637acb4ab44333da1f9e41b6e799b15c0ff4c685ac49501"
+    },
+    "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module/pom.xml": {
+      "bytes": 4031,
+      "sha256": "d3b78ebe5a6b27e191f73c0d5a0cfa4ed6bf8fa3b72bbb518d0e0f26fe1bce9f"
+    }
+  },
+  "files": [
+    {
+      "path": "commons-io/commons-io/2.22.0/commons-io-2.22.0-sources.jar",
+      "bytes": 610277,
+      "sha256": "de5acfae5fa2735276df7facf46cdb0347374208ea47db246b554fae59277fb5"
+    },
+    {
+      "path": "commons-io/commons-io/2.22.0/commons-io-2.22.0.jar",
+      "bytes": 609182,
+      "sha256": "2b9a7b1f726fb86216dbd2c8321eabe0221dbd5b1be81c18e1cb53811b104758"
+    },
+    {
+      "path": "commons-io/commons-io/2.22.0/commons-io-2.22.0.pom",
+      "bytes": 20275,
+      "sha256": "6425cec0ea760035efa77277de85f89fa6dbed147ab3dd95b8d2cbc55340accf"
+    },
+    {
+      "path": "commons-logging/commons-logging/1.4.0/commons-logging-1.4.0-sources.jar",
+      "bytes": 85970,
+      "sha256": "28104e5057a11c6e9cda72e973d767b3a0185e65363fede91bc848bc6a309634"
+    },
+    {
+      "path": "commons-logging/commons-logging/1.4.0/commons-logging-1.4.0.jar",
+      "bytes": 75828,
+      "sha256": "d175dbd751dd782a63bde28c7a039520e971f25e84b79c19b8435edc3603e0dc"
+    },
+    {
+      "path": "commons-logging/commons-logging/1.4.0/commons-logging-1.4.0.pom",
+      "bytes": 32668,
+      "sha256": "92d9c735808eda632a214c7f2c1640266cfc7269c3a63fd2346e15c988aeb11e"
+    },
+    {
+      "path": "info/picocli/picocli/4.7.7/picocli-4.7.7-sources.jar",
+      "bytes": 492153,
+      "sha256": "87916611c616588b20d987868f96e622de6ed447e4b1ff5b662ebd947773e9a6"
+    },
+    {
+      "path": "info/picocli/picocli/4.7.7/picocli-4.7.7.jar",
+      "bytes": 417640,
+      "sha256": "f86e30fffd10d2b13b8caa8d4b237a7ee61f2ffccf5b1941de718b765d235bf8"
+    },
+    {
+      "path": "info/picocli/picocli/4.7.7/picocli-4.7.7.pom",
+      "bytes": 1376,
+      "sha256": "1b18d363134df66631d2b9f7475068d734225ba389cdf9082a1bd8bda90d57d3"
+    },
+    {
+      "path": "org/apache/apache/37/apache-37.pom",
+      "bytes": 25620,
+      "sha256": "524ec4787aff73af6b3a9fafa154c7f1881b648299b663fdbfcadda1286f2353"
+    },
+    {
+      "path": "org/apache/apache/38/apache-38.pom",
+      "bytes": 25608,
+      "sha256": "9b0a5f28ddfb4b7500a37022bee8245efdd044fb9a3d79fb827550923eccc4b5"
+    },
+    {
+      "path": "org/apache/apache/39/apache-39.pom",
+      "bytes": 27054,
+      "sha256": "71752ed4c2435a1d8385fe0a4d330f39d04efec89f0d1ba5d1598d39f7397a44"
+    },
+    {
+      "path": "org/apache/apache/40/apache-40.pom",
+      "bytes": 27116,
+      "sha256": "9c79f575a59ab5b622f591169411a4fdcfab71f8dc0440beaed87ac6b9b941f7"
+    },
+    {
+      "path": "org/apache/commons/commons-parent/102/commons-parent-102.pom",
+      "bytes": 79549,
+      "sha256": "1a3775fa4b265910941ca7f09c6b0df4b30f61e301f03dbebbfd35c49ca740af"
+    },
+    {
+      "path": "org/apache/commons/commons-parent/105/commons-parent-105.pom",
+      "bytes": 80140,
+      "sha256": "31a68daabb4b361453788b9045ac87a6ae87c705e578facd99e4d9ddb6a481e9"
+    },
+    {
+      "path": "org/apache/commons/commons-parent/98/commons-parent-98.pom",
+      "bytes": 79787,
+      "sha256": "d40318527f56033e0ff0789971cc38c856aa99a685eea11270814e7f1eda9fba"
+    },
+    {
+      "path": "org/apache/commons/commons-secure-xml/1.1.0/commons-secure-xml-1.1.0-sources.jar",
+      "bytes": 106558,
+      "sha256": "7f37b3ee141ac0b9983fd3b13c099a486e11091fc61991c2cff2e1d08074ddd2"
+    },
+    {
+      "path": "org/apache/commons/commons-secure-xml/1.1.0/commons-secure-xml-1.1.0.jar",
+      "bytes": 77465,
+      "sha256": "5fc54f0d153bb9c42379a434a05177e79bbfddec7791c383370da1f592789513"
+    },
+    {
+      "path": "org/apache/commons/commons-secure-xml/1.1.0/commons-secure-xml-1.1.0.pom",
+      "bytes": 33813,
+      "sha256": "d2b40910c6938e00356261710f938c0855e3abc5a8406a6873cbd76d93d7d268"
+    },
+    {
+      "path": "org/apache/pdfbox/fontbox/3.0.8/fontbox-3.0.8-sources.jar",
+      "bytes": 1570814,
+      "sha256": "ccb9a570f102b776974dd3ab5a5dd96972c90e2dd30cd3e9ecc59d854f1dc1b0"
+    },
+    {
+      "path": "org/apache/pdfbox/fontbox/3.0.8/fontbox-3.0.8.jar",
+      "bytes": 1647000,
+      "sha256": "a1915c24e3edbe0ecec93896dfbf6d41427810b663ade97bd4e8bae86ec3fdab"
+    },
+    {
+      "path": "org/apache/pdfbox/fontbox/3.0.8/fontbox-3.0.8.pom",
+      "bytes": 9969,
+      "sha256": "17805de8dae9e80519661dd1c0a623d699590f212ceccdb1dc9852733f1ae96f"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-io/3.0.8/pdfbox-io-3.0.8-sources.jar",
+      "bytes": 49627,
+      "sha256": "c0ce16d1ea7b2e68607741e43b2ea14a2e9193eb7a2b344853c4c64b397fb250"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-io/3.0.8/pdfbox-io-3.0.8.jar",
+      "bytes": 51906,
+      "sha256": "36a0e04001010b4c764857817412b96339930b19755e728959805cc0352061b2"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-io/3.0.8/pdfbox-io-3.0.8.pom",
+      "bytes": 3256,
+      "sha256": "cad8e929af82493947713b03a44d08c1c9b7839aa8935ec69793da59b06b04f7"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-parent/3.0.8/pdfbox-parent-3.0.8.pom",
+      "bytes": 16493,
+      "sha256": "f031373f03c0f92fb4e49210645cd53e40e9579219655363ce19644ff779283e"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-tools/3.0.8/pdfbox-tools-3.0.8-sources.jar",
+      "bytes": 72718,
+      "sha256": "07f1409e47dd5a3e267244c1605c7f8e57cff0d62f296c70035641bb0e3092f4"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-tools/3.0.8/pdfbox-tools-3.0.8.jar",
+      "bytes": 104939,
+      "sha256": "73091ece9b8a15bc7f946c224aaec2f7b3104b4c24f1978122ddd452ddc0a578"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox-tools/3.0.8/pdfbox-tools-3.0.8.pom",
+      "bytes": 4893,
+      "sha256": "a34824301e2d2cede93eba2cf69cdde1cef7813481c6260b7ed10495f3734720"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox/3.0.8/pdfbox-3.0.8-sources.jar",
+      "bytes": 1855792,
+      "sha256": "eaed642d27599c78229857e4ab571805979f828f5ec8c695e3135ca933766132"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox/3.0.8/pdfbox-3.0.8.jar",
+      "bytes": 2070583,
+      "sha256": "97647cfbde61ebcfc06b4cf8c9b0ffcaaee073396eceb4a7f6836a9b9128903c"
+    },
+    {
+      "path": "org/apache/pdfbox/pdfbox/3.0.8/pdfbox-3.0.8.pom",
+      "bytes": 59250,
+      "sha256": "1acfce718edc900dff75b17afd44272b022a4f0e914adbe76531df56862403dd"
+    },
+    {
+      "path": "org/bouncycastle/bc-jdk18on-bom/1.86.2/bc-jdk18on-bom-1.86.2.pom",
+      "bytes": 3080,
+      "sha256": "8cb87b667b1ea3e36e4ec5bc8f7ceaa9309fe245079206b146605b499295abc3"
+    },
+    {
+      "path": "org/bouncycastle/bcjmail-jdk18on/1.86/bcjmail-jdk18on-1.86-sources.jar",
+      "bytes": 63539,
+      "sha256": "84e83159c0bc81ff3932aa95df228070cc319303918e33e37de63ede5124b8da"
+    },
+    {
+      "path": "org/bouncycastle/bcjmail-jdk18on/1.86/bcjmail-jdk18on-1.86.jar",
+      "bytes": 96140,
+      "sha256": "a6c26f418de462f7f3e575de7561fa5af1995c220f236515963b56f31c347acb"
+    },
+    {
+      "path": "org/bouncycastle/bcjmail-jdk18on/1.86/bcjmail-jdk18on-1.86.pom",
+      "bytes": 1376,
+      "sha256": "cd01c7e7b3145c211d0e70f123677be8144c4189495f01abf3ffda2c12bd9dfa"
+    },
+    {
+      "path": "org/bouncycastle/bcpkix-jdk18on/1.86/bcpkix-jdk18on-1.86-sources.jar",
+      "bytes": 969954,
+      "sha256": "0bb00b50a80404e40c6465cb8012d3835d2a9100d94d16eaa9efed4587d7e34d"
+    },
+    {
+      "path": "org/bouncycastle/bcpkix-jdk18on/1.86/bcpkix-jdk18on-1.86.jar",
+      "bytes": 1341621,
+      "sha256": "8d8b41a4b149bdae8d331f059a578870954d1e3ff29f8269a9eb3ee19a7e4ef7"
+    },
+    {
+      "path": "org/bouncycastle/bcpkix-jdk18on/1.86/bcpkix-jdk18on-1.86.pom",
+      "bytes": 1522,
+      "sha256": "44989844fb17b39eb08eabeaf81e1fd16ac50c994d5c02119f891220c3ac5878"
+    },
+    {
+      "path": "org/bouncycastle/bcprov-jdk18on/1.86/bcprov-jdk18on-1.86-sources.jar",
+      "bytes": 4909869,
+      "sha256": "34a8b7dcb030a08ddd5356d3d5be962f9299ca5275e1460273186f8fdbe44c34"
+    },
+    {
+      "path": "org/bouncycastle/bcprov-jdk18on/1.86/bcprov-jdk18on-1.86.jar",
+      "bytes": 7224011,
+      "sha256": "2af190b300cbb0b35e248ccf5f4a06b6072030aeb3da7a98ec73abe5b4cb371f"
+    },
+    {
+      "path": "org/bouncycastle/bcprov-jdk18on/1.86/bcprov-jdk18on-1.86.pom",
+      "bytes": 1160,
+      "sha256": "970b70cb75a184639b6fb9ba3c465aca6a4e1a5f3fff4d65ce8574b2fd79ef38"
+    },
+    {
+      "path": "org/bouncycastle/bcutil-jdk18on/1.86/bcutil-jdk18on-1.86-sources.jar",
+      "bytes": 601111,
+      "sha256": "a79e8cdbc04a24aecf64503eda9a4aa61019132484c64f7ce32a68ac30ef6df7"
+    },
+    {
+      "path": "org/bouncycastle/bcutil-jdk18on/1.86/bcutil-jdk18on-1.86.jar",
+      "bytes": 789287,
+      "sha256": "1c268e15f785aafb1e4670d8d6e5f856f69475e96c162dadcd1ff9b350e9139f"
+    },
+    {
+      "path": "org/bouncycastle/bcutil-jdk18on/1.86/bcutil-jdk18on-1.86.pom",
+      "bytes": 1344,
+      "sha256": "2209b3e5d1eb2bb3c593b824c1b8f142b05dea8e9df7400b0f33f2b91a0741fa"
+    },
+    {
+      "path": "org/commonmark/commonmark-ext-gfm-strikethrough/0.31.0/commonmark-ext-gfm-strikethrough-0.31.0-sources.jar",
+      "bytes": 8335,
+      "sha256": "62c2c4444336946712a1008d7ba44b6243ac92a7c3545d9e67f78d53a6be90bc"
+    },
+    {
+      "path": "org/commonmark/commonmark-ext-gfm-strikethrough/0.31.0/commonmark-ext-gfm-strikethrough-0.31.0.jar",
+      "bytes": 13258,
+      "sha256": "6236e6605072708d0a172a9c57802529ab71958e71c72a5e0f90a4fbf62aa9aa"
+    },
+    {
+      "path": "org/commonmark/commonmark-ext-gfm-strikethrough/0.31.0/commonmark-ext-gfm-strikethrough-0.31.0.pom",
+      "bytes": 1045,
+      "sha256": "fc99668467c730f3e376e0fe94f313b5ada8e98053c3c88c8a0b47eb1a2fcff4"
+    },
+    {
+      "path": "org/commonmark/commonmark-ext-gfm-tables/0.31.0/commonmark-ext-gfm-tables-0.31.0-sources.jar",
+      "bytes": 13014,
+      "sha256": "9547a056307647f9b468bc6b50f6fa6d938fdc50d9b2835848d84c5bbd757049"
+    },
+    {
+      "path": "org/commonmark/commonmark-ext-gfm-tables/0.31.0/commonmark-ext-gfm-tables-0.31.0.jar",
+      "bytes": 24482,
+      "sha256": "d2b3e19fc2a55ca1274ef067c583b85abf8635f6dccd1f935cd36ffe8a186706"
+    },
+    {
+      "path": "org/commonmark/commonmark-ext-gfm-tables/0.31.0/commonmark-ext-gfm-tables-0.31.0.pom",
+      "bytes": 1031,
+      "sha256": "c6c5013f941e6c0972b104fb2b34a0789c309272395d01c6fa65b015218b0955"
+    },
+    {
+      "path": "org/commonmark/commonmark-parent/0.31.0/commonmark-parent-0.31.0.pom",
+      "bytes": 13841,
+      "sha256": "bc00a25367470bfb225d314557db746bf29e3fc293e9880701c62fddb0560b71"
+    },
+    {
+      "path": "org/commonmark/commonmark/0.31.0/commonmark-0.31.0-sources.jar",
+      "bytes": 145993,
+      "sha256": "e624cfa7280abf400cd19ae38ef121e8c4980be146dcb817d2671d444b9b1497"
+    },
+    {
+      "path": "org/commonmark/commonmark/0.31.0/commonmark-0.31.0.jar",
+      "bytes": 220558,
+      "sha256": "11d5996813f4d6525a134b906844d87112c6acb6fdd306ad5755ef5df9b26281"
+    },
+    {
+      "path": "org/commonmark/commonmark/0.31.0/commonmark-0.31.0.pom",
+      "bytes": 2440,
+      "sha256": "d8a64614f9c80a071911926e67e8efdf756bbb9b181643b43718bc5cbc0f42c5"
+    },
+    {
+      "path": "org/osgi/org.osgi.compendium/5.0.0/org.osgi.compendium-5.0.0-sources.jar",
+      "bytes": 481425,
+      "sha256": "055c0ae9fd983048fef1ed89262aa53be6353005c36ce65743b813493717bc0a"
+    },
+    {
+      "path": "org/osgi/org.osgi.compendium/5.0.0/org.osgi.compendium-5.0.0.jar",
+      "bytes": 771157,
+      "sha256": "f1ef32cc1530f4e66aac606c24363b627ace4780a7737b045bfb3b908d801bcd"
+    },
+    {
+      "path": "org/osgi/org.osgi.compendium/5.0.0/org.osgi.compendium-5.0.0.pom",
+      "bytes": 1391,
+      "sha256": "82dd78b00cd91627c5b9b24ab54f5b0ed9a654a94c09eb392815864993bd9be0"
+    },
+    {
+      "path": "org/osgi/org.osgi.core/6.0.0/org.osgi.core-6.0.0-sources.jar",
+      "bytes": 296717,
+      "sha256": "7ba9e87b75b85ffc163fb3a60b78a5eeec82cbb011fa97d049588ad1657177a5"
+    },
+    {
+      "path": "org/osgi/org.osgi.core/6.0.0/org.osgi.core-6.0.0.jar",
+      "bytes": 475256,
+      "sha256": "1c1bb435eb34cbf1f743653da38f604d45d53fbc95979053768cd3fc293cb931"
+    },
+    {
+      "path": "org/osgi/org.osgi.core/6.0.0/org.osgi.core-6.0.0.pom",
+      "bytes": 1110,
+      "sha256": "42a22743fb32df6543536f78add4fcfd2557c8af5d0bf0aff5ba9d7491cde350"
+    },
+    {
+      "path": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20-sources.jar",
+      "bytes": 77456,
+      "sha256": "565e509928d095e20c5d93ca5e3a528e98fc7410c3ca4e84b05ccfadf21b40ba"
+    },
+    {
+      "path": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar",
+      "bytes": 70255,
+      "sha256": "7e1446499b359675d8aabe6af2de86b85e72ae8a2a932c0b40d0e5ba57097439"
+    },
+    {
+      "path": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.pom",
+      "bytes": 2826,
+      "sha256": "2e625c3f553cddd49f8554cea9926cbf70673b3d6833464f0c5a02f4d9130594"
+    },
+    {
+      "path": "org/slf4j/slf4j-bom/2.0.20/slf4j-bom-2.0.20.pom",
+      "bytes": 7874,
+      "sha256": "351a3d34f0886942268efcf291708c48dfadce7f2643837efdb4a6954d4e6c62"
+    },
+    {
+      "path": "org/slf4j/slf4j-parent/2.0.20/slf4j-parent-2.0.20.pom",
+      "bytes": 13541,
+      "sha256": "d931cf99cfd3554d322809df03c43ef897082cd480d6ff91b44d8f067ca324c8"
+    }
+  ],
+  "artifacts": [
+    {
+      "coordinates": "commons-io:commons-io:2.22.0",
+      "jar": "commons-io/commons-io/2.22.0/commons-io-2.22.0.jar",
+      "sources": "commons-io/commons-io/2.22.0/commons-io-2.22.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [
+        "benchmark"
+      ],
+      "jarInspection": {
+        "entries": 458,
+        "expandedBytes": 1291393,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 11360,
+            "sha256": "c1d1a38c99c48ccad170890ade6066e2e240bb6ce59861d4eb7f672eddd2a4c6"
+          },
+          {
+            "path": "META-INF/NOTICE.txt",
+            "bytes": 172,
+            "sha256": "85394d154ee5c7b48057f0a29329b6d4c80d2513d4c02b233a69207c522763cf"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 306,
+        "expandedBytes": 2285300,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 11360,
+            "sha256": "c1d1a38c99c48ccad170890ade6066e2e240bb6ce59861d4eb7f672eddd2a4c6"
+          },
+          {
+            "path": "META-INF/NOTICE.txt",
+            "bytes": 172,
+            "sha256": "85394d154ee5c7b48057f0a29329b6d4c80d2513d4c02b233a69207c522763cf"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "commons-logging:commons-logging:1.4.0",
+      "jar": "commons-logging/commons-logging/1.4.0/commons-logging-1.4.0.jar",
+      "sources": "commons-logging/commons-logging/1.4.0/commons-logging-1.4.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 46,
+        "expandedBytes": 179214,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 11359,
+            "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7"
+          },
+          {
+            "path": "META-INF/NOTICE.txt",
+            "bytes": 177,
+            "sha256": "d649e220dd0497197a266b7d7304a009d06bcefce3141fa6ff4f2ceddb438237"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 34,
+        "expandedBytes": 330184,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 11359,
+            "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7"
+          },
+          {
+            "path": "META-INF/NOTICE.txt",
+            "bytes": 177,
+            "sha256": "d649e220dd0497197a266b7d7304a009d06bcefce3141fa6ff4f2ceddb438237"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "info.picocli:picocli:4.7.7",
+      "jar": "info/picocli/picocli/4.7.7/picocli-4.7.7.jar",
+      "sources": "info/picocli/picocli/4.7.7/picocli-4.7.7-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "The Apache Software License, version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 234,
+        "expandedBytes": 938603,
+        "notices": [],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 12,
+        "expandedBytes": 1598724,
+        "notices": [],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.apache.commons:commons-secure-xml:1.1.0",
+      "jar": "org/apache/commons/commons-secure-xml/1.1.0/commons-secure-xml-1.1.0.jar",
+      "sources": "org/apache/commons/commons-secure-xml/1.1.0/commons-secure-xml-1.1.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [
+        "native-xalan"
+      ],
+      "jarInspection": {
+        "entries": 61,
+        "expandedBytes": 181109,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 11359,
+            "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7"
+          },
+          {
+            "path": "META-INF/NOTICE.txt",
+            "bytes": 180,
+            "sha256": "efb091611b5797097fb23b72acb85d542a5425ea6d462a91b7be5f804f05262a"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 45,
+        "expandedBytes": 318819,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 11359,
+            "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7"
+          },
+          {
+            "path": "META-INF/NOTICE.txt",
+            "bytes": 180,
+            "sha256": "efb091611b5797097fb23b72acb85d542a5425ea6d462a91b7be5f804f05262a"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.apache.pdfbox:fontbox:3.0.8",
+      "jar": "org/apache/pdfbox/fontbox/3.0.8/fontbox-3.0.8.jar",
+      "sources": "org/apache/pdfbox/fontbox/3.0.8/fontbox-3.0.8-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 313,
+        "expandedBytes": 4241273,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 18147,
+            "sha256": "f01ba19b3ca5d948d28e8d504c94ad4867ef2946153c6531d10874712e9d510c"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 356,
+            "sha256": "51fd9b39da2a58365fd34637b3aeeb5d403a7c63a4d38cb8ec29b8035296e9e0"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 278,
+        "expandedBytes": 4504402,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 18147,
+            "sha256": "f01ba19b3ca5d948d28e8d504c94ad4867ef2946153c6531d10874712e9d510c"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 356,
+            "sha256": "51fd9b39da2a58365fd34637b3aeeb5d403a7c63a4d38cb8ec29b8035296e9e0"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.apache.pdfbox:pdfbox:3.0.8",
+      "jar": "org/apache/pdfbox/pdfbox/3.0.8/pdfbox-3.0.8.jar",
+      "sources": "org/apache/pdfbox/pdfbox/3.0.8/pdfbox-3.0.8-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 865,
+        "expandedBytes": 4770934,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 60319,
+            "sha256": "0e03b5901cca6833627e6cd8c74e8a6614b2677664bf4f15f15d455808d8c373"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 855,
+            "sha256": "229829a0ea844dee29ce02015f3675f0fc443256f393778d6d8ba7340d71dc03"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 759,
+        "expandedBytes": 6256421,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 60319,
+            "sha256": "0e03b5901cca6833627e6cd8c74e8a6614b2677664bf4f15f15d455808d8c373"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 855,
+            "sha256": "229829a0ea844dee29ce02015f3675f0fc443256f393778d6d8ba7340d71dc03"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.apache.pdfbox:pdfbox-io:3.0.8",
+      "jar": "org/apache/pdfbox/pdfbox-io/3.0.8/pdfbox-io-3.0.8.jar",
+      "sources": "org/apache/pdfbox/pdfbox-io/3.0.8/pdfbox-io-3.0.8-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 34,
+        "expandedBytes": 98931,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 171,
+            "sha256": "cf428ffdb6d269bc864244b5ccf5f4c8e386df65e3131e4120663d383a84226d"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 33,
+        "expandedBytes": 156797,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 171,
+            "sha256": "cf428ffdb6d269bc864244b5ccf5f4c8e386df65e3131e4120663d383a84226d"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.apache.pdfbox:pdfbox-tools:3.0.8",
+      "jar": "org/apache/pdfbox/pdfbox-tools/3.0.8/pdfbox-tools-3.0.8.jar",
+      "sources": "org/apache/pdfbox/pdfbox-tools/3.0.8/pdfbox-tools-3.0.8-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 53,
+        "expandedBytes": 208782,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 174,
+            "sha256": "9da7480634ef968bf37a3a384ae6d5b242eafde7f5a76ffe74a2cc301fda72e8"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 41,
+        "expandedBytes": 215407,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "META-INF/NOTICE",
+            "bytes": 174,
+            "sha256": "9da7480634ef968bf37a3a384ae6d5b242eafde7f5a76ffe74a2cc301fda72e8"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.bouncycastle:bcjmail-jdk18on:1.86",
+      "jar": "org/bouncycastle/bcjmail-jdk18on/1.86/bcjmail-jdk18on-1.86.jar",
+      "sources": "org/bouncycastle/bcjmail-jdk18on/1.86/bcjmail-jdk18on-1.86-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Bouncy Castle Licence",
+          "url": "https://www.bouncycastle.org/licence.html"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 84,
+        "expandedBytes": 197320,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 56,
+        "expandedBytes": 240997,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.bouncycastle:bcpkix-jdk18on:1.86",
+      "jar": "org/bouncycastle/bcpkix-jdk18on/1.86/bcpkix-jdk18on-1.86.jar",
+      "sources": "org/bouncycastle/bcpkix-jdk18on/1.86/bcpkix-jdk18on-1.86-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Bouncy Castle Licence",
+          "url": "https://www.bouncycastle.org/licence.html"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 1124,
+        "expandedBytes": 2846620,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 907,
+        "expandedBytes": 3396178,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.bouncycastle:bcprov-jdk18on:1.86",
+      "jar": "org/bouncycastle/bcprov-jdk18on/1.86/bcprov-jdk18on-1.86.jar",
+      "sources": "org/bouncycastle/bcprov-jdk18on/1.86/bcprov-jdk18on-1.86-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Bouncy Castle Licence",
+          "url": "https://www.bouncycastle.org/licence.html"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 6151,
+        "expandedBytes": 13869264,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 3392,
+        "expandedBytes": 18537862,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.bouncycastle:bcutil-jdk18on:1.86",
+      "jar": "org/bouncycastle/bcutil-jdk18on/1.86/bcutil-jdk18on-1.86.jar",
+      "sources": "org/bouncycastle/bcutil-jdk18on/1.86/bcutil-jdk18on-1.86-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Bouncy Castle Licence",
+          "url": "https://www.bouncycastle.org/licence.html"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 711,
+        "expandedBytes": 1624367,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 649,
+        "expandedBytes": 1931812,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.md",
+            "bytes": 1171,
+            "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.commonmark:commonmark:0.31.0",
+      "jar": "org/commonmark/commonmark/0.31.0/commonmark-0.31.0.jar",
+      "sources": "org/commonmark/commonmark/0.31.0/commonmark-0.31.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "BSD-2-Clause",
+          "url": "https://opensource.org/licenses/BSD-2-Clause"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 207,
+        "expandedBytes": 405868,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1300,
+            "sha256": "11cfcf6da0142fb1971c1f40f5924ddded14454e2793d7f1dd87c9f4abe42dfd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 160,
+        "expandedBytes": 406524,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1300,
+            "sha256": "11cfcf6da0142fb1971c1f40f5924ddded14454e2793d7f1dd87c9f4abe42dfd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.commonmark:commonmark-ext-gfm-strikethrough:0.31.0",
+      "jar": "org/commonmark/commonmark-ext-gfm-strikethrough/0.31.0/commonmark-ext-gfm-strikethrough-0.31.0.jar",
+      "sources": "org/commonmark/commonmark-ext-gfm-strikethrough/0.31.0/commonmark-ext-gfm-strikethrough-0.31.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "BSD-2-Clause",
+          "url": "https://opensource.org/licenses/BSD-2-Clause"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 24,
+        "expandedBytes": 21162,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1300,
+            "sha256": "11cfcf6da0142fb1971c1f40f5924ddded14454e2793d7f1dd87c9f4abe42dfd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 22,
+        "expandedBytes": 13441,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1300,
+            "sha256": "11cfcf6da0142fb1971c1f40f5924ddded14454e2793d7f1dd87c9f4abe42dfd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.commonmark:commonmark-ext-gfm-tables:0.31.0",
+      "jar": "org/commonmark/commonmark-ext-gfm-tables/0.31.0/commonmark-ext-gfm-tables-0.31.0.jar",
+      "sources": "org/commonmark/commonmark-ext-gfm-tables/0.31.0/commonmark-ext-gfm-tables-0.31.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "BSD-2-Clause",
+          "url": "https://opensource.org/licenses/BSD-2-Clause"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 32,
+        "expandedBytes": 43683,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1300,
+            "sha256": "11cfcf6da0142fb1971c1f40f5924ddded14454e2793d7f1dd87c9f4abe42dfd"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 26,
+        "expandedBytes": 30452,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1300,
+            "sha256": "11cfcf6da0142fb1971c1f40f5924ddded14454e2793d7f1dd87c9f4abe42dfd"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.osgi:org.osgi.compendium:5.0.0",
+      "jar": "org/osgi/org.osgi.compendium/5.0.0/org.osgi.compendium-5.0.0.jar",
+      "sources": "org/osgi/org.osgi.compendium/5.0.0/org.osgi.compendium-5.0.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://opensource.org/licenses/apache2.0.php"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 717,
+        "expandedBytes": 1909248,
+        "notices": [
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 330,
+        "expandedBytes": 1417773,
+        "notices": [],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.osgi:org.osgi.core:6.0.0",
+      "jar": "org/osgi/org.osgi.core/6.0.0/org.osgi.core-6.0.0.jar",
+      "sources": "org/osgi/org.osgi.core/6.0.0/org.osgi.core-6.0.0-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 387,
+        "expandedBytes": 1209167,
+        "notices": [
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 179,
+        "expandedBytes": 924990,
+        "notices": [
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          }
+        ],
+        "nativePayloads": []
+      }
+    },
+    {
+      "coordinates": "org.slf4j:slf4j-api:2.0.20",
+      "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar",
+      "sources": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20-sources.jar",
+      "declaredLicences": [
+        {
+          "name": "MIT",
+          "url": "https://opensource.org/license/mit"
+        }
+      ],
+      "dependencyProfilesNotEvaluated": [],
+      "jarInspection": {
+        "entries": 71,
+        "expandedBytes": 143146,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1159,
+            "sha256": "6632f550c207be8d7d6b5e87f5d7b905bee218d18392d531df457bf60bec1447"
+          }
+        ],
+        "nativePayloads": []
+      },
+      "sourceInspection": {
+        "entries": 63,
+        "expandedBytes": 243621,
+        "notices": [
+          {
+            "path": "META-INF/LICENSE.txt",
+            "bytes": 1159,
+            "sha256": "6632f550c207be8d7d6b5e87f5d7b905bee218d18392d531df457bf60bec1447"
+          }
+        ],
+        "nativePayloads": []
+      }
+    }
+  ],
+  "dependencyEdges": [
+    {
+      "requester": "tika-core",
+      "requested": "org.slf4j:slf4j-api:2.0.20",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "commons-io:commons-io:2.22.0",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "org.apache.commons:commons-secure-xml:1.1.0",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "org.commonmark:commonmark:0.31.0",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "org.commonmark:commonmark-ext-gfm-tables:0.31.0",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "org.commonmark:commonmark-ext-gfm-strikethrough:0.31.0",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "org.osgi:org.osgi.core:6.0.0",
+      "scope": "provided",
+      "direct": true
+    },
+    {
+      "requester": "tika-core",
+      "requested": "org.osgi:org.osgi.compendium:5.0.0",
+      "scope": "provided",
+      "direct": true
+    },
+    {
+      "requester": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module",
+      "requested": "org.apache.pdfbox:pdfbox:3.0.8",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module",
+      "requested": "org.apache.pdfbox:pdfbox-tools:3.0.8",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module",
+      "requested": "org.bouncycastle:bcjmail-jdk18on:1.86",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module",
+      "requested": "org.bouncycastle:bcprov-jdk18on:1.86",
+      "scope": "compile",
+      "direct": true
+    },
+    {
+      "requester": "org.commonmark:commonmark-ext-gfm-tables:0.31.0",
+      "requested": "org.commonmark:commonmark:0.31.0",
+      "scope": "compile",
+      "direct": false,
+      "selected": "org.commonmark:commonmark:0.31.0"
+    },
+    {
+      "requester": "org.commonmark:commonmark-ext-gfm-strikethrough:0.31.0",
+      "requested": "org.commonmark:commonmark:0.31.0",
+      "scope": "compile",
+      "direct": false,
+      "selected": "org.commonmark:commonmark:0.31.0"
+    },
+    {
+      "requester": "org.apache.pdfbox:pdfbox:3.0.8",
+      "requested": "org.apache.pdfbox:pdfbox-io:3.0.8",
+      "scope": "compile",
+      "direct": false
+    },
+    {
+      "requester": "org.apache.pdfbox:pdfbox:3.0.8",
+      "requested": "org.apache.pdfbox:fontbox:3.0.8",
+      "scope": "compile",
+      "direct": false
+    },
+    {
+      "requester": "org.apache.pdfbox:pdfbox:3.0.8",
+      "requested": "commons-logging:commons-logging:1.4.0",
+      "scope": "compile",
+      "direct": false
+    },
+    {
+      "requester": "org.apache.pdfbox:pdfbox-tools:3.0.8",
+      "requested": "commons-io:commons-io:2.22.0",
+      "scope": "compile",
+      "direct": false,
+      "selected": "commons-io:commons-io:2.22.0"
+    },
+    {
+      "requester": "org.apache.pdfbox:pdfbox-tools:3.0.8",
+      "requested": "info.picocli:picocli:4.7.7",
+      "scope": "compile",
+      "direct": false
+    },
+    {
+      "requester": "org.bouncycastle:bcjmail-jdk18on:1.86",
+      "requested": "org.bouncycastle:bcpkix-jdk18on:1.86",
+      "scope": "compile",
+      "direct": false
+    },
+    {
+      "requester": "org.apache.pdfbox:pdfbox-io:3.0.8",
+      "requested": "commons-logging:commons-logging:1.4.0",
+      "scope": "compile",
+      "direct": false,
+      "selected": "commons-logging:commons-logging:1.4.0"
+    },
+    {
+      "requester": "org.apache.pdfbox:fontbox:3.0.8",
+      "requested": "org.apache.pdfbox:pdfbox-io:3.0.8",
+      "scope": "compile",
+      "direct": false,
+      "selected": "org.apache.pdfbox:pdfbox-io:3.0.8"
+    },
+    {
+      "requester": "org.apache.pdfbox:fontbox:3.0.8",
+      "requested": "commons-logging:commons-logging:1.4.0",
+      "scope": "compile",
+      "direct": false,
+      "selected": "commons-logging:commons-logging:1.4.0"
+    },
+    {
+      "requester": "org.bouncycastle:bcpkix-jdk18on:1.86",
+      "requested": "org.bouncycastle:bcutil-jdk18on:1.86",
+      "scope": "compile",
+      "direct": false
+    },
+    {
+      "requester": "org.bouncycastle:bcutil-jdk18on:1.86",
+      "requested": "org.bouncycastle:bcprov-jdk18on:1.86",
+      "scope": "compile",
+      "direct": false,
+      "selected": "org.bouncycastle:bcprov-jdk18on:1.86"
+    }
+  ],
+  "limitations": [
+    "Research acquisition/static audit only; no parser executed or build/runtime/quality/licence approval.",
+    "Compile/runtime main-POM dependencies only; test/optional transitive/provided transitive and profiles are not activated. Inspect recorded profiles against the explicit reduced Java runner before qualification.",
+    "Official HTTPS discovery and locally pinned hashes are not publisher signature authentication."
+  ]
+}
