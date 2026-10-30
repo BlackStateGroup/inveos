@@ -15,10 +15,10 @@ import re
 import sys
 
 if __package__:
-    from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology
+    from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology, verify_transcript_work_links
     from .verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE, EXPANDED_PROFILE as OCR_EXPANDED_PROFILE
 else:
-    from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology
+    from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology, verify_transcript_work_links
     from verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE, EXPANDED_PROFILE as OCR_EXPANDED_PROFILE
 
 MAX_PACKAGE = 64 * 1024 * 1024
@@ -288,6 +288,7 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
                 require(same(source, sources[source['id']]), 'Conflicting document original metadata')
             sources[source['id']] = source
         working_links = verify_document_work_links(report)
+        transcript_links = verify_transcript_work_links(report)
         try:
             chronology_count = verify_chronology(report)
         except (ValueError, TypeError, KeyError, UnicodeError) as exc:
@@ -298,6 +299,7 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         raise InvalidReport('Malformed document package') from exc
     return {'status': 'integrity_checks_passed', 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
             'caseId': case_id, 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
+            **({'transcriptFindingsChecked': len(transcripts), 'transcriptWorkLinksChecked': transcript_links} if transcripts or transcript_links else {}),
             'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,
             'releaseStatus': 'draft_not_released', 'limitations': 'Consistency only; no parser execution, source truth, reviewer authentication, current server policy, signature or release certification. Trust report and package fingerprints through a separate channel.'}
 

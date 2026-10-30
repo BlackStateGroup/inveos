@@ -43,6 +43,23 @@ def fixture(corrected=True):
 
 
 class TranscriptFindingChecks(unittest.TestCase):
+    def test_frozen_work_links_verify_scope_type_history_and_package(self):
+        report = fixture()
+        work = dict(id=uid(100), caseId=report['case']['id'])
+        report['investigation']['hypotheses'] = [work]
+        link = dict(id=uid(101), caseId=report['case']['id'], itemId=work['id'], kind='transcript_finding', findingId=uid(13), relation='contradicts', reason='Fictional contrary account retained separately.', createdBy=uid(8), createdAt='2026-10-30T00:00:00.000Z')
+        report['investigation']['transcriptLinks'] = [link]
+        self.assertEqual(verify_report(encode(report))['transcriptWorkLinksChecked'], 1)
+        verify_package(build_package(encode(report), '2026-10-30T00:00:00Z'))
+        for field, value in [('caseId', uid(999)), ('itemId', uid(999)), ('kind', 'document_finding'), ('findingId', uid(999)), ('relation', 'proves'), ('createdAt', '2026-02-31T00:00:00.000Z')]:
+            altered = copy.deepcopy(report)
+            altered['investigation']['transcriptLinks'][0][field] = value
+            with self.assertRaises((InvalidReport, ValueError)):
+                verify_report(encode(altered))
+        report['investigation']['transcriptLinks'].append(dict(link, id=uid(102)))
+        with self.assertRaises(InvalidReport):
+            verify_report(encode(report))
+
     def test_raw_and_corrected_versions_and_versioned_exhibits(self):
         for corrected in (False, True):
             report = fixture(corrected)

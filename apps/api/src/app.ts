@@ -637,6 +637,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       for await (const finding of reportDocumentFindings(client,actor,caseId,[findingId])) return finding;
       return notFound();
     },
+    verifyTranscriptFinding: async(client,actor,caseId,findingId)=>{
+      if(!(await client.query('SELECT 1 FROM transcript_findings WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,findingId])).rowCount)notFound();
+      for await(const finding of reportTranscriptFindings(client,actor,caseId,[findingId]))return finding;
+      return notFound();
+    },
     verifyClaim: async (client, actor, caseId, claimId) => {
       const claim = await findClaim(client, actor, caseId, claimId);
       const source = await findEvidence(client, actor, caseId, claim.evidence_id);
@@ -1351,7 +1356,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   );
 
   // Cursor names are fixed application constants. Transaction end also closes them on failure.
-  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work' | 'report_document_work_links', sql: string, values: unknown[], message: string) {
+  async function* reportRows(client: PoolClient, name: 'report_findings' | 'report_work' | 'report_document_work_links' | 'report_transcript_work_links', sql: string, values: unknown[], message: string) {
     await client.query(`DECLARE ${name} NO SCROLL CURSOR FOR ${sql}`, values);
     let count = 0;
     for (;;) {
@@ -1505,9 +1510,17 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         [actor.tenantId,caseId,workIds],'Report document source link limit exceeded.')) {
         if(!report.documentFindings?.some(f=>f.id===row.document_finding_id))throw new ApiError(409,'Working context references an unavailable document finding.');
         const link=displayWorkLink(row);
-        if(!('kind' in link))throw new ApiError(409,'Invalid document source type.');
+        if(!('kind' in link)||link.kind!=='document_finding')throw new ApiError(409,'Invalid document source type.');
         if(!report.investigation!.documentLinks){budget.add({documentLinks:[]},0,true);report.investigation!.documentLinks=[];}
         budget.add(link,0,report.investigation!.documentLinks.length>0);report.investigation!.documentLinks.push(link);
+      }
+      for await(const row of reportRows(client,'report_transcript_work_links',
+        'SELECT l.* FROM case_work_links l WHERE tenant_id=$1 AND case_id=$2 AND item_id=ANY($3::uuid[]) AND transcript_finding_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM case_work_link_withdrawals x WHERE x.tenant_id=l.tenant_id AND x.case_id=l.case_id AND x.link_id=l.id) ORDER BY created_at,id LIMIT 1001',
+        [actor.tenantId,caseId,workIds],'Report transcript source link limit exceeded.')){
+        if(!report.transcriptFindings?.some(f=>f.id===row.transcript_finding_id))throw new ApiError(409,'Working context references an unavailable transcript finding. Withdraw the historical source link before freezing.');
+        const link=displayWorkLink(row);if(!('kind' in link)||link.kind!=='transcript_finding')throw new ApiError(409,'Invalid transcript source type.');
+        if(!report.investigation.transcriptLinks){budget.add({transcriptLinks:[]},0,true);report.investigation.transcriptLinks=[];}
+        budget.add(link,0,report.investigation.transcriptLinks.length>0);report.investigation.transcriptLinks.push(link);
       }
       const chronology=await chronologyRows(client,actor,caseId);
       if(chronology.length){

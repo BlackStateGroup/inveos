@@ -206,4 +206,6 @@
 
 - [Field, team workload and entity attributes](102_FIELD_TEAM_ENTITY_BATCH.md) — combined browser Field/platform increment; acceptance and native gates recorded separately.
 
-- [Reviewed transcript findings and report lineage](103_TRANSCRIPT_FINDINGS.md) — active combined review/export/delivery batch; exact acceptance status recorded separately.
+- [Reviewed transcript findings and report lineage](103_TRANSCRIPT_FINDINGS.md) — merged review/export/delivery batch; exact acceptance status recorded separately.
+
+- [Transcript casework and search](104_TRANSCRIPT_CASEWORK_SEARCH.md) — connected typed reasoning/history/frozen export and case discovery.

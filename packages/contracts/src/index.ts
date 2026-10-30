@@ -53,7 +53,7 @@ export type WorkLinkInput = {
   reason: string;
 };
 export type DocumentWorkLinkInput = {id: string; findingId: string; relation: WorkLinkInput['relation']; reason: string};
-export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & {kind: 'document_finding'; withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
+export type WorkLink = (WorkLinkInput | (DocumentWorkLinkInput & ({kind: 'document_finding'} | {kind: 'transcript_finding'}) & {withdrawal?: {reason:string;createdBy:string;createdAt:string}})) & {caseId: string; itemId: string; createdBy: string; createdAt: string};
 export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkItem; actor: string; reason: string; at: string};
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
@@ -159,11 +159,12 @@ export type ReportDraft = {
     hypotheses: WorkItem[];
     blockers: WorkItem[];
     documentLinks?: Array<Extract<WorkLink, {kind: 'document_finding'}>>;
+    transcriptLinks?: Array<Extract<WorkLink, {kind: 'transcript_finding'}>>;
   };
   limitations: string;
 };
 
-export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context';
+export type CaseSearchKind = 'original'|'claim'|'document_claim'|'document_text'|'text_finding'|'document_finding'|'work'|'chronology'|'entity'|'relationship'|'source_context'|'transcript'|'transcript_claim'|'transcript_finding';
 export type CaseSearchFilter = {query:string;kind:'all'|CaseSearchKind;status:string};
 export type CaseSearchResult = {interpretation:'stored_records_reverify_sources';items:Array<{kind:CaseSearchKind;id:string;title:string;excerpt:string;status:string;evidenceId:string|null;page:string}>;facets:Array<{kind:CaseSearchKind;count:number}>;next:{kind:CaseSearchKind;id:string}|null};
 export type SavedCaseView = {id:string;name:string;filter:CaseSearchFilter;withdrawn:boolean;version:number};

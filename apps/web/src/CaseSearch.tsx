@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {CaseSearchFilter,CaseSearchKind,CaseSearchResult,SavedCaseView} from '@inveos/contracts';
 import {Badge,Notice,Panel} from './ui';
-const labels:Record<CaseSearchKind,string>={original:'Original metadata',claim:'Text source claim',document_claim:'Document interpretation claim',document_text:'Extracted document text',text_finding:'Reviewed text finding',document_finding:'Reviewed document finding',work:'Case work',chronology:'Alleged account',entity:'Entity record',relationship:'Relationship interpretation',source_context:'Supplied source context'};
+const labels:Record<CaseSearchKind,string>={original:'Original metadata',claim:'Text source claim',document_claim:'Document interpretation claim',document_text:'Extracted document text',text_finding:'Reviewed text finding',document_finding:'Reviewed document finding',work:'Case work',chronology:'Alleged account',entity:'Entity record',relationship:'Relationship interpretation',source_context:'Supplied source context',transcript:'Supplied transcript',transcript_claim:'Transcript interpretation',transcript_finding:'Reviewed transcript finding'};
 const empty:CaseSearchFilter={query:'',kind:'all',status:''};
 export function CaseSearch({caseId,csrf,go,inspect,inspectDocument}:{caseId:string;csrf:string;go:(page:string)=>void;inspect:(id:string)=>void;inspectDocument:(evidenceId:string,jobId:string)=>void}){
  const [filter,setFilter]=useState<CaseSearchFilter>(empty),[result,setResult]=useState<CaseSearchResult|null>(null),[views,setViews]=useState<SavedCaseView[]>([]),[current,setCurrent]=useState<SavedCaseView|null>(null),[name,setName]=useState(''),[history,setHistory]=useState<Array<{snapshot:SavedCaseView;recordedAt:string}>|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
@@ -12,7 +12,7 @@ export function CaseSearch({caseId,csrf,go,inspect,inspectDocument}:{caseId:stri
  async function search(e?:FormEvent,after?:CaseSearchResult['next']){e?.preventDefault();await act(async()=>{setResult(null);setResult(await api('/search',{...filter,...(after?{after}:{})}));});}
  async function save(withdrawn=false){await act(async()=>{const input={name,filter,withdrawn};const saved=await api<SavedCaseView>(current?'/saved-views/'+current.id+'/revise':'/saved-views',current?{...input,expectedVersion:current.version}:{...input,id:retry.current});setCurrent(saved);retry.current=crypto.randomUUID();setViews(await api('/saved-views'));setHistory(null);});}
  return <Panel title="Search this case" meta={<Badge>Private saved views</Badge>}><div className="panel-body">
-  <Notice>Search stored metadata, extracted document text, claims, findings, work and alleged accounts. A match does not reverify source bytes or establish truth. Open the record and check its source before relying on it.</Notice>
+  <Notice>Search stored metadata, extracted document text, claims, findings, supplied transcripts, work and alleged accounts. A match does not reverify source bytes or establish truth. Open the record and check its source before relying on it.</Notice>
   {error&&<p role="alert" className="form-error">{error}</p>}
   <form className="work-form" aria-label="Case record search" onSubmit={e=>void search(e)}><fieldset disabled={busy}>
    <label className="form-label">Search phrase<input name="caseQuery" maxLength={200} value={filter.query} onChange={e=>{setFilter({...filter,query:e.target.value});setResult(null);}} placeholder="Literal phrase; blank browses all records"/></label>
