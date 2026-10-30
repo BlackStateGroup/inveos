@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {setTimeout as delay} from 'node:timers/promises';
 import {createServer} from 'node:http';
 import {createHmac,randomUUID} from 'node:crypto';
 import {mkdtemp,rm,readFile,mkdir,writeFile} from 'node:fs/promises';
@@ -44,6 +45,8 @@ test('actual Keycloak password and OTP authenticate enrolled identities and pres
   const click=(selector:string)=>evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   const status=(path:string)=>evaluate<number>(`fetch(${JSON.stringify(path)}).then(r=>r.status)`);
   const button=(label:string)=>evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(label)})&&!b.disabled).click()`);
+  const usedSteps=new Map<string,number>();
+  async function freshOtp(name:string){const previous=usedSteps.get(name);if(previous!==undefined&&Math.floor(Date.now()/30000)<=previous)await delay((previous+1)*30000-Date.now()+250);usedSteps.set(name,Math.floor(Date.now()/30000));return otp(name);}
   async function start(name:string,portal=false){
    await b.send('Network.clearBrowserCookies');await b.send('Page.navigate',{url:origin+(portal?'/portal':'/')});
    if(!portal){await eventually(()=>evaluate(`!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('Open persistent lab'))`),'application entry');await button('Open persistent lab');}
@@ -53,12 +56,12 @@ test('actual Keycloak password and OTP authenticate enrolled identities and pres
   }
   async function submit(){const before=await evaluate<number>('performance.timeOrigin');await click('#kc-login');await eventually(()=>evaluate<boolean>('performance.timeOrigin!=='+before).catch(()=>false),'provider form navigation');}
   async function password(value='Fictional-test-only-2026!'){await fill('#password',value);await submit();}
-  async function complete(name:string,expected=200){await password();await eventually(()=>has('#otp'),'Keycloak OTP screen');await fill('#otp',otp(name));await submit();await eventually(()=>evaluate(`location.origin===${JSON.stringify(origin)}`),'provider callback');await eventually(async()=>await status('/api/session/me')===expected,'server identity outcome');}
+  async function complete(name:string,expected=200){await password();await eventually(()=>has('#otp'),'Keycloak OTP screen');await fill('#otp',await freshOtp(name));await submit();await eventually(()=>evaluate(`location.origin===${JSON.stringify(origin)}`),'provider callback');await eventually(async()=>await status('/api/session/me')===expected,'server identity outcome');}
   await start('reviewer');await password('fictional-wrong-password');await eventually(()=>evaluate(`!!document.body?.innerText.includes('Invalid username or password')`),'wrong password denied');outcomes.push('actual wrong password denied');
   await password();await eventually(()=>has('#otp'),'actual second factor required');assert.equal((await pool.query('SELECT count(*)::int AS n FROM sessions WHERE identity_id IS NOT NULL')).rows[0].n,0);outcomes.push('password alone grants no INVEOS session');await mkdir('output/evals/keycloak',{recursive:true});const otpShot=await b.send<{data:string}>('Page.captureScreenshot',{format:'png'});await writeFile('output/evals/keycloak/keycloak-otp.png',Buffer.from(otpShot.data,'base64'));
   await fill('#otp',otp('reviewer',-20));await submit();await eventually(()=>evaluate(`!!document.body?.innerText.includes('Invalid authenticator code')`),'expired OTP denied');outcomes.push('actual expired OTP denied');
   await fill('#otp','not-an-otp');await submit();await eventually(()=>evaluate(`!!document.body?.innerText.includes('Invalid authenticator code')`),'malformed OTP denied');outcomes.push('actual malformed OTP denied');
-  await fill('#otp',otp('reviewer'));await submit();await eventually(()=>evaluate(`location.origin===${JSON.stringify(origin)}`),'actual MFA callback');await eventually(async()=>await status('/api/session/me')===200,'real MFA identity');outcomes.push('real password plus OTP and signed acr/amr accepted');
+  await fill('#otp',await freshOtp('reviewer'));await submit();await eventually(()=>evaluate(`location.origin===${JSON.stringify(origin)}`),'actual MFA callback');await eventually(async()=>await status('/api/session/me')===200,'real MFA identity');outcomes.push('real password plus OTP and signed acr/amr accepted');
   assert.equal(await evaluate(`document.cookie.includes('inveos_session=')||document.cookie.includes('inveos_login=')`),false);outcomes.push('session and login cookies remain HttpOnly');
   assert.equal(await status(callback),401);outcomes.push('consumed real callback cannot replay');
   // Replayed callback clears login state, not the established application session.
