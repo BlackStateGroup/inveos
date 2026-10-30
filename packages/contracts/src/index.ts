@@ -293,3 +293,4 @@ export type AnalysisRun={id:string;caseId:string;authorityVersion:number;created
 export type AnalysisDecision={id:string;suggestion:number;version:number;disposition:'request_check'|'dismiss';reason:string;actorId:string;actorName:string;recordedAt:string};
 export type AnalysisRunRecord={run:AnalysisRun;decisions:AnalysisDecision[];sourceVerification:'current_reviewed_sources_reverified';canDecide:boolean};
 export type AnalysisRunPage={items:{id:string;mode:AnalysisMode;question:string;createdAt:string;createdBy:string;authorityVersion:number;sourceCount:number;suggestionCount:number}[];next:string|null};
+export type {BillingDeclarationFields,BillingDeclaration,InvoiceSelection,InvoiceLine,InvoiceSnapshot,InvoiceReview,InvoiceRevision,InvoiceSummary,InvoicePage,InvoiceCandidate,InvoiceEligibility,InvoiceExport} from './agency-invoicing.js';
