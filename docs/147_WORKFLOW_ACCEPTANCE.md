@@ -37,3 +37,37 @@ report; its separate correction and wider acceptance follow in a later commit.
 
 Broader feature acceptance, browser checks and final type/lint validation are
 not claimed by this isolated invoice-fixture receipt.
+
+
+## Composition validation hook (second isolated commit)
+
+The first actual composition POST stalled until the 45-second test timeout
+(`composition-first.log`). Its Fastify `preValidation: strict` function was
+synchronous and neither returned a promise nor invoked a callback. Declaring
+that hook `async` completes successful validation and preserves thrown validation
+errors. This is an application fix, with no schema or authorisation relaxation.
+
+Audited the analogous `restricted-work.ts` factory: its **returned hook is
+already async**. No collaborator hook change is needed. Actual collaborator
+create, publish, invitation, submission and independent acceptance paths execute
+in the added PostgreSQL test.
+
+Actual targeted rerun (same restricted database URLs as above):
+
+```sh
+node --import tsx --test --test-concurrency=1 \
+  apps/api/test/report-portal-acceptance.test.ts
+```
+
+**3 passed, 0 failed, 0 skipped** (`report-portal-second.log`). The composition
+case saves and independently accepts an outline, freezes ordered findings and
+separate context fields, corrects the outline without changing frozen bytes,
+and downloads the actual verification kit. Copied Python scripts execute outside
+the checkout with an empty PYTHONPATH: JSON, PDF and DOCX, including whole-finding
+redactions, give **5 valid-copy passes and 5 changed-byte/content rejections**.
+The other two cases exercise release-bound feedback visibility/resolution and
+restricted collaborator acceptance/privacy with current handling denial.
+
+These are API/database and copied-verifier checks; they do not establish native
+Office rendering, qualified browser acceptance, provider identity or production
+readiness. Wider acceptance is continuing separately.
