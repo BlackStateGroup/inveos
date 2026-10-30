@@ -8,6 +8,14 @@ export const rasterProfile=JSON.stringify({format:'inveos_raster_profile_v1',ima
   wheelInventory:native.wheelInventory,pdfium:'5.14.0',pillow:'13.0.0',scale:1,rotation:0,crop:[0,0,0,0],
   grayscale:true,forms:false,annotations:false,maxPages:2,maxOriginalBytes:65536,maxDimension:2048,maxPixels:2000000,maxPngBytes:262144});
 export const rasterProfileDigest=sha256(rasterProfile);
+export const rasterKind='pdf_raster_lab_v1',rasterExpandedKind='pdf_raster_lab_v2';
+export const rasterExpandedProfile=JSON.stringify({...JSON.parse(rasterProfile),format:'inveos_raster_profile_v2',maxOriginalBytes:262144});
+export const rasterExpandedProfileDigest=sha256(rasterExpandedProfile);
+export function rasterConfiguration(kind:string){
+  if(kind===rasterKind)return {kind,profile:rasterProfile,profileDigest:rasterProfileDigest,maxOriginalBytes:65536};
+  if(kind===rasterExpandedKind)return {kind,profile:rasterExpandedProfile,profileDigest:rasterExpandedProfileDigest,maxOriginalBytes:262144};
+  return undefined;
+}
 function fail():never{throw new Error('Invalid raster derivative');}
 export function pngCrc(bytes:Buffer){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
 /** Accept only non-interlaced 8-bit greyscale, with no metadata/animation/extra streams. */
@@ -39,9 +47,10 @@ export function validateRasterPng(png:Buffer,width:number,height:number,colourTy
 }
 type Page={page:number;width:number;height:number;pngSha256:string;pngBytes:number;pngBase64:string};
 export type RasterResult={context:DocumentContext;profileDigest:string;originalSha256:string;pages:Page[]};
-export function makeRasterDerivative(original:Buffer,context:DocumentContext,result:RasterResult){
-  if(original.length<1||original.length>65536||original.subarray(0,5).toString()!=='%PDF-'||sha256(original)!==context.sourceDigest||
-    result.originalSha256!==context.sourceDigest||result.profileDigest!==rasterProfileDigest)fail();
+export function makeRasterDerivative(original:Buffer,context:DocumentContext,result:RasterResult,kind=rasterKind){
+  const config=rasterConfiguration(kind);if(!config)fail();
+  if(original.length<1||original.length>config.maxOriginalBytes||original.subarray(0,5).toString()!=='%PDF-'||sha256(original)!==context.sourceDigest||
+    result.originalSha256!==context.sourceDigest||result.profileDigest!==config.profileDigest)fail();
   for(const key of ['tenantId','caseId','jobId','evidenceId','sourceDigest','authorityVersion'] as const)if(result.context[key]!==context[key])fail();
   if(!Array.isArray(result.pages)||result.pages.length<1||result.pages.length>2)fail();
   const pages=result.pages.map((p,i)=>{
@@ -51,7 +60,7 @@ export function makeRasterDerivative(original:Buffer,context:DocumentContext,res
     if(checked.digest!==p.pngSha256||checked.byteLength!==p.pngBytes)fail();
     return {page:p.page,...checked,bytes};
   });
-  const manifest={format:'inveos_raster_derivative_v1',context:{tenantId:context.tenantId,caseId:context.caseId,jobId:context.jobId,evidenceId:context.evidenceId,sourceDigest:context.sourceDigest,authorityVersion:context.authorityVersion},profileDigest:rasterProfileDigest,reviewState:'unreviewed',
+  const manifest={format:'inveos_raster_derivative_v1',context:{tenantId:context.tenantId,caseId:context.caseId,jobId:context.jobId,evidenceId:context.evidenceId,sourceDigest:context.sourceDigest,authorityVersion:context.authorityVersion},profileDigest:config.profileDigest,reviewState:'unreviewed',
     coordinates:'top_left_pixels',limitations:['forms_omitted','annotations_omitted','greyscale','visual_fidelity_unapproved'],
     pages:pages.map(p=>({page:p.page,width:p.width,height:p.height,byteLength:p.byteLength,digest:p.digest}))};
   const bytes=Buffer.from(JSON.stringify(manifest));

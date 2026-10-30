@@ -8,10 +8,11 @@ async function sha(value:string){const bytes=new TextEncoder().encode(value);ret
 export async function inspectDocumentDerivative(value:unknown,job:InspectionJob):Promise<InspectedDocument>{
   if(!value||typeof value!=='object')fail();
   const row=value as InspectedDocument&{caseId:string;status:string;profile:unknown;derivative:{format:string;context:{jobId:string;caseId:string;evidenceId:string;sourceDigest:string;authorityVersion:number};reviewState:string;offsetBasis:string;rawDigest:string;profileDigest:string;text:string;pages:{page:number;width:number;height:number}[];references:Reference[];coverage:{completeExtractionVerified:boolean;pageTextCounts:number[];pagesWithoutText:number[];disposition:string}}};
-  const ocr=job.kind==='tesseract_scan_lab_v1';
-  if(!['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind)||job.status!=='succeeded'||row.status!=='unreviewed_derivative'||row.jobId!==job.id||row.caseId!==job.caseId||row.evidenceId!==job.evidenceId||row.sourceDigest!==job.sourceDigest||row.authorityVersion!==job.authorityVersion)fail();
+  const ocr=['tesseract_scan_lab_v1','tesseract_scan_lab_v2'].includes(job.kind);
+  if(!['native_pdf_lab_v1','tesseract_scan_lab_v1','tesseract_scan_lab_v2'].includes(job.kind)||job.status!=='succeeded'||row.status!=='unreviewed_derivative'||row.jobId!==job.id||row.caseId!==job.caseId||row.evidenceId!==job.evidenceId||row.sourceDigest!==job.sourceDigest||row.authorityVersion!==job.authorityVersion)fail();
   for(const digest of [row.sourceDigest,row.derivativeDigest,row.rawDigest,row.profileDigest])if(typeof digest!=='string'||!hex.test(digest))fail();
   if(typeof row.processedAt!=='string'||!Number.isFinite(Date.parse(row.processedAt)))fail();
+  if(ocr&&(!row.profile||typeof row.profile!=='object'||(row.profile as {format?:string}).format!==(job.kind==='tesseract_scan_lab_v2'?'inveos_ocr_profile_v2':'inveos_ocr_profile_v1')))fail();
   const d=row.derivative;if(!d||d.format!==(ocr?'inveos_ocr_document_v1':'inveos_native_document_v1')||d.reviewState!=='unreviewed'||d.offsetBasis!==(ocr?'ocr_utf8_not_original_pdf':'extracted_utf8_not_original_pdf')||d.rawDigest!==row.rawDigest||d.profileDigest!==row.profileDigest||!d.context||!d.coverage||d.coverage.completeExtractionVerified!==false)fail();
   for(const key of ['jobId','caseId','evidenceId','sourceDigest','authorityVersion'] as const)if(d.context[key]!==row[key])fail();
   if(!Array.isArray(d.pages)||d.pages.length<1||d.pages.length>2||!Array.isArray(d.references)||d.references.length>1000||typeof d.text!=='string'||d.text.length>1048576)fail();

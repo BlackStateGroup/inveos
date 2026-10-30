@@ -34,7 +34,7 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
   async function inspectRequested(signal?:AbortSignal){
     if(!requestedJobId)return;
     const job=await get<Job>(base+'/'+requestedJobId,signal);
-    if(job.id!==requestedJobId||job.caseId!==caseId||job.status!=='succeeded'||!['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind))throw new Error('Selected extraction is unavailable.');
+    if(job.id!==requestedJobId||job.caseId!==caseId||job.status!=='succeeded'||!['native_pdf_lab_v1','tesseract_scan_lab_v1','tesseract_scan_lab_v2'].includes(job.kind))throw new Error('Selected extraction is unavailable.');
     const checked=await inspectDocumentDerivative(await get<unknown>(base+'/'+job.id+'/document-derivative',signal),job);
     if(alive.current&&!signal?.aborted){focusRequested.current=true;setSource(job.evidenceId);onSource?.(job.evidenceId);setDocument(checked);setHistory(null);setRows(old=>old.some(v=>v.id===job.id)?old:[job,...old]);}
   }
@@ -87,14 +87,14 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,onSource,onD
     <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh processing jobs</button>{requestedJobId&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectRequested())}>Retry searched extraction</button>}
     {error&&<p role="alert" className="form-error">{error} Refresh to retry.</p>}
     <p role="status">{busy?'Loading processing jobs…':message||(!rows.length?'No processing jobs for this case.':'')}</p>
-    <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='tesseract_scan_lab_v1'?'Scanned PDF OCR lab':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
+    <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v2'?'PDF page images · 256 KiB profile':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='tesseract_scan_lab_v2'?'Scanned PDF OCR lab · 256 KiB profile':job.kind==='tesseract_scan_lab_v1'?'Scanned PDF OCR lab':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
       <p>Evidence {job.evidenceId} · attempt {job.attempt} · authority version {job.authorityVersion}</p>
       <p>Original SHA-256: {job.sourceDigest}</p>{job.failureCode&&<p>Failure: {job.failureCode}</p>}
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>events(job.id))}>View attempts {job.id.slice(0,8)}</button>
       {job.kind==='utf8_line_index_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspect(job))}>Inspect unreviewed lines {job.id.slice(0,8)}</button>}
-      {['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(job.kind)&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectDocument(job))}>Inspect unreviewed pages {job.id.slice(0,8)}</button>}
-      {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectImage(job))}>Inspect page images {job.id.slice(0,8)}</button>}
-      {job.kind==='pdf_raster_lab_v1'&&job.status==='succeeded'&&rows.filter(d=>['native_pdf_lab_v1','tesseract_scan_lab_v1'].includes(d.kind)&&d.status==='succeeded'&&d.caseId===job.caseId&&d.evidenceId===job.evidenceId&&d.sourceDigest===job.sourceDigest&&d.authorityVersion===job.authorityVersion).map(d=><button key={d.id} className="secondary" disabled={busy} onClick={()=>void act(()=>compareImage(job,d))}>Compare image {job.id.slice(0,8)} with passages {d.id.slice(0,8)}</button>)}
+      {['native_pdf_lab_v1','tesseract_scan_lab_v1','tesseract_scan_lab_v2'].includes(job.kind)&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectDocument(job))}>Inspect unreviewed pages {job.id.slice(0,8)}</button>}
+      {['pdf_raster_lab_v1','pdf_raster_lab_v2'].includes(job.kind)&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectImage(job))}>Inspect page images {job.id.slice(0,8)}</button>}
+      {['pdf_raster_lab_v1','pdf_raster_lab_v2'].includes(job.kind)&&job.status==='succeeded'&&rows.filter(d=>['native_pdf_lab_v1','tesseract_scan_lab_v1','tesseract_scan_lab_v2'].includes(d.kind)&&d.status==='succeeded'&&d.caseId===job.caseId&&d.evidenceId===job.evidenceId&&d.sourceDigest===job.sourceDigest&&d.authorityVersion===job.authorityVersion).map(d=><button key={d.id} className="secondary" disabled={busy} onClick={()=>void act(()=>compareImage(job,d))}>Compare image {job.id.slice(0,8)} with passages {d.id.slice(0,8)}</button>)}
       {['queued','running'].includes(job.status)&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>cancel(job))}>Cancel job {job.id.slice(0,8)}</button>}
     </li>)}</ul>
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(true))}>Older jobs</button>}

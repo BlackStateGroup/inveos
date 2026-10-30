@@ -46,3 +46,8 @@ test('manifest context ordering is fixed and unrelated caller metadata is exclud
   const a=makeRasterDerivative(original,context,result()),b=makeRasterDerivative(original,reordered,result());
   assert.equal(a.digest,b.digest);assert.ok(!b.bytes.toString().includes('internalNote'));
 });
+
+test('expanded raster keeps the v1 profile immutable and rejects cross-profile or excessive originals',async()=>{
+ const {rasterExpandedKind,rasterExpandedProfileDigest,rasterExpandedProfile,rasterProfile}=await import('../src/raster-derivative.js');assert.equal(rasterProfileDigest,'80bf6d3f398ca89c0c192371fbed4af8899eefb4bdda8e764dc89ecebed5d569');assert.equal(JSON.parse(rasterProfile).maxOriginalBytes,65536);assert.equal(JSON.parse(rasterExpandedProfile).maxOriginalBytes,262144);
+ const larger=Buffer.concat([original,Buffer.alloc(262144-original.length,32)]),scope={...context,sourceDigest:sha256(larger)},output={...result(),context:scope,originalSha256:scope.sourceDigest,profileDigest:rasterExpandedProfileDigest};assert.throws(()=>makeRasterDerivative(larger,scope,output));assert.throws(()=>makeRasterDerivative(original,context,result(),rasterExpandedKind));assert.throws(()=>makeRasterDerivative(larger,scope,{...output,profileDigest:rasterProfileDigest},rasterExpandedKind));assert.throws(()=>makeRasterDerivative(Buffer.concat([larger,Buffer.from('x')]),scope,output,rasterExpandedKind));const accepted=makeRasterDerivative(larger,scope,output,rasterExpandedKind);assert.equal(accepted.manifest.profileDigest,rasterExpandedProfileDigest);assert.equal(accepted.pages[0]!.digest,sha256(png()));
+});

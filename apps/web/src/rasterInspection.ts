@@ -8,12 +8,12 @@ const jsonHash=(value:unknown)=>hash(new TextEncoder().encode(JSON.stringify(val
 export async function inspectRaster(value:unknown,job:InspectionJob):Promise<InspectedRaster>{
   if(!value||typeof value!=='object')fail();
   const r=value as {jobId:string;caseId:string;evidenceId:string;sourceDigest:string;authorityVersion:number;status:string;processedAt:string;derivativeDigest:string;profileDigest:string;profile:{format:string;scale:number;rotation:number;crop:number[];grayscale:boolean;forms:boolean;annotations:boolean};manifest:{format:string;context:Record<string,unknown>;profileDigest:string;reviewState:string;coordinates:string;limitations:string[];pages:RasterPage[]}};
-  if(job.kind!=='pdf_raster_lab_v1'||job.status!=='succeeded'||r.status!=='unreviewed_derivative'||r.jobId!==job.id||r.caseId!==job.caseId||r.evidenceId!==job.evidenceId||r.sourceDigest!==job.sourceDigest||r.authorityVersion!==job.authorityVersion)fail();
+  if(!['pdf_raster_lab_v1','pdf_raster_lab_v2'].includes(job.kind)||job.status!=='succeeded'||r.status!=='unreviewed_derivative'||r.jobId!==job.id||r.caseId!==job.caseId||r.evidenceId!==job.evidenceId||r.sourceDigest!==job.sourceDigest||r.authorityVersion!==job.authorityVersion)fail();
   if(![r.sourceDigest,r.derivativeDigest,r.profileDigest].every(d=>typeof d==='string'&&hex.test(d))||typeof r.processedAt!=='string'||!Number.isFinite(Date.parse(r.processedAt)))fail();
   const m=r.manifest,p=r.profile;
   if(!m||!m.context||m.format!=='inveos_raster_derivative_v1'||m.reviewState!=='unreviewed'||m.coordinates!=='top_left_pixels'||m.profileDigest!==r.profileDigest||JSON.stringify(m.limitations)!==JSON.stringify(['forms_omitted','annotations_omitted','greyscale','visual_fidelity_unapproved']))fail();
   for(const key of ['caseId','evidenceId','sourceDigest','authorityVersion'] as const)if(m.context[key]!==job[key])fail();
-  if(m.context.jobId!==job.id||!p||p.format!=='inveos_raster_profile_v1'||p.scale!==1||p.rotation!==0||JSON.stringify(p.crop)!=='[0,0,0,0]'||p.grayscale!==true||p.forms!==false||p.annotations!==false)fail();
+  if(m.context.jobId!==job.id||!p||p.format!==(job.kind==='pdf_raster_lab_v2'?'inveos_raster_profile_v2':'inveos_raster_profile_v1')||p.scale!==1||p.rotation!==0||JSON.stringify(p.crop)!=='[0,0,0,0]'||p.grayscale!==true||p.forms!==false||p.annotations!==false)fail();
   if(!Array.isArray(m.pages)||m.pages.length<1||m.pages.length>2)fail();
   m.pages.forEach((page,i)=>{if(page.page!==i+1||![page.width,page.height,page.byteLength].every(Number.isInteger)||page.width<1||page.height<1||page.width>2048||page.height>2048||page.width*page.height>2000000||page.byteLength<57||page.byteLength>262144||!hex.test(page.digest))fail();});
   if(await jsonHash(m)!==r.derivativeDigest||await jsonHash(p)!==r.profileDigest)fail();

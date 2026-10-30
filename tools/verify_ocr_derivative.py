@@ -16,6 +16,7 @@ else:
     from verify_report import InvalidReport, require, unique_object, reject_constant
 
 PROFILE = '3eaf9e8346c3496729f98a2c846abc75d4afac066f3e8c3c9b4ada6acb323e76'
+EXPANDED_PROFILE = 'f759250b341ee423d8939d4b6f0755ed451931a4860b633be29df435bf32aaa3'
 LOCK = 'bfcdba20feb42105845bbce39b243925dd12133e9358630ab1384125c84e1172'
 HEADER = 'level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext'
 
@@ -70,8 +71,10 @@ def png(raw, width, height):
             and all(pixels[y * stride] <= 4 for y in range(height)), 'OCR PNG pixel stream')
 
 
-def ocr_derivative(raw, context, original):
-    require(0 < len(raw) <= 1048576 and 0 < len(original) <= 65536 and original.startswith(b'%PDF-') and sha(original) == context['sourceDigest'], 'OCR original bound or digest')
+def ocr_derivative(raw, context, original, profile_digest=PROFILE):
+    require(profile_digest in (PROFILE,EXPANDED_PROFILE), 'Unknown OCR profile')
+    maximum=65536 if profile_digest==PROFILE else 262144
+    require(0 < len(raw) <= 1048576 and 0 < len(original) <= maximum and original.startswith(b'%PDF-') and sha(original) == context['sourceDigest'], 'OCR original bound or digest')
     data = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object, parse_constant=reject_constant)
     exact(data, 'format originalSha256 runtimeImageId artifactLock pages')
     require(data['format'] == 'inveos_tesseract_pages_v1' and data['originalSha256'] == sha(original) and data['artifactLock'] == LOCK
@@ -119,7 +122,7 @@ def ocr_derivative(raw, context, original):
             count += 1
         counts.append(count)
     missing = [i + 1 for i, count in enumerate(counts) if not count]
-    return dict(format='inveos_ocr_document_v1', context=context, profileDigest=PROFILE, rawDigest=sha(raw), reviewState='unreviewed',
+    return dict(format='inveos_ocr_document_v1', context=context, profileDigest=profile_digest, rawDigest=sha(raw), reviewState='unreviewed',
                 offsetBasis='ocr_utf8_not_original_pdf', pages=dimensions, text='\n'.join(texts), references=references,
                 coverage=dict(pageTextCounts=counts, pagesWithoutText=missing, disposition='needs_page_review' if missing else 'unreviewed_text', completeExtractionVerified=False),
                 ocr=dict(runtimeImageId=data['runtimeImageId'], artifactLock=LOCK, artifacts=artifacts,

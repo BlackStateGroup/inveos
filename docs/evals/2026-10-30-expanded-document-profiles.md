@@ -1,0 +1,9 @@
+# Expanded OCR/raster profile verification — 30 October 2026
+
+Fictional fixtures only. Branch `feat/ocr-expanded-profile` includes verified main #91, merge `c86fa6d353d05a673da038357aaab2e90f8d03c8`. Its resulting-main Checks 40976004669 passed 340 Node/124 Python, zero failures/skips and 30 actual browsers. The retained attention render and final merge receipt are carried here alongside substantive profile engineering.
+
+V2 implementation adds separate OCR/raster job kinds, matching original bounds, strict attachment/read reconstruction, independent package replay and browser/source comparison recognition. Legacy profile digests are asserted explicitly. A golden OCR boundary derivative digest was read from the unchanged #91 worktree to detect historical output drift. No dependency or model was added.
+
+Local focused evidence so far: migration upgrade/idempotency and legacy document/raster integration pass (3 tests); expanded OCR/raster database attachment, profile substitution denial, quarantine, restart, current access, search labels and corrupt-source denial/recovery pass (with migration, 2 tests). Legacy/new boundary checks and independent Python replay pass; lint/build/type checks and 125 Python tests pass. The full local suite passed: 313 Node tests, 30 explicit browser skips (343 total), zero failures. Hosted sandboxed application/native/corpus suites are pending. No new parser execution or v2 quality result is yet claimed.
+
+Actual native acceptance now runs the complete supplier workflow for both versions, with v2's genuine PDF enlarged through labelled comment padding and corrected xref location. The actual adversity experiment measures both profiles independently; input size rejections must remain explicit. Unrun mobile/provider/recovery checks and independent professional/security/privacy/licence approvals remain open.

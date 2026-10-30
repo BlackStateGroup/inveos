@@ -48,3 +48,13 @@ class OcrCorpusDefinitionTests(unittest.TestCase):
         self.assertEqual(actual,'" ATLAS 60')
         self.assertTrue(measure('ATLAS 60',actual)['normalisedExact'])
         self.assertEqual([word['text'] for word in words(raw,64,64)],['"','ATLAS','60'])
+
+class ExpandedOcrBoundaryTests(unittest.TestCase):
+    def test_unknown_profiles_and_oversized_originals_fail_before_native_import(self):
+        from run_ocr_document import extract
+        for version in (0,3,True,'2'):
+            with self.assertRaisesRegex(ValueError,'Unknown OCR profile'):
+                extract(b'%PDF-fictional',version)
+        for version,maximum in ((1,65536),(2,262144)):
+            with self.assertRaisesRegex(ValueError,'Original exceeds'):
+                extract(b'%PDF-'+b' '*(maximum-4),version)
