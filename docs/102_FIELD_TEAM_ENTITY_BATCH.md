@@ -1,0 +1,26 @@
+# Field, team workload and entity attributes
+
+Implementation batch, 30 October 2026. Fictional lab only. Not native device or production acceptance.
+
+The browser Field workspace stores originals, frozen capture manifests and explicit cached case authority in IndexedDB encrypted with AES-256-GCM. A 12–200 character passphrase derives a non-exportable in-memory key using PBKDF2-SHA256 (600,000 iterations, random 16-byte salt). Record identities/revisions are authenticated; random 96-bit nonces are generated per encryption. Lock, hidden-page and reload paths release the active key reference. This is not hardware-backed storage, guaranteed memory erasure, backup or protection from a compromised origin. Browser storage deletion/passphrase loss can destroy access; there is no recovery claim.
+
+A separately cached public application shell permits offline launch. No API response or case data enters that cache. New shell assets become active only after their complete download. Capture requires previously saved explicit case scope, purpose and minimisation, original source time, separate device capture time and known/unknown clock uncertainty. Cached authority may be stale. The server rechecks current internal membership, case authority/lifecycle, exact original bytes and device revocation on delivery. Device identifiers are account-scoped labels, not hardware attestation or remote wipe. Original and manifest receipt commit together; retries retain identities. Captures remain quarantined and require existing separate processing/review. This increment is bounded to 100 local records/contexts and 256 KiB originals; native encrypted storage and large-media resumable capture remain open.
+
+Reviewer team workload aggregates only current accessible case work, with unassigned, blocked, overdue and undated counts, filters and bounded keyset drill-down. Removed colleagues remain attributed without exposing unavailable profile names. Counts do not measure effort or certify completion. Existing work revisions provide reassignment.
+
+Entity aliases, previous names, identifiers, jurisdiction, legal form, dates and websites are versioned working attributes. Each carries a verified reviewed finding, source hash and authority version. Source inspection rechecks originals/current authority; old entity revisions remain retained. Attribute removal creates a revision; withdrawal preserves the old attributes. No automatic identity merge or review promotion occurs.
+
+## Pinned source adaptations
+
+- WatermelonDB `5c463222ecd79928861385bac94b486fcc7623d4`: exact unchanged-record acknowledgement adapted to capture revision/fingerprint/receipt checks. MIT notice and actual source/dependency inspection retained in `third_party/watermelondb`.
+- FollowTheMoney `c70a89ffa59ea785956f6095643310da3735b7fb`: eight schema property names/labels adapted into bounded INVEOS source-linked attributes. MIT notice, source hashes and actual manifest review retained in `third_party/followthemoney`.
+
+Research checkouts remain ignored. No new runtime dependency or private code copied. These narrow adaptations do not qualify the full upstream stacks or external data licences.
+
+## Running and verification
+
+Use the root README restricted-role PostgreSQL migrations/setup, `npm ci --ignore-scripts`, `npm run build`, and the API/web run commands. Migration 048 adds immutable device, revocation and capture records. Open Field after entering the fictional lab, create a local vault, save an authorised case scope, then prepare offline launch on the built HTTPS/localhost app. Save fictional originals offline; reconnect using the same account and deliver. Keep originals until the exact receipt is confirmed.
+
+Seven focused real PostgreSQL checks passed: ordered migration/replay, immutable byte/time/receipt preservation, metadata/stale-authority/device denial, account/case/client/CSRF boundaries, audit rollback/concurrent intake, workload visibility/paging/former owners, and source-linked entity correction/history. Initial workload fixture incorrectly supplied a status on create; fixed to use ordinary revision. A subsequent fixture exhausted the existing request limiter; independent fixture application instances now avoid cross-test rate state. No production limit was relaxed. Types/lint passed before the final browser fixture; combined validation remains pending.
+
+Written but not yet run: actual Chromium IndexedDB/WebCrypto, public-shell offline reload, wrong-passphrase denial, retained offline original, lost HTTP receipt/retry and narrow viewport. Full regression, combined main integration, team/entity browser extension, actual rendered review and final source/privacy review remain pending. Native iOS/Android device/airplane-mode/restart/lost-device, provider/MFA/KMS/WORM and external approvals remain open.

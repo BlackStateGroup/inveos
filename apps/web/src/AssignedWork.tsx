@@ -1,8 +1,10 @@
+import {TeamWorkload} from './TeamWorkload';
+import type {Case} from '@inveos/contracts';
 import {useEffect,useRef,useState} from 'react';
 import {workStatuses,type AssignedWorkEntry,type AssignedWorkPage,type WorkKind} from '@inveos/contracts';
 import {Badge,Notice,Panel,SectionTitle} from './ui';
 type Cursor=AssignedWorkPage['next'];
-export function AssignedWork({openWork}:{openWork:(item:AssignedWorkEntry)=>Promise<void>}){
+function PersonalWork({openWork}:{openWork:(item:AssignedWorkEntry)=>Promise<void>}){
  const [kind,setKind]=useState(''),[status,setStatus]=useState(''),[page,setPage]=useState<AssignedWorkPage|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[cursor,setCursor]=useState<Cursor>(null),[previous,setPrevious]=useState<Cursor[]>([]);
  const pending=useRef<AbortController|null>(null),live=useRef(true),loading=useRef(false),reload=useRef<()=>void>(()=>{});
  const statuses=kind?workStatuses[kind as WorkKind]:[...new Set(Object.values(workStatuses).flat())];
@@ -23,4 +25,9 @@ export function AssignedWork({openWork}:{openWork:(item:AssignedWorkEntry)=>Prom
  {page&&<section aria-label="Assigned work results">{page.items.map(item=><article className="work-record" key={item.caseId+':'+item.id}><div className="work-record-top"><h3>{item.title}</h3><Badge>{item.status}</Badge></div><p>{item.caseRef} · {item.caseTitle}</p><p className="work-body">{item.excerpt}</p><p className="small">{item.kind} · {item.dueDate?'Due '+item.dueDate:'No deadline recorded'} · version {item.version}</p><button className="secondary" disabled={busy} onClick={()=>void open(item)}>Open assigned work: {item.title}</button></article>)}</section>}
  <p className="small muted">Ordered by recorded deadline, with undated work last. Changes during paging may move work between pages; refresh to start again.</p>
  </div></Panel></>;
+}
+
+export function AssignedWork({openWork,cases=[],reviewer=false}:{openWork:(item:AssignedWorkEntry)=>Promise<void>;cases?:Case[];reviewer?:boolean}){
+ const [team,setTeam]=useState(false);
+ return <>{reviewer&&<div className="work-record-actions"><button className={team?'secondary':'primary'} onClick={()=>setTeam(false)}>My assignments</button><button className={team?'primary':'secondary'} onClick={()=>setTeam(true)}>Team workload</button></div>}{team&&reviewer?<TeamWorkload cases={cases} openWork={openWork}/>:<PersonalWork openWork={openWork}/>}</>;
 }

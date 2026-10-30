@@ -1,0 +1,56 @@
+import {createHash} from 'node:crypto';
+import type {FastifyInstance,FastifyRequest} from 'fastify';
+import type {Pool,PoolClient,QueryResultRow} from 'pg';
+import type {FieldDevice,FieldManifest,FieldCaptureReceipt} from '@inveos/contracts';
+import type {Actor} from './app.js';
+import {collectionOpen,type LifecycleCase} from './case-lifecycle.js';
+import {inTransaction} from './db.js';
+import {ApiError,notFound} from './errors.js';
+
+type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<LifecycleCase>;audit:(c:PoolClient,a:Actor,caseId:string|null,action:string,type:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>;receive:(a:Actor,caseId:string,m:FieldManifest,contentBase64:string)=>Promise<FieldCaptureReceipt>;validSourceTime:(s:string)=>boolean};
+const uuid={type:'string',pattern:'^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'};
+const caseParams={type:'object',additionalProperties:false,required:['caseId'],properties:{caseId:uuid}};
+const deviceParams={type:'object',additionalProperties:false,required:['deviceId'],properties:{deviceId:uuid}};
+const plain=(value:string)=>Buffer.from(value).toString('utf8')===value&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value);
+const deviceDto=(r:QueryResultRow):FieldDevice=>({id:r.id,label:r.label,createdAt:new Date(r.created_at).toISOString(),revokedAt:r.revoked_at?new Date(r.revoked_at).toISOString():null,revocationReason:r.reason??null});
+export const fieldManifestHash=(m:FieldManifest)=>createHash('sha256').update(JSON.stringify({id:m.id,deviceId:m.deviceId,authorityId:m.authorityId,authorityVersion:m.authorityVersion,filename:m.filename,sourceTime:m.sourceTime,capturedAt:m.capturedAt,clockUncertaintySeconds:m.clockUncertaintySeconds,method:m.method,expectedSha256:m.expectedSha256,byteLength:m.byteLength,kind:m.kind,scopeConfirmed:m.scopeConfirmed})).digest('hex');
+export function fieldReceipt(r:QueryResultRow){return {id:r.id,caseId:r.case_id,deviceId:r.device_id,authorityId:r.authority_id,authorityVersion:r.authority_version,manifestSha256:r.manifest_sha256.trim(),receivedAt:new Date(r.received_at).toISOString()};}
+// Call after acquiring the case lock. Device revocation takes this same row lock.
+export async function checkFieldDevice(c:PoolClient,a:Actor,id:string){
+ const row=(await c.query('SELECT * FROM field_devices WHERE tenant_id=$1 AND user_id=$2 AND id=$3 FOR UPDATE',[a.tenantId,a.userId,id])).rows[0];if(!row)notFound();
+ if((await c.query('SELECT 1 FROM field_device_revocations WHERE tenant_id=$1 AND user_id=$2 AND device_id=$3',[a.tenantId,a.userId,id])).rowCount)throw new ApiError(409,'Field device is revoked. Keep local captures for an authorised recovery decision.');return row;
+}
+export function registerFieldCapture(app:FastifyInstance,s:Services){
+ const internal=async(r:FastifyRequest,write=false)=>{await(write?s.requireCsrf:s.authenticate)(r);if(r.actor!.role==='client')throw new ApiError(403,'Internal field capture only.');};
+ const tx=<T>(run:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");return run(c);});
+ const account=async(c:PoolClient,a:Actor)=>{await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['field-device:'+a.tenantId+':'+a.userId]);const row=(await c.query('SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2',[a.tenantId,a.userId])).rows[0];if(!row||row.role!==a.role||row.role==='client')notFound();};
+ app.get('/api/field/devices',{preHandler:r=>internal(r)},r=>tx(async c=>{const a=r.actor!;await account(c,a);const rows=(await c.query('SELECT d.*,r.recorded_at revoked_at,r.reason FROM field_devices d LEFT JOIN field_device_revocations r ON r.tenant_id=d.tenant_id AND r.user_id=d.user_id AND r.device_id=d.id WHERE d.tenant_id=$1 AND d.user_id=$2 ORDER BY d.created_at DESC,d.id LIMIT 50',[a.tenantId,a.userId])).rows;return {tenantId:a.tenantId,userId:a.userId,items:rows.map(deviceDto)};}));
+ app.post('/api/field/devices',{preHandler:r=>internal(r,true),schema:{body:{type:'object',additionalProperties:false,required:['id','label'],properties:{id:uuid,label:{type:'string',minLength:3,maxLength:100}}}}},r=>tx(async c=>{
+  const a=r.actor!,input=r.body as {id:string;label:string};if(!plain(input.label)||input.label.trim().length<3)throw new ApiError(422,'Give this device a clear label.');await account(c,a);
+  const old=(await c.query('SELECT d.*,r.recorded_at revoked_at,r.reason FROM field_devices d LEFT JOIN field_device_revocations r ON r.tenant_id=d.tenant_id AND r.user_id=d.user_id AND r.device_id=d.id WHERE d.tenant_id=$1 AND d.user_id=$2 AND d.id=$3',[a.tenantId,a.userId,input.id])).rows[0];
+  if(old){if(old.label!==input.label)throw new ApiError(409,'Device identity already has a different label.');return deviceDto(old);}
+  const count=(await c.query('SELECT count(*)::int n FROM field_devices WHERE tenant_id=$1 AND user_id=$2',[a.tenantId,a.userId])).rows[0].n;if(count>=50)throw new ApiError(409,'Device history limit reached.');
+  const saved=(await c.query('INSERT INTO field_devices(tenant_id,user_id,id,label) VALUES($1,$2,$3,$4) RETURNING *',[a.tenantId,a.userId,input.id,input.label])).rows[0];await s.audit(c,a,null,'field.device_registered','field_device',input.id,'Field device label registered; no hardware attestation claimed');return deviceDto(saved);
+ }));
+ app.post('/api/field/devices/:deviceId/revoke',{preHandler:r=>internal(r,true),schema:{params:deviceParams,body:{type:'object',additionalProperties:false,required:['reason'],properties:{reason:{type:'string',minLength:10,maxLength:2000}}}}},r=>tx(async c=>{
+  const a=r.actor!,{deviceId}=r.params as {deviceId:string},{reason}=r.body as {reason:string};if(!plain(reason)||reason.trim().length<10)throw new ApiError(422,'Explain the device revocation.');await account(c,a);
+  const row=(await c.query('SELECT * FROM field_devices WHERE tenant_id=$1 AND user_id=$2 AND id=$3 FOR UPDATE',[a.tenantId,a.userId,deviceId])).rows[0];if(!row)notFound();
+  const old=(await c.query('SELECT * FROM field_device_revocations WHERE tenant_id=$1 AND user_id=$2 AND device_id=$3',[a.tenantId,a.userId,deviceId])).rows[0];if(old){if(old.reason!==reason)throw new ApiError(409,'Another revocation reason is already retained.');return deviceDto({...row,revoked_at:old.recorded_at,reason});}
+  const saved=(await c.query('INSERT INTO field_device_revocations(tenant_id,user_id,device_id,reason) VALUES($1,$2,$3,$4) RETURNING *',[a.tenantId,a.userId,deviceId,reason])).rows[0];await s.audit(c,a,null,'field.device_revoked','field_device',deviceId,'Further device delivery denied; remote erasure is not claimed');return deviceDto({...row,revoked_at:saved.recorded_at,reason});
+ }));
+ app.get('/api/cases/:caseId/field-context/:deviceId',{preHandler:r=>internal(r),schema:{params:{...caseParams,required:['caseId','deviceId'],properties:{caseId:uuid,deviceId:uuid}}}},r=>tx(async c=>{
+  const a=r.actor!,{caseId,deviceId}=r.params as {caseId:string;deviceId:string},kase=await s.findCase(c,a,caseId,true);if(!collectionOpen(kase))throw new ApiError(409,'Field context requires current authority and an open collection stage.');
+  const device=await checkFieldDevice(c,a,deviceId),authority=(await c.query('SELECT a.*,u.display_name FROM authority_records a JOIN users u ON u.id=a.approved_by WHERE a.tenant_id=$1 AND a.case_id=$2 AND a.version=$3',[a.tenantId,caseId,kase.authority_version])).rows[0];if(!authority)throw new ApiError(409,'Authority unavailable.');
+  await s.audit(c,a,caseId,'field.context_read','field_device',deviceId,'Current authority copied for explicit offline capture; current access is rechecked on delivery');
+  return {tenantId:a.tenantId,userId:a.userId,caseId,device:deviceDto(device),authority:{id:authority.id,caseId,version:authority.version,purpose:authority.purpose,lawfulBasis:authority.lawful_basis,scope:authority.scope,retentionDays:authority.retention_days,minimisation:authority.minimisation,approvedBy:authority.display_name,approvedAt:new Date(authority.approved_at).toISOString()},checkedAt:new Date().toISOString(),maxOriginalBytes:262144};
+ }));
+ const manifest={type:'object',additionalProperties:false,required:['id','deviceId','authorityId','authorityVersion','filename','sourceTime','capturedAt','clockUncertaintySeconds','method','expectedSha256','byteLength','kind','scopeConfirmed'],properties:{id:uuid,deviceId:uuid,authorityId:uuid,authorityVersion:{type:'integer',minimum:1},filename:{type:'string',minLength:5,maxLength:128},sourceTime:{type:'string',maxLength:64},capturedAt:{type:'string',maxLength:64},clockUncertaintySeconds:{type:['integer','null'],minimum:0,maximum:86400},method:{type:'string',minLength:5,maxLength:500},expectedSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},byteLength:{type:'integer',minimum:1,maximum:262144},kind:{enum:['supplied_file','field_note']},scopeConfirmed:{const:true}}};
+ app.post('/api/cases/:caseId/field-captures',{preHandler:r=>internal(r,true),preValidation:async r=>{const b=r.body as {manifest?:FieldManifest;contentBase64?:unknown}|null,m=b?.manifest;if(!m||typeof m!=='object'||Array.isArray(m)||typeof b?.contentBase64!=='string'||['id','deviceId','authorityId','filename','sourceTime','capturedAt','method','expectedSha256','kind'].some(key=>typeof (m as unknown as Record<string,unknown>)[key]!=='string')||typeof m.authorityVersion!=='number'||typeof m.byteLength!=='number'||(m.clockUncertaintySeconds!==null&&typeof m.clockUncertaintySeconds!=='number')||m.scopeConfirmed!==true)throw new ApiError(422,'Explicit capture metadata and numeric versions/sizes are required.');},schema:{params:caseParams,body:{type:'object',additionalProperties:false,required:['manifest','contentBase64'],properties:{manifest,contentBase64:{type:'string',minLength:4,maxLength:349528}}}}},r=>{
+  const {manifest:m,contentBase64}=r.body as {manifest:FieldManifest;contentBase64:string};if(!s.validSourceTime(m.capturedAt)||!s.validSourceTime(m.sourceTime)||!plain(m.method)||m.method.trim().length<5)throw new ApiError(422,'Record valid original/device times and an acquisition method.');
+  const bytes=Buffer.from(contentBase64,'base64');if(bytes.length!==m.byteLength||bytes.toString('base64')!==contentBase64)throw new ApiError(422,'Capture bytes differ from the frozen manifest.');return s.receive(r.actor!,(r.params as {caseId:string}).caseId,m,contentBase64);
+ });
+ app.get('/api/cases/:caseId/field-captures',{preHandler:r=>internal(r),schema:{params:caseParams,querystring:{type:'object',additionalProperties:false,properties:{before:uuid}}}},r=>tx(async c=>{
+  const a=r.actor!,{caseId}=r.params as {caseId:string},{before}=r.query as {before?:string};await s.findCase(c,a,caseId,true);
+  const rows=(await c.query('SELECT * FROM field_captures WHERE tenant_id=$1 AND case_id=$2 AND ($3::uuid IS NULL OR id<$3) ORDER BY id DESC LIMIT 51',[a.tenantId,caseId,before??null])).rows;return {items:rows.slice(0,50).map(row=>({...fieldReceipt(row),manifest:row.manifest,evidenceId:row.evidence_id,recordedBy:row.user_id})),next:rows.length>50?rows[49].id:null};
+ }));
+}
