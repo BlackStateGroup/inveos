@@ -9,3 +9,7 @@ Type checking caught a missing JSX delimiter and an unchecked indexed version re
 Task status is coordination context, not source/finding approval, proof of completed work or permission to release. Native devices, representative large cases, production identity/storage, financial policy and independent external approvals remain open.
 
 The branch now integrates validated merged #94 (`476c883bff82ac172393554631512d4778624882`) and #93. No application conflicts arose. Final #94 Checks 40984269475 passed 351 Node/136 Python with zero failures/skips and 31 browsers; #93 main Checks 40984158675 also passed. Combined bulk-task hosted verification remains pending.
+
+Initial hosted Checks 40985117089 at `d921cb5f30e8b2765fd0ac8c478aa227e782c4c5` passed 358/359 Node tests (zero skips), but timed out waiting for the deliberately interrupted batch response to produce the retry UI. The proxy dropped only one response, allowing transport recovery to consume the fault. The fault now stays active until the test observes the failed submission, then is explicitly lifted before the user's unchanged retry. The original run remains failed; a new actual browser result is required.
+
+Resulting #94 main Checks 40984928414 failed an older assigned-work journey before interaction, while starting sandboxed Chrome. It is not a passed main receipt; an unchanged rerun is pending.
