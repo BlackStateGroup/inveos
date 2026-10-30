@@ -124,7 +124,7 @@ test('analysis follow-up audit failure rolls back its work, both links, history 
 });
 
 
-test('desktop batch intake resumes exact chunks and retains independent completed, cancelled and pending originals',{timeout:30000},async()=>{
+test('desktop batch intake over HTTP resumes exact chunks and retains independent completed, cancelled and pending originals',{timeout:30000},async()=>{
  const f=await fixture();try{
   const bytes=Buffer.alloc(32769,97);bytes.write('Fictional batch original.');
   const files=['first.bin','second.bin','third.bin'].map(filename=>({filename,sourceTime:'2020-01-02T09:00:00+01:00',method:'Fictional supplied binary original',expectedSha256:sha(bytes),byteLength:bytes.length})),input={id:randomUUID(),files},url=f.base+'/intake-batches';
@@ -137,8 +137,9 @@ test('desktop batch intake resumes exact chunks and retains independent complete
   assert.equal((await f.call(path+'/chunk',{ordinal:0,contentBase64:bytes.subarray(0,10).toString('base64')})).statusCode,422);
   for(const ordinal of [0,0,1])await f.must(path+'/chunk',{ordinal,contentBase64:bytes.subarray(ordinal*32768,Math.min((ordinal+1)*32768,bytes.length)).toString('base64')});
   assert.deepEqual((await f.must<{received:number[]}>(path)).received,[0,1]);
-  const completions=await Promise.all([f.call(path+'/complete',{}),f.call(path+'/complete',{})]);for(const r of completions)assert.equal(r.statusCode,200,r.body);
-  const original=completions[0]!.json<Evidence>();assert.equal(completions[1]!.json<Evidence>().id,original.id);assert.equal(original.sourceTime,files[0]!.sourceTime);assert.equal(original.status,'Quarantined');assert.equal(original.digest,sha(bytes));
+  const address=await f.app.listen({host:'127.0.0.1',port:0});
+  const complete=async()=>{const response=await fetch(address+path+'/complete',{method:'POST',headers:{...f.maker,'content-type':'application/json'},body:'{}'});const body=await response.text();assert.equal(response.status,200,body);return JSON.parse(body) as Evidence;};
+  const completions=await Promise.all([complete(),complete()]);const original=completions[0]!;assert.equal(completions[1]!.id,original.id);assert.equal(original.sourceTime,files[0]!.sourceTime);assert.equal(original.status,'Quarantined');assert.equal(original.digest,sha(bytes));
   const second=await f.must<{id:string}>(f.base+'/uploads',reserve(1));await f.must(f.base+'/uploads/'+second.id+'/chunk',{ordinal:0,contentBase64:bytes.subarray(0,32768).toString('base64')});await f.must(f.base+'/uploads/'+second.id+'/cancel',{});
   const retained=await f.must<DesktopIntakeBatch>(url+'/'+batch.id);assert.deepEqual(retained.entries.map(e=>e.state),['completed','cancelled','pending']);assert.equal((await f.pool.query('SELECT count(*)::int n FROM upload_chunks WHERE upload_id=$1',[second.id])).rows[0].n,0);
   assert.equal((await f.call(f.base+'/uploads/'+second.id+'/complete',{})).statusCode,409);

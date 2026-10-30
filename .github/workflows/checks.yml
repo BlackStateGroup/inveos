@@ -76,7 +76,7 @@ jobs:
       - name: Exercise development effect replay in the actual browser
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio|real browser prints collected-source lineage|real browser links reviewed speech to reasoning' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio|real browser prints collected-source lineage|real browser links reviewed speech to reasoning|real browser saves desktop batches' apps/api/test/api.test.ts
       - name: Render and re-save the fictional DOCX in LibreOffice
         run: |
           sudo apt-get update -qq
@@ -376,5 +376,14 @@ jobs:
         with:
           name: speech-reasoning-browser
           path: output/evals/speech-reasoning-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Retain desktop batch browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: desktop-batch-browser
+          path: output/evals/desktop-batch-*.png
           if-no-files-found: ignore
           retention-days: 14
