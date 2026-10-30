@@ -31,15 +31,27 @@ CREATE TRIGGER disclosure_editable_rendition_append_only BEFORE UPDATE OR DELETE
  FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
 GRANT SELECT,INSERT ON report_editable_rendition_reviews,report_disclosure_editable_renditions TO inveos_app;
 
--- Serialise attachment selection without granting mutation of the immutable grant.
--- This also protects a direct application-role insert racing another format.
+-- A shared unique row enforces exclusivity even under an older repeatable-read
+-- snapshot. An advisory lock plus EXISTS cannot see a later committed attachment.
+CREATE TABLE report_disclosure_attachment_choices (
+ tenant_id uuid NOT NULL,disclosure_id uuid NOT NULL,attachment_table text NOT NULL,
+ PRIMARY KEY(tenant_id,disclosure_id),
+ FOREIGN KEY(tenant_id,disclosure_id) REFERENCES report_disclosures(tenant_id,id),
+ CHECK(attachment_table IN ('report_disclosure_packages','report_disclosure_renditions','report_disclosure_editable_renditions'))
+);
+-- Preserve existing attachments; a pre-existing conflicting grant fails migration
+-- for explicit investigation rather than silently choosing a deliverable.
+INSERT INTO report_disclosure_attachment_choices(tenant_id,disclosure_id,attachment_table)
+ SELECT tenant_id,disclosure_id,'report_disclosure_packages' FROM report_disclosure_packages
+ UNION ALL SELECT tenant_id,disclosure_id,'report_disclosure_renditions' FROM report_disclosure_renditions;
+CREATE TRIGGER disclosure_attachment_choice_append_only BEFORE UPDATE OR DELETE ON report_disclosure_attachment_choices
+ FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
+GRANT SELECT,INSERT ON report_disclosure_attachment_choices TO inveos_app;
 CREATE FUNCTION guard_single_disclosure_attachment() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- PERFORM pg_advisory_xact_lock(hashtextextended(NEW.tenant_id::text || ':' || NEW.disclosure_id::text, 57));
- IF (TG_TABLE_NAME <> 'report_disclosure_packages' AND EXISTS(SELECT 1 FROM report_disclosure_packages WHERE tenant_id=NEW.tenant_id AND disclosure_id=NEW.disclosure_id))
- OR (TG_TABLE_NAME <> 'report_disclosure_renditions' AND EXISTS(SELECT 1 FROM report_disclosure_renditions WHERE tenant_id=NEW.tenant_id AND disclosure_id=NEW.disclosure_id))
- OR (TG_TABLE_NAME <> 'report_disclosure_editable_renditions' AND EXISTS(SELECT 1 FROM report_disclosure_editable_renditions WHERE tenant_id=NEW.tenant_id AND disclosure_id=NEW.disclosure_id))
- THEN RAISE EXCEPTION 'Disclosure already has a different deliverable'; END IF;
+ INSERT INTO report_disclosure_attachment_choices(tenant_id,disclosure_id,attachment_table)
+ VALUES(NEW.tenant_id,NEW.disclosure_id,TG_TABLE_NAME) ON CONFLICT DO NOTHING;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Disclosure already has a different deliverable'; END IF;
  RETURN NEW;
 END;
 $$;

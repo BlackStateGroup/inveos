@@ -5715,3 +5715,39 @@ test('a disclosure cannot acquire conflicting DOCX and PDF attachments through c
   assert.equal((await request('GET','/api/portal/disclosures/'+grant.id,f.recipient)).headers['x-inveos-docx-sha256'],f.rendition.docxSha256);
  }finally{await f.app.close();}
 });
+
+test('disclosure attachment exclusivity survives an older repeatable-read snapshot',async()=>{
+ const f=await docxReleaseFixture();try{
+  assert.equal((await request('POST',f.base+'/reviews',f.reviewer,{payload:f.review})).statusCode,200);const grant=(await request('POST',f.base+'/disclosures',context.demo!,{payload:f.release})).json();
+  const made=await request('POST',`${f.revisionsUrl}/${f.revision.id}/renditions`,context.demo!,{payload:{idempotencyKey:randomUUID(),redactedFindingIds:[]}});assert.equal(made.statusCode,200,made.body);const pdf=made.json(),contested=randomUUID();
+  await context.pool!.query(`INSERT INTO report_disclosures(tenant_id,case_id,id,revision_id,recipient_id,created_by,idempotency_key,authority_version,digest,reason,expires_at) SELECT tenant_id,case_id,$2,revision_id,recipient_id,created_by,$2,authority_version,digest,reason,expires_at FROM report_disclosures WHERE id=$1`,[grant.id,contested]);
+  const older=await context.pool!.connect();try{
+   await older.query('BEGIN ISOLATION LEVEL REPEATABLE READ');await older.query('SELECT count(*) FROM report_disclosure_renditions');
+   await context.pool!.query('INSERT INTO report_disclosure_renditions(tenant_id,case_id,revision_id,disclosure_id,rendition_id) VALUES($1,$2,$3,$4,$5)',[demoTenantId,f.scope.caseId,f.revision.id,contested,pdf.id]);
+   await assert.rejects(older.query('INSERT INTO report_disclosure_editable_renditions(tenant_id,case_id,revision_id,disclosure_id,rendition_id) VALUES($1,$2,$3,$4,$5)',[demoTenantId,f.scope.caseId,f.revision.id,contested,f.rendition.id]),/different deliverable|could not serialize/);
+  }finally{await older.query('ROLLBACK');older.release();}
+  assert.equal((await context.pool!.query('SELECT count(*)::int n FROM report_disclosure_editable_renditions WHERE disclosure_id=$1',[contested])).rows[0].n,0);
+ }finally{await f.app.close();}
+});
+
+test('DOCX disclosure migration retains legacy attachment choices without rewriting bytes or inventing approval',async()=>{
+ const schema='docx_upgrade_'+randomUUID().replaceAll('-',''),admin=createPool(adminDatabaseUrl!,schema,1);await context.adminPool!.query(`CREATE SCHEMA "${schema}"`);
+ try{
+  const client=await admin.connect();try{await client.query('BEGIN');await client.query(`SET LOCAL search_path TO "${schema}",public`);await client.query('CREATE TABLE schema_migrations(filename text PRIMARY KEY,sha256 char(64) NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())');const directory=new URL('../migrations/',import.meta.url);for(const name of (await readdir(directory)).filter(n=>/^\d{3}_[a-z_]+\.sql$/.test(n)&&n<'057_').sort()){const source=await readFile(new URL(name,directory),'utf8');await client.query(source);await client.query('INSERT INTO schema_migrations(filename,sha256) VALUES($1,$2)',[name,digest(source)]);}await client.query('COMMIT');}finally{client.release();}
+  // Structural migration fixtures only; these bytes are not valid report/PDF exports.
+  const caseId=randomUUID(),revisionId=randomUUID(),renditionId=randomUUID(),packageGrant=randomUUID(),pdfGrant=randomUUID(),hash='a'.repeat(64),bytes=Buffer.from('Fictional migration byte-preservation fixture.');
+  await admin.query("INSERT INTO cases(tenant_id,id,ref,title,client,owner_user_id,scope,jurisdiction) VALUES($1,$2::uuid,($2::uuid)::text,'Fictional legacy attachment case','Fictional client',$3,'Fictional migration scope','England and Wales')",[demoTenantId,caseId,demoUserId]);
+  await admin.query("INSERT INTO authority_records(tenant_id,case_id,id,version,purpose,lawful_basis,scope,retention_days,minimisation,approved_by) VALUES($1,$2,$2,1,'Fictional preservation test','Fictional authority','Fictional scope',30,'Fictional minimisation',$3)",[demoTenantId,caseId,demoUserId]);
+  await admin.query('INSERT INTO report_revisions(tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest) VALUES($1,$2,$3,$4,$3,$5,$6)',[demoTenantId,caseId,revisionId,demoUserId,bytes,hash]);
+  await admin.query("INSERT INTO report_renditions(tenant_id,case_id,revision_id,id,created_by,idempotency_key,source_report_digest,profile,profile_digest,redaction_plan,redaction_digest,content_model,content_digest,pdf_bytes,pdf_digest) VALUES($1,$2,$3,$4,$5,$4,$6,'inveos_report_pdf_v1',$6,'{}',$6,'{}',$6,$7,$6)",[demoTenantId,caseId,revisionId,renditionId,demoUserId,hash,bytes]);
+  for(const id of [packageGrant,pdfGrant])await admin.query("INSERT INTO report_disclosures(tenant_id,case_id,id,revision_id,recipient_id,created_by,idempotency_key,authority_version,digest,reason,expires_at,created_at) VALUES($1,$2,$3,$4,$5,$5,$3,1,$6,'Fictional retained disclosure decision','2026-10-31T12:00:00Z','2026-10-29T12:00:00Z')",[demoTenantId,caseId,id,revisionId,demoUserId,hash]);
+  await admin.query('INSERT INTO report_disclosure_packages(tenant_id,disclosure_id,report_digest,package_digest,package_bytes) VALUES($1,$2,$3,$3,$4)',[demoTenantId,packageGrant,hash,bytes]);
+  await admin.query('INSERT INTO report_disclosure_renditions(tenant_id,case_id,revision_id,disclosure_id,rendition_id) VALUES($1,$2,$3,$4,$5)',[demoTenantId,caseId,revisionId,pdfGrant,renditionId]);
+  const before=(await admin.query('SELECT * FROM report_disclosures ORDER BY id')).rows;await runMigrations(admin,schema);await runMigrations(admin,schema);assert.deepEqual((await admin.query('SELECT * FROM report_disclosures ORDER BY id')).rows,before);
+  assert.deepEqual((await admin.query('SELECT attachment_table FROM report_disclosure_attachment_choices ORDER BY attachment_table')).rows.map(r=>r.attachment_table),['report_disclosure_packages','report_disclosure_renditions']);
+  assert.deepEqual((await admin.query('SELECT package_bytes FROM report_disclosure_packages')).rows[0].package_bytes,bytes);assert.deepEqual((await admin.query('SELECT pdf_bytes FROM report_renditions')).rows[0].pdf_bytes,bytes);
+  assert.equal((await admin.query('SELECT count(*)::int n FROM report_editable_rendition_reviews')).rows[0].n,0);
+  await assert.rejects(admin.query('DELETE FROM report_disclosure_attachment_choices'),/append-only/);
+  await assert.rejects(admin.query('INSERT INTO report_disclosure_renditions(tenant_id,case_id,revision_id,disclosure_id,rendition_id) VALUES($1,$2,$3,$4,$5)',[demoTenantId,caseId,revisionId,packageGrant,renditionId]),/different deliverable/);
+ }finally{await admin.end();await context.adminPool!.query(`DROP SCHEMA "${schema}" CASCADE`);}
+});
