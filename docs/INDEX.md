@@ -230,4 +230,6 @@
 
 - [114 — Connected independent-review attention](114_EXPANDED_REVIEW_ATTENTION.md)
 
+- [115 — Authenticated archive publication indexes](115_AUTHENTICATED_ARCHIVE_INDEXES.md) — pinned signed-index correspondence before OCR research builds; actual acceptance and trust limits recorded separately.
+
 - [116 — Source, correspondence and expense review queue](116_SOURCE_EXPENSE_REVIEW_QUEUE.md) — independent pending records and exact context navigation; actual acceptance recorded separately.
