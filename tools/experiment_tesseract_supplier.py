@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Actual isolated clean-scan OCR baseline, not product/runtime approval.
 
-Networked package preparation occurs in a disposable build with no evidence.
+Exact public archives are acquired separately; the disposable build has no network or evidence.
 After preparation, every inspection and parser run uses an immutable image ID,
 the existing qualified isolation policy, bounded capture and confirmed cleanup.
 """
@@ -16,6 +16,7 @@ from datetime import datetime,timezone
 from bounded_process import run_bounded
 from prepare_ocr_worker import prepare_ocr_bundle
 from ocr_package_archives import acquire as acquire_ocr_archives, stage_archives, BASE as OCR_BASE
+from ocr_source_archives import acquire as acquire_ocr_sources
 from probe_worker_isolation import command,container_args,check_configuration,require,run_probe
 
 ROOT=Path(__file__).resolve().parent.parent
@@ -44,6 +45,7 @@ def adverse_corpus(image_id,cache,profile_version=1):
 
 def experiment(case_acceptance=False,include_corpus=False):
     cache=ROOT/'.research-cache';cache.mkdir(exist_ok=True)
+    source_receipt=acquire_ocr_sources(offline=True)
     archives=acquire_ocr_archives(offline=True)
     archive_receipt={key:value for key,value in archives.items() if key!='paths'}
     tag='inveos-tesseract-research:'+uuid.uuid4().hex
@@ -108,9 +110,9 @@ def experiment(case_acceptance=False,include_corpus=False):
             checked=run_bounded(['node','--import','tsx','--test','--test-concurrency=1','apps/api/test/ocr-worker.integration.ts'],timeout=300,max_output=1024*1024)
             if checked.returncode:raise ValueError('Actual OCR case acceptance failed: '+checked.stdout.decode()[-20000:]+'\n'+checked.stderr.decode()[-4000:])
             acceptance=checked.stdout.decode()
-        return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,packageArchives=archive_receipt,detachedDeadlineVerified=True,caseAcceptance=acceptance,
+        return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,packageArchives=archive_receipt,sourceArchives=source_receipt,detachedDeadlineVerified=True,caseAcceptance=acceptance,
                     inventory=results[0],experiment=results[1],adversityCorpus=corpus,expandedAdversityCorpus=expanded_corpus,approval='research_only_not_product_or_licence_approval',
-                    remaining='Pinned-source Tesseract and Tika/OCRmyPDF comparisons, source archives/signed-index and licence obligations, representative client scans, multilingual/handwritten and semantic table accuracy, plus professional and production approvals remain open')
+                    remaining='Pinned-source Tesseract and Tika/OCRmyPDF comparisons, authenticated signatures/indexes, upstream build provenance and licence obligations, representative client scans, multilingual/handwritten and semantic table accuracy, plus professional and production approvals remain open')
     finally:
         command('image','rm',tag,check=False)
 

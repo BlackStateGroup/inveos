@@ -213,3 +213,5 @@
 - [Existing-account case invitations](105_CASE_INVITATIONS.md) — explicit owner offers, recipient decisions, expiry and retained access history; acceptance recorded separately.
 
 - [Registered source-use decisions](106_SOURCE_USE_DECISIONS.md) — separate reviewer permissions, enforced processing/report/release boundaries and frozen proofs; actual acceptance recorded separately.
+
+- [107 — Corresponding Debian source archives](107_OCR_SOURCE_ARCHIVES.md)

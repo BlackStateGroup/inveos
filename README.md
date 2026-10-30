@@ -57,7 +57,7 @@ Follow the [five-stage roadmap](docs/13_ROADMAP.md): real accounts/persistent ca
 
 ## Repository and redistribution policy
 
-This foundation is intended for the public GitHub repository `BlackStateGroup/inveos`. It contains no secrets, customer data, private repository source code, datasets, model weights or copied third-party software. The example test fixtures are fictional. Third-party links are not endorsements or permissions to reuse. The original INVEOS documents are **copyright © 2026 Black State Group. All rights reserved** pending an explicit licensing decision; see [NOTICE](NOTICE.md). No open-source licence has been granted to INVEOS itself. Each referenced project retains its own licence.
+This foundation is intended for the public GitHub repository `BlackStateGroup/inveos`. It contains no secrets, customer data, private repository source code or operational datasets. Narrow permitted third-party adaptations retain their pinned provenance and notices in `third_party/`; acquired research source trees, binary packages and model weights remain in ignored local caches. The example test fixtures are fictional. Third-party links are not endorsements or permissions to reuse. The original INVEOS documents are **copyright © 2026 Black State Group. All rights reserved** pending an explicit licensing decision; see [NOTICE](NOTICE.md). No open-source licence has been granted to INVEOS itself. Each referenced project retains its own licence.
 
 **Research-only references are not approved dependencies.** Separate and review application licence, bundled transitive dependencies, model/data licence, terms of service, privacy, source maintenance and security before incorporation.
 
