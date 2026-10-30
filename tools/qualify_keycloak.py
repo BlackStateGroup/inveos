@@ -2,12 +2,16 @@
 """Disposable, loopback-only actual Keycloak qualification; never a deployment tool."""
 import argparse
 import hashlib
+import http.client
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import ipaddress
 import io
 import json
 from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
+import threading
 import time
 import urllib.request
 import uuid
@@ -132,6 +136,47 @@ def realm():
                          'protocolMappers': [mapper('completed authentication methods', 'oidc-amr-mapper'), mapper('completed assurance level', 'oidc-acr-mapper')]}]}
 
 
+def provider_proxy(address):
+    """Loopback test ingress to an internal network; never an arbitrary URL proxy."""
+    require(ipaddress.ip_address(address).version == 4 and ipaddress.ip_address(address).is_private)
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            pass  # Callback/query/cookie contents must never enter logs.
+
+        def forward(self):
+            if not self.path.startswith(('/realms/inveos-fictional/', '/resources/')):
+                self.send_error(404); return
+            try:
+                size = int(self.headers.get('Content-Length', '0'))
+                require(0 <= size <= 16384 and not self.headers.get('Transfer-Encoding'), 'Provider request bound')
+                body = self.rfile.read(size)
+                require(len(body) == size, 'Incomplete provider request')
+                connection = http.client.HTTPConnection(address, 8080, timeout=10)
+                try:
+                    headers = {k: v for k, v in self.headers.items() if k.lower() not in ['connection', 'transfer-encoding', 'expect']}
+                    connection.request(self.command, self.path, body=body, headers=headers)
+                    response = connection.getresponse()
+                    data = response.read(8 * 1024 * 1024 + 1)
+                    require(len(data) <= 8 * 1024 * 1024, 'Provider response bound')
+                    self.send_response(response.status)
+                    for key, value in response.getheaders():
+                        if key.lower() not in ['connection', 'transfer-encoding', 'content-length']:
+                            self.send_header(key, value)
+                    self.send_header('Content-Length', str(len(data)))
+                    self.end_headers(); self.wfile.write(data)
+                finally:
+                    connection.close()
+            except (OSError, ValueError, http.client.HTTPException):
+                self.send_error(502, 'Disposable provider unavailable')
+        do_GET = forward
+        do_POST = forward
+    server = ThreadingHTTPServer(('127.0.0.1', 58992), Handler)
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, thread
+
+
 def qualify():
     inventory = audit()
     info = json.loads(command('image', 'inspect', IMAGE).stdout)[0]
@@ -145,9 +190,10 @@ def qualify():
         root = Path(directory); root.chmod(0o755)
         fixture = root / 'realm.json'; fixture.write_text(json.dumps(realm())); fixture.chmod(0o444)
         command('network', 'create', '--internal', network)
+        proxy = None
         try:
             script = 'exec > /scratch/startup.log 2>&1; status=0; (set -e; cp -R /opt/keycloak /scratch/keycloak; mkdir -p /scratch/keycloak/data/import; cp /fixture /scratch/keycloak/data/import/inveos-fictional-realm.json; exec /bin/bash /scratch/keycloak/bin/kc.sh start-dev --import-realm --http-port=8080 --hostname=http://127.0.0.1:58992 --hostname-strict=true --cache=local) || status=$?; printf "Provider exited: %s\\n" "$status"; echo "$status" > /scratch/provider.exit; sleep 120; exit "$status"'
-            command('create', '--pull=never', '--name', name, '--network', network, '--publish', '127.0.0.1:58992:8080',
+            command('create', '--pull=never', '--name', name, '--network', network,
                     '--user=1000:1000', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true',
                     '--memory=2g', '--memory-swap=2g', '--cpus=2', '--pids-limit=128', '--log-driver=none',
                     '--tmpfs=/scratch:rw,noexec,nosuid,nodev,size=1g,mode=1777', '--tmpfs=/tmp:rw,noexec,nosuid,nodev,size=128m,mode=1777',
@@ -159,8 +205,10 @@ def qualify():
             require(host['Memory'] == 2147483648 and host['MemorySwap'] == host['Memory'] and host['PidsLimit'] == 128 and host['NanoCpus'] == 2000000000)
             require('no-new-privileges:true' in host['SecurityOpt'] and host['LogConfig']['Type'] == 'none')
             require(json.loads(command('network', 'inspect', network).stdout)[0]['Internal'])
-            require(detail['Config']['User'] == '1000:1000' and host['PortBindings'] == {'8080/tcp': [{'HostIp': '127.0.0.1', 'HostPort': '58992'}]})
+            require(detail['Config']['User'] == '1000:1000' and not host['PortBindings'])
             command('start', name)
+            address = json.loads(command('inspect', name).stdout)[0]['NetworkSettings']['Networks'][network]['IPAddress']
+            proxy, proxy_thread = provider_proxy(address)
             deadline = time.monotonic() + 100
             while True:
                 try:
@@ -180,6 +228,8 @@ def qualify():
             require(result.returncode == 0, 'Actual provider/browser qualification failed')
             (ROOT / 'output/evals/keycloak/host-receipt.json').write_text(json.dumps({'image': inventory['image'], 'config': CONFIG, 'hostProbes': probes, 'internalNetwork': True, 'loopbackOnly': True, 'rootAndFixtureReadOnly': True, 'publicEgressDenied': True, 'actualBrowserPassed': True}, indent=2) + '\n')
         finally:
+            if proxy:
+                proxy.shutdown(); proxy.server_close(); proxy_thread.join(timeout=5)
             command('rm', '-f', name, check=False)
             command('network', 'rm', network)
             require(command('inspect', name, check=False).returncode != 0, 'Provider container retained')
