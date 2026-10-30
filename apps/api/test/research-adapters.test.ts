@@ -1,0 +1,27 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {inspectResearchCapture,researchTarget} from '../src/research-adapters.js';
+import {rdapLoopbackTransport,rdapProviderTransport,rdapFixtureEndpoint} from '../src/rdap-transport.js';
+import type {ResearchCaptureInput} from '@inveos/contracts';
+const raw=await readFile(new URL('../../../tests/fixtures/rdap-domain-fictional.json',import.meta.url));
+const now=new Date('2026-10-30T12:00:00Z');
+const input:ResearchCaptureInput={contentBase64:raw.toString('base64'),filename:'fictional.json',publisher:'Fictional RDAP response',sourceTime:'2026-10-01T13:00:00+01:00',retrievedAt:'2026-10-02T12:00:00Z',sourceTimeBasis:'declared_response_date',captureMode:'controlled_response',mediaType:'application/rdap+json',fictional:true};
+test('RDAP input retains original bytes and exact domain pointers without linked contact traversal',()=>{
+ const parsed=inspectResearchCapture('rdap_domain_v1','example.test',input,now);assert.deepEqual(parsed.bytes,raw);assert.ok(parsed.fields.some(f=>f.pointer==='/events/0/eventDate'));assert.ok(parsed.fields.every(f=>!f.pointer.includes('entities')&&!f.pointer.includes('links')));
+ for(const body of ['{"objectClassName":"domain","ldhName":"other.test"}','{"objectClassName":"domain","ldhName":"example.test","ldhName":"example.test"}'])assert.throws(()=>inspectResearchCapture('rdap_domain_v1','example.test',{...input,contentBase64:Buffer.from(body).toString('base64')},now));
+ assert.throws(()=>inspectResearchCapture('rdap_domain_v1','example.test',{...input,contentBase64:Buffer.alloc(262145).toString('base64')},now));
+ for(const target of ['../x','https://example.test','EXAMPLE.test','*.test','127.0.0.1','a.test?secret=x','a.local'])assert.throws(()=>researchTarget('rdap_domain_v1',target,rdapFixtureEndpoint));
+ assert.throws(()=>researchTarget('supplied_webpage_v1','https://other.test/page','https://supplier.example.test/'));
+});
+test('supplied HTML is preserved as inert source bytes without extracted active content',async()=>{
+ const bytes=await readFile(new URL('../../../tests/fixtures/supplied-webpage-fictional.html',import.meta.url));
+ const result=inspectResearchCapture('supplied_webpage_v1','https://supplier.example.test/page',{...input,contentBase64:bytes.toString('base64'),filename:'fictional.html',mediaType:'text/html',captureMode:'supplied_webpage',sourceTimeBasis:'declared_page_time'},now);assert.deepEqual(result.bytes,bytes);assert.deepEqual(result.fields,[]);
+});
+test('RDAP live activation fails closed; loopback uses the bounded transport and rejects redirects and oversized responses',async()=>{
+ await assert.rejects(rdapProviderTransport()({endpointScope:'https://rdap.verisign.com/com/v1/domain/',domain:'example.com'},new AbortController().signal),/live_collection_disabled/);
+ let mode='success',calls=0;const server=createServer((req,res)=>{calls++;assert.equal(req.url,'/domain/example.test');if(mode==='redirect'){res.writeHead(302,{location:'https://never-follow.example.test/'});res.end();}else if(mode==='large'){res.writeHead(200,{'content-length':'262145'});res.end();}else{res.writeHead(200,{'content-type':'application/rdap+json'});res.end(raw);}});
+ await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const transport=rdapLoopbackTransport((server.address() as {port:number}).port),scope={endpointScope:rdapFixtureEndpoint,domain:'example.test'};
+ try{const response=await transport(scope,new AbortController().signal);assert.deepEqual(response.body,raw);assert.equal(response.sourceUrl,rdapFixtureEndpoint+'example.test');assert.equal(response.provenance,'fictional_fixture');assert.equal(calls,1);await assert.rejects(transport({...scope,domain:'other.test'},new AbortController().signal),/fixture_scope_required/);assert.equal(calls,1);mode='redirect';await assert.rejects(transport(scope,new AbortController().signal),/redirect_denied/);mode='large';await assert.rejects(transport(scope,new AbortController().signal),/response_too_large/);}finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});

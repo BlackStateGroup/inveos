@@ -1,5 +1,7 @@
 import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance} from './field-sync.js';
 export * from './field-sync.js';
+import type {ResearchProvenance} from './research.js';
+export type * from './research.js';
 export const caseStages=['Intake','Scope review','Active','Review','Released','Closed','Archived'] as const;
 export type CaseStage=typeof caseStages[number];
 export type CaseLifecycle={state:CaseStage;version:number;collectionOpen:boolean;canManage:boolean;allowed:CaseStage[];history:{id:string;version:number;from:CaseStage|null;to:CaseStage;actorId:string|null;reason:string;source:string;authorityVersion:number|null;disclosureId:string|null;recordedAt:string}[];nextBefore:number|null;disclosures:{id:string;createdAt:string}[]};
@@ -252,7 +254,7 @@ export type CaseInvitation={id:string;caseId:string;caseRef:string;caseTitle:str
 export type CaseInvitationPage={items:CaseInvitation[];next:string|null};
 
 export type SourceUseDecision={id:string;caseId:string;sourceId:string;evidenceId:string;sequence:number;sourceVersion:number;sourceDigest:string;authorityVersion:number;permission:'blocked'|'analysis'|'analysis_and_release';reason:string;actorId:string;actorName:string;recordedAt:string;expiresAt:string|null;digest:string};
-export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview;collection?:CollectionProvenance};
+export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview;collection?:CollectionProvenance;research?:ResearchProvenance};
 export type SourceUseState={items:SourceUseDecision[];analysisAllowed:boolean;releaseAllowed:boolean;canDecide:boolean;sourceVersion:number;sourceDigest:string};
 
 export type CaseCurrency='GBP'|'EUR'|'USD';
@@ -278,7 +280,7 @@ export type SpeechClaimRecord={claim:SpeechClaim;review:TranscriptClaimReview|nu
 export type SpeechReportFinding={kind:'reviewed_speech';id:string;text:string;reviewer:string;reviewedAt:string;source:TranscriptClaim['source'];claim:SpeechClaim;review:TranscriptClaimReview};
 
 
-export type ConnectorPolicyProposal={id:string;adapterId:'companies_house_profile_v1';expectedVersion:number;profileDigest:string;purpose:string;lawfulBasis:string;termsReference:string;termsSha256:string;minimisation:string;retentionDays:number;requestsPerWindow:number;validUntil:string;reason:string};
+export type ConnectorPolicyProposal={id:string;adapterId:'companies_house_profile_v1'|'rdap_domain_v1'|'supplied_webpage_v1';endpointScope?:string;credentialScope?:'none:controlled-input';expectedVersion:number;profileDigest:string;purpose:string;lawfulBasis:string;termsReference:string;termsSha256:string;minimisation:string;retentionDays:number;requestsPerWindow:number;validUntil:string;reason:string};
 export type ConnectorPolicyVersion=Omit<ConnectorPolicyProposal,'expectedVersion'>&{version:number;proposedBy:string;proposedByName:string;proposedAt:string;review:{id:string;accepted:boolean;reason:string;legalApprovalReference:string;reviewerId:string;reviewerName:string;recordedAt:string}|null;withdrawal:{id:string;actorId:string;actorName:string;reason:string;recordedAt:string}|null;state:'candidate'|'approved'|'rejected'|'withdrawn'|'expired'|'superseded';canReview:boolean};
 
 export type CollectionAuthorisationInput={id:string;policyVersion:number;authorityVersion:number;companyNumber:string;purpose:string;minimisation:string;retentionDays:number;validUntil:string};

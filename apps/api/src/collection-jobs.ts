@@ -1,3 +1,4 @@
+import {registerResearchJobs} from './research-jobs.js';
 import {createHash,randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient,QueryResultRow} from 'pg';
@@ -36,6 +37,7 @@ async function authorised(c:PoolClient,a:Actor,caseId:string,id:string){
 function job(r:QueryResultRow):CollectionJob{return {id:r.id,authorisationId:r.authorisation_id,companyNumber:r.company_number,status:r.status,requestedAt:iso(r.requested_at),failureCode:r.failure_code,evidenceId:r.evidence_id??null,sourceId:r.source_id??null};}
 const bounded=<T>(pool:Pool,operation:(c:PoolClient)=>Promise<T>)=>inTransaction(pool,async c=>{await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");return operation(c);});
 export function registerCollectionJobs(app:FastifyInstance,s:{pool:Pool;storage:OriginalStore;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>}){
+ registerResearchJobs(app,s);
  const base='/api/cases/:caseId/collection',internal=async(r:FastifyRequest)=>{await s.authenticate(r);if(r.actor!.role==='client')throw new ApiError(403,'Internal collection only.');};
  app.get(base,{preHandler:internal,schema:{params}},r=>bounded(s.pool,async c=>{
   const a=r.actor!,{caseId}=r.params as {caseId:string};const kase=await findCase(c,a,caseId,true);
