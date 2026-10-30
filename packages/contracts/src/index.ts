@@ -219,6 +219,9 @@ export type AttentionPreferences={version:number;deadlines:boolean;failures:bool
 export type ReviewOwnership={version:number;assigneeId:string|null;assigneeName:string|null;assigneeAvailable:boolean};
 export type ReviewAssignment=ReviewOwnership&{id:string;actorId:string;actorName:string;reason:string;recordedAt:string};
 export type ReviewAssignmentPage={current:ReviewAssignment|null;pending:boolean;history:ReviewAssignment[];next:number|null;candidates:{id:string;name:string}[];candidatesNext:string|null};
+export type ReviewAssignmentContext=Pick<AttentionEntry,'key'|'revision'|'caseId'|'caseRef'|'caseTitle'|'title'>;
+export type ReviewRegisterCursor={caseId:string;key:string;revision:string};
+export type ReviewRegisterPage={items:(ReviewAssignmentContext&{pending:boolean;assignment:ReviewAssignment})[];next:ReviewRegisterCursor|null};
 export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'report_review'|'pdf_review'|'docx_review'|'correspondence_review'|'source_review'|'expense_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;acknowledged?:boolean;assignment?:ReviewOwnership|null};
 export type AttentionPage={items:AttentionEntry[];next:string|null;preferences:AttentionPreferences;asOf:string;interpretation:'personal_attention_not_review'};
 
