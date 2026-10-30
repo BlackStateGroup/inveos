@@ -2,7 +2,7 @@
 
 Canonical execution plan, updated 30 October 2026. Requirements in [02_PRODUCT_REQUIREMENTS.md](02_PRODUCT_REQUIREMENTS.md) and [21_ENGINEERING_WORKPACKAGES.md](21_ENGINEERING_WORKPACKAGES.md) define scope across Cases, Field, Research, Intelligence, Evidence, Results, Client Portal and Agency Administration. The concise [current handoff](../BUILD_HANDOFF.md) records the exact resumable state. [Historical receipts](history/2026-10-29_DELIVERY_RECEIPTS.md) retain prior evidence without duplicating this plan.
 
-Main includes #102 as `70194886113fc622251dd77b8b468b2daa830a77`. Reviewed `214e140` and resulting-main Checks 41005679284 passed **412 Node/157 Python, zero failures/skips, 39 production plus three development browsers**. Expense/spending workflow is implemented and main-verified (docs/108). #101 actual source-archive/rebuilt supplier/worker qualification remains in the handoff/history. The active internal editable DOCX batch is in docs/109; hosted acceptance and merge remain pending.
+Main includes #105 as `8af846cd6da90c2e0d2f382f0fd5b7195611ee94`. Reviewed head and resulting-main Checks **41015516487** passed **423 Node/175 Python, zero failures/skips, 41 production plus four development browsers**, office/host acceptance. Task owner/deadline batches (docs/111), internal editable DOCX (docs/109), and the actual Tika comparator (docs/110) are merged and main-verified. Tika remains research-only; wider parser/licence gates remain open. The active actual-Keycloak MFA qualification is in docs/112; execution and merge remain pending.
 
 | Priority | Integrated journey and acceptance | Current evidence / remaining work |
 |---|---|---|
