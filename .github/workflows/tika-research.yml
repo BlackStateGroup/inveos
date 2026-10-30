@@ -1,0 +1,58 @@
+name: Pinned Tika PDF research
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/tika-research.yml'
+      - 'research/tika/**'
+      - 'research/runtime_artifacts/tika-research-artifacts.json'
+      - 'tools/tika_runtime_artifacts.py'
+      - 'tools/build_tika_research.py'
+      - 'tools/experiment_tika_pdf.py'
+      - 'tools/probe_worker_isolation.py'
+      - 'tools/bounded_process.py'
+      - 'tools/synthetic_pdf.py'
+      - 'tools/supplier_scan_fixture.py'
+      - 'tests/test_tika_research.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-tika-pdf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Check disk and acquire pinned source without executing it
+        run: |
+          df -h .
+          python3 tools/mine_sources.py --fetch apache/tika
+      - name: Acquire locked runtime and corresponding source artifacts
+        run: python3 tools/tika_runtime_artifacts.py --fetch --source .research-cache/sources/apache/tika --lock research/runtime_artifacts/tika-research-artifacts.json
+      - name: Replay artifact graph offline
+        run: python3 tools/tika_runtime_artifacts.py --source .research-cache/sources/apache/tika --lock research/runtime_artifacts/tika-research-artifacts.json
+      - name: Pull exact research JDK image
+        run: docker pull eclipse-temurin@sha256:1d4fdea2c842d8830bfb34fe4f0faf9bdad8432f79c7d1a117f1f3ee4ad46e5b
+      - name: Qualify isolation and build twice without network or upstream build plugins
+        run: python3 tools/build_tika_research.py --source .research-cache/sources/apache/tika
+      - name: Run actual bounded Tika parser twice per fictional fixture
+        run: python3 tools/experiment_tika_pdf.py --source .research-cache/sources/apache/tika
+      - name: Keep research receipts and fictional output, excluding third-party binaries
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tika-pdf-research
+          path: |
+            .research-cache/tika-built/build-receipt.json
+            output/evals/tika-pdf/
+          include-hidden-files: true
+          if-no-files-found: ignore
+      - name: Verify tracked sources unchanged
+        run: git diff --exit-code
