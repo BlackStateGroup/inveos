@@ -12,7 +12,7 @@ import {Panel,Notice} from './ui';
 type Job={id:string;caseId:string;evidenceId:string;kind:string;status:string;attempt:number;authorityVersion:number;sourceDigest:string;failureCode:string|null};
 type Event={id:string;status:string;attempt:number;failureCode:string|null;recordedAt:string};
 type Page={items:Job[];nextBefore:string|null};
-export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCitationId,onSource,onDenied}:{caseId:string;csrf:string;evidence:Evidence[];requestedJobId?:string;requestedCitationId?:string;onSource?:(id:string)=>void;onDenied?:()=>Promise<unknown>}){
+export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCitationId,onSource,onSpeech,onDenied}:{caseId:string;csrf:string;evidence:Evidence[];requestedJobId?:string;requestedCitationId?:string;onSource?:(id:string)=>void;onSpeech?:(id:string)=>void;onDenied?:()=>Promise<unknown>}){
   const [source,setSource]=useState(evidence[0]?.id||''),[kind,setKind]=useState<JobKind>('original_sha256_v1'),[pending,setPending]=useState<PendingJob|null>(null);
   const [rows,setRows]=useState<Job[]>([]),[next,setNext]=useState<string|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(true);
   const [inspection,setInspection]=useState<InspectedDerivative|null>(null),[linePage,setLinePage]=useState(0);
@@ -79,7 +79,8 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCit
         <option value="" disabled>Choose an original</option>{evidence.map(e=><option key={e.id} value={e.id}>{e.filename} · {e.id.slice(0,8)}</option>)}</select></label>
       <label className="form-label">Processing operation<select disabled={busy||!!pending} value={pending?.kind||kind} onChange={e=>setKind(e.target.value as JobKind)}>
         <option value="original_sha256_v1">Verify original SHA-256</option>
-        <option value="utf8_line_index_v1" disabled={evidence.find(e=>e.id===source)?.originalKind!=='original_utf8'}>Build unreviewed UTF-8 line index</option></select></label>
+        <option value="utf8_line_index_v1" disabled={evidence.find(e=>e.id===source)?.originalKind!=='original_utf8'}>Build unreviewed UTF-8 line index</option>
+        <optgroup label="Isolated research workers · require an enabled qualified lab">{([['native_pdf_lab_v1','Native PDF extraction · up to64KiB'],['pdf_raster_lab_v1','PDF page images · up to64KiB'],['pdf_raster_lab_v2','PDF page images · up to256KiB'],['tesseract_scan_lab_v1','Scan OCR · up to64KiB'],['tesseract_scan_lab_v2','Scan OCR · up to256KiB'],['whisper_pcm_lab_v1','English speech recognition · bounded PCM WAV']] as const).map(([value,label])=><option key={value} value={value} disabled={evidence.find(e=>e.id===source)?.originalKind!=='opaque_binary'}>{label}</option>)}</optgroup></select></label>
       <button className="primary" disabled={busy||(!pending&&!source)}>{pending?'Recover pending processing request':'Queue processing job'}</button>
       {pending&&<p role="status">Recover the previous request before queuing another operation. Original: {pending.evidenceId}; operation: {pending.kind}.</p>}
       <p className="small muted">Queueing does not run the worker. Recovery lasts for this tab and sign-in; inspect job history after losing either.</p>
@@ -87,10 +88,11 @@ export function ProcessingJobs({caseId,csrf,evidence,requestedJobId,requestedCit
     <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh processing jobs</button>{requestedJobId&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectRequested())}>Retry searched extraction</button>}
     {error&&<p role="alert" className="form-error">{error} Refresh to retry.</p>}
     <p role="status">{busy?'Loading processing jobs…':message||(!rows.length?'No processing jobs for this case.':'')}</p>
-    <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v2'?'PDF page images · 256 KiB profile':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='tesseract_scan_lab_v2'?'Scanned PDF OCR lab · 256 KiB profile':job.kind==='tesseract_scan_lab_v1'?'Scanned PDF OCR lab':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
+    <ul>{rows.map(job=><li key={job.id}><strong>{job.kind==='utf8_line_index_v1'?'UTF-8 line index':job.kind==='pdf_raster_lab_v2'?'PDF page images · 256 KiB profile':job.kind==='pdf_raster_lab_v1'?'PDF page images':job.kind==='tesseract_scan_lab_v2'?'Scanned PDF OCR lab · 256 KiB profile':job.kind==='tesseract_scan_lab_v1'?'Scanned PDF OCR lab':job.kind==='native_pdf_lab_v1'?'Native PDF lab':job.kind==='whisper_pcm_lab_v1'?'English speech recognition lab':job.kind==='original_sha256_v1'?'Original SHA-256 check':'Unsupported operation'} · {job.status}</strong>
       <p>Evidence {job.evidenceId} · attempt {job.attempt} · authority version {job.authorityVersion}</p>
       <p>Original SHA-256: {job.sourceDigest}</p>{job.failureCode&&<p>Failure: {job.failureCode}</p>}
       <button className="secondary" disabled={busy} onClick={()=>void act(()=>events(job.id))}>View attempts {job.id.slice(0,8)}</button>
+      {job.kind==='whisper_pcm_lab_v1'&&job.status==='succeeded'&&onSpeech&&<button className="secondary" disabled={busy} onClick={()=>onSpeech(job.id)}>Open speech transcript</button>}
       {job.kind==='utf8_line_index_v1'&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspect(job))}>Inspect unreviewed lines {job.id.slice(0,8)}</button>}
       {['native_pdf_lab_v1','tesseract_scan_lab_v1','tesseract_scan_lab_v2'].includes(job.kind)&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectDocument(job))}>Inspect unreviewed pages {job.id.slice(0,8)}</button>}
       {['pdf_raster_lab_v1','pdf_raster_lab_v2'].includes(job.kind)&&job.status==='succeeded'&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>inspectImage(job))}>Inspect page images {job.id.slice(0,8)}</button>}

@@ -25,3 +25,5 @@ A new actual-browser journey covers discovery from an empty reminder queue, both
 ## Reproduce
 
 Run the standard disposable restricted-role PostgreSQL setup from README, then `npm ci`, `npm run typecheck`, `npm run lint` and the API/foundation suite. For focused actual database checks use `node --import tsx --test --test-concurrency=1 --test-name-pattern='review assignment register|review ownership' apps/api/test/api.test.ts` with `INVEOS_TEST_DATABASE_URL` and `INVEOS_TEST_ADMIN_DATABASE_URL` pointing to the disposable database. Qualified browser hosts use the existing `INVEOS_TEST_BROWSER=1` path; CI retains both fictional register screenshots. Never relax browser isolation when the local host cannot support it.
+
+#113 resulting-main41043710293 / job124022477413 passed456Node/197Python,zero failures/skips,46production+9development browsers,both office profiles,unchanged host/lint/types/build, at merge bbef17122056fa574bf9288963d3d70e815a3e4a.

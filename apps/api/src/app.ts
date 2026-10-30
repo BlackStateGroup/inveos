@@ -1,3 +1,4 @@
+import {registerSpeechTranscripts} from './speech-transcripts.js';
 import {buildReportDocx} from './report-docx.js';
 import {registerCaseExpenses} from './case-expenses.js';
 import {registerSourceUse,sourceUseProofs,reportSourceUse} from './source-use.js';
@@ -130,6 +131,7 @@ type AppOptions = {
   sessionTtlSeconds: number;
   sessionEpoch?: string;
   documentLab?: boolean;
+  speechLab?: boolean;
 };
 
 type AppRequest = FastifyRequest & { actor: Actor | null };
@@ -633,7 +635,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({error: 'Not found.'}));
 
-  const {reportDocumentFindings,documentReportExhibits}=registerIntegrityJobs(app, {documentLab: options.documentLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
+  const {reportDocumentFindings,documentReportExhibits}=registerIntegrityJobs(app, {documentLab: options.documentLab, speechLab: options.speechLab, pool: options.pool, storageRoot: options.storageRoot, authenticate, requireCsrf, findCase, audit: writeAudit});
 
   registerCaseWork(app, {
     pool: options.pool, authenticate, requireCsrf, findCase, audit: writeAudit,
@@ -689,6 +691,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerChronology(app,investigationServices);
   registerCaseGraph(app,investigationServices);
 
+  registerSpeechTranscripts(app,{pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
   const transcriptService=registerInterviews(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id);if(row.original_kind!=='original_utf8')throw new ApiError(422,'A preserved supplied transcript text original is required.');const bytes=await verifiedBytes(options.storageRoot,row);return {bytes,digest:row.digest.trim(),authorityVersion:row.authority_version,sourceTime:row.source_time,receivedTime:iso(row.received_time),filename:row.filename};}});
   const {reportFindings:reportTranscriptFindings}=registerTranscriptFindings(app,{pool:options.pool,authenticate,requireCsrf,findCase,load:transcriptService.load,audit:writeAudit});
 

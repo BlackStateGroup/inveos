@@ -1,3 +1,4 @@
+import {speechKind,speechProfile,speechProfileDigest,makeSpeechDerivative} from './speech-derivative.js';
 import {sourceUseProofs} from './source-use.js';
 import type {OriginalStore} from './original-encryption.js';
 import {ocrKind,ocrExpandedKind,ocrConfiguration,makeOcrDerivative} from './ocr-derivative.js';
@@ -16,7 +17,7 @@ import { ApiError, notFound } from './errors.js';
 import { readOriginalBounded } from './storage.js';
 import { makeTextDerivative, sha256, textConfiguration, textProcessor, verifyTextDerivative, type DerivativeOutput } from './text-derivative.js';
 const documentKinds=[documentKind,ocrKind,ocrExpandedKind],rasterKinds=[rasterKind,rasterExpandedKind];
-const isolatedKinds=[...documentKinds,...rasterKinds];
+const isolatedKinds=[...documentKinds,...rasterKinds,speechKind];
 function documentSettings(kind:string){
  const ocr=ocrConfiguration(kind);if(ocr)return ocr;
  if(kind===documentKind)return {kind,profile:documentProfile,profileDigest:documentProfileDigest,maxOriginalBytes:65536};
@@ -27,7 +28,7 @@ function makeProfileDocument(kind:string,original:Buffer,context:DocumentContext
 
 type Scope = {tenantId: string; caseId: string; jobId: string};
 type Services = {
-  pool: Pool; storageRoot: OriginalStore; documentLab?: boolean; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
+  pool: Pool; storageRoot: OriginalStore; documentLab?: boolean; speechLab?: boolean; authenticate: (r: FastifyRequest) => Promise<void>; requireCsrf: (r: FastifyRequest) => Promise<void>;
   audit: (c: PoolClient, a: Actor, caseId: string, action: string, entityType: string, id: string, summary: string) => Promise<void>;
   findCase: (c: PoolClient, a: Actor, id: string, lock?: boolean) => Promise<unknown>;
 };
@@ -160,7 +161,7 @@ export async function dispatchIntegrityJobs(pool: Pool, root: OriginalStore, sco
   }
   return {selected:results.length,stopReason,results};
 }
-export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'digest_mismatch' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | null) {
+export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'unsupported_media' | 'digest_mismatch' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | null) {
   return finishProcessingJob(pool,s,token,failure);
 }
 type Failure = 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed';
@@ -236,6 +237,34 @@ export async function finishDocumentJob(pool:Pool,root:OriginalStore,s:Scope,tok
     const completed=await terminal(client,s,'succeeded',null,token);
     if(!completed)return null;
     await client.query(`INSERT INTO document_derivatives (tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,
+      profile,profile_digest,raw_bytes,raw_digest,output_bytes,output_digest) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,profile,profileDigest,result.raw,output.rawDigest,output.bytes,output.digest]);
+    return completed;
+  });
+}
+export async function finishSpeechJob(pool:Pool,root:OriginalStore,s:Scope,token:string,result:DocumentResult) {
+  return inTransaction(pool,async client=>{
+    await client.query("SET LOCAL lock_timeout = '2s'");
+    await client.query("SET LOCAL statement_timeout = '5s'");
+    await lockWorkerCase(client,s);
+    const found=await client.query(`SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3
+      AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE`,[...values(s),token]);
+    const row=found.rows[0];if(!row||row.kind!==speechKind)return null;
+    const profile=speechProfile,profileDigest=speechProfileDigest,maxOriginalBytes=262144;
+    if(!await permitted(client,row))return terminal(client,s,'cancelled','scope_changed',token);
+    const source=(await client.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[s.tenantId,s.caseId,row.evidence_id])).rows[0];
+    let original:Buffer;
+    try {
+      original=await readOriginalBounded(root,source.object_path,maxOriginalBytes);
+      if(source.original_kind!=='opaque_binary'||original.length!==source.byte_length||sha256(original)!==row.source_digest.trim()||source.digest.trim()!==row.source_digest.trim())throw new Error('Original mismatch');
+    } catch {return terminal(client,s,'failed','original_unavailable',token);}
+    let output;
+    try {output=makeSpeechDerivative(original,documentContext(row),result);}
+    catch {return terminal(client,s,'failed','speech_result_invalid',token);}
+    // Final fenced transition occurs after original and output checks, within the same transaction.
+    const completed=await terminal(client,s,'succeeded',null,token);
+    if(!completed)return null;
+    await client.query(`INSERT INTO speech_derivatives (tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,
       profile,profile_digest,raw_bytes,raw_digest,output_bytes,output_digest) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
       [...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,profile,profileDigest,result.raw,output.rawDigest,output.bytes,output.digest]);
     return completed;
@@ -318,7 +347,8 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
     const actor = request.actor!;
     const {caseId} = request.params as {caseId:string};
     const input = request.body as {evidenceId:string;idempotencyKey:string;kind?:string};
-    if(isolatedKinds.includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
+    if(input.kind===speechKind&&!svc.speechLab)throw new ApiError(409,'Speech processing lab is disabled.');
+    if(input.kind!==speechKind&&isolatedKinds.includes(input.kind??'')&&!svc.documentLab)throw new ApiError(409,'Document processing lab is disabled.');
     return inTransaction(svc.pool,async client => {
       await svc.findCase(client,actor,caseId,true);
       const old = await client.query('SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND requested_by=$3 AND idempotency_key=$4', [actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
@@ -330,7 +360,7 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
-      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>((ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
+      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>(input.kind===speechKind?262144:(ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
       if(input.kind&&input.kind!=='original_sha256_v1')await sourceUseProofs(client,actor.tenantId,caseId,input.evidenceId,'analysis');
       const id = randomUUID();
       const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
