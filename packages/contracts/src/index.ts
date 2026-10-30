@@ -58,7 +58,7 @@ export type WorkRevision = {sources?: WorkLink[]; version: number; item: WorkIte
 export type CaseMember = {caseId: string; userId: string; name: string; role: 'reviewer' | 'investigator'};
 
 export type AllegedTime = {precision: 'instant' | 'day' | 'month' | 'range' | 'unknown'; start: string | null; end: string | null; timezone: string; note: string};
-export type ChronologySource = {kind: 'text_finding' | 'document_finding'; findingId: string};
+export type ChronologySource = {kind: 'text_finding' | 'document_finding' | 'transcript_finding'; findingId: string};
 export type ChronologyInput = {id: string; title: string; account: string; time: AllegedTime; source: ChronologySource; status: 'alleged' | 'disputed' | 'withdrawn'};
 export type ChronologyEvent = ChronologyInput & {caseId: string; version: number; createdBy: string; createdAt: string; recordedAt: string; interpretation: 'recorded_account_not_finding'};
 export type ChronologyEdit = Omit<ChronologyInput, 'id'> & {expectedVersion: number; reason: string};
@@ -233,3 +233,5 @@ export type TranscriptClaim={
 export type TranscriptClaimReview={id:string;claimId:string;claimDigest:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string};
 export type TranscriptClaimRecord={claim:TranscriptClaim;review:TranscriptClaimReview|null;findingId:string|null;withdrawal:{id:string;actorId:string;reason:string;recordedAt:string}|null;state:'candidate'|'reviewed'|'rejected'|'needs_review'|'withdrawn';canReview:boolean;canWithdraw:boolean};
 export type TranscriptReportFinding={kind:'reviewed_transcript';id:string;text:string;reviewer:string;reviewedAt:string;claim:TranscriptClaim;review:TranscriptClaimReview;originalBase64:string};
+
+export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentReportFinding | TranscriptReportFinding;

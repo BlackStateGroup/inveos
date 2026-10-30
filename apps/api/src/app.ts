@@ -662,6 +662,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerCaseSearch(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   const verifiedFinding=async(client:PoolClient,actor:Actor,caseId:string,reference:ChronologySource)=>{
       const kase=await findCase(client,actor,caseId);
+      if(reference.kind==='transcript_finding'){
+        if(!(await client.query('SELECT 1 FROM transcript_findings WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,reference.findingId])).rowCount)notFound();
+        for await(const finding of reportTranscriptFindings(client,actor,caseId,[reference.findingId]))return finding;
+        return notFound();
+      }
       const table=reference.kind==='text_finding'?'findings':'document_findings';
       if(!(await client.query(`SELECT id FROM ${table} WHERE tenant_id=$1 AND case_id=$2 AND id=$3`,[actor.tenantId,caseId,reference.findingId])).rowCount)notFound();
       const selected=await buildReport(client,actor,caseId,reference.kind==='text_finding'?[reference.findingId]:[],reference.kind==='document_finding'?[reference.findingId]:[]);
@@ -1526,7 +1531,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(chronology.length){
         budget.add({chronology:[]},0,true);report.investigation.chronology=[];
         for(const event of chronology){
-          const available=event.source.kind==='text_finding'?report.findings:report.documentFindings??[];
+          const available=event.source.kind==='text_finding'?report.findings:event.source.kind==='document_finding'?report.documentFindings??[]:report.transcriptFindings??[];
           if(!available.some(f=>f.id===event.source.findingId))throw new ApiError(409,'Chronology references an unavailable finding. Resolve the source before freezing.');
           budget.add(event,0,report.investigation.chronology.length>0);report.investigation.chronology.push(event);
         }

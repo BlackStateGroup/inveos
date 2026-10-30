@@ -219,6 +219,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: transcript-reasoning-browser
-          path: output/evals/transcript-reasoning-desktop.png
+          path: |
+            output/evals/transcript-reasoning-desktop.png
+            output/evals/transcript-graph-desktop.png
           if-no-files-found: ignore
           retention-days: 7

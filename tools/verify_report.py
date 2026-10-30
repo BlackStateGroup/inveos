@@ -83,7 +83,8 @@ def verify_chronology(report):
     rows = context['chronology']
     require(isinstance(rows, list) and len(rows) <= 1000, 'event limit')
     sources = {'text_finding': {f['id'] for f in report.get('findings', [])},
-               'document_finding': {f['id'] for f in report.get('documentFindings', [])}}
+               'document_finding': {f['id'] for f in report.get('documentFindings', [])},
+               'transcript_finding': {f['id'] for f in report.get('transcriptFindings', [])}}
     seen = set()
     for event in rows:
         fields(event, 'id caseId title account status time source version createdBy createdAt recordedAt interpretation')

@@ -1,8 +1,9 @@
+import {ReviewedSourceView} from './ReviewedSourceView';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
-import type {ChronologyEdit,ChronologyEvent,ChronologyInput,ChronologyRevision,ChronologySource,DocumentReportFinding,ReportDraft} from '@inveos/contracts';
+import type {ChronologyEdit,ChronologyEvent,ChronologyInput,ChronologyRevision,ChronologySource,ReviewedSourceFinding} from '@inveos/contracts';
 import {Badge,Empty,Notice,Panel} from './ui';
 
-type Source = ReportDraft['findings'][number] | DocumentReportFinding;
+type Source = ReviewedSourceFinding;
 type Candidate = ChronologySource & {text:string};
 export function Chronology({caseId,csrf,inspect}:{caseId:string;csrf:string;inspect:(id:string)=>void}){
  const [items,setItems]=useState<ChronologyEvent[]>([]),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -43,7 +44,7 @@ export function Chronology({caseId,csrf,inspect}:{caseId:string;csrf:string;insp
    <p className="small muted">For an instant or range: 2026-10-01T09:00:00+01:00. Leave dates blank when unknown. A day or month is a calendar label, not midnight UTC.</p>
    <label className="form-label">Timezone as stated in the account<input name="timezone" maxLength={100} defaultValue={current?.time.timezone??''} placeholder="Leave blank if not stated"/></label>
    <label className="form-label">Date uncertainty and basis<textarea name="note" required maxLength={1000} defaultValue={current?.time.note}/></label>
-   <label className="form-label">Source finding<select name="source" required defaultValue={current?current.source.kind+':'+current.source.findingId:''}><option value="">Choose an existing reviewed source</option>{sources.map(s=><option key={s.kind+':'+s.findingId} value={s.kind+':'+s.findingId}>{s.kind==='document_finding'?'Document':'Text'}: {s.text}</option>)}</select></label>
+   <label className="form-label">Source finding<select name="source" required defaultValue={current?current.source.kind+':'+current.source.findingId:''}><option value="">Choose an existing reviewed source</option>{sources.map(s=><option key={s.kind+':'+s.findingId} value={s.kind+':'+s.findingId}>{s.kind==='document_finding'?'Document':s.kind==='transcript_finding'?'Transcript':'Text'}: {s.text}</option>)}</select></label>
    <p className="small muted">Saving checks the source bytes, citation and current authority. The account itself is not a reviewed finding.</p>
    {current&&<label className="form-label">Correction reason<textarea name="reason" required maxLength={3000}/></label>}
    <div className="work-form-actions"><button type="button" className="secondary" onClick={()=>setForm(null)}>Cancel account edit</button><button type="submit" className="primary">{current?'Save account correction':'Save alleged event'}</button></div>
@@ -55,6 +56,6 @@ export function Chronology({caseId,csrf,inspect}:{caseId:string;csrf:string;insp
    <div className="work-record-actions"><button className="text-button" disabled={busy} onClick={()=>void edit(event)}>Correct {event.title}</button><button className="text-button" disabled={busy} onClick={()=>void act(async()=>{setHistory(null);setHistory(await api<ChronologyRevision[]>(base+'/'+event.id+'/history'));})}>History: {event.title}</button><button className="text-button" disabled={busy} onClick={()=>void act(async()=>{setSource(null);setSource(await api<Source>(base+'/'+event.id+'/source'));})}>Inspect source: {event.title}</button></div>
   </article>)}
   {history&&<section className="work-history" aria-label="Chronology correction history"><h3>Correction history</h3>{history.map(r=><details key={r.event.version}><summary>Version {r.event.version}: {r.reason}</summary><p>{r.actor} · {r.at}</p><p>{r.event.title}: {r.event.account}</p><p>{r.event.status} · {r.event.time.precision} · {r.event.time.start??'Unknown'} {r.event.time.end??''}</p><p>{r.event.time.note} · {r.event.time.timezone||'Timezone unspecified'}</p><p>Historical source finding: {r.event.source.findingId}</p></details>)}</section>}
-  {source&&<section aria-label="Chronology source"><h3>{source.source.filename}</h3><blockquote>{'kind' in source?source.reference.quote:source.source.quote}</blockquote><p>Source-recorded time: {source.source.sourceTime}</p><p>Received time: {source.source.receivedTime}</p><p>Reviewed: {source.reviewedAt}</p>{'kind' in source&&<p>Processed: {source.extraction.processedAt} · page {source.reference.page}</p>}<p className="digest">SHA-256: {source.source.sha256}</p><button className="text-button" onClick={()=>inspect(source.source.id)}>Open chronology original</button></section>}
+  {source&&<section aria-label="Chronology source"><ReviewedSourceView finding={source} inspect={inspect} originalLabel="Open chronology original"/></section>}
  </div></Panel>;
 }

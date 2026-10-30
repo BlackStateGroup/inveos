@@ -43,6 +43,17 @@ def fixture(corrected=True):
 
 
 class TranscriptFindingChecks(unittest.TestCase):
+    def test_transcript_chronology_retains_declared_uncertainty_and_typed_reference(self):
+        report = fixture()
+        at = '2026-10-30T00:00:00.000Z'
+        event = dict(id=uid(120), caseId=report['case']['id'], title='Fictional undated account', account='The supplied transcript does not establish a calendar date.', status='disputed', time=dict(precision='unknown', start=None, end=None, timezone='', note='Transcript timecodes are not event timestamps.'), source=dict(kind='transcript_finding', findingId=uid(13)), version=1, createdBy=uid(8), createdAt=at, recordedAt=at, interpretation='recorded_account_not_finding')
+        report['investigation']['chronology'] = [event]
+        self.assertEqual(verify_report(encode(report))['chronologyEventsChecked'], 1)
+        verify_package(build_package(encode(report), '2026-10-30T00:00:00Z'))
+        event['source']['kind'] = 'text_finding'
+        with self.assertRaises(InvalidReport):
+            verify_report(encode(report))
+
     def test_frozen_work_links_verify_scope_type_history_and_package(self):
         report = fixture()
         work = dict(id=uid(100), caseId=report['case']['id'])
