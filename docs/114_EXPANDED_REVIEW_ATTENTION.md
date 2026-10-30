@@ -35,3 +35,7 @@ node --import tsx --test --test-concurrency=1 --test-name-pattern='expanded revi
 ```
 
 Set `INVEOS_TEST_BROWSER=1` only on a host with working sandboxed Chrome; local isolation is unavailable and must not be bypassed. No migration or original/report-byte format changes. Source correspondence, source-register and expense review reminders, individually assigned review ownership, contractor policy, external push, representative large-case performance and professional/security/privacy acceptance remain open.
+
+## Hosted render correction
+
+Initial head `662fc81bd780e753ea11cbf3dcadb927a62e5d06` passed **Checks41024064621 / job123957888419:438Node/179Python, zero failures/skips,43 production plus six development browser journeys**, both office profiles, host probes/lint/types/build. Render inspection then found horizontal overflow inside the notification dialog from long review-status badges; the old document-width assertion did not measure that inner scroll area. Scoped wrapping now keeps reminder headings/statuses/actions within the dialog, and browser checks measure both the dialog and queue widths on desktop and a narrow viewport. Final rerun and renders remain pending.
