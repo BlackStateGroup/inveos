@@ -221,3 +221,5 @@
 - [109 — Frozen editable report copies](109_EDITABLE_REPORTS.md)
 
 - `110_TIKA_PDF_COMPARISON.md` — pinned source/runtime acquisition, isolated reduced Tika build and actual comparison protocol.
+
+- `111_TASK_PLANNING.md` — atomic owner/deadline batches, current-version history, assignment boundaries and browser acceptance.

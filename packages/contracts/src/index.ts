@@ -37,6 +37,7 @@ export type WorkEdit = {
   reason: string;
 };
 export type TaskStatusBatch = {id:string; items:{id:string;expectedVersion:number}[];status:typeof workStatuses.task[number];reason:string};
+export type TaskPlanBatch = {id:string;items:{id:string;expectedVersion:number}[];ownerChange?:{ownerId:string|null};dueDateChange?:{dueDate:string|null};reason:string};
 export type TaskStatusBatchResult = {id:string;applied:{id:string;version:number}[];items:WorkItem[]};
 export type WorkItem = WorkInput & {
   caseId: string;

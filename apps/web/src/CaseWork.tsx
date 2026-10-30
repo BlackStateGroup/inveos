@@ -3,13 +3,14 @@ import {WorkDiscussion,WorkMentions} from './WorkDiscussion';
 import {DocumentWorkSources} from './DocumentWorkSources';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, History, Link2, Plus, Search, X } from 'lucide-react';
-import { workStatuses, type TaskStatusBatch, type TaskStatusBatchResult, type WorkEdit, type WorkInput, type WorkItem, type WorkKind, type WorkLinkInput, type DocumentWorkLinkInput, type WorkRevision } from '@inveos/contracts';
+import { workStatuses, type TaskStatusBatch, type TaskPlanBatch, type TaskStatusBatchResult, type WorkEdit, type WorkInput, type WorkItem, type WorkKind, type WorkLinkInput, type DocumentWorkLinkInput, type WorkRevision } from '@inveos/contracts';
 import { Badge, Empty, Notice, Panel } from './ui';
 import type { ViewProps } from './CaseViews';
 
 export type WorkActions = {
   enabled: boolean;
   batchStatus: (input:TaskStatusBatch)=>Promise<TaskStatusBatchResult>;
+  batchPlan: (input:TaskPlanBatch)=>Promise<TaskStatusBatchResult>;
   discussion: <T>(path:string,body?:object)=>Promise<T>;
   create: (input: WorkInput) => Promise<void>;
   revise: (id: string, input: WorkEdit) => Promise<void>;
@@ -133,7 +134,7 @@ function WorkRecord({p, item, selection}: {p: ViewProps; item: WorkItem; selecti
     try { setRevisions(await p.work.history(item.id)); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }
   return <article id={`work-${item.id}`} className={`work-record ${item.status === 'Blocked' ? 'work-blocked' : ''}`}>
-    {selection&&<label className="checkbox-row task-selection"><input type="checkbox" checked={selection.checked} disabled={selection.disabled} onChange={selection.toggle} aria-label={`Select task: ${item.title}`}/><span>Select for status change</span></label>}
+    {selection&&<label className="checkbox-row task-selection"><input type="checkbox" checked={selection.checked} disabled={selection.disabled} onChange={selection.toggle} aria-label={`Select task: ${item.title}`}/><span>Select for batch change</span></label>}
     <div className="work-record-top"><h3>{item.title}</h3><Badge tone={done.has(item.status) ? 'teal' : item.status === 'Blocked' ? 'amber' : 'neutral'}>{item.status}</Badge></div>
     {parent && <p className="small muted work-parent">For: {parent.title}</p>}
     {item.body && <p className="work-body">{item.body}</p>}
@@ -192,9 +193,10 @@ export function CaseWorkDashboard({p}: {p: ViewProps}) {
 export function CaseTaskboard(p: ViewProps) {
   const [adding,setAdding]=useState(false),[query,setQuery]=useState('');
   const [selected,setSelected]=useState<WorkItem[]>([]),[status,setStatus]=useState<TaskStatusBatch['status']>('In progress'),[reason,setReason]=useState('');
-  const [pending,setPending]=useState<TaskStatusBatch|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[denied,setDenied]=useState(false);
+  const [mode,setMode]=useState<'status'|'plan'>('status'),[owner,setOwner]=useState('keep'),[deadline,setDeadline]=useState<'keep'|'set'|'clear'>('keep'),[dueDate,setDueDate]=useState('');
+  const [pending,setPending]=useState<TaskStatusBatch|TaskPlanBatch|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[denied,setDenied]=useState(false);
   const working=useRef(false);
-  function clear(){setSelected([]);setPending(null);setReason('');}
+  function clear(){setSelected([]);setPending(null);setReason('');setOwner('keep');setDeadline('keep');setDueDate('');}
   async function act(run:()=>Promise<void>){if(working.current)return;working.current=true;setBusy(true);setError('');
     try{await run();}catch(e){const failure=e as Error&{statusCode?:number};setError(failure.message);
       if([401,403,404].includes(failure.statusCode??0)){clear();setDenied(true);void p.work.refresh().catch(()=>{});}
@@ -202,9 +204,10 @@ export function CaseTaskboard(p: ViewProps) {
   }
   async function refresh(){clear();setNotice('');setDenied(true);await p.work.refresh();setDenied(false);}
   async function save(event?:FormEvent){event?.preventDefault();await act(async()=>{
-    const input=pending??{id:crypto.randomUUID(),items:selected.map(item=>({id:item.id,expectedVersion:item.version})),status,reason};
-    setNotice('');setPending(input);const result=await p.work.batchStatus(input);clear();setDenied(true);setNotice('Task status receipt confirmed. Loading current task records…');
-    await p.work.refresh();setDenied(false);setNotice(`Recorded status changes for ${result.applied.length} tasks. Individual histories retain the decision.`);
+    if(!pending&&mode==='plan'&&owner==='keep'&&deadline==='keep')throw new Error('Choose an owner or deadline change.');
+    const input=pending??{id:crypto.randomUUID(),items:selected.map(item=>({id:item.id,expectedVersion:item.version})),reason,...(mode==='status'?{status}:{...(owner==='keep'?{}:{ownerChange:{ownerId:owner||null}}),...(deadline==='keep'?{}:{dueDateChange:{dueDate:deadline==='clear'?null:dueDate}})})};
+    setNotice('');setPending(input);const result='status' in input?await p.work.batchStatus(input):await p.work.batchPlan(input);clear();setDenied(true);setNotice('Task receipt confirmed. Loading current task records…');
+    await p.work.refresh();setDenied(false);setNotice(`Recorded ${'status' in input?'status':'assignment/deadline'} changes for ${result.applied.length} tasks. Individual histories retain the decision.`);
   });}
   if(!p.work.enabled)return <WorkSection p={p} kind="task" title="Case tasks" description="Save assignments, deadlines, blockers and completion decisions with the case."/>;
   const tasks=p.data.workItems.filter(w=>w.caseId===p.active.id&&w.kind==='task'&&`${w.title} ${w.body}`.toLowerCase().includes(query.toLowerCase()));
@@ -216,13 +219,20 @@ export function CaseTaskboard(p: ViewProps) {
     {notice&&<p role="status">{notice}</p>}
     {denied?<Notice>Current tasks are unavailable. Refresh to check access and load them again.</Notice>:<>
       {adding&&<WorkForm p={p} kind="task" onClose={()=>setAdding(false)}/>}
-      <Panel title="Change selected task statuses" meta={<Badge>{selected.length} / 50 selected</Badge>}>
-        <div className="panel-body"><p className="body-copy">Select tasks below, choose their new status and record one reason. Every selected version must still be current. The whole batch is saved together with each task’s history.</p>
-          {!!selected.length&&<><ul aria-label="Selected task versions">{selected.map(item=><li key={item.id}>{item.title} · v{item.version} · {item.status}</li>)}</ul>
-            <form aria-label="Task status batch" className="work-form" onSubmit={e=>void save(e)}><fieldset disabled={frozen}>
-              <label className="form-label">New task status<select name="status" value={status} onChange={e=>setStatus(e.target.value as TaskStatusBatch['status'])}>{workStatuses.task.map(value=><option key={value}>{value}</option>)}</select></label>
-              <label className="form-label">Reason for these status changes<textarea name="reason" required minLength={10} maxLength={3000} value={reason} onChange={e=>setReason(e.target.value)}/></label>
-              <button className="primary">Save selected task statuses</button>
+      <Panel title={mode==='status'?"Change selected task statuses":"Plan selected tasks"} meta={<Badge>{selected.length} / 50 selected</Badge>}>
+        <div className="panel-body"><p className="body-copy">Select tasks below, choose status or assignment/deadline changes and record one reason. Every selected version must still be current. The whole batch is saved together with each task’s history.</p>
+          {!!selected.length&&<><ul aria-label="Selected task versions">{selected.map(item=><li key={item.id}>{item.title} · v{item.version} · {item.status}{mode==='plan'&&<span className="small"> · {p.data.members.find(m=>m.caseId===p.active.id&&m.userId===item.ownerId)?.name??(item.ownerId?'Former case member':'Unassigned')} · {item.dueDate?'Due '+dateLabel(item.dueDate):'No deadline'}</span>}</li>)}</ul>
+            <form aria-label={mode==='status'?'Task status batch':'Task planning batch'} className="work-form" onSubmit={e=>void save(e)}><fieldset disabled={frozen}>
+              <label className="form-label">Batch change<select name="mode" value={mode} onChange={e=>setMode(e.target.value as 'status'|'plan')}><option value="status">Status</option><option value="plan">Owner and deadline</option></select></label>
+              {mode==='status'?
+              <label className="form-label">New task status<select name="status" value={status} onChange={e=>setStatus(e.target.value as TaskStatusBatch['status'])}>{workStatuses.task.map(value=><option key={value}>{value}</option>)}</select></label>:<>
+                <label className="form-label">New task owner<select name="owner" value={owner} onChange={e=>setOwner(e.target.value)}><option value="keep">Keep each current owner</option><option value="">Unassigned</option>{p.data.members.filter(m=>m.caseId===p.active.id).map(m=><option key={m.userId} value={m.userId}>{m.name}</option>)}</select></label>
+                <label className="form-label">Deadline change<select name="deadline" value={deadline} onChange={e=>setDeadline(e.target.value as 'keep'|'set'|'clear')}><option value="keep">Keep each current deadline</option><option value="set">Set a deadline</option><option value="clear">Remove deadline</option></select></label>
+                {deadline==='set'&&<label className="form-label">New deadline<input name="dueDate" type="date" required value={dueDate} onChange={e=>setDueDate(e.target.value)}/></label>}
+                <p className="small">Keeping a field preserves its value on each task. Unassigned and Remove deadline explicitly clear it. Task status stays unchanged.</p>
+              </>}
+              <label className="form-label">{mode==='status'?'Reason for these status changes':'Reason for these planning changes'}<textarea name="reason" required minLength={10} maxLength={3000} value={reason} onChange={e=>setReason(e.target.value)}/></label>
+              <button className="primary">{mode==='status'?'Save selected task statuses':'Save selected task plan'}</button>
             </fieldset></form>
             {pending&&<button className="primary" disabled={busy} onClick={()=>void save()}>Retry unchanged task batch</button>}
             <button className="text-button" disabled={busy} onClick={()=>void act(refresh)}>Discard selection and refresh tasks</button>
