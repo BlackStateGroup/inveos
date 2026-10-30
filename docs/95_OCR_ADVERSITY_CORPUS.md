@@ -14,6 +14,7 @@ Run only on a qualified worker host, after preparing the existing pinned artifac
 
 ```sh
 python3 -m unittest discover -s tests -p test_ocr_corpus.py -v
+python3 tools/ocr_package_archives.py
 python3 tools/experiment_tesseract_supplier.py --case-acceptance --adverse-corpus
 ```
 

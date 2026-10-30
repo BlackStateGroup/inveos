@@ -15,6 +15,7 @@ import os
 from datetime import datetime,timezone
 from bounded_process import run_bounded
 from prepare_ocr_worker import prepare_ocr_bundle
+from ocr_package_archives import acquire as acquire_ocr_archives, stage_archives, BASE as OCR_BASE
 from probe_worker_isolation import command,container_args,check_configuration,require,run_probe
 
 ROOT=Path(__file__).resolve().parent.parent
@@ -43,12 +44,21 @@ def adverse_corpus(image_id,cache,profile_version=1):
 
 def experiment(case_acceptance=False,include_corpus=False):
     cache=ROOT/'.research-cache';cache.mkdir(exist_ok=True)
+    archives=acquire_ocr_archives(offline=True)
+    archive_receipt={key:value for key,value in archives.items() if key!='paths'}
     tag='inveos-tesseract-research:'+uuid.uuid4().hex
-    # Only the first-party Dockerfile enters build context; no private files,
-    # original store, credentials or third-party checkout is sent to the daemon.
+    # Only the first-party Dockerfile and verified public package archives enter
+    # build context; no case data, credentials or unrelated checkout.
     with tempfile.TemporaryDirectory(dir=cache,prefix='ocr-build-') as directory:
-        build=Path(directory);shutil.copyfile(ROOT/'research/runtime_artifacts/tesseract-baseline.Dockerfile',build/'Dockerfile')
-        command('build','--pull=false','--tag',tag,str(build),timeout=240)
+        build=Path(directory);dockerfile=ROOT/'research/runtime_artifacts/tesseract-baseline.Dockerfile'
+        require(('FROM '+OCR_BASE+'\n') in dockerfile.read_text(),'OCR base image drift')
+        shutil.copyfile(dockerfile,build/'Dockerfile');(build/'packages').mkdir()
+        stage_archives(archives['paths'],build/'packages')
+        built=command('build','--pull=false','--network=none','--tag',tag,str(build),timeout=240,check=False)
+        # Public archive-only context: preserve bounded diagnostics without
+        # exposing case data or enabling a networked retry.
+        (cache/'ocr-build.log').write_text(built.stdout+'\n'+built.stderr)
+        require(built.returncode==0,'Offline OCR image build failed: '+built.stderr[-6000:])
     try:
         qualification=run_probe(tag,runtime=True);image_id=qualification['imageId']
         with tempfile.TemporaryDirectory(dir=cache,prefix='ocr-supplier-') as directory:
@@ -84,7 +94,7 @@ def experiment(case_acceptance=False,include_corpus=False):
                     command('rm','-f','-v',name);require(command('inspect',name,check=False).returncode!=0,'OCR container cleanup failed')
         # Fail closed on *all* installed versions and selected native/model/notice
         # bytes before enabling the fictional case worker. This is a content
-        # acceptance lock, not a complete package-archive or legal clearance.
+        # acceptance lock. Archive acquisition is separate from legal clearance.
         lock_bytes=(ROOT/'research/runtime_artifacts/tesseract-baseline.lock.json').read_bytes()
         lock=json.loads(lock_bytes)
         require(lock['packages']==results[0]['packages'] and lock['artifacts']==results[0]['artifacts'],'OCR runtime artifact drift')
@@ -98,9 +108,9 @@ def experiment(case_acceptance=False,include_corpus=False):
             checked=run_bounded(['node','--import','tsx','--test','--test-concurrency=1','apps/api/test/ocr-worker.integration.ts'],timeout=300,max_output=1024*1024)
             if checked.returncode:raise ValueError('Actual OCR case acceptance failed: '+checked.stdout.decode()[-20000:]+'\n'+checked.stderr.decode()[-4000:])
             acceptance=checked.stdout.decode()
-        return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,detachedDeadlineVerified=True,caseAcceptance=acceptance,
+        return dict(status='isolated_scanned_supplier_baseline_measured',imageId=image_id,qualification=qualification,packageArchives=archive_receipt,detachedDeadlineVerified=True,caseAcceptance=acceptance,
                     inventory=results[0],experiment=results[1],adversityCorpus=corpus,expandedAdversityCorpus=expanded_corpus,approval='research_only_not_product_or_licence_approval',
-                    remaining='Pinned-source Tesseract and Tika/OCRmyPDF comparisons, package-archive/licence obligations, representative client scans, multilingual/handwritten and semantic table accuracy, plus professional and production approvals remain open')
+                    remaining='Pinned-source Tesseract and Tika/OCRmyPDF comparisons, source archives/signed-index and licence obligations, representative client scans, multilingual/handwritten and semantic table accuracy, plus professional and production approvals remain open')
     finally:
         command('image','rm',tag,check=False)
 
