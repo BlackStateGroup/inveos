@@ -9,5 +9,14 @@ export type TikaCitationEntry={id:string;authorId:string;authorName:string;recor
 export type TikaReview={id:string;citationId:string;citationDigest:string;sequence:number;previousDigest:string|null;decision:'accepted'|'rejected';reason:string;originalCompared:boolean;reviewerId:string;reviewerName:string;recordedAt:string;scope:'extraction_correspondence_only';digest:string};
 export type TikaClaim={id:string;citationId:string;citationDigest:string;correspondenceDigest:string;text:string;authorId:string;authorName:string;recordedAt:string;state:'proposed_interpretation';digest:string};
 export type TikaDecision={id:string;claimId:string;claimDigest:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string;scope:'interpretation_only';digest:string};
-export type TikaClaimEntry={claim:TikaClaim;decision:TikaDecision|null;eligible:boolean};
+export type TikaClaimEntry={claim:TikaClaim;decision:TikaDecision|null;eligible:boolean;withdrawal?:TikaWithdrawal;reportEligible?:boolean;reportIneligibility?:string};
 export type TikaInspection={jobId:string;caseId:string;evidenceId:string;source:{filename:string;sha256:string;sourceTime:string;receivedAt:string;authorityId:string;authorityVersion:number};processedAt:string;profile:string;profileDigest:string;rawDigest:string;derivativeDigest:string;derivative:TikaDerivative;canReview:boolean;canChange:boolean;citations:{entry:TikaCitationEntry;reviews:TikaReview[];claims:TikaClaimEntry[]}[]};
+
+/** Terminal withdrawal retains all extraction and interpretation history. */
+export type TikaWithdrawal={id:string;claimId:string;claimDigest:string;decisionDigest:string|null;reason:string;actorId:string;actorName:string;recordedAt:string;digest:string};
+export type TikaReportFinding={
+ kind:'reviewed_tika_page_text';id:string;text:string;reviewer:string;reviewedAt:string;
+ source:{id:string;filename:string;sha256:string;sourceTime:string;receivedTime:string;authorityId:string;authorityVersion:number};
+ extraction:{jobId:string;authorityVersion:number;attempt:number;processedAt:string;profile:string;profileDigest:string;rawDigest:string;derivativeDigest:string;xhtmlDigest:string;runtimeDigest:string;processingAuthorityDigest:string;sourceAuthorityDigest:string};
+ reference:TikaCitationEntry;correspondence:TikaReview[];interpretation:{claim:TikaClaim;decision:TikaDecision};limitations:string;
+};

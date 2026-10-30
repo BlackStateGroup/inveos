@@ -23,9 +23,12 @@ export async function verifyDocumentPackageDownload(bytes:ArrayBuffer,reportSha2
  const packageSha256=await sha256(bytes);if(packageSha256!==header)return fail();
  let parsed:unknown;try{parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{return fail();}
  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return fail();const value=parsed as Record<string,unknown>;
- if(Object.keys(value).sort().join(',')!=='exhibits,format,reportBase64,reportSha256'||value.format!=='inveos_document_report_package_v1'||value.reportSha256!==reportSha256||!Array.isArray(value.exhibits)||value.exhibits.length<1||value.exhibits.length>1000)return fail();
+ const expanded=value.format==='inveos_document_report_package_v2';
+ if(Object.keys(value).sort().join(',')!==(expanded?'exhibits,format,reportBase64,reportSha256,tikaExhibits':'exhibits,format,reportBase64,reportSha256')||!expanded&&value.format!=='inveos_document_report_package_v1'||value.reportSha256!==reportSha256||!Array.isArray(value.exhibits))return fail();
+ const tikas=expanded?value.tikaExhibits:[];
+ if(!Array.isArray(tikas)||expanded&&!tikas.length||value.exhibits.length+tikas.length<1||value.exhibits.length+tikas.length>1000)return fail();
  const report=decodeBase64(value.reportBase64);if(await sha256(report)!==reportSha256)return fail();
- return {packageSha256,documentFindings:value.exhibits.length};
+ return {packageSha256,documentFindings:value.exhibits.length+tikas.length};
 }
 export function packageStorageKey(caseId:string,revisionId:string){return `inveos:document-package:v1:${caseId}:${revisionId}`;}
 export function readVerifiedDocumentPackage(store:Pick<Storage,'getItem'>,caseId:string,revisionId:string,reportSha256:string):VerifiedDocumentPackage|null{

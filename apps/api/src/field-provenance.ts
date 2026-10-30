@@ -7,7 +7,7 @@ import {transcriptHash as hash} from './transcript-findings.js';
 const stamp=(v:Date|string)=>new Date(v).toISOString();
 function fail():never{throw new ApiError(409,'Field capture and historical recovery provenance differ.');}
 export async function reportFieldProvenance(c:PoolClient,tenantId:string,caseId:string,report:ReportDraft):Promise<FieldProvenance[]>{
- const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id),...(report.speechFindings??[]).map(f=>f.source.id)])].sort();
+ const ids=[...new Set([...report.findings.map(f=>f.source.id),...(report.documentFindings??[]).map(f=>f.source.id),...(report.transcriptFindings??[]).map(f=>f.claim.source.id),...(report.speechFindings??[]).map(f=>f.source.id),...(report.tikaFindings??[]).map(f=>f.source.id)])].sort();
  const values:FieldProvenance[]=[];
  for(const evidenceId of ids){
   const row=(await c.query(`SELECT f.*,e.digest,e.byte_length,e.filename,e.source_time,e.method,e.received_time original_received_at,e.authority_id accepted_authority_id,e.authority_version accepted_authority_version,r.acceptance,r.recovery_id FROM field_captures f JOIN evidence e ON e.tenant_id=f.tenant_id AND e.case_id=f.case_id AND e.id=f.evidence_id LEFT JOIN field_sync_receipts r ON r.tenant_id=f.tenant_id AND r.case_id=f.case_id AND r.capture_id=f.id WHERE f.tenant_id=$1 AND f.case_id=$2 AND f.evidence_id=$3`,[tenantId,caseId,evidenceId])).rows[0];if(!row)continue;

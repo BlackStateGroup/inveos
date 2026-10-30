@@ -276,7 +276,7 @@ def verify_source_use(report):
     """Check retained declarations, not present permission or legal sufficiency."""
     proofs = report.get('sourceUse', [])
     require(isinstance(proofs, list) and len(proofs) <= 200, 'Source-use proof limit')
-    sources = {f['source']['id']: f['source'] for f in report.get('findings', []) + report.get('documentFindings', [])}
+    sources = {f['source']['id']: f['source'] for f in report.get('findings', []) + report.get('documentFindings', []) + report.get('tikaFindings', [])}
     sources.update({f['claim']['source']['id']: f['claim']['source'] for f in report.get('transcriptFindings', [])})
     sources.update({f['source']['id']: f['source'] for f in report.get('speechFindings', [])})
     seen_sources, seen_decisions = set(), set()
@@ -361,7 +361,7 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         raise InvalidReport('Malformed UTF-8 JSON') from exc
     require(isinstance(report, dict), 'Expected report object')
     require(report.get('status') == 'draft_not_released', 'Unsupported report status')
-    require('documentFindings' not in report,
+    require('documentFindings' not in report and 'tikaFindings' not in report,
             'Document-derived reports require the derivative package verifier; unsupported by this verifier')
     case = object_field(report, 'case')
     case_id = text_field(case, 'id')

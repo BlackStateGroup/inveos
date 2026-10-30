@@ -8,12 +8,12 @@ import {compositionChoices,compositionDigest,compositionHash,compositionIds,orde
 type Services={authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
  transaction:<T>(op:(c:PoolClient)=>Promise<T>)=>Promise<T>;access:(c:PoolClient,a:Actor,caseId:string)=>Promise<void>;
  lock:(c:PoolClient,a:Actor,caseId:string)=>Promise<unknown>;
- build:(c:PoolClient,a:Actor,caseId:string,text?:string[],documents?:string[],transcripts?:string[],speech?:string[],omitContext?:boolean)=>Promise<ReportDraft>;
+ build:(c:PoolClient,a:Actor,caseId:string,text?:string[],documents?:string[],transcripts?:string[],speech?:string[],omitContext?:boolean,tika?:string[]|'available')=>Promise<ReportDraft>;
  audit:(c:PoolClient,a:Actor,caseId:string,action:string,type:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
 const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'},sha={type:'string',pattern:'^[a-f0-9]{64}$'};
 const short={type:'string',minLength:3,maxLength:150},note={type:'string',minLength:10,maxLength:2000},version={type:'integer',minimum:1,maximum:100};
 const obj=(properties:Record<string,unknown>,required=Object.keys(properties))=>({type:'object',additionalProperties:false,required,properties});
-const outlineSchema=obj({name:short,scope:note,method:note,limitations:note,sections:{type:'array',minItems:1,maxItems:50,items:obj({id:uuid,title:short,findings:{type:'array',maxItems:1000,items:obj({kind:{enum:['text','document','transcript','speech']},id:uuid,sha256:sha})}})}});
+const outlineSchema=obj({name:short,scope:note,method:note,limitations:note,sections:{type:'array',minItems:1,maxItems:50,items:obj({id:uuid,title:short,findings:{type:'array',maxItems:1000,items:obj({kind:{enum:['text','document','transcript','speech','tika']},id:uuid,sha256:sha})}})}});
 const iso=(v:Date|string)=>new Date(v).toISOString();
 function clean(v:string,min=10){const text=v.trim().normalize('NFC').replace(/\r\n?/g,'\n');if(text.length<min||Buffer.from(text).toString('utf8')!==text||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text))throw new ApiError(422,'Enter explicit plain-text context and a reason.');return text;}
 function cleanOutline(o:ReportOutline):ReportOutline{
@@ -38,7 +38,7 @@ export function registerReportCompositions(app:FastifyInstance,s:Services){
  async function view(c:PoolClient,a:Actor,caseId:string,r:QueryResultRow):Promise<CompositionRevision&{reviewSequence:number}>{check(r);const review=await latestReview(c,a,caseId,r.composition_id,r.version);return {payload:orderedCompositionPayload(r.payload),sha256:r.sha256.trim(),authorId:r.actor_id,authorName:r.actor_name,recordedAt:iso(r.recorded_at),review:review?reviewView(review):null,reviewSequence:review?.sequence??0,canReview:await independent(c,a,caseId,r.composition_id)};}
  const audit=(c:PoolClient,a:Actor,caseId:string,action:string,id:string,metadata:Record<string,unknown>)=>s.audit(c,a,caseId,'report.composition.'+action,'report_composition',id,'Internal report outline '+action,metadata);
  async function selected(c:PoolClient,a:Actor,caseId:string,p:CompositionPayload){
-  const report=await s.build(c,a,caseId,...(['text','document','transcript','speech'] as const).map(kind=>compositionIds(p,kind)) as [string[],string[],string[],string[]]);
+  const report=await s.build(c,a,caseId,compositionIds(p,'text'),compositionIds(p,'document'),compositionIds(p,'transcript'),compositionIds(p,'speech'),true,compositionIds(p,'tika'));
   try{verifyCompositionSelection(report,p);}catch(e){throw new ApiError(409,(e as Error).message);}return report;
  }
  async function replay(c:PoolClient,a:Actor,caseId:string,id:string,hash:string,table:'report_composition_revisions'|'report_composition_reviews'){
@@ -50,7 +50,10 @@ export function registerReportCompositions(app:FastifyInstance,s:Services){
  }));
  app.get(base+'/findings',{preHandler:s.authenticate,schema:{params}},r=>tx(r,async(c,a,caseId)=>{
   // The existing bounded builder verifies originals, citations and current source permissions.
-  try{return {items:compositionChoices(await s.build(c,a,caseId,undefined,undefined,undefined,undefined,true))};}catch(e){if(e instanceof ApiError&&e.message==='A report draft requires at least one accepted finding.')return {items:[]};throw e;}
+  try{return {items:compositionChoices(await s.build(c,a,caseId,undefined,undefined,undefined,undefined,true,'available'))};}catch(e){if(e instanceof ApiError&&e.message==='A report draft requires at least one accepted finding.')return {items:[]};throw e;}
+ }));
+ app.get(base+'/findings/:findingId/tika',{preHandler:s.authenticate,schema:{params:obj({caseId:uuid,findingId:uuid})}},r=>tx(r,async(c,a,caseId)=>{
+  const {findingId}=r.params as {findingId:string};const report=await s.build(c,a,caseId,[],[],[],[],true,[findingId]);await audit(c,a,caseId,'tika_inspected',findingId,{});return report;
  }));
  app.get(base+'/:compositionId',{preHandler:s.authenticate,schema:{params:itemParams}},r=>tx(r,async(c,a,caseId)=>view(c,a,caseId,await head(c,a,caseId,(r.params as {compositionId:string}).compositionId))));
  app.get(base+'/:compositionId/history',{preHandler:s.authenticate,schema:{params:itemParams,querystring:obj({before:{type:'integer',minimum:1,maximum:101}},[])}},r=>tx(r,async(c,a,caseId)=>{

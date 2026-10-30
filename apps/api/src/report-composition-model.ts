@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import type {CompositionFindingKind,CompositionChoice,CompositionPayload,ReportDraft} from '@inveos/contracts';
 export const compositionHash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export function compositionChoices(report:ReportDraft):CompositionChoice[]{
- const groups=[['text',report.findings],['document',report.documentFindings??[]],['transcript',report.transcriptFindings??[]],['speech',report.speechFindings??[]]] as const;
+ const groups=[['text',report.findings],['document',report.documentFindings??[]],['transcript',report.transcriptFindings??[]],['speech',report.speechFindings??[]],['tika',report.tikaFindings??[]]] as const;
  return groups.flatMap(([kind,findings])=>findings.map(f=>{
   const source='kind' in f&&f.kind==='reviewed_transcript'?f.claim.source:f.source;
   // Explicit, string-only identity profile. Full citation/original verification remains in buildReport.

@@ -48,7 +48,7 @@ def verify(report, original_lengths=None):
     for finding in report.get('findings', []):
         source = finding['source']; sources[source['id']] = source
         lengths[source['id']] = len(base64.b64decode(source['contentBase64'], validate=True))
-    for finding in report.get('documentFindings', []):
+    for finding in report.get('documentFindings', []) + report.get('tikaFindings', []):
         sources[finding['source']['id']] = finding['source']
     for finding in report.get('transcriptFindings', []):
         source = finding['claim']['source']; sources[source['id']] = source

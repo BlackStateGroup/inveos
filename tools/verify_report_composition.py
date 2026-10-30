@@ -68,7 +68,7 @@ def verify_composition(report):
     section_ids, selected_ids, ordered = set(), set(), []
     actual = {}
     for kind, name in (('text', 'findings'), ('document', 'documentFindings'),
-                       ('transcript', 'transcriptFindings'), ('speech', 'speechFindings')):
+                       ('transcript', 'transcriptFindings'), ('speech', 'speechFindings'), ('tika', 'tikaFindings')):
         for f in report.get(name, []):
             source = f['claim']['source'] if kind == 'transcript' else f['source']
             require(f['id'] not in actual, 'duplicate frozen finding')
