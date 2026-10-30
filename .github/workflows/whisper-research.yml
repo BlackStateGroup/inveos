@@ -54,6 +54,7 @@ jobs:
           path: |
             .research-cache/whisper-inputs/*receipt.json
             .research-cache/whisper-built/build-receipt.json
+            .research-cache/whisper-built/*-probe.json
             output/evals/whisper/
           include-hidden-files: true
           if-no-files-found: ignore

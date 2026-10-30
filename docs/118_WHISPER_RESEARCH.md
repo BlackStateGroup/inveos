@@ -55,3 +55,5 @@ python3 -m tools.experiment_whisper
 ```
 
 No production activation, external collection, communication, purchase or source/model distribution approval is implied. Application incorporation needs its own typed derivative/authority/lease/review integration and actual acceptance; production/legal/security/model-data/distribution gates remain open.
+
+Speech research draft #112 initial head860ed77010f72c04743b8587c90f95d853f52763: Research41038015783 / job124003574412 failed when the build caller requested600seconds, exceeding the shared300second process bound. Native compilation/inference did not run. The caller now uses300seconds without changing any shared isolation/resource limit. Transcript stdout/stderr decode strictly as UTF-8 and retain original byte digests; invalid bytes are not silently replaced. Builder/runtime probe receipts are retained independently if a later stage fails. Corrected hosted acceptance remains pending.

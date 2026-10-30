@@ -120,6 +120,7 @@ def build(source, cache, output):
     safe_path(output)
     try:
         probe = run_probe(image, runtime=True)
+        (output / 'builder-probe.json').write_text(json.dumps(probe, indent=2) + '\n')
         info = json.loads(command('image', 'inspect', image).stdout)[0]
         with tempfile.TemporaryDirectory(prefix='inveos-whisper-build-') as directory:
             root = Path(directory)
@@ -135,7 +136,7 @@ def build(source, cache, output):
                 try:
                     command(*container_args(name, image, bundle, info['Config'].get('Volumes') or {}, runtime=True), BUILD)
                     check_configuration(json.loads(command('inspect', name).stdout)[0], info['Config'].get('Volumes') or {}, runtime=True)
-                    result = command('start', '--attach', name, timeout=600, max_output=16 * 1024 * 1024, check=False)
+                    result = command('start', '--attach', name, timeout=300, max_output=16 * 1024 * 1024, check=False)
                     require(result.returncode == 0, 'Isolated compiler failed: ' + result.stderr[-6000:])
                     marker = 'INVEOS_WHISPER_BUILD='
                     require(result.stdout.startswith(marker) and result.stdout.count(marker) == 1, 'Unexpected build output framing')
@@ -156,6 +157,7 @@ def build(source, cache, output):
         notices['ggml-YaRN-MIT'] = yarn + b'\n\n' + sources['LICENSE']
         runtime = copy_image(lock['baseImage'], {'inveos-whisper': (compiled[0], True)} | {'notices/' + n: (b, False) for n, b in notices.items()})
         runtime_probe = run_probe(runtime, runtime=True)
+        (output / 'runtime-probe.json').write_text(json.dumps(runtime_probe, indent=2) + '\n')
         receipt = {'format': 'inveos.whisper_research_build.v1', 'sourceRevision': PIN, 'inputLockSha256': sha(LOCK.read_bytes()), 'inputs': inputs, 'baseImage': lock['baseImage'], 'baseConfig': lock['baseConfig'], 'builderImageId': image, 'runtimeImageId': runtime, 'binarySha256': sha(compiled[0]), 'binaryBytes': len(compiled[0]), 'harness': {n: sha(b) for n, b in harness.items()}, 'sourceBundleSha256': bundle_digest, 'repeatedBuildsIdentical': True, 'builds': evidence, 'runtimeNotices': {n: sha(b) for n, b in notices.items()}, 'runtimeInventory': runtime_inventory(runtime), 'builderIsolation': probe, 'runtimeIsolation': runtime_probe, 'limitation': 'Research-only CPU build. No production/model/data/licence/security approval. Complete base-image source closure and individual bundled obligations remain open.'}
         (output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
         return {k: receipt[k] for k in ('runtimeImageId', 'binarySha256', 'binaryBytes', 'repeatedBuildsIdentical')}

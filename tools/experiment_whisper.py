@@ -10,10 +10,10 @@ import sys
 import tempfile
 import time
 import uuid
-from .bounded_process import ProcessLimitExceeded
+from .bounded_process import ProcessLimitExceeded, run_bounded
 from .probe_worker_isolation import command, container_args, check_configuration
 from .speech_fixture import pcm_wave
-from .whisper_research_inputs import ROOT, LOCK, require, sha
+from .whisper_research_inputs import ROOT, LOCK, require, sha, safe_path
 
 
 def words(text):
@@ -93,9 +93,9 @@ def execute(image, model, wave_bytes, *, timeout=180, expect_timeout=False):
             command(*container_args(name, image, root, info['Config'].get('Volumes') or {}, runtime=True), 'exec /opt/inveos/inveos-whisper /original/model.bin /original/audio.wav')
             check_configuration(json.loads(command('inspect', name).stdout)[0], info['Config'].get('Volumes') or {}, runtime=True)
             try:
-                outcome = command('start', '--attach', name, timeout=timeout, max_output=256 * 1024, check=False)
+                outcome = run_bounded(['docker', 'start', '--attach', name], timeout=timeout, max_output=256 * 1024)
                 require(not expect_timeout, 'Forced short deadline unexpectedly completed')
-                return {'returnCode': outcome.returncode, 'stdout': outcome.stdout, 'stderr': outcome.stderr, 'seconds': time.monotonic() - start}
+                return {'returnCode': outcome.returncode, 'stdout': outcome.stdout.decode('utf-8'), 'stderr': outcome.stderr.decode('utf-8'), 'stdoutSha256': sha(outcome.stdout), 'stderrSha256': sha(outcome.stderr), 'seconds': time.monotonic() - start}
             except ProcessLimitExceeded:
                 require(expect_timeout, 'Inference exceeded its time/output bound')
                 return {'deadlineEnforced': True, 'seconds': time.monotonic() - start}
@@ -110,6 +110,7 @@ def experiment(cache, built, output):
     build = json.loads((built / 'build-receipt.json').read_text())
     require(build['inputLockSha256'] == sha(LOCK.read_bytes()) and build['binarySha256'] == sha((built / 'inveos-whisper').read_bytes()), 'Build provenance changed')
     model = cache / 'ggml-tiny.en.bin'
+    safe_path(model)
     expected = next(a for a in lock['artifacts'] if a['name'] == model.name)
     require(model.stat().st_size == expected['bytes'] and sha(model.read_bytes()) == expected['sha256'], 'Model differs from qualified input')
     image = build['runtimeImageId']
@@ -124,7 +125,7 @@ def experiment(cache, built, output):
             value, times_valid = validate_output(run['stdout'], (len(data) - 44) // 2)
             text = ' '.join(s['text'] for s in value['segments'])
             repetitions.append(value)
-            receipt = {'case': name, 'attempt': attempt + 1, 'originalSha256': sha(data), 'originalBytes': len(data), 'modelSha256': expected['sha256'], 'runtimeImageId': image, 'referenceText': reference, 'recognisedText': text, 'reportedTimestampRangesValid': times_valid, 'output': value, 'seconds': run['seconds'], 'stderrSha256': sha(run['stderr'].encode()), 'accuracy': errors(reference, text)}
+            receipt = {'case': name, 'attempt': attempt + 1, 'originalSha256': sha(data), 'originalBytes': len(data), 'modelSha256': expected['sha256'], 'runtimeImageId': image, 'referenceText': reference, 'recognisedText': text, 'reportedTimestampRangesValid': times_valid, 'output': value, 'seconds': run['seconds'], 'stdoutSha256': run['stdoutSha256'], 'stderrSha256': run['stderrSha256'], 'accuracy': errors(reference, text)}
             (output / (name + '-' + str(attempt + 1) + '.json')).write_text(json.dumps(receipt, indent=2) + '\n')
             runs.append(receipt)
         require(repetitions[0] == repetitions[1], 'Repeated greedy outputs differ for ' + name)
