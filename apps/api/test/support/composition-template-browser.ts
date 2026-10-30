@@ -8,7 +8,7 @@ import {forwardBrowserApi} from './browser-proxy.js';
 import {workflowFixture,type Session} from './workflow-fixture.js';
 
 /** Real built app, HTTP API and disposable PostgreSQL. No mocked routes or browser fallback. */
-export async function compositionTemplateBrowser(){
+export async function compositionTemplateBrowser(artifactFolder='composition-templates'){
   // Deliberately fail before fixture creation when the host cannot run sandboxed Chrome.
   const browser=await launchBrowser();
   let fixture:Awaited<ReturnType<typeof workflowFixture>>|undefined,apiAddress='';
@@ -27,7 +27,7 @@ export async function compositionTemplateBrowser(){
     const origin='http://127.0.0.1:'+(server.address() as {port:number}).port;
     const f=await workflowFixture(origin);fixture=f;apiAddress=await f.app.listen({host:'127.0.0.1',port:0});
     await browser.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
-    const artifacts=resolve('output/evals/composition-templates');await mkdir(artifacts,{recursive:true});
+    const artifacts=resolve('output/evals',artifactFolder);await mkdir(artifacts,{recursive:true});
     await browser.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:join(artifacts,'downloads')});
     async function navigate(session:Session,view:'Reports'|'Tasks'){
       // A new document prevents a prior user's state from satisfying the next role's assertions.

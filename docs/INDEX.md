@@ -290,3 +290,7 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 - [149 — Independent Field/platform boundary review](149_INDEPENDENT_FIELD_PLATFORM_REVIEW.md)
 - [150 — Independent agency/portal integrity review](150_AGENCY_PORTAL_REVIEW.md)
 - [151 — Independent Field vault UI review](151_FIELD_VAULT_UI_REVIEW.md)
+
+- [152 — Composition and reusable-template browser acceptance](152_COMPOSITION_TEMPLATE_BROWSER_ACCEPTANCE.md)
+- [153 — Research workbench browser acceptance](153_RESEARCH_WORKBENCH_BROWSER.md)
+- [156 — Field operations browser acceptance](156_FIELD_OPERATIONS_BROWSER.md)

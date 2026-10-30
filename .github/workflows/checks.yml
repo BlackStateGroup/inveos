@@ -80,9 +80,6 @@ jobs:
         env:
           INVEOS_ACCEPTANCE_ARTIFACTS: ${{ github.workspace }}/output/evals/source-family
         run: timeout 600s npm test --workspace @inveos/api
-      - name: Exercise actual recipient evidence upload and privacy in the browser
-        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
-        run: timeout 180s node --import tsx --test apps/api/test/workflow-browser.integration.ts
       - name: Exercise development effect replay in the actual browser
         if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: |
@@ -398,14 +395,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Retain recipient evidence browser renders
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: recipient-evidence-browser
-          path: output/evals/workflow-evidence-*.png
-          if-no-files-found: ignore
-          retention-days: 14
       - name: Retain fictional source-family rendered copies and verifier receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -422,3 +411,69 @@ jobs:
           path: output/evals/invoice-workflow-*.png
           if-no-files-found: ignore
           retention-days: 14
+
+  connected-workflows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.11'
+      - name: Install locked dependencies and build the actual application
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build --workspace @inveos/web
+      - name: Create restricted application role in disposable test database
+        run: |
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
+      - name: Exercise connected workflows with real PostgreSQL and sandboxed Chrome
+        # Explicit journeys fail when the browser/database is unavailable; none skip.
+        # Serial execution bounds memory; a separate runner keeps the growing API
+        # suite's existing deadline independent of these longer UI journeys.
+        run: >-
+          timeout 720s node --import tsx --test --test-concurrency=1
+          apps/api/test/workflow-browser.integration.ts
+          apps/api/test/composition-template-browser.integration.ts
+          apps/api/test/research-workbench.integration.ts
+          apps/api/test/field-operations-browser.integration.ts
+      - name: Retain fictional connected workflow renders and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: connected-workflow-browser
+          path: |
+            output/evals/workflow-evidence-*.png
+            output/evals/composition-templates/
+            output/evals/research-workbench/
+            output/evals/field-operations/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Check tracked sources remain unchanged
+        run: git diff --exit-code
