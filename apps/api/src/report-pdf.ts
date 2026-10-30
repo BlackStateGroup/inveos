@@ -6,7 +6,7 @@
  * separately reviewed embedded-font artifact.
  */
 import {createHash} from 'node:crypto';
-import type {ReportDraft} from '@inveos/contracts';
+import {researchProvenanceRows,type ReportDraft} from '@inveos/contracts';
 
 const sha256=(value:Buffer|string)=>createHash('sha256').update(value).digest('hex');
 const digestPattern=/^[a-f0-9]{64}$/;
@@ -55,10 +55,17 @@ function wrap(label:string,value:unknown,width=88){
 
 export function reportLines(report:ReportDraft,redacted:Set<string>,reason:string,format=wrap){
   const lines:string[]=['INVEOS INTERNAL REPORT','',...format('Case',`${report.case.ref} — ${report.case.title}`),...format('Client',report.case.client),...format('Jurisdiction',report.case.jurisdiction),...format('Scope',report.case.scope),''];
+  // Called only inside the visible finding branch. Whole-finding redaction
+  // therefore excludes receipt metadata from both visible and embedded models.
+  const researchLines=(evidenceId:string)=>{
+    const proof=report.sourceUse?.find(p=>p.record.original.id===evidenceId&&p.research)?.research;
+    return proof?[...researchProvenanceRows(proof).flatMap(([label,value])=>format(label,value)),'']:[];
+  };
   let number=0;
   for(const finding of report.findings){
     number++;if(redacted.has(finding.id)){lines.push(`FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
     lines.push(`FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Source',finding.source.filename),...format('Source SHA-256',finding.source.sha256),...format('Citation',`${finding.source.startByte}-${finding.source.endByte}: ${finding.source.quote}`),...format('Authority',`${finding.source.policy.authorityId} v${finding.source.policy.authorityVersion}; ${finding.source.policy.lawfulBasis}`),'');
+    lines.push(...researchLines(finding.source.id));
     const collection=report.sourceUse?.find(p=>p.record.original.id===finding.source.id&&p.collection)?.collection;
     if(collection){const c=collection.payload,r=c.receipt;lines.push(...format('Collection',`${r.captureMode==='fictional_fixture'?'Fictional fixture; provider not contacted':'Provider response'}; ${r.url}`),...format('Collection receipt',`${r.jobId}; SHA-256 ${c.receiptSha256}`),...format('Collection permission',`${r.authorisationId}; case authority v${r.authorityVersion}; source policy v${r.policyVersion}`),...format('Collection time',`response ${r.sourceTime} (not record creation); received ${r.receivedAt}`),'');}
 
@@ -66,15 +73,18 @@ export function reportLines(report:ReportDraft,redacted:Set<string>,reason:strin
   for(const finding of report.documentFindings??[]){
     number++;if(redacted.has(finding.id)){lines.push(`DOCUMENT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
     lines.push(`DOCUMENT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${finding.source.filename}; SHA-256 ${finding.source.sha256}`),...format('Page/region',`page ${finding.reference.page}; ${finding.reference.bbox.origin} [${finding.reference.bbox.l}, ${finding.reference.bbox.t}, ${finding.reference.bbox.r}, ${finding.reference.bbox.b}]`),...format('Reviewed passage',finding.reference.quote),...format('Citation SHA-256',finding.reference.citationDigest),...format('Derivative SHA-256',finding.extraction.derivativeDigest),...format('Finding limitation',finding.limitations),'');
+    lines.push(...researchLines(finding.source.id));
   }
   for(const finding of report.transcriptFindings??[]){
     number++;if(redacted.has(finding.id)){lines.push(`TRANSCRIPT FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
     const c=finding.claim;lines.push(`TRANSCRIPT FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...format('Transcript version',`${c.transcript.id} ${c.transcript.sourcePointer} v${c.transcript.version}`),...format('Transcript citation',`${c.reference.startByte}-${c.reference.endByte}: ${c.reference.quote}`),...format('Declared time',`${c.reference.startMs}-${c.reference.endMs} ms; audio alignment unverified`),...format('Declared speaker',`${c.reference.speakerLabel}; ${c.reference.speakerUncertain?'uncertain':'attributed in supplied record'}`),...format('Finding limitation',c.limitations),'');
+    lines.push(...researchLines(c.source.id));
   }
   for(const finding of report.speechFindings??[]){
     number++;if(redacted.has(finding.id)){lines.push(`SPEECH FINDING ${number}: [REDACTED]`,...format('Redaction reason',reason),'');continue;}
     const c=finding.claim,r=c.reference,p=c.context.payload;
     lines.push(`SPEECH FINDING ${number}`,...format('Finding',finding.text),...format('Reviewed by',`${finding.reviewer} at ${finding.reviewedAt}`),...format('Original audio',`${c.source.filename}; SHA-256 ${c.source.sha256}`),...format('Recognition',`${r.jobId}; profile ${p.profileDigest}; raw ${p.rawDigest}`),...format('Speech account',`segment ${r.segmentIndex+1}, correction v${r.version}; correspondence decision ${r.correspondenceDigest}`),...format('Account citation',`${r.startByte}-${r.endByte} UTF-8: ${r.quote}`),...format('Reviewed range',`${r.account.startMs}-${r.account.endMs} ms; declared speaker ${r.account.speakerLabel}; ${r.account.speakerUncertain?'uncertain attribution':'human attribution, identity unverified'}`),...format('Finding limitation',c.limitations),'');
+    lines.push(...researchLines(c.source.id));
   }
   const context=report.investigation;
   if(context){lines.push('WORKING CONTEXT — NOT FINDINGS');for(const [heading,items] of [['Objectives',context.objectives],['Questions',context.questions],['Hypotheses',context.hypotheses],['Blocked tasks',context.blockers]] as const){lines.push(heading);for(const item of items)lines.push(...format('-',JSON.stringify(item)));}lines.push('');}

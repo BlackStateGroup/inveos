@@ -26,7 +26,7 @@
  */
 import {createHash} from 'node:crypto';
 export type CollectionEffect='local_only'|'third_party_lookup'|'contacts_subject'|'unverified';
-export type ConnectorDefinition={id:string;title:string;effect:CollectionEffect;recipient:string;note:string;operation:'company_profile'|'rdap_domain'|'supplied_webpage';maxResponseBytes:number;deadlineMs:number;serviceWindowSeconds:number;serviceWindowRequests:number};
+export type ConnectorDefinition={id:string;title:string;effect:CollectionEffect;recipient:string;note:string;operation:'company_profile'|'rdap_domain'|'supplied_webpage'|'lei_record';maxResponseBytes:number;deadlineMs:number;serviceWindowSeconds:number;serviceWindowRequests:number};
 export const companyProfileConnector:Readonly<ConnectorDefinition>=Object.freeze({
  id:'companies_house_profile_v1',title:'Companies House company profile',effect:'third_party_lookup',recipient:'api.company-information.service.gov.uk',
  note:'The company number is sent to Companies House. The request does not contact the company, but the provider can log it. Public availability does not establish permitted use.',
@@ -52,5 +52,10 @@ export const suppliedWebpageConnector:Readonly<ConnectorDefinition>=Object.freez
  note:'Preserves supplied UTF-8 HTML or text with a declared URL and timestamps. HTML is displayed as escaped source text only; scripts, links and subresources are never executed or fetched.',
  operation:'supplied_webpage',maxResponseBytes:262144,deadlineMs:10000,serviceWindowSeconds:300,serviceWindowRequests:30,
 });
-export const connectorDefinitions=[companyProfileConnector,rdapDomainConnector,suppliedWebpageConnector] as const;
+export const gleifLeiConnector:Readonly<ConnectorDefinition>=Object.freeze({
+ id:'gleif_lei_v1',title:'Legal entity identifier - GLEIF candidate',effect:'third_party_lookup',recipient:'api.gleif.org',
+ note:'One exact LEI record, supplied or fictional loopback transport. No live provider activation, name search, pagination, ownership, person or linked-resource traversal. GLEIF does not endorse this application or its fictional data.',
+ operation:'lei_record',maxResponseBytes:262144,deadlineMs:10000,serviceWindowSeconds:300,serviceWindowRequests:30,
+});
+export const connectorDefinitions=[companyProfileConnector,rdapDomainConnector,suppliedWebpageConnector,gleifLeiConnector] as const;
 export function profileDigestFor(id:string):string|null{const p=findConnector(id);return p?createHash('sha256').update(JSON.stringify(p)).digest('hex'):null;}

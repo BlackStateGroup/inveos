@@ -1,0 +1,54 @@
+# 130 — Research provenance copies and bounded legal-entity research
+
+Second implementation batch on `feat/osint-expansion-124`, following `171f0ac3b4d4d520be151502fa28dbb83caa54a1`. Root owns integration, additive Field capture/recovery renderer changes (docs134), combined acceptance, PRs and merging. No central handoff/index/test-inventory edits, deployment, live collection, new dependency or new agent. Migration **090** only; 091–093 unused and 089 belongs to root.
+
+## Report integration completed in code
+
+`researchProvenanceRows` in the shared contracts produces explicit plain-text capture provenance: adapter/mode, declared URL, exact request/version/scope/author/purpose/minimisation, request/receipt/provenance/original digests, media/size/publisher, source time and its basis separately from retrieval/server receipt, historical authority and policy, inspected terms digest/reference, independent policy review, expiry/retention/quota, observed fictional response metadata and bounded unreviewed pointer fields. Historical capture permission is explicitly separate from source-use, finding review and release approval.
+
+`report-pdf.ts:reportLines` attaches those rows inside each visible text/document/transcript/speech finding branch. Whole-finding redaction exits that branch before provenance is read. `report-docx.ts` already consumes those same lines through its UTF-8 paragraph formatter, so both visible DOCX text and embedded copy model receive the same rows. Neither exporter embeds the raw research proof/original or creates active provider links. Existing PDF/DOCX profiles, copy-model schemas and standalone copy-verifier algorithms remain unchanged. The web report preview displays the same rows for frozen text findings; document/transcript/speech preview components are unchanged.
+
+This closes the dedicated PDF/DOCX rendering gap recorded in docs124 **by implementation**, not by a rendered acceptance claim. `verify_report_pdf.py` and `verify_report_docx.py` independently reconstruct visible content against the embedded copy model and can consume additive lines without a new format. They establish copy consistency, not the truth or authenticity of the provenance text. Frozen JSON reports still use `verify_report.py` plus `verify_research_context.py` to check the full research receipt against original bytes. Copy verification and whole-finding redaction execution are unrun here; root must exercise both formats, all finding families, shared-source findings and edited/rehashed mutations. Existing PDF character/size limits remain; DOCX is the existing Unicode copy route.
+
+## Legal-entity operations implemented
+
+- New immutable `gleif_lei_v1` profile and exact endpoint scope `https://api.gleif.org/api/v1/lei-records/`, with `none:controlled-input` credential scope. Profile digest: `421eae6fcad6722302efd1fb6c36bd2278f7478e83ec014035f895493eae178c`.
+- One exact 20-character uppercase LEI with two final check digits is validated by first-party MOD97 logic. The fixture `000000FICTIONAL00040` was generated locally and never looked up. Check digits do not establish entity existence or registration.
+- Strict bounded UTF-8 JSON/JSON:API capture with duplicate-key/nesting checks. A single `lei-records` object must match the authorised LEI in both data ID and attributes. Allowed unreviewed JSON-pointer fields: type/ID/LEI, entity legal name and optional language, jurisdiction/category/status/registeredAs and registration status/initialRegistrationDate/lastUpdateDate/nextRenewalDate. Unknown fields remain in original bytes but are not expanded. No name search, pagination, links, addresses, ownership/person traversal or mapped-identifier requests.
+- Source selector, policy proposal and independent review/withdrawal/history, saved immutable request versions, explicit queue/re-run, supplied-file capture, fixture-job queue, inspect/history/failure/cancel/recovery controls and context download are connected through the existing workbench/API. No automatic run or findings. Successful runs attach an immutable original and unreviewed source metadata; separate source metadata and source-use review still block analysis/report eligibility.
+- `gleif-transport.ts` implements a fixed provider transport contract and the actual loopback HTTP exchange. `gleifProviderTransport()` is disabled **before DNS/socket operations** by `liveGleifQualified=false`, with no UI/environment activation switch. The future provider path uses HTTPS, public-address DNS pinning, normal TLS verification, no ambient credentials, exact host/path, no redirects/compression, bounded lengths/truncation and cancellation/deadlines. Worker attachment also rejects non-fictional provider responses. This is implemented transport code, not provider runtime qualification.
+- `gleifLoopbackTransport(port)` only accepts the fixed official logical scope and locally invented LEI; its actual destination is `http://127.0.0.1:<port>/api/v1/lei-records/000000FICTIONAL00040`. No configurable host/path. `run-gleif-fixture.ts` starts that server itself and consumes one queued `lei_transport` job. It uses the same fenced capture path as supplied/RDAP work, preserves one observed loopback request, HTTP Date/ETag and distinct source/retrieval/receipt times, and labels output fictional with providerContacted false. Recording the official logical URL does **not** claim a request to GLEIF.
+- Ten-second worker/network cap, 256 KiB original/response cap, 30-second lease, durable maximum 30 attempts/300 seconds further bounded by policy, current authority/reviewer/requester checks at start/during transport/attachment, explicit cancellation/reconciliation and persisted 429 backoff. A policy decision does not qualify or activate a provider. Existing tenant/case boundaries, immutable histories, source corrections and report lineage are preserved.
+- Independent `verify_research_context.py` adds the new profile, exact endpoint/LEI validation and pointer whitelist. Company `collection` v1, RDAP/webpage research v1 receipts, old profile hashes and old verifier branches retain their formats. No verifier claims source truth, actor authenticity, current authority or legal approval.
+
+New code: `gleif-adapter.ts`, `gleif-transport.ts`, `run-gleif-fixture.ts`, migration090 and an authored fictional JSON fixture. Shared seams: connector registry/policy schema, contracts, existing research API/worker/provenance, OsintWorkbench/ResearchWorkbench, additive report lines/EvidenceViews and independent research verifier. Root should preserve both this report addition and its later Field/report-composition changes.
+
+## Documentation/licence inspection
+
+Actual primary-document inspection supports this limited candidate implementation. `research/osint/GLEIF_DECISION.md` records official API/JSON:API/limit observations, data/access-term distinctions, CC0 limitations and runtime analysis. `gleif-inspected-sources.json` records six fetched document byte hashes and timestamps; full copies remain ignored in `.research-cache/gleif/`. CC0 legal text and GLEIF descriptive notice are retained under `third_party/osint/`. The ISO format page's attempted direct archive returned 403; no archived copy is claimed. No upstream code/SDK/new runtime dependency or real API record was acquired, installed or executed. Existing pinned OpenOSINT/SpiderFoot MIT notices remain intact.
+
+Observed published terms and API shape are not legal advice, provider approval, current service entitlement, coverage assurance or transport qualification. Live provider activation remains unavailable. No claim of complete OSINT/product/native/production readiness.
+
+## Root exercise after integration — not executed here
+
+Apply migrations through090 on isolated fresh and populated development schemas. In Research choose Legal entity identifier, propose a fictional development source policy for the fixed endpoint and record inspected terms/reference/hash. Have a different reviewer decide it, then an assigned reviewer save a request for `000000FICTIONAL00040` within current authority/policy expiry. Select the exact request version and queue **fictional LEI transport**. With restricted development database and original-store environment configured:
+
+```bash
+INVEOS_DEV_LAB=1 node --env-file=.env --import tsx apps/api/src/run-gleif-fixture.ts TENANT_UUID CASE_UUID RUN_UUID
+```
+
+`INVEOS_COLLECTION_SCHEMA` selects an isolated schema. The CLI refuses production mode. Refresh/inspect the run, original, receipt and history. Alternatively queue supplied capture and upload `tests/fixtures/gleif-lei-fictional.json` with truthful fictional declarations and source/retrieval times; no network request is claimed. Download its context and run:
+
+```bash
+python3 tools/verify_research_context.py research-context.json --expected-sha256 TRUSTED_FINGERPRINT
+```
+
+Continue existing independent metadata/source-use/finding review, create a frozen report and produce full/redacted PDF and DOCX copies; use existing standalone copy verifiers and visual inspection. No test or CLI above has been run by this build agent.
+
+## Checks and remaining work
+
+Build-phase compiler/static receipt is recorded below before commit. New broad tests were neither written nor executed for this batch at root's request. Existing first-batch research tests remain unrun here.
+
+Deferred to root: fresh/populated migration execution and migration-name/order reconciliation; GLEIF supplied/API/CLI loopback exercises; company/RDAP/webpage regression; malformed/duplicate/deep/oversized/wrong-identity JSON; redirects, encodings, chunking/truncation, timeout/cancellation, 429/backoff/restart, expiry/revocation and quota races; transactional object cleanup and audit; semantic rehash/copy corruption; original/source/frozen-report consistency; PDF/DOCX rendering/redaction/copy verification across finding families and actual office viewer inspection; browser permissions/reload/keyboard/layout and controlled HTML inertness; combined suites/CI/security acceptance. Provider TLS/DNS/coverage/auth/terms/legal/operational qualification remains a separate future gate, with no live runtime execution in this batch.
+
+Final build-phase receipt, 30 October 2026: `npm run typecheck` passed for web/contracts/API (`/tmp/osint130-types-final.log`); targeted ESLint passed for all changed TypeScript/TSX files (`/tmp/osint130-lint-final.log`); `python3 -m py_compile tools/verify_research_context.py` and `git diff --check` passed. Earlier intermediate compiler errors were corrected before these final runs. These are compiler/static checks only. No PostgreSQL migration, application test, fixture worker, copy verifier, PDF/DOCX render, browser, office viewer, provider runtime or combined suite was executed. No passing acceptance result is inferred from compilation.

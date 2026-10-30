@@ -1,0 +1,7 @@
+# GLEIF data licence reference
+
+GLEIF is the Global Legal Entity Identifier Foundation. The candidate source URL is `https://api.gleif.org/api/v1/lei-records/`. INVEOS is not affiliated with or endorsed by GLEIF. No GLEIF logo, provider data, SDK or provider implementation is included in this slice. The supplied application fixture is authored fictional data with a locally invented identifier; it is not a GLEIF response and was never looked up.
+
+On 30 October 2026 we inspected [GLEIF's data terms](https://www.gleif.org/en/meta/lei-data-terms-of-use), [open-data notice](https://www.gleif.org/en/about/open-data) and [CC0 1.0 legal code](https://creativecommons.org/publicdomain/zero/1.0/legalcode.en). The data terms identify CC0 for LEI data. A complete legal-body text copy is retained in `CC0-1.0.txt`; it is extracted from the official legal-code page with whitespace normalized and list markers retained. Its legal wording is unchanged. Source document and derived copy hashes are in `research/osint/gleif-inspected-sources.json`.
+
+This reference is not a blanket licence for GLEIF's website/documentation/code or marks, nor an approval of API access, investigative use, retention, accuracy or client release. Provider access terms and third-party rights remain separate. See `research/osint/GLEIF_DECISION.md` for actual inspection and runtime limitations. Existing OpenOSINT and SpiderFoot licence notices remain applicable to their previously recorded adaptations.
