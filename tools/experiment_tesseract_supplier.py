@@ -54,7 +54,11 @@ def experiment(case_acceptance=False,include_corpus=False):
         require(('FROM '+OCR_BASE+'\n') in dockerfile.read_text(),'OCR base image drift')
         shutil.copyfile(dockerfile,build/'Dockerfile');(build/'packages').mkdir()
         for archive in archives['paths']:shutil.copyfile(archive,build/'packages'/archive.name)
-        command('build','--pull=false','--network=none','--tag',tag,str(build),timeout=240)
+        built=command('build','--pull=false','--network=none','--tag',tag,str(build),timeout=240,check=False)
+        # Public archive-only context: preserve bounded diagnostics without
+        # exposing case data or enabling a networked retry.
+        (cache/'ocr-build.log').write_text(built.stdout+'\n'+built.stderr)
+        require(built.returncode==0,'Offline OCR image build failed: '+built.stderr[-6000:])
     try:
         qualification=run_probe(tag,runtime=True);image_id=qualification['imageId']
         with tempfile.TemporaryDirectory(dir=cache,prefix='ocr-supplier-') as directory:

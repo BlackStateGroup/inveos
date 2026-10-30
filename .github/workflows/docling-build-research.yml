@@ -176,6 +176,7 @@ jobs:
           name: ocr-adversity-results
           path: |
             .research-cache/ocr-research-output.json
+            .research-cache/ocr-build.log
             .research-cache/ocr-adversity-measurement.json
             .research-cache/ocr-expanded-adversity-measurement.json
             output/evals/ocr-expanded-comparison.png
