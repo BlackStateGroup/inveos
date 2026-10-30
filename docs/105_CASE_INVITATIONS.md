@@ -1,6 +1,6 @@
 # Existing-account case invitations
 
-Connected application batch. Fictional fixtures only. Final hosted/browser acceptance and merge remain pending.
+Merged PR99. Fictional fixtures only. Earlier pending checkpoints below are retained history; the final receipt supersedes their status.
 
 ## Behaviour and boundaries
 
@@ -31,3 +31,9 @@ The full browser journey is written: owner offer and lost-response recovery, can
 Source/privacy review before draft publication: existing-role-only offers, named-recipient scope disclosure, current owner/authority/lifecycle checks, post-lock role refresh, same-transaction access/audit changes, immutable decisions, exact retries and removed-member replay, bounded listing and access-denial clearing inspected. Actual browser verification and rendered review remain required.
 
 Initial invitation head `a216604895b829399a43b9f4be1caed60a98ffd1`: Checks **40998251325**, job **123876338539**, failed with exit 124 at the whole-suite 240-second limit, after 378 reported passing checks. The new actual invitation browser journey passed (4.7 seconds); both actual renders were inspected. This is not a complete passing suite. The expanded 393-test suite now has a bounded 360-second allowance; the owner render also waits for its response refresh to settle. Final complete rerun remains pending.
+
+## Final reviewed merge
+
+Reviewed head `8861dfede9dc6caf7f5f38e362ff57230c5c2b4e` passed **Checks 40998882502**, job **123878363108**: **393 Node/145 Python, zero failures/skips, 37 actual browser journeys**, lint/types/build and worker-host probes. Both final owner/recipient renders were inspected and retained in docs/evals/assets/case-invitations-owner.png and case-invitations-recipient.png. No outstanding PR feedback remained. Source/privacy review covered scoped immutable records, named-recipient disclosure, fresh post-lock owner/role/authority checks, exact retries/removed-member replay, atomic audit rollback, bounded queries and access clearing.
+
+**Research 40998470862**, job **123877052198**, passed actual pinned source/runtime/archive qualification, native/OCR suppliers/corpora, raster and five worker failure/isolation checks at `a216604895b829399a43b9f4be1caed60a98ffd1`. Application/worker code is unchanged in final `8861dfe`; its changes only bound whole-suite time, settle the owner screenshot and record the failed earlier run. PR99 merged as `3635eb5b49bf3c64dd52b96c4b9daac8e368489c`. Resulting-main **40999512376**, job **123880372614**, passed **393 Node/145 Python, zero failures/skips**, including all 37 browser journeys. This is not real identity-provider/new-account enrolment or production readiness.

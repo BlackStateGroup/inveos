@@ -132,6 +132,7 @@ export type ReportDraft = {
   status: 'draft_not_released';
   documentFindings?: DocumentReportFinding[];
   transcriptFindings?: TranscriptReportFinding[];
+  sourceUse?: SourceUseProof[];
   case: Pick<Case, 'id' | 'ref' | 'title' | 'client' | 'scope' | 'jurisdiction'>;
   findings: Array<{
     id: string;
@@ -238,3 +239,7 @@ export type ReviewedSourceFinding = ReportDraft['findings'][number] | DocumentRe
 
 export type CaseInvitation={id:string;caseId:string;caseRef:string;caseTitle:string;recipientId:string;recipientName:string;ownerId:string;ownerName:string;reason:string;authorityVersion:number;approvedScope:string;approvedPurpose:string;offeredAt:string;expiresAt:string;response:{id:string;decision:'accept'|'decline';reason:string;actorId:string;recordedAt:string;accessVersion:number|null}|null;cancellation:{id:string;reason:string;actorId:string;recordedAt:string}|null;hasCurrentMembership:boolean;canAccept:boolean;state:'offered'|'accepted'|'declined'|'cancelled'|'expired'|'scope_changed'|'already_assigned'};
 export type CaseInvitationPage={items:CaseInvitation[];next:string|null};
+
+export type SourceUseDecision={id:string;caseId:string;sourceId:string;evidenceId:string;sequence:number;sourceVersion:number;sourceDigest:string;authorityVersion:number;permission:'blocked'|'analysis'|'analysis_and_release';reason:string;actorId:string;actorName:string;recordedAt:string;expiresAt:string|null;digest:string};
+export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview};
+export type SourceUseState={items:SourceUseDecision[];analysisAllowed:boolean;releaseAllowed:boolean;canDecide:boolean;sourceVersion:number;sourceDigest:string};

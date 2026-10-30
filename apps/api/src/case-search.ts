@@ -1,3 +1,4 @@
+import {sourceUseProofs} from './source-use.js';
 import {createHash} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
@@ -47,6 +48,7 @@ export function registerCaseSearch(app:FastifyInstance,s:Services){
    page AS (SELECT kind,id,title,substring(body FROM greatest(1,strpos(lower(body),lower($3))-60) FOR 260) excerpt,status,evidence_id AS "evidenceId",page FROM matched WHERE ($5='all' OR kind=$5) AND ($6::text IS NULL OR (kind,id)>($6,$7::uuid)) ORDER BY kind,id LIMIT 51)
    SELECT (SELECT coalesce(jsonb_agg(facets ORDER BY kind),'[]'::jsonb) FROM facets) facets,(SELECT coalesce(jsonb_agg(p ORDER BY p.kind,p.id),'[]'::jsonb) FROM page p) items`,[actor.tenantId,caseId,input.query.trim(),input.status,input.kind,input.after?.kind??null,input.after?.id??null]);
   const {facets,items}=found.rows[0],more=items.length>50;if(more)items.pop();const last=items.at(-1);
+  for(const id of new Set<string>(items.filter((item:{evidenceId:string|null;kind:string})=>item.evidenceId&&!['original','source_context'].includes(item.kind)).map((item:{evidenceId:string})=>item.evidenceId)))await sourceUseProofs(c,actor.tenantId,caseId,id,'analysis');
   return {items,facets,next:more?{kind:last.kind,id:last.id}:null,interpretation:'stored_records_reverify_sources'} satisfies CaseSearchResult;
  }));
  app.get(views,{preHandler:internal,schema:{params}},async r=>inTransaction(s.pool,async c=>{

@@ -1,3 +1,4 @@
+import {sourceUseProofs} from './source-use.js';
 import {createHash,randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient,QueryResultRow} from 'pg';
@@ -23,6 +24,7 @@ export function registerTranscriptFindings(app:FastifyInstance,s:Services){
  const tx=<T>(run:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");return run(c);});
  async function source(c:PoolClient,a:Actor,caseId:string,input:Pick<TranscriptClaimInput,'transcriptId'|'segmentId'|'expectedVersion'>,current:boolean){
   const {value,original}=await s.load(c,a,caseId,input.transcriptId),segment=value.segments.find(v=>v.id===input.segmentId);if(!segment)notFound();
+  await sourceUseProofs(c,a.tenantId,caseId,value.source.evidenceId,'analysis');
   if(input.expectedVersion>segment.currentVersion||(current&&input.expectedVersion!==segment.currentVersion))throw new ApiError(409,'The selected transcript segment changed. Compare its retained versions.');
   const rows=(await c.query('SELECT * FROM interview_transcript_corrections WHERE tenant_id=$1 AND case_id=$2 AND transcript_id=$3 AND segment_id=$4 AND version<=$5 ORDER BY version LIMIT 101',[a.tenantId,caseId,input.transcriptId,input.segmentId,input.expectedVersion])).rows;
   if(rows.length!==input.expectedVersion||rows.some((r,i)=>r.version!==i+1))throw new ApiError(409,'Transcript correction history is incomplete.');

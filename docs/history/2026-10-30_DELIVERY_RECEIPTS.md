@@ -124,3 +124,13 @@ PR **#97** merged as `6eb912abe86aba18cfe8063d35cc13ca82e781b3`. Reviewed head `
 #97 adds independent transcript interpretation review/withdrawal, frozen source/version/correction lineage, standalone report/exhibit verification and PDF/redaction with approved recipient delivery. It does not verify speech, audio alignment or source truth. Source/privacy review is recorded in PR97. Preserve failed **40992635268** at `6bbabe8`: 375/376 Node, zero skips, new browser account switch kept the same document. The fixture now explicitly reloads the document; the final run passes. Research at that earlier head passed independently.
 
 #96 remains merged and main-verified at `ca6dcf4`: 369 Node/136 Python, zero skips, 34 browsers. Encrypted browser Field, team workload and source-linked entity attributes include pinned MIT WatermelonDB/FollowTheMoney adaptations and distributed notices. No native-device or production approval claimed. Full preceding receipts, including #95/#96 failures, are in docs/history and docs/102.
+
+## Retained PR98 verification checkpoint
+
+## Latest merge and verification
+
+PR **#98** merged as `ad891d055dc0efebab2b2e5dfd32b481087f5bfc`. Reviewed head **`588c94ecaa41fb4c9827985fd1ecddaf8d261e06`** passed **Checks 40996258156**, job **123869976068**: **385 Node/145 Python, zero failures/skips, 36 actual browser journeys**. Source/privacy review and actual reasoning/graph renders inspected. **Research 40996257930**, job **123869975034**, passed actual source/runtime/archive qualification, native/OCR supplier paths/corpora, raster and five daemon/failure/isolation checks. **Resulting-main 40997304678**, job **123873299925**, passed **385 Node/145 Python, zero failures/skips**, including all 36 browser journeys.
+
+#98 connects reviewed transcript findings to reasoning/history, chronology, graph relationships/entity attributes, frozen reports/PDF/independent mixed-package verification and search. Current entity attributes are searchable; superseded aliases remain in history. Existing text/document hashes and legacy output are preserved. See docs/104 for exact earlier passing and failed checkpoints. Expanded `78c2b14` Checks 40995503955 failed 383/384 due to an older browser using a static heading before entities loaded; final head waits for the saved entity. The alias search defect was reproduced through the actual API before fixing it. Do not relabel these failures.
+
+#97 remains main-verified (376/143, 35 browsers); #96 remains main-verified (369/136, 34 browsers). Their exact evidence and failed earlier runs are in docs/history and docs/102–103. Browser Field remains browser-only. Pinned MIT WatermelonDB/FollowTheMoney adaptations retain provenance and distributed notices.
