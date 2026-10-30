@@ -1,0 +1,122 @@
+{
+  "format": "inveos.ocr_package_archive_receipt.v1",
+  "repository": "BlackStateGroup/inveos",
+  "commit": "4e236294ccf629129045921425baa270609ae05c",
+  "checks": {
+    "run": 40981869336,
+    "job": 123823593042,
+    "nodePassed": 343,
+    "pythonPassed": 134,
+    "browserJourneys": 30,
+    "failed": 0,
+    "skipped": 0
+  },
+  "research": {
+    "run": 40981869416,
+    "job": 123823593426,
+    "artifactId": 12945976073,
+    "artifactArchiveSha256": "ae8d1b55ed577e6b58e665382a396caa31f03bc81b1ec7021b127f575df85a3a",
+    "completeReportSha256": "3fa62378a678e20add9bf28f47b5c5cbfa497a5a805be60c5993ab5439d72eaa",
+    "buildLogSha256": "0388709fd1d866c8cf656e29898099d6524f50b4f2118910ce29ca18ed9f918b",
+    "imageId": "sha256:6b81cea79ca39f7771a5f2faeda3146a69387bc1231bf5eae9da125abdeb45b2",
+    "packageArchives": {
+      "lockSha256": "6d834f36b61e7adbb37961403b2b6de0bde2de3c844b7db6be145fa3e0e50197",
+      "archives": 161,
+      "bytes": 67896672
+    },
+    "qualified": {
+      "status": "host_probe_passed",
+      "imageId": "sha256:6b81cea79ca39f7771a5f2faeda3146a69387bc1231bf5eae9da125abdeb45b2",
+      "repoDigests": [],
+      "checks": [
+        "boundaries",
+        "timeout",
+        "stdout_limit",
+        "stderr_limit",
+        "memory",
+        "pids",
+        "cpu"
+      ],
+      "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+      "parserExecuted": false,
+      "imageVolumeOverrides": [],
+      "profile": "runtime-1g",
+      "resourceEvidence": {
+        "oomKilled": true,
+        "pids": 2,
+        "cpu": 1344863
+      },
+      "combinedCaptureLimitBytes": 16384,
+      "daemonLogging": false,
+      "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+    },
+    "inventoryMatchesExistingRuntimeLock": true,
+    "bothCorporaTsvAndMetricsEqualPriorReceipt": true,
+    "metricsReplayed": true,
+    "rasterIntegrationPassed": 1,
+    "daemonFailureIntegrationPassed": 5
+  },
+  "caseAcceptanceTap": "TAP version 13\n# Subtest: actual isolated supplier profile 1 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 1 - actual isolated supplier profile 1 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 34359.767791\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"profileVersion\":1,\"originalBytes\":40501,\"encryptedOriginals\":true,\"scanSha256\":\"575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"c4a7f5568120c8e1c5116c25f3c0fc8093e9b937bda00e6dc434dd801f3f3e19\",\"ocrDerivativeDigest\":\"538794091367a9011f7cc9472b0c1c07000834d3b443fda2bf054ffd0d19399e\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n# Subtest: actual isolated supplier profile 2 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 2 - actual isolated supplier profile 2 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 33351.864698\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"profileVersion\":2,\"originalBytes\":126518,\"encryptedOriginals\":true,\"scanSha256\":\"80e1e2797ce0f3eb3aee4950facafef257bb4bc0ea49ab9a12ae78bc4ea6f7bd\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"154120dacfa8cacbce0830de087c30a597924b17c599dfc11cbba36b2671eea7\",\"ocrDerivativeDigest\":\"330a4b18c866e78849765e00ae9da5ae2ff46293419d9cfc5d186f09670a62a1\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n1..2\n# tests 2\n# suites 0\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 68273.033168\n",
+  "approval": {
+    "professional": false,
+    "licence": false,
+    "production": false
+  },
+  "remaining": "Source archive/signed-index/build provenance, file-specific source/notice obligations, vulnerability assessment and independent approvals remain open.",
+  "finalVerification": {
+    "commit": "d8c49150fe477ce363b8174ae520f24fc609d919",
+    "merge": "eff69b0bdc7a92d258a9310b21b1e17dfbb9dd3e",
+    "checks": {
+      "run": 40983304386,
+      "job": 123828287725,
+      "node": 343,
+      "python": 136,
+      "failures": 0,
+      "skips": 0,
+      "browsers": 30
+    },
+    "research": {
+      "run": 40983304312,
+      "job": 123828287303,
+      "artifactId": 12946620214,
+      "artifactZipSha256": "8cc428c79d5c9010addd91843ccf5dce037d5d40832746218f4a64bdd27963c1",
+      "reportSha256": "48ef6f81257c3cf9c248ce3dd4f369e17705eac9f4e5e6ee5af46883b1146e31",
+      "buildLogSha256": "78cacf0a0d99070d4de22488877db00e3e9cfb91e6495ec866bbe14b49f2446d",
+      "imageId": "sha256:12cbcb4be83864209f424b2abaa8a7320669d79e3d1cf54b6bae88c08d6aaf8d",
+      "packageArchives": {
+        "lockSha256": "6d834f36b61e7adbb37961403b2b6de0bde2de3c844b7db6be145fa3e0e50197",
+        "archives": 161,
+        "bytes": 67896672
+      },
+      "qualification": {
+        "status": "host_probe_passed",
+        "imageId": "sha256:12cbcb4be83864209f424b2abaa8a7320669d79e3d1cf54b6bae88c08d6aaf8d",
+        "repoDigests": [],
+        "checks": [
+          "boundaries",
+          "timeout",
+          "stdout_limit",
+          "stderr_limit",
+          "memory",
+          "pids",
+          "cpu"
+        ],
+        "originalSha256": "1651f4fbefda7bbe2392733ed07f5ce88677462304db3609c6cd2b5a825c1cb3",
+        "parserExecuted": false,
+        "imageVolumeOverrides": [],
+        "profile": "runtime-1g",
+        "resourceEvidence": {
+          "oomKilled": true,
+          "pids": 2,
+          "cpu": 1260015
+        },
+        "combinedCaptureLimitBytes": 16384,
+        "daemonLogging": false,
+        "limits": "Observed RAM OOM kill, PID denial, CPU throttling, bounded stdout/stderr capture, scratch/output exhaustion and cleanup. Host qualification only; no parser or exploit resistance certification."
+      },
+      "caseAcceptanceTap": "TAP version 13\n# Subtest: actual isolated supplier profile 1 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 1 - actual isolated supplier profile 1 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 51035.724645\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"profileVersion\":1,\"originalBytes\":40501,\"encryptedOriginals\":true,\"scanSha256\":\"575f2137292bd596843d27a86f1893cbf847ad88f1a41b1a60ac55e6030b7393\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"97d812a00b624294c76f7cffcde3cd2e8b6b5db3f37552e25332cd6374ab8cc1\",\"ocrDerivativeDigest\":\"873b1e68cf67f4b0f5d44cdd5ece16880cc7ef0fea399a8f35c478950dcbd822\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n# Subtest: actual isolated supplier profile 2 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\nok 2 - actual isolated supplier profile 2 originals progress through OCR, independent review, frozen exhibits/PDF and approved restricted delivery\n  ---\n  duration_ms: 35259.834081\n  type: 'test'\n  ...\n# Actual isolated supplier acceptance: {\"profileVersion\":2,\"originalBytes\":126518,\"encryptedOriginals\":true,\"scanSha256\":\"80e1e2797ce0f3eb3aee4950facafef257bb4bc0ea49ab9a12ae78bc4ea6f7bd\",\"digitalSha256\":\"7448ca31af214e4525f1b0bbbd7ad59325eb86c8bd553d43b0bc9dcdbd45546e\",\"ocrRawDigest\":\"682407f8b77844be28234869002559374aedba0f8d6680519d29c840bba636c7\",\"ocrDerivativeDigest\":\"f739f314217904a9b231494b3748f71de578c98a5ec8b051a69458a66c7696c4\",\"ocrWords\":18,\"documentFindings\":2,\"documentWorkLinks\":6,\"competingHypothesesRemainProposed\":true,\"questionClosureHistory\":true,\"independentPackageVerified\":true,\"independentPdfVerified\":true,\"browserOcrReload\":true,\"browserStoredExtractionSearch\":true,\"browserOriginalPageComparison\":true,\"restrictedPdfDelivery\":true,\"acknowledgementAndRevocation\":true,\"cancelledAttachmentDenied\":true,\"realProfessionalReview\":false}\n1..2\n# tests 2\n# suites 0\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 86888.467871\n",
+      "raster": 1,
+      "daemonFailures": 5
+    }
+  }
+}
