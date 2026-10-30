@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/keycloak-research.yml'
       - 'tools/qualify_keycloak.py'
+      - 'tests/test_keycloak_research.py'
       - 'apps/api/test/keycloak.integration.ts'
       - 'apps/api/src/oidc.ts'
       - 'apps/api/src/identity-routes.ts'

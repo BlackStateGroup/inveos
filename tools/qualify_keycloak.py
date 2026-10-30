@@ -36,6 +36,8 @@ def sha(data):
 
 def acquire(name, url, digest, size, fetch):
     path = CACHE / name
+    require(not any(parent.is_symlink() for parent in [CACHE, *CACHE.parents]), 'Symlinked research cache')
+    require(not path.is_symlink(), 'Symlinked artifact')
     if not path.exists() and fetch:
         CACHE.mkdir(parents=True, exist_ok=True)
         with urllib.request.urlopen(urllib.request.Request(url, headers={'Accept': 'application/vnd.oci.image.manifest.v1+json'}), timeout=30) as response:
@@ -144,7 +146,7 @@ def qualify():
         fixture = root / 'realm.json'; fixture.write_text(json.dumps(realm())); fixture.chmod(0o444)
         command('network', 'create', '--internal', network)
         try:
-            script = 'exec > /scratch/startup.log 2>&1; status=0; (set -e; cp -R /opt/keycloak /scratch/keycloak; mkdir -p /scratch/keycloak/data/import; cp /fixture /scratch/keycloak/data/import/inveos-realm.json; exec /bin/bash /scratch/keycloak/bin/kc.sh start-dev --import-realm --http-port=8080 --hostname=http://127.0.0.1:58992 --hostname-strict=true --cache=local) || status=$?; printf "Provider exited: %s\\n" "$status"; sleep 120; exit "$status"'
+            script = 'exec > /scratch/startup.log 2>&1; status=0; (set -e; cp -R /opt/keycloak /scratch/keycloak; mkdir -p /scratch/keycloak/data/import; cp /fixture /scratch/keycloak/data/import/inveos-fictional-realm.json; exec /bin/bash /scratch/keycloak/bin/kc.sh start-dev --import-realm --http-port=8080 --hostname=http://127.0.0.1:58992 --hostname-strict=true --cache=local) || status=$?; printf "Provider exited: %s\\n" "$status"; echo "$status" > /scratch/provider.exit; sleep 120; exit "$status"'
             command('create', '--pull=never', '--name', name, '--network', network, '--publish', '127.0.0.1:58992:8080',
                     '--user=1000:1000', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true',
                     '--memory=2g', '--memory-swap=2g', '--cpus=2', '--pids-limit=128', '--log-driver=none',
@@ -166,7 +168,7 @@ def qualify():
                         require(json.loads(response.read(65537))['issuer'] == ISSUER)
                     break
                 except (OSError, ValueError):
-                    if time.monotonic() >= deadline:
+                    if time.monotonic() >= deadline or command('exec', name, '/bin/bash', '-c', 'test -f /scratch/provider.exit', check=False).returncode == 0:
                         diagnostic = command('exec', name, '/bin/bash', '-c', 'tail -c 12000 /scratch/startup.log', check=False, max_output=16384)
                         print(diagnostic.stdout)
                         print(json.dumps(json.loads(command('inspect', name).stdout)[0]['State']))
