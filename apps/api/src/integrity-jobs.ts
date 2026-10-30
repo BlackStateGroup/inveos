@@ -1,3 +1,5 @@
+import {registerTikaJobs} from './tika-jobs.js';
+import {tikaKind,tikaProfile,tikaProfileDigest,makeTikaDerivative,type TikaResult} from './tika-derivative.js';
 import {speechKind,speechProfile,speechProfileDigest,makeSpeechDerivative} from './speech-derivative.js';
 import {sourceUseProofs} from './source-use.js';
 import type {OriginalStore} from './original-encryption.js';
@@ -17,7 +19,7 @@ import { ApiError, notFound } from './errors.js';
 import { readOriginalBounded } from './storage.js';
 import { makeTextDerivative, sha256, textConfiguration, textProcessor, verifyTextDerivative, type DerivativeOutput } from './text-derivative.js';
 const documentKinds=[documentKind,ocrKind,ocrExpandedKind],rasterKinds=[rasterKind,rasterExpandedKind];
-const isolatedKinds=[...documentKinds,...rasterKinds,speechKind];
+const isolatedKinds=[...documentKinds,...rasterKinds,speechKind,tikaKind];
 function documentSettings(kind:string){
  const ocr=ocrConfiguration(kind);if(ocr)return ocr;
  if(kind===documentKind)return {kind,profile:documentProfile,profileDigest:documentProfileDigest,maxOriginalBytes:65536};
@@ -161,10 +163,10 @@ export async function dispatchIntegrityJobs(pool: Pool, root: OriginalStore, sco
   }
   return {selected:results.length,stopReason,results};
 }
-export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'unsupported_media' | 'digest_mismatch' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | null) {
+export async function finishIntegrityJob(pool: Pool, s: Scope, token: string, failure: 'original_unavailable' | 'unsupported_media' | 'digest_mismatch' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | 'worker_aborted' | 'worker_timeout' | 'worker_output_limit' | 'tika_runtime_unavailable' | 'tika_parser_rejected_or_failed' | null) {
   return finishProcessingJob(pool,s,token,failure);
 }
-type Failure = 'unsupported_media' | 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed';
+type Failure = 'unsupported_media' | 'original_unavailable' | 'digest_mismatch' | 'unsupported_original' | 'text_limits' | 'worker_execution_failed' | 'worker_cleanup_unconfirmed' | 'worker_aborted' | 'worker_timeout' | 'worker_output_limit' | 'tika_runtime_unavailable' | 'tika_parser_rejected_or_failed';
 async function finishProcessingJob(pool: Pool, s: Scope, token: string, failure: Failure | null, output?: DerivativeOutput) {
   return inTransaction(pool, async client => {
     await lockWorkerCase(client,s);
@@ -242,6 +244,19 @@ export async function finishDocumentJob(pool:Pool,root:OriginalStore,s:Scope,tok
     return completed;
   });
 }
+/** Tika has a separate page-text derivative family; never invent coordinate references. */
+export async function finishTikaJob(pool:Pool,root:OriginalStore,s:Scope,token:string,result:TikaResult){
+ return inTransaction(pool,async client=>{
+  await client.query("SET LOCAL lock_timeout = '2s'");await client.query("SET LOCAL statement_timeout = '5s'");await lockWorkerCase(client,s);
+  const row=(await client.query("SELECT * FROM integrity_jobs WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND kind=$5 AND status='running' AND lease_token=$4 AND lease_until>clock_timestamp() FOR UPDATE",[...values(s),token,tikaKind])).rows[0];if(!row)return null;
+  if(!await permitted(client,row))return terminal(client,s,'cancelled','scope_changed',token);
+  const source=(await client.query('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[s.tenantId,s.caseId,row.evidence_id])).rows[0];let original:Buffer;
+  try{original=await readOriginalBounded(root,source.object_path,2097152);if(source.original_kind!=='opaque_binary'||original.length!==source.byte_length||sha256(original)!==row.source_digest.trim()||source.digest.trim()!==row.source_digest.trim())throw new Error();}catch{return terminal(client,s,'failed','original_unavailable',token);}
+  let output;try{output=makeTikaDerivative(original,documentContext(row),result);}catch{return terminal(client,s,'failed','tika_result_invalid',token);}
+  const completed=await terminal(client,s,'succeeded',null,token);if(!completed)return null;
+  await client.query('INSERT INTO tika_derivatives(tenant_id,case_id,job_id,evidence_id,source_digest,authority_version,kind,attempt,profile,profile_digest,raw_bytes,raw_digest,output_bytes,output_digest,runtime) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb)',[...values(s),row.evidence_id,row.source_digest,row.authority_version,row.kind,row.attempt,tikaProfile,tikaProfileDigest,result.raw,output.rawDigest,output.bytes,output.digest,JSON.stringify(result.runtime)]);return completed;
+ });
+}
 export async function finishSpeechJob(pool:Pool,root:OriginalStore,s:Scope,token:string,result:DocumentResult) {
   return inTransaction(pool,async client=>{
     await client.query("SET LOCAL lock_timeout = '2s'");
@@ -303,6 +318,7 @@ export async function finishRasterJob(pool:Pool,root:OriginalStore,s:Scope,token
 }
 
 export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
+  registerTikaJobs(app,svc);
   app.get('/api/cases/:caseId/integrity-jobs', {preHandler:svc.authenticate,schema:{
     params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},
     querystring:{type:'object',additionalProperties:false,properties:{before:uuid,limit:{type:'integer',minimum:1,maximum:50,default:25}}},
@@ -356,12 +372,13 @@ export function registerIntegrityJobs(app: FastifyInstance, svc: Services) {
         if (old.rows[0].evidence_id !== input.evidenceId || old.rows[0].kind !== (input.kind ?? 'original_sha256_v1')) throw new ApiError(409,'Idempotency key already used.');
         return dto(old.rows[0]);
       }
-      const source = await client.query(`SELECT e.digest,e.original_kind,e.byte_length,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
+      const source = await client.query(`SELECT e.digest,e.original_kind,e.byte_length,e.object_path,c.authority_version FROM evidence e JOIN cases c ON c.tenant_id=e.tenant_id AND c.id=e.case_id
         WHERE e.tenant_id=$1 AND e.case_id=$2 AND e.id=$3 AND c.status='Active' AND c.lifecycle_state IN ('Active','Review')`, [actor.tenantId,caseId,input.evidenceId]);
       if (!source.rows[0]) notFound();
       if (input.kind==='utf8_line_index_v1' && source.rows[0].original_kind!=='original_utf8') throw new ApiError(409,'Text indexing requires a UTF-8 original.');
-      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>(input.kind===speechKind?262144:(ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,'Document lab requires a bounded binary original.');
+      if(isolatedKinds.includes(input.kind??'')&&(source.rows[0].original_kind!=='opaque_binary'||source.rows[0].byte_length>(input.kind===tikaKind?2097152:input.kind===speechKind?262144:(ocrConfiguration(input.kind??'')??rasterConfiguration(input.kind??''))?.maxOriginalBytes??65536)))throw new ApiError(409,input.kind===tikaKind?'Locked Tika supports bounded binary PDFs only; Office, text and other formats are unsupported.':'Document lab requires a bounded binary original.');
       if(input.kind&&input.kind!=='original_sha256_v1')await sourceUseProofs(client,actor.tenantId,caseId,input.evidenceId,'analysis');
+      if(input.kind===tikaKind){const original=await readOriginalBounded(svc.storageRoot,source.rows[0].object_path,2097152);if(original.length!==source.rows[0].byte_length||sha256(original)!==source.rows[0].digest.trim())throw new ApiError(409,'Original bytes failed verification.');if(original.length<8||!original.subarray(0,5).equals(Buffer.from('%PDF-')))throw new ApiError(422,'The locked Tika profile supports PDF only. Office, text, archives, images and other formats are unsupported.');}
       const id = randomUUID();
       const inserted = await client.query(`INSERT INTO integrity_jobs (tenant_id,case_id,id,evidence_id,source_digest,authority_version,requested_by,idempotency_key,kind)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [actor.tenantId,caseId,id,input.evidenceId,source.rows[0].digest,source.rows[0].authority_version,actor.userId,input.idempotencyKey,input.kind ?? 'original_sha256_v1']);

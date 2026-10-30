@@ -1,0 +1,13 @@
+/** Tika page-text references are distinct from bounding-box and original-byte citations. */
+export type TikaContext={tenantId:string;caseId:string;jobId:string;evidenceId:string;sourceDigest:string;authorityVersion:number};
+export type TikaPage={page:number;path:string;text:string;textSha256:string;utf8Bytes:number;textPresent:boolean};
+export type TikaRuntime={qualification:Record<string,unknown>;preparation:Record<string,unknown>};
+export type TikaDerivative={format:'inveos.tika_page_text.v1';context:TikaContext;profileDigest:string;rawDigest:string;xhtmlDigest:string;runtimeDigest:string;state:'unreviewed_extraction';offsetBasis:'tika_xhtml_page_utf8_not_original_bytes';pages:TikaPage[];coverage:{pagesWithoutText:number[];completeExtractionVerified:false};metrics:{parseNanos:number;processCpuNanos:number;peakRssKiB:number}};
+export type TikaSelection={derivativeDigest:string;page:number;startByte:number;endByte:number;quote:string};
+export type TikaCitation={format:'inveos.tika_page_citation.v1';context:TikaContext;profileDigest:string;rawDigest:string;xhtmlDigest:string;derivativeDigest:string;location:{kind:'tika_pdf_page_text';page:number;path:string;pageTextSha256:string;startByte:number;endByte:number;offsetBasis:TikaDerivative['offsetBasis']};quote:string;state:'unreviewed_candidate'};
+export type TikaCitationEntry={id:string;authorId:string;authorName:string;recordedAt:string;citation:TikaCitation;digest:string};
+export type TikaReview={id:string;citationId:string;citationDigest:string;sequence:number;previousDigest:string|null;decision:'accepted'|'rejected';reason:string;originalCompared:boolean;reviewerId:string;reviewerName:string;recordedAt:string;scope:'extraction_correspondence_only';digest:string};
+export type TikaClaim={id:string;citationId:string;citationDigest:string;correspondenceDigest:string;text:string;authorId:string;authorName:string;recordedAt:string;state:'proposed_interpretation';digest:string};
+export type TikaDecision={id:string;claimId:string;claimDigest:string;accepted:boolean;reason:string;reviewerId:string;reviewerName:string;recordedAt:string;scope:'interpretation_only';digest:string};
+export type TikaClaimEntry={claim:TikaClaim;decision:TikaDecision|null;eligible:boolean};
+export type TikaInspection={jobId:string;caseId:string;evidenceId:string;source:{filename:string;sha256:string;sourceTime:string;receivedAt:string;authorityId:string;authorityVersion:number};processedAt:string;profile:string;profileDigest:string;rawDigest:string;derivativeDigest:string;derivative:TikaDerivative;canReview:boolean;canChange:boolean;citations:{entry:TikaCitationEntry;reviews:TikaReview[];claims:TikaClaimEntry[]}[]};

@@ -1,3 +1,4 @@
+export type * from './tika.js';
 import type {ResearchProvenance} from './research.js';
 export type * from './research.js';
 export {researchProvenanceRows} from './research.js';
