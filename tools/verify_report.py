@@ -428,9 +428,16 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         transcript_links = verify_transcript_work_links(report)
         source_use_count = verify_source_use(report)
         field_count = verify_field_provenance(report)
+        composition_count = 0
+        if 'composition' in report:
+            if __package__:
+                from .verify_report_composition import verify_composition
+            else:
+                from verify_report_composition import verify_composition
+            composition_count = verify_composition(report)
     except (ValueError, TypeError, KeyError, UnicodeError, IndexError, AttributeError, binascii.Error) as exc:
-        raise InvalidReport('Invalid frozen chronology or transcript lineage') from exc
-    return {'status': 'integrity_checks_passed', **({'fieldCapturesChecked': field_count} if field_count else {}), **({'speechWorkLinksChecked': speech_links_count} if speech_links_count else {}), 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
+        raise InvalidReport('Invalid frozen chronology, transcript lineage or report composition') from exc
+    return {'status': 'integrity_checks_passed', **({'fieldCapturesChecked': field_count} if field_count else {}), **({'compositionFindingsChecked': composition_count} if composition_count else {}), **({'speechWorkLinksChecked': speech_links_count} if speech_links_count else {}), 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
             'trustedReportDigestMatched': expected_sha256 is not None, **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}),
             **({'speechFindingsChecked': speech_count} if speech_count else {}), 'caseId': case_id, 'findingsChecked': len(findings) + transcript_count + speech_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
             **({'transcriptWorkLinksChecked': transcript_links} if transcript_links else {}), 'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',

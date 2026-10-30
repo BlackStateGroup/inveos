@@ -1,5 +1,7 @@
 import {reportFieldProvenance} from './field-provenance.js';
 import {registerCaseAnalysis} from './case-analysis.js';
+import {registerReportCompositions} from './report-compositions.js';
+import {verifyFrozenComposition} from './report-composition-model.js';
 import {registerPortalFeedback} from './portal-feedback.js';
 import {registerAgencyInvoicing} from './agency-invoicing.js';
 import {registerCollectionJobs} from './collection-jobs.js';
@@ -1422,7 +1424,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     await client.query(`CLOSE ${name}`);
   }
 
-  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[],selectedTranscripts?:string[],selectedSpeech?:string[]): Promise<ReportDraft> {
+  async function buildReport(client: PoolClient, actor: Actor, caseId: string, selectedFindings?:string[],selectedDocuments?:string[],selectedTranscripts?:string[],selectedSpeech?:string[],omitContext=false): Promise<ReportDraft> {
       await findCase(client,actor,caseId);
       const caseResult = await client.query<CaseRow>(
         `SELECT c.*, u.display_name AS owner_name
@@ -1550,7 +1552,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if (!report.findings.length&&!report.documentFindings?.length&&!report.transcriptFindings?.length&&!report.speechFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
       const sourceUse=await reportSourceUse(client,actor.tenantId,caseId,report,'analysis');if(sourceUse.length){budget.add({sourceUse},0,true);report.sourceUse=sourceUse;}
       const fieldProvenance=await reportFieldProvenance(client,actor.tenantId,caseId,report);if(fieldProvenance.length){budget.add({fieldProvenance},0,true);report.fieldProvenance=fieldProvenance;}
-      if(selectedFindings)return report; // Verification inspects only the frozen finding set, not later working context.
+      if(selectedFindings||omitContext)return report; // Verification inspects only the frozen finding set, not later working context.
       for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
           WHERE tenant_id=$1 AND case_id=$2
@@ -1616,6 +1618,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     const member=await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role<>'client'",[actor.tenantId,actor.userId]);
     if(!member.rowCount) throw new ApiError(403,'Internal reports only.');
   }
+  const compositions=registerReportCompositions(app,{authenticate,requireCsrf,transaction:reportTransaction,access:reportAccess,lock:(c,a,id)=>findCase(c,a,id,true),build:buildReport,audit:writeAudit});
   app.get('/api/cases/:caseId/report',{preHandler:authenticate,schema:{params:caseParamsSchema}},async request=>{
     const actor=request.actor!,{caseId}=request.params as {caseId:string};
     return reportTransaction(async client=>{await reportAccess(client,actor,caseId);return buildReport(client,actor,caseId);});
@@ -1641,21 +1644,29 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   app.get('/api/cases/:caseId/report-revisions/:revisionId/receipt',{preHandler:authenticate,schema:{params:{type:'object',required:['caseId','revisionId'],additionalProperties:false,properties:{caseId:uuidSchema,revisionId:uuidSchema}}}},async(request,reply)=>{
     const actor=request.actor!,{caseId,revisionId}=request.params as {caseId:string;revisionId:string};const row=await reportTransaction(async client=>{await reportAccess(client,actor,caseId);const found=(await client.query('SELECT id,digest,created_at FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];if(!found)notFound();return revisionReceipt(found,caseId);});return reply.header('Cache-Control','no-store').send(row);
   });
-  app.post('/api/cases/:caseId/report-revisions',{preHandler:requireCsrf,schema:{params:caseParamsSchema,
-    body:{type:'object',required:['idempotencyKey'],additionalProperties:false,properties:{idempotencyKey:uuidSchema}}}},async request=>{
-    const actor=request.actor!,{caseId}=request.params as {caseId:string},{idempotencyKey}=request.body as {idempotencyKey:string};
+  app.post('/api/cases/:caseId/report-revisions',{preHandler:requireCsrf,preValidation:async request=>{
+    const binding=(request.body as {composition?:{id?:unknown;version?:unknown;sha256?:unknown;reviewId?:unknown}})?.composition;
+    if(binding!==undefined&&(!binding||typeof binding!=='object'||Array.isArray(binding)||!Number.isInteger(binding.version)||typeof binding.id!=='string'||typeof binding.sha256!=='string'||typeof binding.reviewId!=='string'))throw new ApiError(422,'Composition freezing requires an explicit typed version and review receipt.');
+  },schema:{params:caseParamsSchema,
+    body:{type:'object',required:['idempotencyKey'],additionalProperties:false,properties:{idempotencyKey:uuidSchema,composition:{type:'object',additionalProperties:false,required:['id','version','sha256','reviewId'],properties:{id:uuidSchema,version:{type:'integer',minimum:1,maximum:100},sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},reviewId:uuidSchema}}}}}},async request=>{
+    const actor=request.actor!,{caseId}=request.params as {caseId:string},{idempotencyKey,composition}=request.body as {idempotencyKey:string;composition?:{id:string;version:number;sha256:string;reviewId:string}};
     return reportTransaction(async client=>{
       await reportAccess(client,actor,caseId);
       const old=await client.query('SELECT id,digest,created_at,report_bytes FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,idempotencyKey]);
-      if(old.rows[0]) {checkRevision(old.rows[0]);return revisionReceipt(old.rows[0],caseId);}
-      const report=await buildReport(client,actor,caseId);
+      if(old.rows[0]) {
+        checkRevision(old.rows[0]);const frozen=(JSON.parse(old.rows[0].report_bytes.toString('utf8')) as ReportDraft).composition;
+        if((!!frozen)!==!!composition||frozen&&composition&&(frozen.payload.id!==composition.id||frozen.payload.version!==composition.version||frozen.sha256!==composition.sha256||frozen.review.id!==composition.reviewId))throw new ApiError(409,'Freeze retry belongs to a different composition.');
+        return revisionReceipt(old.rows[0],caseId);
+      }
+      await findCase(client,actor,caseId,true);
+      const report=composition?await compositions.freeze(client,actor,caseId,composition):await buildReport(client,actor,caseId);
       const bytes=Buffer.from(JSON.stringify(report),'utf8');
       if(bytes.length>REPORT_MAX_BYTES) throw new ApiError(422,'Report byte limit exceeded.');
       const digest=createHash('sha256').update(bytes).digest('hex'),id=randomUUID();
       const inserted=await client.query(`INSERT INTO report_revisions (tenant_id,case_id,id,created_by,idempotency_key,report_bytes,digest)
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);
       if(!inserted.rows[0]) throw Object.assign(new Error('Concurrent revision retry'),{code:'40001'});
-      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[],transcriptFindingIds:report.transcriptFindings?.map(f=>f.id)??[],speechFindingIds:report.speechFindings?.map(f=>f.id)??[]});
+      await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,...(report.composition?{compositionId:report.composition.payload.id,compositionVersion:report.composition.payload.version,compositionSha256:report.composition.sha256,compositionReviewId:report.composition.review.id}:{}),findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[],transcriptFindingIds:report.transcriptFindings?.map(f=>f.id)??[],speechFindingIds:report.speechFindings?.map(f=>f.id)??[]});
       return revisionReceipt(inserted.rows[0],caseId);
     });
   });
@@ -1664,6 +1675,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   }
   function checkRevision(row: QueryResultRow) {
     if(createHash('sha256').update(row.report_bytes).digest('hex')!==row.digest.trim()) throw new ApiError(409,'Stored report revision integrity failed.');
+    try{verifyFrozenComposition(JSON.parse(row.report_bytes.toString('utf8')) as ReportDraft);}catch{throw new ApiError(409,'Stored report composition integrity failed.');}
   }
   async function verifyFrozenSources(client:PoolClient,actor:Actor,caseId:string,revisionId:string,expected:string,use:'analysis'|'release'='analysis'){
       const revision=(await client.query('SELECT report_bytes,digest FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[actor.tenantId,caseId,revisionId])).rows[0];
