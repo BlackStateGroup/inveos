@@ -7,7 +7,7 @@ import type {BinaryEvidenceInput,Evidence} from '@inveos/contracts';
 import type {Actor} from './app.js';
 import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
-type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
+type Services={pool:Pool;assertSession:(c:PoolClient,a:Actor)=>Promise<void>;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;
  findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<LifecycleCase>;
  audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>;
  receive:(a:Actor,caseId:string,input:BinaryEvidenceInput,uploadId:string)=>Promise<Evidence>;
@@ -29,6 +29,7 @@ export function assembleUploadChunks(byteLength:number,rows:Array<{ordinal:numbe
 }
 export function registerUploads(app:FastifyInstance,s:Services){
  registerDesktopIntake(app,s);
+ const tx=<T>(actor:Actor,fn:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await s.assertSession(c,actor);const value=await fn(c);await s.assertSession(c,actor);return value;});
  const base='/api/cases/:caseId/uploads';
  // All lifecycle mutations take the same case lock as intake/finalisation.
  // Staging is transient; reservation identity and completed evidence are retained.
@@ -36,7 +37,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
   const actor=request.actor!,{caseId}=request.params as {caseId:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await s.findCase(c,actor,caseId);
    const rows=await c.query(`SELECT id,case_id,status,byte_length,authority_version,expires_at,evidence_id,
      created_by=$3 AS owned,expires_at<=statement_timestamp() AS expired
@@ -49,7 +50,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');reply.header('X-Content-Type-Options','nosniff');
   const actor=request.actor!,{caseId}=request.params as {caseId:string},{before,limit=25}=request.query as {before?:string;limit?:number};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await s.findCase(c,actor,caseId);
    // Resolve an opaque cursor inside the same visibility boundary; retain database timestamp precision.
    const scope=[actor.tenantId,caseId,actor.userId,actor.role==='reviewer'];
@@ -70,7 +71,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
  app.get(base+'/by-key/:requestKey',{preHandler:s.authenticate,schema:{params:{type:'object',additionalProperties:false,required:['caseId','requestKey'],properties:{caseId:uuid,requestKey:uuid}}}},async(request,reply)=>{
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,requestKey}=request.params as {caseId:string;requestKey:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await s.findCase(c,actor,caseId);
    const found=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,requestKey]);
    if(!found.rows[0])notFound();return {...dto(found.rows[0]),requestKey};
@@ -80,7 +81,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId}=request.params as {caseId:string};
   if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required for staging maintenance.');
   const {limit}=request.body as {limit:number};
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");
    await s.findCase(c,actor,caseId,true);
    const rows=await c.query(`SELECT id FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2
@@ -98,7 +99,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,uploadId}=request.params as {caseId:string;uploadId:string};
   if(actor.role!=='reviewer')throw new ApiError(403,'Reviewer required for staging maintenance.');
   const reason=(request.body as {reason:string}).reason.trim();if(reason.length<10)throw new ApiError(422,'Explain why this pending upload must be cancelled.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    await c.query("SET LOCAL lock_timeout='2s'");await c.query("SET LOCAL statement_timeout='5s'");
    await s.findCase(c,actor,caseId,true);const keys=[actor.tenantId,caseId,uploadId];
    const found=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 FOR UPDATE',keys),row=found.rows[0];if(!row)notFound();
@@ -116,7 +117,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
   const input=request.body as Omit<BinaryEvidenceInput,'contentBase64'>&{byteLength:number};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
   if(!s.validFilename(input.filename,true)||!s.validSourceTime(input.sourceTime))throw new ApiError(422,'Invalid source metadata.');
-  return inTransaction(s.pool,async c=>{
+  return tx(actor,async c=>{
    const kase=await s.findCase(c,actor,caseId,true);
    const metadata={filename:input.filename,sourceTime:input.sourceTime,method:input.method,expectedSha256:input.expectedSha256};
    const prior=await c.query('SELECT * FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,input.idempotencyKey]);
@@ -132,7 +133,7 @@ export function registerUploads(app:FastifyInstance,s:Services){
  for(const action of ['status','chunk','cancel','complete'])app.route({method:action==='status'?'GET':'POST',url:base+'/:uploadId'+(action==='status'?'':'/'+action),preHandler:action==='status'?s.authenticate:s.requireCsrf,schema:{params,...(action==='status'?{}:{body:action==='chunk'?{type:'object',additionalProperties:false,required:['ordinal','contentBase64'],properties:{ordinal:{type:'integer',minimum:0,maximum:7},contentBase64:{type:'string',minLength:4,maxLength:43692}}}:empty})},handler:async(request,reply)=>{
   reply.header('Cache-Control','no-store');const actor=request.actor!,{caseId,uploadId}=request.params as {caseId:string;uploadId:string};
   if(actor.role==='client')throw new ApiError(403,'Internal intake only.');
-  const result=await inTransaction(s.pool,async c=>{
+  const result=await tx(actor,async c=>{
    const kase=await s.findCase(c,actor,caseId,true),keys=[actor.tenantId,caseId,uploadId];
    const found=await c.query('SELECT *,expires_at>clock_timestamp() AS live FROM upload_reservations WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND created_by=$4 FOR UPDATE',[...keys,actor.userId]);
    const row=found.rows[0];if(!row)notFound();

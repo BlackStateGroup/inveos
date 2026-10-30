@@ -739,7 +739,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return finding;
   };
   const investigationServices={pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,source:verifiedFinding};
-  registerCaseAnalysis(app,investigationServices);
+  registerCaseAnalysis(app,{...investigationServices,assertSession:assertCurrentSession});
   registerCaseInvitations(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseAccess(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerSourceUse(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,...manualSourceService});
@@ -1097,6 +1097,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         let stored: StoredOriginal | undefined;
         try {
           const result = await inTransaction(options.pool, async (client) => {
+            await assertCurrentSession(client,actor);
+            const receive = async()=>{
             await client.query(
               'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
               [`${actor.tenantId}:${caseId}:${actor.userId}:${input.idempotencyKey}`],
@@ -1197,6 +1199,10 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
               await writeAudit(client,actor,caseId,'field.capture_received','field_capture',field.id,'Frozen field manifest and verified original received',{evidenceId,deviceId:field.deviceId,manifestSha256:fieldManifestHash(field)});
             }
             return {row,bytes,capture,accepted:capture?{...acceptance,receivedAt:new Date(capture.received_at).toISOString()}:undefined};
+            };
+            const result=await receive();
+            await assertCurrentSession(client,actor);
+            return result;
           });
           if (stored && result.row.object_path !== stored.objectPath) {
             await stored.remove();
@@ -1212,11 +1218,11 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   for(const binary of [false,true])app.post(binary?'/api/cases/:caseId/evidence/binary':'/api/cases/:caseId/evidence',
     {preHandler:requireCsrf,schema:{params:caseParamsSchema,body:binary?binaryEvidenceBodySchema:evidenceBodySchema}},
     request=>receiveEvidence(request.actor!,(request.params as {caseId:string}).caseId,request.body as EvidenceInput|BinaryEvidenceInput,binary));
-  registerFieldDispatch(app,{pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
-  registerFieldSessions(app,{pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
-  registerFieldCapture(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
+  registerFieldDispatch(app,{assertSession:assertCurrentSession,pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerFieldSessions(app,{assertSession:assertCurrentSession,pool:options.pool,storageRoot:options.storageRoot,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerFieldCapture(app,{assertSession:assertCurrentSession,pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
     receive:async(actor,caseId,manifest,contentBase64,recoveryId)=>await receiveEvidence(actor,caseId,{filename:manifest.filename,sourceTime:manifest.sourceTime,method:manifest.method,expectedSha256:manifest.expectedSha256,idempotencyKey:manifest.id,contentBase64},true,undefined,manifest,recoveryId) as FieldCaptureReceipt});
-  registerFieldSync(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
+  registerFieldSync(app,{assertSession:assertCurrentSession,pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validSourceTime,
     receipt:async(client,actor,caseId,captureId)=>{
       const capture=(await client.query('SELECT * FROM field_captures WHERE tenant_id=$1 AND case_id=$2 AND id=$3 AND user_id=$4',[actor.tenantId,caseId,captureId,actor.userId])).rows[0];if(!capture)return null;
       const row=await findEvidence(client,actor,caseId,capture.evidence_id),evidence=evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));
@@ -1229,9 +1235,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     receive:async(actor,caseId,input,uploadId,permit)=>{await receiveEvidence(actor,caseId,input,true,uploadId,undefined,undefined,permit);},
     verifyOriginal:async(c,tenantId,caseId,id)=>{const row=(await c.query<EvidenceRow>('SELECT * FROM evidence WHERE tenant_id=$1 AND case_id=$2 AND id=$3',[tenantId,caseId,id])).rows[0];if(!row)notFound();await verifiedBytes(options.storageRoot,row);},
   });
-  registerUploads(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validFilename,validSourceTime,
+  registerUploads(app,{assertSession:assertCurrentSession,pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,validFilename,validSourceTime,
     receive:async(actor,caseId,input,uploadId)=>await receiveEvidence(actor,caseId,input,true,uploadId) as Evidence,
-    receipt:(actor,caseId,id)=>inTransaction(options.pool,async c=>{const row=await findEvidence(c,actor,caseId,id);return evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));})});
+    receipt:(actor,caseId,id)=>inTransaction(options.pool,async c=>{await assertCurrentSession(c,actor);const row=await findEvidence(c,actor,caseId,id),value=evidenceDtoWithText(row,await verifiedBytes(options.storageRoot,row));await assertCurrentSession(c,actor);return value;})});
 
   app.get(
     '/api/cases/:caseId/evidence/:evidenceId/original',
@@ -2000,7 +2006,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
          EXISTS(SELECT 1 FROM report_editable_rendition_reviews rr JOIN memberships rm ON rm.tenant_id=rr.tenant_id AND rm.user_id=rr.reviewer_id JOIN case_memberships rc ON rc.tenant_id=rr.tenant_id AND rc.user_id=rr.reviewer_id AND rc.case_id=rr.case_id
           WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=ed.rendition_id AND rr.authority_version=d.authority_version AND rr.docx_digest=er.docx_digest AND rr.redaction_digest=er.redaction_digest AND rr.decision='accept_for_disclosure' AND rm.role='reviewer')
          AND NOT EXISTS(SELECT 1 FROM report_editable_rendition_reviews rr WHERE rr.tenant_id=d.tenant_id AND rr.case_id=d.case_id AND rr.rendition_id=ed.rendition_id AND rr.decision='request_changes')))`;
-  registerCaseHandling(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
+  registerCaseHandling(app,{assertSession:assertCurrentSession,pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseLifecycle(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,disclosures:async(c,a,caseId,id)=>(await c.query(`SELECT d.id,d.created_at AS "createdAt" FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id ${renditionDisclosureJoin} WHERE d.tenant_id=$1 AND d.case_id=$2 AND ($3::uuid IS NULL OR d.id=$3) AND d.expires_at>clock_timestamp() AND ${disclosureEligibility} AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client') ORDER BY d.created_at DESC,d.id DESC LIMIT 50`,[a.tenantId,caseId,id??null])).rows});
   app.get('/api/cases/:caseId/disclosures',{preHandler:authenticate,schema:{params:caseParamsSchema,querystring:{type:'object',additionalProperties:false,properties:{before:uuidSchema,limit:{type:'integer',minimum:1,maximum:50,default:25}}}}},async(request,reply)=>{
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
