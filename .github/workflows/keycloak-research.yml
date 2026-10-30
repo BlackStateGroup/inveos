@@ -1,0 +1,74 @@
+name: Actual Keycloak MFA research
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/keycloak-research.yml'
+      - 'tools/qualify_keycloak.py'
+      - 'tests/test_keycloak_research.py'
+      - 'apps/api/test/keycloak.integration.ts'
+      - 'apps/api/src/oidc.ts'
+      - 'apps/api/src/identity-routes.ts'
+      - 'apps/api/test/support/browser*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-keycloak-mfa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: inveos_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inveos_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      INVEOS_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-only@127.0.0.1:5432/inveos_test
+      INVEOS_TEST_DATABASE_URL: postgres://inveos_app:synthetic-ci-only@127.0.0.1:5432/inveos_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install locked application and prepare disposable restricted PostgreSQL
+        run: |
+          df -h .
+          npm ci --no-audit --no-fund
+          psql "$INVEOS_TEST_ADMIN_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE inveos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'synthetic-ci-only';
+          GRANT CONNECT ON DATABASE inveos_test TO inveos_app;
+          SQL
+          npm run build --workspace @inveos/web
+      - name: Acquire pinned provider source without executing it
+        run: python3 tools/mine_sources.py --fetch keycloak/keycloak
+      - name: Acquire and inventory exact provider runtime and published notices
+        run: python3 tools/qualify_keycloak.py --fetch
+      - name: Verify inventory offline and pull exact test-only provider
+        run: |
+          python3 tools/qualify_keycloak.py
+          docker pull quay.io/keycloak/keycloak@sha256:3e1ac632e743660017b1e6bb4c3ffc800fd02c82cdd0db858cd03456a98a8dfc
+      - name: Qualify host and exercise real password and OTP with sandboxed browser
+        run: python3 tools/qualify_keycloak.py --run
+      - name: Retain inventory and fictional acceptance, never runtime binaries or tokens
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: actual-keycloak-mfa
+          path: output/evals/keycloak/
+          if-no-files-found: ignore
+      - name: Check tracked sources unchanged
+        run: git diff --exit-code
