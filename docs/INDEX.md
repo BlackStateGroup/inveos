@@ -276,3 +276,5 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 
 - [136 — Locked Tika PDF application worker](136_TIKA_APPLICATION_WORKER.md): page-text citations, independent decisions and isolated worker integration; actual acceptance pending.
 - [140 — Reusable case task templates](140_REUSABLE_TASK_TEMPLATES.md): pinned reviewed boilerplate and atomic explicit application; runtime acceptance pending.
+
+- [139 — Field dispatch and manual shift records](139_FIELD_DISPATCH.md): reviewer instructions, recipient check-ins/incidents/handovers and encrypted operational queue; runtime/upgrade/restore acceptance pending.

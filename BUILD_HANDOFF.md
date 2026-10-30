@@ -1,3 +1,13 @@
+## Current build checkpoint — dispatch integrated; acceptance definitions unrun
+
+Dispatchcaa5248b integrated at97535ab7, migrations116–117; full receipts survive vault schema/backupv2, with actual upgrade/restore acceptance still required. Combined web/contracts/API compilation passed (`/tmp/inveos-platform-field-dispatch-compile.log`). Root adds six acceptance definitions: two Field search/context corruption cases, three handling/release/audit cases, one copied verification-kit/Unicode/rehash/DOCX case. All compile; **none has executed**. Keep runtime counts separate from compiler feedback.
+
+Active children: @thread:thr_d5kgavmfyc Tika report lineage130–134/docs144 from combined6cdcc69d; @thread:thr_gzfv5czq7n portal evidence requests125–129/docs143; @thread:thr_2fsytqdbkm scoped restored-case quarantine135–139/docs145 from97535ab7. The last is required recovery integration: restored authority/grants must not resume solely on re-login. No production restore, global device revocation or claimed reconstruction of post-backup decisions.
+
+Fresh GitHub reads: main remains14f058469cd41d2aa02117b38eb75b8a40aa19ac; only draftPR116 open at7d9f1540. Its already-run final Checks41060168124 passed477Node/203Python plus12devbrowser tests,zero failures/skips and actual Office checks. Whisper41060168453 passed actual inference/isolation and3 application-worker checks. Logs inspected; final collection artifact12978504700 not newly visually inspected. No review/comments and no merge. This is **pre-build** evidence, not acceptance of platform-build-batch. Details retained in docs122.
+
+Continue final connected feature integration, then actual combined acceptance. New root and child migrations/API/browser/worker/restore/offline/verifier/runtime checks remain unrun. No new platform PR or main merge, new dependency or production action.
+
 ## Latest integrations and final connected build tasks
 
 Task templatese4d1d365 integrated at2abbd254. Shared casework creator retains both template freshness/receipt options and root analysis initial source-link callback; mandatory collaborator handling checks survive session-helper extraction. Tika applicationa1fb692d integrated at6cdcc69d, migration105, with shared batch queue/profile registry and self-contained verify_tika_context.py in the kit. Workspace compilation passed (`/tmp/inveos-platform-task-templates-compile.log`, `/tmp/inveos-platform-tika-compile.log`). Original upstream Tika licence bytes retain their trailing whitespace; first-party diff checks are clean. Runtime/licence/production acceptance remains open.

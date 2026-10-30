@@ -64,3 +64,36 @@ test('structured original validator rejects automatic location claims, invalid d
  const id=randomUUID(),record:FieldSessionRecord={format:'inveos.field.record.v1',id,tenantId:randomUUID(),userId:randomUUID(),caseId:randomUUID(),sessionId:id,deviceId:randomUUID(),authorityId:randomUUID(),authorityVersion:1,sourceTime:'2026-10-01T09:00:00Z',deviceTime:'2026-10-01T09:00:01Z',clockUncertaintySeconds:null,reason:'Fictional explicit session start',kind:'session_start',expectedVersion:0,title:'Fictional session',purpose:'Record a fictional exercise',summary:''};
  assert.deepEqual(parseFieldRecord(record),record);assert.throws(()=>parseFieldRecord({...record,sourceTime:'2026-02-30T09:00:00Z'}),/time/);assert.throws(()=>parseFieldRecord({...record,expectedVersion:'0'}),/integer/);assert.throws(()=>parseFieldRecord({...record,location:{method:'automatic'}}),/fields/);assert.throws(()=>parseFieldRecord({...record,sessionId:randomUUID()}),/identity/);
 });
+
+// Definitions for combined acceptance. Do not infer a run from their presence.
+test('Field search follows the current correction while exact inspection retains older original bytes',async()=>{
+ const f=await fixture();try{
+  const start=f.start();await f.organise(start);const first=f.observe(start.id),saved=await f.organise(first);
+  const corrected:FieldObservationRecord={...first,id:randomUUID(),kind:'observation_correct',expectedVersion:1,supersedesCaptureId:first.id,title:'Fictional corrected archive observation',account:'The supplied fictional account describes a green archive box.',reason:'Retain the earlier blue account and explicitly correct its colour.'};
+  const latest=await f.organise(corrected);
+  const found=await f.req('POST',f.base+'/search',{query:'archive green',queryMode:'all_words',kind:'field_observation',status:''});assert.equal(found.statusCode,200,found.body);
+  assert.deepEqual(found.json().items.map((row:{id:string})=>row.id),[corrected.id]);assert.equal(found.json().items[0].evidenceId,latest.original.evidence.id);assert.equal(found.json().items[0].status,'Unreviewed observation');
+  const old=await f.req('POST',f.base+'/search',{query:'blue',kind:'field_observation',status:''});assert.equal(old.statusCode,200,old.body);assert.equal(old.json().items.length,0);
+  const context=await f.req('GET',f.base+'/field-records/'+first.id+'/context');assert.equal(context.statusCode,200,context.body);assert.equal(context.json().selected.source.sha256,saved.receipt.source.sha256);assert.deepEqual(context.json().history.map((row:{version:number})=>row.version),[2,1]);assert.equal(context.json().latest.captureId,corrected.id);
+  assert.equal(context.json().selected.record.account,first.account);assert.equal(context.json().selected.source.sourceTime,first.sourceTime);assert.equal(context.json().selected.source.deviceTime,first.deviceTime);
+  const page=await f.req('GET',f.base+'/field-records/'+corrected.id+'/context?beforeVersion=2');assert.equal(page.statusCode,200,page.body);assert.deepEqual(page.json().history.map((row:{captureId:string})=>row.captureId),[first.id]);
+  const wrong=await f.req('POST',f.base+'/search',{query:'',kind:'field_observation',status:'',evidenceId:saved.original.evidence.id});assert.equal(wrong.statusCode,200,wrong.body);assert.equal(wrong.json().items.length,0);
+  const unassigned=await f.member('investigator'),client=await f.member('client',true);
+  assert.equal((await f.req('GET',f.base+'/field-records/'+first.id+'/context',undefined,unassigned)).statusCode,404);
+  assert.equal((await f.req('GET',f.base+'/field-records/'+first.id+'/context',undefined,client)).statusCode,403);
+  await assert.rejects(f.pool.query('UPDATE field_session_records SET receipt=$1 WHERE case_id=$2 AND capture_id=$3',[JSON.stringify({...saved.receipt,record:{...first,account:'Unattributed replacement'}}),f.caseId,first.id]),/permission denied|append|immutable/i);
+ }finally{await f.close();}
+});
+
+test('Field context and same-original retries reject a retained receipt that disagrees with original semantics',async()=>{
+ const f=await fixture();try{
+  const start=f.start();await f.organise(start);const observation=f.observe(start.id),saved=await f.organise(observation);
+  // Controlled corruption in this disposable schema only, beyond ordinary role rights.
+  await f.admin.query('ALTER TABLE field_session_records DISABLE TRIGGER field_session_records_immutable');
+  try{await f.admin.query('UPDATE field_session_records SET receipt=$1::jsonb WHERE case_id=$2 AND capture_id=$3',[JSON.stringify({...saved.receipt,record:{...observation,account:'Fictional forged replacement retaining the old original digest.'}}),f.caseId,observation.id]);}
+  finally{await f.admin.query('ALTER TABLE field_session_records ENABLE TRIGGER field_session_records_immutable');}
+  for(const path of ['/receipt','/context']){const reply=await f.req('GET',f.base+'/field-records/'+observation.id+path);assert.equal(reply.statusCode,409,reply.body);assert.match(reply.body,/receipt does not match/i);}
+  const replay=await f.req('POST',f.base+'/field-records',saved.request);assert.equal(replay.statusCode,409,replay.body);
+  assert.equal((await f.req('GET',f.base+'/evidence/'+saved.original.evidence.id+'/original')).body,JSON.stringify(observation));
+ }finally{await f.close();}
+});

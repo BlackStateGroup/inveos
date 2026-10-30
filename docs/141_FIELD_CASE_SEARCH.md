@@ -13,3 +13,5 @@ The search transaction now holds the case lock so authority/membership updates c
 ## Verification still required
 
 Web/contracts/API compilation passed both initially and after the final request-cancellation adjustment (`/tmp/inveos-field-search-compile.log`, `/tmp/inveos-field-search-final-compile.log`). No PostgreSQL/API/search, mutation, performance, browser or accessibility acceptance has run. Add actual checks for correction/withdrawal indexing, saved filters and time bounds, stale context review, cross-case/tenant/role denial, source-use blocks, altered receipt/raw/attachment, original recovery and independent pagination. Exercise strict-mode mounting, refresh/re-authentication, rapidly switching results, narrow/keyboard layout and actual Field-original navigation. Do not count this as a parser benchmark or native Field acceptance.
+
+Two actual-API acceptance definitions are now authored for current-correction search/history, typed source timestamps, role/tenant boundaries, immutable SQL rows and corrupted receipt/same-original retry denial. They compile (`/tmp/inveos-field-search-definitions-compile.log`) but are **unrun**.
