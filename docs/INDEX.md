@@ -229,3 +229,5 @@
 - [113 — Reviewed editable DOCX delivery](113_REVIEWED_DOCX_DELIVERY.md) — versioned exports, independent decisions, exact recipient files and revocation; acceptance in progress.
 
 - [114 — Connected independent-review attention](114_EXPANDED_REVIEW_ATTENTION.md)
+
+- [116 — Source, correspondence and expense review queue](116_SOURCE_EXPENSE_REVIEW_QUEUE.md) — independent pending records and exact context navigation; actual acceptance recorded separately.

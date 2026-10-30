@@ -2,18 +2,20 @@ import {CitationReviewPanel} from './CitationReview';
 import {useEffect,useRef,useState} from 'react';
 import type {InspectedDocument} from './documentInspection';
 import {citationScope,pendingCitation,saveCitationRecoverably,verifyCitation,type CitationReceipt,type PendingCitation} from './citationRequest';
-export function DocumentCitations({document:d,csrf}:{document:InspectedDocument;csrf:string}){
+export function DocumentCitations({document:d,csrf,focusCitationId}:{document:InspectedDocument;csrf:string;focusCitationId?:string}){
   const [selected,setSelected]=useState(d.references[0]?.itemRef??''),[pending,setPending]=useState<PendingCitation|null>(null),[rows,setRows]=useState<CitationReceipt[]>([]),[next,setNext]=useState<string|null>(null);
   const [reviewId,setReviewId]=useState<string|null>(null);
   const [busy,setBusy]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
-  const alive=useRef(true),lock=useRef(false),scope=useRef(''),base=`/api/cases/${d.caseId}/integrity-jobs/${d.jobId}/document-citations`;
+  const focusedOnce=useRef<string|null>(null),alive=useRef(true),lock=useRef(false),scope=useRef(''),base=`/api/cases/${d.caseId}/integrity-jobs/${d.jobId}/document-citations`;
   async function read(url:string,signal?:AbortSignal){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal});const value=await r.json();if(!r.ok)throw new Error(value.error||'Citation candidates unavailable.');return value;}
   async function load(after?:string,signal?:AbortSignal){
     const page=await read(`${base}${after?`?after=${after}`:''}`,signal) as {items:unknown[];nextAfter:string|null};
     if(!Array.isArray(page.items)||page.items.length>50)throw new Error('Citation list could not be verified.');
     const checked=await Promise.all(page.items.map(r=>verifyCitation(r,d)));
     if(checked.some((r,i)=>i>0&&r.id<=checked[i-1]!.id||after&&r.id<=after)||page.nextAfter!==null&&(checked.length!==50||page.nextAfter!==checked.at(-1)?.id))throw new Error('Citation list cursor could not be verified.');
-    if(alive.current&&!signal?.aborted){setRows(old=>after?[...old,...checked]:checked);setNext(page.nextAfter);}
+    const focused=focusCitationId&&!after&&!checked.some(r=>r.id===focusCitationId)?await verifyCitation(await read(base+'/'+focusCitationId,signal),d):null;
+    if(focused&&focused.id!==focusCitationId)throw new Error('Selected citation identity differs from the requested record.');
+    if(alive.current&&!signal?.aborted){setRows(old=>after?[...old,...checked.filter(r=>!old.some(v=>v.id===r.id))]:focused?[focused,...checked]:checked);setNext(page.nextAfter);}
   }
   useEffect(()=>{alive.current=true;const c=new AbortController();
     void (async()=>{scope.current=await citationScope(csrf,d);if(c.signal.aborted)return;setPending(pendingCitation(window.sessionStorage,scope.current));await load(undefined,c.signal);})()
@@ -21,6 +23,7 @@ export function DocumentCitations({document:d,csrf}:{document:InspectedDocument;
     return()=>{alive.current=false;c.abort();};
   // Parent keys this workspace by extraction and session, discarding stale requests on replacement.
   },[]);
+  useEffect(()=>{if(focusCitationId&&focusedOnce.current!==focusCitationId&&!busy&&rows.some(row=>row.id===focusCitationId)){focusedOnce.current=focusCitationId;const target=document.getElementById('citation-'+focusCitationId);target?.focus();target?.scrollIntoView({block:'start'});}},[focusCitationId,busy,rows]);
   async function act(fn:()=>Promise<void>){if(lock.current||!scope.current)return;lock.current=true;setBusy(true);setError('');setMessage('');setReviewId(null);
     try{await fn();}catch(e){if(alive.current){setRows([]);setNext(null);setError((e as Error).message);}}
     finally{lock.current=false;if(alive.current){try{setPending(pendingCitation(window.sessionStorage,scope.current));}catch(e){setError((e as Error).message);}setBusy(false);}}
@@ -45,7 +48,7 @@ export function DocumentCitations({document:d,csrf}:{document:InspectedDocument;
     {pending&&<p role="status">Unconfirmed candidate {pending.id}. Recover before saving another passage.</p>}
     <button className="secondary" disabled={busy} onClick={()=>void act(()=>load())}>Refresh citation candidates</button>
     {error&&<p role="alert">{error}</p>}<p role="status">{busy?'Verifying citation candidates…':message}</p>
-    <ol>{rows.map(r=><li key={r.id}><strong>Unreviewed candidate · page {r.citation.page}</strong><p>{r.id} · {r.citation.itemRef} · extracted bytes [{r.citation.startByte}, {r.citation.endByte})</p><pre className="source-excerpt">{r.citation.quote}</pre><p>Saved {r.createdAt} · author {r.createdBy} · SHA-256 {r.citationDigest}</p><button className="secondary" disabled={busy} onClick={()=>setReviewId(r.id)}>Review candidate {r.id.slice(0,8)}</button>{reviewId===r.id&&<CitationReviewPanel key={r.id} candidate={r} csrf={csrf}/>}</li>)}</ol>
+    <ol>{rows.map(r=><li key={r.id} id={'citation-'+r.id} tabIndex={-1}><strong>Unreviewed candidate · page {r.citation.page}</strong><p>{r.id} · {r.citation.itemRef} · extracted bytes [{r.citation.startByte}, {r.citation.endByte})</p><pre className="source-excerpt">{r.citation.quote}</pre><p>Saved {r.createdAt} · author {r.createdBy} · SHA-256 {r.citationDigest}</p><button className="secondary" disabled={busy} onClick={()=>setReviewId(r.id)}>Review candidate {r.id.slice(0,8)}</button>{reviewId===r.id&&<CitationReviewPanel key={r.id} candidate={r} csrf={csrf}/>}</li>)}</ol>
     {!busy&&!error&&!rows.length&&<p>No saved candidates for this extraction.</p>}
     {next&&<button className="secondary" disabled={busy} onClick={()=>void act(()=>load(next))}>More citation candidates</button>}
   </section>;
