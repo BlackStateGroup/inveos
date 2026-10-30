@@ -18,6 +18,9 @@ on:
       - 'tools/prepare_ocr_worker.py'
       - 'tools/ocr_package_archives.py'
       - 'tests/test_ocr_package_archives.py'
+      - 'tools/ocr_source_archives.py'
+      - 'tests/test_ocr_source_archives.py'
+      - 'research/runtime_artifacts/tesseract-sources.lock.json'
       - 'research/runtime_artifacts/tesseract-archives.lock.json'
       - 'research/runtime_artifacts/ocr-wheels.json'
       - 'tools/verify_ocr_derivative.py'
@@ -147,6 +150,11 @@ jobs:
           PYTHON
       - name: Acquire and statically audit locked Debian archives without installation
         run: timeout 300s python3 tools/ocr_package_archives.py
+      - name: Acquire locked corresponding Debian sources without extraction or execution
+        run: |
+          timeout 300s python3 tools/ocr_source_archives.py > .research-cache/ocr-source-receipt.json
+          cat .research-cache/ocr-source-receipt.json
+          timeout 90s python3 tools/ocr_source_archives.py --offline
       - name: Measure isolated fictional scanned supplier OCR baseline
         run: |
           npm run build
@@ -175,6 +183,7 @@ jobs:
         with:
           name: ocr-adversity-results
           path: |
+            .research-cache/ocr-source-receipt.json
             .research-cache/ocr-research-output.json
             .research-cache/ocr-build.log
             .research-cache/ocr-adversity-measurement.json
