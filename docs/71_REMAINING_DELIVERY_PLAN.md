@@ -19,7 +19,7 @@ Work the next unmet criterion and its dependencies. A local parser/device/provid
 
 ## Combined platform batch — implemented, not yet accepted or merged
 
-The implementation-first batch is integrated on `feat/platform-build-batch`. Actual acceptance is now in progress. Compilation, lint and a web build passed;203 Python passed. The first broad Node run had468passes,3failures and50explicit local browser skips. Narrow fixes and actual PostgreSQL checks are recorded in the handoff; this is not a passing whole-batch receipt.
+The implementation-first batch is integrated on `feat/platform-build-batch`. Actual acceptance is now in progress. Compilation, lint and a web build passed;203 Python passed. The second broad Node run at8d58c956 had490 passes,2 failures and52 explicit local browser skips. Both reproduced fixture failures are corrected and focused checks pass; independent reviews and hosted browser/race fixes continue. Source-family acceptance includes actual16-test root replay and20 PDF/DOCX renders, with actual Tika application-worker execution newly wired into the qualified host. Exact receipts remain in docs146 and the handoff; this is not a passing whole-batch receipt.
 
 | Connected capability | Implementation and current acceptance boundary |
 |---|---|

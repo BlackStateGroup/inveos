@@ -60,6 +60,7 @@ jobs:
       - name: Typecheck every workspace
         run: npm run typecheck
       - name: Build web application
+        id: web-build
         run: npm run build
       - name: Recreate the fictional disclosure DOCX fixture
         run: node --import tsx tools/make_disclosure_docx_fixture.mjs
@@ -67,25 +68,32 @@ jobs:
         run: npm run test:foundation
       - name: Exercise synthetic reference flow
         run: python3 -m examples.evidence_flow_demo
+      - name: Install actual PDF and Office inspection tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk poppler-utils
       - name: Run API integration tests against real PostgreSQL
         # This existing workspace command reads CI environment variables directly;
         # the root test:api command requires a developer's private .env file.
         # The growing serial suite includes actual database and browser journeys.
         # Individual worker/browser deadlines remain unchanged.
+        env:
+          INVEOS_ACCEPTANCE_ARTIFACTS: ${{ github.workspace }}/output/evals/source-family
         run: timeout 600s npm test --workspace @inveos/api
       - name: Exercise actual recipient evidence upload and privacy in the browser
+        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: timeout 180s node --import tsx --test apps/api/test/workflow-browser.integration.ts
       - name: Exercise development effect replay in the actual browser
+        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: |
           NODE_ENV=development npm run build --workspace @inveos/web
-          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio|real browser prints collected-source lineage|real browser links reviewed speech to reasoning|real browser saves desktop batches' apps/api/test/api.test.ts
+          timeout 120s node --import tsx --test --test-concurrency=1 --test-name-pattern='real browser offers case invitations|real browser records source-use|real browser records expenses|real browser recovers editable DOCX|real browser independently reviews and releases a redacted DOCX|real browser opens exact report and transcript review contexts|real browser opens exact source expense and correspondence review records|real browser assigns independent reviews|real browser discovers completed assignment history|real browser inspects OSINT captures|real browser compares speech audio|real browser prints collected-source lineage|real browser links reviewed speech to reasoning|real browser saves desktop batches|real browser declares billing' apps/api/test/api.test.ts
       - name: Render and re-save the fictional DOCX in LibreOffice
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk poppler-utils
           timeout 120s python3 tools/eval_report_docx_office.py --output output/evals/docx-office
           timeout 120s python3 tools/eval_speech_docx_office.py
           timeout 120s python3 tools/eval_speech_docx_office.py --kind collection
+          timeout 180s python3 tools/eval_source_family_copies.py output/evals/source-family
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
@@ -396,5 +404,21 @@ jobs:
         with:
           name: recipient-evidence-browser
           path: output/evals/workflow-evidence-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Retain fictional source-family rendered copies and verifier receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-family-copies
+          path: output/evals/source-family/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Retain fictional invoice browser renders
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: invoice-workflow-browser
+          path: output/evals/invoice-workflow-*.png
           if-no-files-found: ignore
           retention-days: 14
