@@ -272,7 +272,7 @@ def verify_source_use(report):
         require(hashlib.sha256(raw).hexdigest() == value.get('digest'), 'Source-use record digest mismatch')
 
     for proof in proofs:
-        require(isinstance(proof, dict) and set(proof) == {'decision', 'record', 'metadataReview'}, 'Invalid source-use proof')
+        require(isinstance(proof, dict) and set(proof) in ({'decision', 'record', 'metadataReview'}, {'decision', 'record', 'metadataReview', 'collection'}), 'Invalid source-use proof')
         d, r, review = (object_field(proof, key) for key in ('decision', 'record', 'metadataReview'))
         require(set(d) == set('id caseId sourceId evidenceId sequence sourceVersion sourceDigest authorityVersion permission reason actorId actorName recordedAt expiresAt digest'.split()), 'Source-use decision fields')
         require(set(r) == set('url publisher retrievedAt method trustGrade termsReference purpose lawfulBasis scope retentionDays minimisation annotation id caseId version original recordedBy recordedAt withdrawn digest'.split()), 'Source context fields')
@@ -296,6 +296,16 @@ def verify_source_use(report):
         require(source is not None and original['id'] == d['evidenceId'], 'Uncited source-use original')
         for key in ('filename', 'sha256', 'sourceTime', 'receivedTime'):
             require(original[key] == source[key], 'Source-use original identity mismatch')
+        if 'collection' in proof:
+            try:
+                if __package__:
+                    from .verify_collection_context import verify_provenance
+                else:
+                    from verify_collection_context import verify_provenance
+                verify_provenance(proof['collection'], source['contentBase64'], original, report['case']['id'])
+            except (ValueError, KeyError, TypeError, UnicodeError, RecursionError) as exc:
+                raise InvalidReport('Frozen collection provenance does not verify') from exc
+            require(stamp(r['recordedAt']) >= stamp(original['receivedTime']), 'Source metadata predates collection')
         policy = source.get('policy', source)
         require(original['authorityId'] == policy['authorityId'] and type(d['authorityVersion']) is int and type(original['authorityVersion']) is int and 0 < d['authorityVersion'] == original['authorityVersion'] == policy['authorityVersion'], 'Source-use authority mismatch')
         require(type(r['retentionDays']) is int and 1 <= r['retentionDays'] <= 3650, 'Source-use retention limit')

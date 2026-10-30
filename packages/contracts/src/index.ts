@@ -249,7 +249,7 @@ export type CaseInvitation={id:string;caseId:string;caseRef:string;caseTitle:str
 export type CaseInvitationPage={items:CaseInvitation[];next:string|null};
 
 export type SourceUseDecision={id:string;caseId:string;sourceId:string;evidenceId:string;sequence:number;sourceVersion:number;sourceDigest:string;authorityVersion:number;permission:'blocked'|'analysis'|'analysis_and_release';reason:string;actorId:string;actorName:string;recordedAt:string;expiresAt:string|null;digest:string};
-export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview};
+export type SourceUseProof={decision:SourceUseDecision;record:ManualSourceRecord;metadataReview:ManualSourceReview;collection?:CollectionProvenance};
 export type SourceUseState={items:SourceUseDecision[];analysisAllowed:boolean;releaseAllowed:boolean;canDecide:boolean;sourceVersion:number;sourceDigest:string};
 
 export type CaseCurrency='GBP'|'EUR'|'USD';
@@ -282,3 +282,5 @@ export type CollectionAuthorisationInput={id:string;policyVersion:number;authori
 export type CollectionAuthorisation=CollectionAuthorisationInput&{authorId:string;authorName:string;recordedAt:string;withdrawn:boolean};
 export type CollectionJob={id:string;authorisationId:string;companyNumber:string;status:'queued'|'running'|'succeeded'|'failed'|'cancelled';requestedAt:string;failureCode:string|null;evidenceId:string|null;sourceId:string|null};
 export type CollectionReceipt={schemaVersion:'inveos.collection.v1';captureMode:'fictional_fixture'|'provider';tenantId:string;caseId:string;jobId:string;authorisationId:string;authorityVersion:number;policyVersion:number;profileDigest:string;url:string;companyNumber:string;httpStatus:200;sourceTime:string;sourceTimeBasis:'http_response_date_not_record_creation';receivedAt:string;etag:string|null;contentType:string;originalSha256:string;byteLength:number;fields:{pointer:string;value:string}[];interpretation:'unreviewed_provider_assertions'};
+
+export type CollectionProvenance={payload:{schemaVersion:'inveos.collection-provenance.v1';receipt:CollectionReceipt;receiptSha256:string;authorisation:Record<string,unknown>;caseAuthority:Record<string,unknown>;sourcePolicy:Record<string,unknown>;policyReview:Record<string,unknown>};sha256:string};

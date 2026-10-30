@@ -243,3 +243,5 @@
 - [120 — Connected speech workflow](120_SPEECH_WORKFLOW.md) — preserved audio, independent correspondence/interpretation decisions, frozen reports and offline verification; acceptance status is explicit.
 
 - [121 — Controlled OSINT workbench](121_OSINT_WORKBENCH.md) — source policies, scoped collection, preserved responses and actual evidence; live activation remains disabled.
+
+- [122 — Collected-source report lineage](122_COLLECTION_REPORT_LINEAGE.md) — frozen collection permissions, original-linked offline verification and redaction; actual acceptance is recorded separately.

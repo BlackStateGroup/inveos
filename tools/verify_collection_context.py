@@ -94,6 +94,21 @@ def verify(data, expected=None):
     return {'status': 'consistency_checks_passed', 'sha256': envelope['sha256'], 'captureMode': r['captureMode'], 'companyNumber': r['companyNumber'], 'fieldsChecked': len(fields), 'actorAuthenticityVerified': False, 'providerTruthVerified': False, 'currentUseApproved': False, 'clientReleaseApproved': False}
 
 
+def verify_provenance(value, original_base64, original, case_id):
+    """Verify frozen report provenance using that finding's already preserved original."""
+    require(isinstance(value, dict) and set(value) == {'payload', 'sha256'}, 'Invalid collection provenance envelope')
+    p = value['payload']
+    require(isinstance(p, dict) and set(p) == {'schemaVersion', 'receipt', 'receiptSha256', 'authorisation', 'caseAuthority', 'sourcePolicy', 'policyReview'}, 'Invalid frozen collection provenance')
+    require(p['schemaVersion'] == 'inveos.collection-provenance.v1' and digest(p) == value['sha256'], 'Collection provenance digest differs')
+    require(p['receipt']['caseId'] == case_id and p['receipt']['originalSha256'] == original['sha256'], 'Collection provenance cites another original or case')
+    r = p['receipt']
+    require(r['sourceTime'] == original['sourceTime'] and r['receivedAt'] == original['receivedTime'], 'Collection timestamps differ from original')
+    require(p['caseAuthority']['id'] == original['authorityId'] and type(original['authorityVersion']) is int and r['authorityVersion'] == original['authorityVersion'], 'Collection authority differs from original')
+    context = {**p, 'schemaVersion': 'inveos.collection-context.v1', 'originalBase64': original_base64}
+    encoded = json.dumps({'payload': context, 'sha256': digest(context)}, ensure_ascii=False, separators=(',', ':')).encode()
+    return verify(encoded)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('path', type=Path)
