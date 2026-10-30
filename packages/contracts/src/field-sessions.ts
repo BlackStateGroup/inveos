@@ -38,3 +38,5 @@ export function parseFieldRecord(value:unknown):FieldRecord{
 }
 /** Stable semantic comparison; original bytes are always hashed separately. */
 export function fieldRecordCanonical(value:unknown):string{if(Array.isArray(value))return '['+value.map(fieldRecordCanonical).join(',')+']';if(value&&typeof value==='object')return '{'+Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>JSON.stringify(k)+':'+fieldRecordCanonical(v)).join(',')+'}';return JSON.stringify(value);}
+
+export type FieldRecordContext={selected:FieldRecordReceipt;history:FieldRecordReceipt[];reviews:FieldObservationReview[];latest:{captureId:string;version:number};nextBefore:number|null};

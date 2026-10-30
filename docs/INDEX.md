@@ -267,3 +267,7 @@
 These feature documents distinguish implementation/compiler feedback from unrun acceptance. Current combined branch, child assignments, commit evidence and remaining gates are in BUILD_HANDOFF.md. None of this section implies main merge or production readiness.
 
 - [138 — Case sensitivity and handling](138_CASE_SENSITIVITY_HANDLING.md): versioned labels and current recipient-sharing restrictions; runtime acceptance pending.
+
+- [135 — Field sessions and observations](135_FIELD_SESSIONS.md): original-backed sessions, corrections and independent context review; runtime acceptance pending.
+- [137 — Restricted collaborator work](137_RESTRICTED_COLLABORATOR_WORK.md): independently published task instructions and recipient submissions; runtime acceptance pending.
+- [141 — Field records in investigator search](141_FIELD_CASE_SEARCH.md): exact original/correction inspection from case search; runtime acceptance pending.

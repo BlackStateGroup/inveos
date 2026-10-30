@@ -8,7 +8,7 @@ import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
 
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string,action:string,entity:string,id:string,summary:string)=>Promise<void>};
-const kinds=['original','claim','document_claim','document_text','text_finding','document_finding','work','chronology','entity','relationship','source_context','transcript','transcript_claim','transcript_finding','speech_claim','speech_finding'];
+const kinds=['original','claim','document_claim','document_text','text_finding','document_finding','work','chronology','entity','relationship','source_context','transcript','transcript_claim','transcript_finding','speech_claim','speech_finding','field_session','field_observation'];
 const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'};
 const timestamp={type:'string',minLength:20,maxLength:40};
 const filterProperties={query:{type:'string',maxLength:200},kind:{enum:['all',...kinds]},status:{type:'string',maxLength:40},queryMode:{enum:['phrase','all_words','any_words']},sourceFrom:timestamp,sourceTo:timestamp,receivedFrom:timestamp,receivedTo:timestamp,evidenceId:uuid};
@@ -26,6 +26,17 @@ function validate(filter:CaseSearchFilter){
 
 // Search describes current stored records. It never asserts source-byte verification or evidential truth.
 const records=`
+ SELECT CASE WHEN r.observation_id IS NULL THEN 'field_session' ELSE 'field_observation' END kind,r.capture_id id,r.receipt#>>'{record,title}' title,
+ concat_ws(' ',r.receipt#>>'{record,title}',r.receipt#>>'{record,purpose}',r.receipt#>>'{record,summary}',r.receipt#>>'{record,account}',r.receipt#>>'{record,sourceDescription}',r.receipt#>>'{record,category}',r.receipt#>>'{record,basis}') body,
+ CASE WHEN r.observation_id IS NULL THEN CASE WHEN EXISTS(SELECT 1 FROM field_session_records e WHERE e.tenant_id=r.tenant_id AND e.case_id=r.case_id AND e.session_id=r.session_id AND e.kind='session_end') THEN 'Session end recorded' ELSE 'Session start recorded' END
+ WHEN r.receipt#>>'{record,status}'='withdrawn' THEN 'Withdrawn observation'
+ WHEN v.receipt->>'decision'='needs_correction' THEN 'Context review needs correction'
+ WHEN v.receipt->>'decision'='context_checked' AND (v.receipt->>'authorityVersion')::int=k.authority_version AND (v.receipt->>'caseAccessVersion')::int=k.access_version AND EXISTS(SELECT 1 FROM case_memberships cm JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id WHERE cm.tenant_id=r.tenant_id AND cm.case_id=r.case_id AND cm.user_id=v.reviewer_id AND m.role='reviewer') THEN 'Context checked; not a finding'
+ WHEN v.capture_id IS NOT NULL THEN 'Needs fresh context review' ELSE 'Unreviewed observation' END status,f.evidence_id,'Field' page
+ FROM field_session_records r JOIN field_captures f ON f.tenant_id=r.tenant_id AND f.case_id=r.case_id AND f.id=r.capture_id JOIN cases k ON k.tenant_id=r.tenant_id AND k.id=r.case_id
+ LEFT JOIN LATERAL(SELECT * FROM field_observation_reviews v WHERE v.tenant_id=r.tenant_id AND v.case_id=r.case_id AND v.capture_id=r.capture_id ORDER BY recorded_at DESC,id DESC LIMIT 1)v ON true
+ WHERE r.tenant_id=$1 AND r.case_id=$2 AND NOT EXISTS(SELECT 1 FROM field_session_records n WHERE n.tenant_id=r.tenant_id AND n.case_id=r.case_id AND n.session_id=r.session_id AND n.observation_id IS NOT DISTINCT FROM r.observation_id AND n.version>r.version)
+ UNION ALL
  SELECT 'transcript' kind,t.id,t.title title,t.title||' '||coalesce((SELECT string_agg(coalesce(c.text,g.raw_text),' ' ORDER BY g.ordinal) FROM interview_transcript_segments g LEFT JOIN interview_transcript_corrections c ON c.tenant_id=g.tenant_id AND c.case_id=g.case_id AND c.transcript_id=g.transcript_id AND c.segment_id=g.id AND c.version=g.current_version WHERE g.tenant_id=t.tenant_id AND g.case_id=t.case_id AND g.transcript_id=t.id),'') body,'Supplied transcript' status,t.evidence_id,'Interview' page FROM interview_transcripts t WHERE t.tenant_id=$1 AND t.case_id=$2
  UNION ALL
  SELECT entry.kind,entry.id,left(p.snapshot->>'text',120),(p.snapshot->>'text')||' '||(p.snapshot#>>'{reference,quote}')||' '||(p.snapshot#>>'{reference,speakerLabel}'),CASE WHEN w.claim_id IS NOT NULL THEN 'Withdrawn' WHEN r.accepted=false THEN 'Rejected' WHEN g.current_version<>p.segment_version OR k.authority_version<>(p.snapshot#>>'{source,policy,authorityVersion}')::int OR k.status<>'Active' THEN 'Needs fresh review' WHEN r.accepted THEN 'Recorded independent review' ELSE 'Proposed interpretation' END,t.evidence_id,'Interview' FROM transcript_claims p JOIN interview_transcript_segments g ON g.tenant_id=p.tenant_id AND g.case_id=p.case_id AND g.transcript_id=p.transcript_id AND g.id=p.segment_id JOIN interview_transcripts t ON t.tenant_id=p.tenant_id AND t.case_id=p.case_id AND t.id=p.transcript_id JOIN cases k ON k.tenant_id=p.tenant_id AND k.id=p.case_id LEFT JOIN transcript_claim_reviews r ON r.tenant_id=p.tenant_id AND r.case_id=p.case_id AND r.claim_id=p.id LEFT JOIN transcript_findings f ON f.tenant_id=p.tenant_id AND f.case_id=p.case_id AND f.claim_id=p.id LEFT JOIN transcript_claim_withdrawals w ON w.tenant_id=p.tenant_id AND w.case_id=p.case_id AND w.claim_id=p.id CROSS JOIN LATERAL (VALUES ('transcript_claim',p.id),('transcript_finding',f.id)) entry(kind,id) WHERE entry.id IS NOT NULL AND p.tenant_id=$1 AND p.case_id=$2
@@ -59,7 +70,7 @@ export function registerCaseSearch(app:FastifyInstance,s:Services){
  const internal=async(r:FastifyRequest)=>{await s.authenticate(r);if(r.actor!.role==='client')throw new ApiError(403,'Internal case search only.');};
  const base='/api/cases/:caseId',views=base+'/saved-views';
  app.post(base+'/search',{preHandler:s.requireCsrf,schema:{params,body:{type:'object',additionalProperties:false,required:['query','kind','status'],properties:{...filterProperties,after:{type:'object',additionalProperties:false,required:['kind','id'],properties:{kind:{enum:kinds},id:uuid}}}}}},async r=>inTransaction(s.pool,async c=>{
-  const actor=r.actor!,{caseId}=r.params as {caseId:string};if(actor.role==='client')throw new ApiError(403,'Internal case search only.');await s.findCase(c,actor,caseId);
+  const actor=r.actor!,{caseId}=r.params as {caseId:string};if(actor.role==='client')throw new ApiError(403,'Internal case search only.');await c.query("SET LOCAL lock_timeout='2s'");await s.findCase(c,actor,caseId,true);
   const input=r.body as CaseSearchFilter&{after?:{kind:string;id:string}};validate(input);
   await c.query("SET LOCAL statement_timeout='2s'");
   const found=await c.query(`WITH records AS (${records}), located AS (
