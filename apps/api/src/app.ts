@@ -1,3 +1,4 @@
+import {registerAgencyInvoicing} from './agency-invoicing.js';
 import {registerCollectionJobs} from './collection-jobs.js';
 import {registerConnectorPolicies} from './connector-policies.js';
 import {registerSpeechFindings} from './speech-findings.js';
@@ -709,7 +710,9 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerAttention(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerTimeLedger(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   registerCaseBudgets(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
-  registerCaseExpenses(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:async(c,a,caseId,id)=>{const row=await findEvidence(c,a,caseId,id),kase=await findCase(c,a,caseId);if(kase.status!=='Active'||kase.authority_version!==row.authority_version)throw new ApiError(409,'Expense receipt requires current case authority.');await sourceUseProofs(c,a.tenantId,caseId,id,'analysis');await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};}});
+  const verifiedExpenseOriginal = async(c:PoolClient,a:Actor,caseId:string,id:string)=>{const row=await findEvidence(c,a,caseId,id),kase=await findCase(c,a,caseId);if(kase.status!=='Active'||kase.authority_version!==row.authority_version)throw new ApiError(409,'Expense receipt requires current case authority.');await sourceUseProofs(c,a.tenantId,caseId,id,'analysis');await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};};
+  registerCaseExpenses(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:verifiedExpenseOriginal});
+  registerAgencyInvoicing(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:verifiedExpenseOriginal});
   registerWorkload(app,{pool:options.pool,authenticate,findCase});
 
   app.post(
