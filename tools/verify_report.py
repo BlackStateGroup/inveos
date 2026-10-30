@@ -154,7 +154,7 @@ def verify_transcript_findings(report, finding_ids, evidence):
         identifier(finding['id']); require(finding['id'] not in finding_ids, 'Duplicate finding identity'); finding_ids.add(finding['id'])
         claim, decision = finding['claim'], finding['review']
         fields(claim, 'id caseId text proposedBy proposedAt digest source transcript reference limitations')
-        identifier(claim['id']); identifier(claim['proposedBy']); stamp(claim['proposedAt'], True)
+        identifier(claim['id']); identifier(claim['caseId']); identifier(claim['proposedBy']); stamp(claim['proposedAt'], True)
         require(claim['caseId'] == report['case']['id'], 'Cross-case transcript claim')
         string(claim['text'], 2000, 10)
         require(claim['limitations'] == 'Reviewed interpretation of a supplied transcript, not proof of speech or source truth. Timecodes and speaker labels are declared; audio alignment and identity are unverified.', 'Transcript limitations changed')
