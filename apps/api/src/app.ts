@@ -757,7 +757,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerCaseBudgets(app, {pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit});
   const verifiedExpenseOriginal = async(c:PoolClient,a:Actor,caseId:string,id:string)=>{const row=await findEvidence(c,a,caseId,id),kase=await findCase(c,a,caseId);if(kase.status!=='Active'||kase.authority_version!==row.authority_version)throw new ApiError(409,'Expense receipt requires current case authority.');await sourceUseProofs(c,a.tenantId,caseId,id,'analysis');await verifiedBytes(options.storageRoot,row);return {id:row.id,filename:row.filename,sha256:row.digest.trim(),sourceTime:row.source_time,receivedTime:iso(row.received_time),authorityId:row.authority_id,authorityVersion:row.authority_version,status:row.status};};
   registerCaseExpenses(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:verifiedExpenseOriginal});
-  registerAgencyInvoicing(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:verifiedExpenseOriginal});
+  registerAgencyInvoicing(app,{pool:options.pool,authenticate,requireCsrf,findCase,audit:writeAudit,original:verifiedExpenseOriginal,assertSession:assertCurrentSession});
   registerWorkload(app,{pool:options.pool,authenticate,findCase});
 
   app.post(
@@ -1666,7 +1666,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
     const member=await client.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role<>'client'",[actor.tenantId,actor.userId]);
     if(!member.rowCount) throw new ApiError(403,'Internal reports only.');
   }
-  const compositions=registerReportCompositions(app,{authenticate,requireCsrf,transaction:reportTransaction,access:reportAccess,lock:(c,a,id)=>findCase(c,a,id,true),build:buildReport,audit:writeAudit});
+  const compositions=registerReportCompositions(app,{authenticate,requireCsrf,assertSession:assertCurrentSession,transaction:op=>inTransaction(options.pool,op),access:reportAccess,lock:(c,a,id)=>findCase(c,a,id,true),build:buildReport,audit:writeAudit});
   app.get('/api/cases/:caseId/report',{preHandler:authenticate,schema:{params:caseParamsSchema}},async request=>{
     const actor=request.actor!,{caseId}=request.params as {caseId:string};
     return reportTransaction(async client=>{await reportAccess(client,actor,caseId);return buildReport(client,actor,caseId);});
@@ -1698,7 +1698,8 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   },schema:{params:caseParamsSchema,
     body:{type:'object',required:['idempotencyKey'],additionalProperties:false,properties:{idempotencyKey:uuidSchema,composition:{type:'object',additionalProperties:false,required:['id','version','sha256','reviewId'],properties:{id:uuidSchema,version:{type:'integer',minimum:1,maximum:100},sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},reviewId:uuidSchema}}}}}},async request=>{
     const actor=request.actor!,{caseId}=request.params as {caseId:string},{idempotencyKey,composition}=request.body as {idempotencyKey:string;composition?:{id:string;version:number;sha256:string;reviewId:string}};
-    return reportTransaction(async client=>{
+    const transaction=composition?<T>(op:(client:PoolClient)=>Promise<T>)=>compositions.transaction(actor,caseId,op):reportTransaction;
+    return transaction(async client=>{
       await reportAccess(client,actor,caseId);
       const old=await client.query('SELECT id,digest,created_at,report_bytes FROM report_revisions WHERE tenant_id=$1 AND case_id=$2 AND created_by=$3 AND idempotency_key=$4',[actor.tenantId,caseId,actor.userId,idempotencyKey]);
       if(old.rows[0]) {
@@ -1715,6 +1716,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (tenant_id,case_id,created_by,idempotency_key) DO NOTHING RETURNING id,digest,created_at`,[actor.tenantId,caseId,id,actor.userId,idempotencyKey,bytes,digest]);
       if(!inserted.rows[0]) throw Object.assign(new Error('Concurrent revision retry'),{code:'40001'});
       await writeAudit(client,actor,caseId,'report.frozen','report_revision',id,'Internal draft revision frozen',{digest,...(report.composition?{compositionId:report.composition.payload.id,compositionVersion:report.composition.payload.version,compositionSha256:report.composition.sha256,compositionReviewId:report.composition.review.id}:{}),findingIds:report.findings.map(f=>f.id),documentFindingIds:report.documentFindings?.map(f=>f.id)??[],transcriptFindingIds:report.transcriptFindings?.map(f=>f.id)??[],speechFindingIds:report.speechFindings?.map(f=>f.id)??[],tikaFindingIds:report.tikaFindings?.map(f=>f.id)??[]});
+      if(composition){await compositions.assertAccepted(client,actor,caseId,composition);await assertFrozenSourceUse(client,actor.tenantId,caseId,report,'analysis');}
       return revisionReceipt(inserted.rows[0],caseId);
     });
   });
@@ -2040,10 +2042,13 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       return {items:visible.map(r=>({id:r.id,revisionId:r.revision_id,sha256:r.docx_digest?.trim()??r.pdf_digest?.trim()??r.package_digest?.trim()??r.digest.trim(),reportSha256:r.digest.trim(),deliverable:r.editable_rendition_id?'report_docx':r.rendition_id?'report_pdf':r.package_digest?'document_package':'report_json',createdAt:iso(r.created_at),expiresAt:iso(r.expires_at)})),nextBefore:rows.rows.length>limit?rows.rows[limit-1]!.id:null};
     });
   });
+  async function assertFrozenSourceUse(client:PoolClient,tenantId:string,caseId:string,frozen:ReportDraft,use:'analysis'|'release'){
+    const permissions=await reportSourceUse(client,tenantId,caseId,frozen,use);
+    if(JSON.stringify(permissions)!==JSON.stringify(frozen.sourceUse??[]))throw new ApiError(409,'Frozen source-use decisions are no longer current.');
+  }
   async function disclosureDelivery(client:PoolClient,row:QueryResultRow){
     checkRevision(row);const reportDigest=row.digest.trim();
-    const frozen=JSON.parse(row.report_bytes.toString('utf8')) as ReportDraft,permissions=await reportSourceUse(client,row.tenant_id,row.case_id,frozen,'release');
-    if(JSON.stringify(permissions)!==JSON.stringify(frozen.sourceUse??[]))throw new ApiError(409,'Released source-use decisions are no longer current.');
+    await assertFrozenSourceUse(client,row.tenant_id,row.case_id,JSON.parse(row.report_bytes.toString('utf8')) as ReportDraft,'release');
     if(row.editable_rendition_id){
       if(row.package_bytes||row.rendition_id)throw new ApiError(409,'Disclosure has conflicting deliverables.');
       const rendition=(await client.query('SELECT * FROM report_editable_renditions WHERE tenant_id=$1 AND case_id=$2 AND revision_id=$3 AND id=$4',[row.tenant_id,row.case_id,row.revision_id,row.editable_rendition_id])).rows[0];
@@ -2068,12 +2073,15 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   registerPortalFeedback(app,{pool:options.pool,authenticate,requireSessionCsrf,audit:writeAudit,
     assertCurrent:async(client,actor,scope)=>{
       if(actor.role!=='client')await findCase(client,actor,scope.caseId,true);
-      const eligible=(await client.query(`SELECT 1 FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id ${renditionDisclosureJoin}
+      const eligible=(await client.query(`SELECT r.report_bytes FROM report_disclosures d JOIN cases c ON c.tenant_id=d.tenant_id AND c.id=d.case_id JOIN report_revisions r ON r.tenant_id=d.tenant_id AND r.case_id=d.case_id AND r.id=d.revision_id ${renditionDisclosureJoin}
         WHERE d.tenant_id=$1 AND d.case_id=$2 AND d.id=$3 AND d.recipient_id=$4 AND d.expires_at>clock_timestamp() AND ${disclosureEligibility}
         AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=d.recipient_id AND m.role='client')
         AND EXISTS(SELECT 1 FROM memberships m WHERE m.tenant_id=d.tenant_id AND m.user_id=$5 AND m.role=$6)
-        AND EXISTS(SELECT 1 FROM sessions ss LEFT JOIN identity_bindings ib ON ib.id=ss.identity_id AND ib.tenant_id=ss.tenant_id AND ib.user_id=ss.user_id WHERE ss.tenant_id=d.tenant_id AND ss.user_id=$5 AND ss.token_hash=$7 AND ss.expires_at>clock_timestamp() AND ss.revoked_at IS NULL AND ss.epoch=$8 AND (($9::text IS NULL AND ss.identity_id IS NULL) OR ($9::text IS NOT NULL AND ib.issuer=$9 AND ib.revoked_at IS NULL AND ss.identity_profile_hash=$10)))`,[actor.tenantId,scope.caseId,scope.disclosureId,scope.recipientId,actor.userId,actor.role,actor.tokenHash,epoch,options.identity?.issuer??null,options.identity?.fingerprint??null])).rowCount;
+        AND EXISTS(SELECT 1 FROM sessions ss LEFT JOIN identity_bindings ib ON ib.id=ss.identity_id AND ib.tenant_id=ss.tenant_id AND ib.user_id=ss.user_id WHERE ss.tenant_id=d.tenant_id AND ss.user_id=$5 AND ss.token_hash=$7 AND ss.expires_at>clock_timestamp() AND ss.revoked_at IS NULL AND ss.epoch=$8 AND (($9::text IS NULL AND ss.identity_id IS NULL) OR ($9::text IS NOT NULL AND ib.issuer=$9 AND ib.revoked_at IS NULL AND ss.identity_profile_hash=$10)))`,[actor.tenantId,scope.caseId,scope.disclosureId,scope.recipientId,actor.userId,actor.role,actor.tokenHash,epoch,options.identity?.issuer??null,options.identity?.fingerprint??null])).rows[0];
       if(!eligible)notFound();
+      try{await assertFrozenSourceUse(client,actor.tenantId,scope.caseId,JSON.parse(eligible.report_bytes.toString('utf8')) as ReportDraft,'release');}
+      catch(error){if(actor.role==='client'&&error instanceof ApiError)throw new ApiError(409,'This release is currently unavailable for feedback. Refresh disclosures.');throw error;}
+      await assertCurrentSession(client,actor);
     },
     listReleases:async(client,actor,caseId,after)=>{
       await findCase(client,actor,caseId,true);
