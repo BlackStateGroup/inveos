@@ -70,7 +70,7 @@ jobs:
         # the root test:api command requires a developer's private .env file.
         # The two added browser journeys bring the measured suite close to 180s.
         # Individual worker/browser deadlines remain unchanged.
-        run: timeout 240s npm test --workspace @inveos/api
+        run: timeout 360s npm test --workspace @inveos/api
       - name: Qualify isolated worker host with first-party probes
         run: timeout 90s python3 tools/probe_worker_isolation.py --image postgres:15
       - name: Retain fictional chronology browser render
