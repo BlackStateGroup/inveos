@@ -1,0 +1,17 @@
+.processing-batches { display: grid; gap: 20px; margin-bottom: 24px; min-width: 0; }
+.processing-batches .panel-body { display: grid; gap: 14px; }
+.processing-batches fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 14px; }
+.processing-batches code,.processing-batches p,.processing-batches small { overflow-wrap: anywhere; }
+.processing-filter { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.processing-filter .form-label { flex: 1 1 200px; margin: 0; }
+.processing-originals { max-height: 360px; overflow: auto; border-block: 1px solid var(--line); }
+.processing-original { display: flex; align-items: start; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.processing-original span { min-width: 0; overflow-wrap: anywhere; }
+.processing-original small { display: block; margin-top: 5px; line-height: 1.6; color: var(--muted); }
+.processing-record { padding: 16px 0; border-top: 1px solid var(--line); min-width: 0; }
+.processing-record h4 { overflow-wrap: anywhere; }
+.processing-pending { padding: 16px; border: 1px solid var(--line); }
+.processing-table { overflow-x: auto; }
+.processing-batches summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.processing-batches .work-record-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.processing-batches button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+export * from './processing-batches.js';
 import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance,FieldProvenance} from './field-sync.js';
 export * from './field-sync.js';
 import type {ResearchProvenance} from './research.js';
