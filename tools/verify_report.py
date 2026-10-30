@@ -259,6 +259,19 @@ def verify_speech_work_links(report):
     return verify_typed_work_links(report, "speech")
 
 
+def verify_field_provenance(report, original_lengths=None):
+    if 'fieldProvenance' not in report:
+        return 0
+    try:
+        if __package__:
+            from .verify_field_provenance import verify as check_field
+        else:
+            from verify_field_provenance import verify as check_field
+        return check_field(report, original_lengths)
+    except (ValueError, TypeError, KeyError, AttributeError, UnicodeError, OverflowError) as exc:
+        raise InvalidReport('Invalid frozen Field capture or recovery lineage') from exc
+
+
 def verify_source_use(report):
     """Check retained declarations, not present permission or legal sufficiency."""
     proofs = report.get('sourceUse', [])
@@ -414,9 +427,10 @@ def verify_report(raw: bytes, expected_sha256=None, expected_case_id=None):
         chronology_count = verify_chronology(report)
         transcript_links = verify_transcript_work_links(report)
         source_use_count = verify_source_use(report)
+        field_count = verify_field_provenance(report)
     except (ValueError, TypeError, KeyError, UnicodeError, IndexError, AttributeError, binascii.Error) as exc:
         raise InvalidReport('Invalid frozen chronology or transcript lineage') from exc
-    return {'status': 'integrity_checks_passed', **({'speechWorkLinksChecked': speech_links_count} if speech_links_count else {}), 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
+    return {'status': 'integrity_checks_passed', **({'fieldCapturesChecked': field_count} if field_count else {}), **({'speechWorkLinksChecked': speech_links_count} if speech_links_count else {}), 'chronologyEventsChecked': chronology_count, 'reportSha256': actual,
             'trustedReportDigestMatched': expected_sha256 is not None, **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}),
             **({'speechFindingsChecked': speech_count} if speech_count else {}), 'caseId': case_id, 'findingsChecked': len(findings) + transcript_count + speech_count, **({'transcriptFindingsChecked': transcript_count} if transcript_count else {}),
             **({'transcriptWorkLinksChecked': transcript_links} if transcript_links else {}), 'originalsChecked': len(evidence), 'releaseStatus': 'draft_not_released',

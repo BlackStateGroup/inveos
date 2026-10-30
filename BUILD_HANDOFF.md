@@ -1,3 +1,11 @@
+## Field report lineage and next integration
+
+Root adds docs134 / `field-provenance.ts` / `verify_field_provenance.py`: Field capture/recovery joins into new frozen reports, independent verification and shared PDF/DOCX/print. No migration. Final web/contracts/API compilation passes; all runtime/export/render/mutation acceptance is unrun. Preserve historical report bytes and distinguish software identity from device attestation.
+
+Ready child commits awaiting root integration: bulk processing `246007c6f4a86276497fd7ea98fb016bc7f97c63` on feat/bulk-processing, migrations085–086/docs129; OSINT follow-through `d56778eee2ecf4487e26d2a874eeabec245f7b04` on feat/osint-expansion-124, migration090/docs130, including PDF/DOCX provenance and GLEIF. Both compile; tests are unrun. Root must merge additively with its Field renderer changes.
+
+Active next tasks: agency report composition095–099/docs132; Field sessions/structured observations100–104/docs135 on feat/field-sessions; existing locked Tika runtime application integration105–109/docs136 on feat/tika-application. Three children remain authorised and active; do not spawn additional agents or contact unrelated threads. Continue implementation before combined acceptance, per user steering. No new PR/main merge/production/provider activation claim.
+
 ## Current root checkpoint — platform build branch
 
 `feat/platform-build-batch` now includes portal feedback a74853d60 via merge489024b1; its integrated web/contracts/API compile passed (`/tmp/inveos-platform-portal-compile.log`). Desktop intake bf2a3298, migration094/docs131, also passed final compilation including manifest integrity. Root now adds source/receipt-time bounds, exact original filters and word matching to case search/docs133, preserving historical saved-filter meaning; compilation passes, all database/browser/performance checks remain unrun.

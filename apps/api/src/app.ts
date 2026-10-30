@@ -1,3 +1,4 @@
+import {reportFieldProvenance} from './field-provenance.js';
 import {registerCaseAnalysis} from './case-analysis.js';
 import {registerPortalFeedback} from './portal-feedback.js';
 import {registerAgencyInvoicing} from './agency-invoicing.js';
@@ -1548,6 +1549,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       }
       if (!report.findings.length&&!report.documentFindings?.length&&!report.transcriptFindings?.length&&!report.speechFindings?.length) throw new ApiError(422, 'A report draft requires at least one accepted finding.');
       const sourceUse=await reportSourceUse(client,actor.tenantId,caseId,report,'analysis');if(sourceUse.length){budget.add({sourceUse},0,true);report.sourceUse=sourceUse;}
+      const fieldProvenance=await reportFieldProvenance(client,actor.tenantId,caseId,report);if(fieldProvenance.length){budget.add({fieldProvenance},0,true);report.fieldProvenance=fieldProvenance;}
       if(selectedFindings)return report; // Verification inspects only the frozen finding set, not later working context.
       for await (const row of reportRows(client, 'report_work',
         `SELECT *, due_date::text AS due_date FROM case_work_items
@@ -1679,6 +1681,7 @@ export async function createApp(options: AppOptions): Promise<FastifyInstance> {
       if(JSON.stringify(current.transcriptFindings??[])!==JSON.stringify(frozen.transcriptFindings??[]))throw new ApiError(409,'Frozen transcript findings no longer match their reviewed versions.');
       if(JSON.stringify(current.documentFindings??[])!==JSON.stringify(frozen.documentFindings??[]))throw new ApiError(409,'Frozen document findings no longer match their current source records.');
       if(JSON.stringify(current.speechFindings??[])!==JSON.stringify(frozen.speechFindings??[]))throw new ApiError(409,'Frozen speech findings no longer match their reviewed versions.');
+      if(frozen.fieldProvenance!==undefined&&JSON.stringify(current.fieldProvenance??[])!==JSON.stringify(frozen.fieldProvenance))throw new ApiError(409,'Frozen Field capture provenance no longer matches its recorded acceptance.');
       const permissions=use==='release'?await reportSourceUse(client,actor.tenantId,caseId,current,'release'):current.sourceUse??[];
       if(JSON.stringify(permissions)!==JSON.stringify(frozen.sourceUse??[]))throw new ApiError(409,'Frozen source-use decisions require a new report revision.');
       return {ids:allIds,revision};

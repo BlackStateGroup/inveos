@@ -15,10 +15,10 @@ import re
 import sys
 
 if __package__:
-    from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology, verify_transcript_work_links, verify_speech_work_links, verify_source_use
+    from .verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology, verify_transcript_work_links, verify_speech_work_links, verify_source_use, verify_field_provenance
     from .verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE, EXPANDED_PROFILE as OCR_EXPANDED_PROFILE
 else:
-    from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology, verify_transcript_work_links, verify_speech_work_links, verify_source_use
+    from verify_report import InvalidReport, require, unique_object, reject_constant, verify_report, verify_chronology, verify_transcript_work_links, verify_speech_work_links, verify_source_use, verify_field_provenance
     from verify_ocr_derivative import ocr_derivative, PROFILE as OCR_PROFILE, EXPANDED_PROFILE as OCR_EXPANDED_PROFILE
 
 MAX_PACKAGE = 64 * 1024 * 1024
@@ -275,7 +275,7 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         transcripts = report.get('transcriptFindings', [])
         require(isinstance(transcripts, list) and len(legacy) + len(findings) + len(transcripts) + len(speeches) <= 1000, 'Mixed finding count limit')
         if legacy or transcripts or speeches:
-            original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'sourceUse')}
+            original_report = {key: value for key, value in report.items() if key not in ('documentFindings', 'sourceUse', 'fieldProvenance')}
             # The complete mixed-source chronology is validated below, after both source families.
             original_report['investigation'] = {key: value for key, value in report.get('investigation', {}).items() if key != 'chronology'}
             verify_report(json.dumps(original_report, ensure_ascii=False).encode('utf-8'))
@@ -298,11 +298,12 @@ def verify_package(raw, expected_report_sha256=None, expected_package_sha256=Non
         except (ValueError, TypeError, KeyError, UnicodeError) as exc:
             raise InvalidReport('Invalid frozen chronology') from exc
         tenants = {verify_exhibit(f, e, case_id) for f, e in zip(findings, exhibits)}
+        field_count = verify_field_provenance(report, {f['source']['id']: len(blob(e['originalBase64'], 262144)) for f, e in zip(findings, exhibits)})
         tenants.update(f['claim']['context']['payload']['derivative']['context']['tenantId'] for f in speeches)
         require(len(tenants) == 1, 'Mixed tenant lineage')
     except (KeyError, TypeError, IndexError, AttributeError, UnicodeError, OverflowError, RecursionError, StopIteration) as exc:
         raise InvalidReport('Malformed document package') from exc
-    return {'status': 'integrity_checks_passed', 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
+    return {'status': 'integrity_checks_passed', **({'fieldCapturesChecked': field_count} if field_count else {}), 'reportSha256': sha(report_raw), 'packageSha256': sha(raw),
             'caseId': case_id, **({'speechWorkLinksChecked': speech_links} if speech_links else {}), **({'sourceUseDecisionsChecked': source_use_count} if source_use_count else {}), 'chronologyEventsChecked': chronology_count, 'documentWorkLinksChecked': working_links, 'documentFindingsChecked': len(findings), 'originalFindingsChecked': len(legacy),
             **({'transcriptFindingsChecked': len(transcripts), 'transcriptWorkLinksChecked': transcript_links} if transcripts or transcript_links else {}),
             **({'speechFindingsChecked': len(speeches)} if speeches else {}), 'trustedReportDigestMatched': expected_report_sha256 is not None, 'trustedPackageDigestMatched': expected_package_sha256 is not None,

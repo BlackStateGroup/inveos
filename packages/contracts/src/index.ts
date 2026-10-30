@@ -1,4 +1,4 @@
-import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance} from './field-sync.js';
+import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance,FieldProvenance} from './field-sync.js';
 export * from './field-sync.js';
 import type {ResearchProvenance} from './research.js';
 export type * from './research.js';
@@ -135,6 +135,7 @@ export type DocumentReportFinding = {
 
 export type ReportDraft = {
   status: 'draft_not_released';
+  fieldProvenance?:FieldProvenance[];
   documentFindings?: DocumentReportFinding[];
   transcriptFindings?: TranscriptReportFinding[];
   speechFindings?: SpeechReportFinding[];
