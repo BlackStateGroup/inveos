@@ -1,3 +1,5 @@
+import type {FieldSyncAuthority,FieldGrant,FieldDeviceState,FieldAcceptance} from './field-sync.js';
+export * from './field-sync.js';
 export const caseStages=['Intake','Scope review','Active','Review','Released','Closed','Archived'] as const;
 export type CaseStage=typeof caseStages[number];
 export type CaseLifecycle={state:CaseStage;version:number;collectionOpen:boolean;canManage:boolean;allowed:CaseStage[];history:{id:string;version:number;from:CaseStage|null;to:CaseStage;actorId:string|null;reason:string;source:string;authorityVersion:number|null;disclosureId:string|null;recordedAt:string}[];nextBefore:number|null;disclosures:{id:string;createdAt:string}[]};
@@ -227,10 +229,10 @@ export type ReviewRegisterPage={items:(ReviewAssignmentContext&{pending:boolean;
 export type AttentionEntry={key:string;revision:string;caseId:string;caseRef:string;caseTitle:string;id:string;kind:'deadline'|'upload_expired'|'processing_failed'|'claim_review'|'document_review'|'transcript_review'|'report_review'|'pdf_review'|'docx_review'|'correspondence_review'|'source_review'|'expense_review';category:'deadlines'|'failures'|'reviews';title:string;status:string;dueDate:string|null;workKind:WorkKind|null;evidenceId:string|null;jobId:string|null;contextId?:string|null;acknowledged?:boolean;assignment?:ReviewOwnership|null};
 export type AttentionPage={items:AttentionEntry[];next:string|null;preferences:AttentionPreferences;asOf:string;interpretation:'personal_attention_not_review'};
 
-export type FieldDevice={id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
-export type FieldContext={tenantId:string;userId:string;caseId:string;device:FieldDevice;authority:AuthorityRecord;checkedAt:string;maxOriginalBytes:number};
-export type FieldManifest={id:string;deviceId:string;authorityId:string;authorityVersion:number;filename:string;sourceTime:string;capturedAt:string;clockUncertaintySeconds:number|null;method:string;expectedSha256:string;byteLength:number;kind:'supplied_file'|'field_note';scopeConfirmed:true};
-export type FieldCaptureReceipt={capture:{id:string;caseId:string;deviceId:string;authorityId:string;authorityVersion:number;manifestSha256:string;receivedAt:string};evidence:Evidence};
+export type FieldDevice={version?:number;state?:FieldDeviceState;userId?:string;userName?:string;id:string;label:string;createdAt:string;revokedAt:string|null;revocationReason:string|null};
+export type FieldContext={grant?:FieldGrant|null;tenantId:string;userId:string;caseId:string;device:FieldDevice;authority:AuthorityRecord;checkedAt:string;maxOriginalBytes:number};
+export type FieldManifest={sync?:FieldSyncAuthority;id:string;deviceId:string;authorityId:string;authorityVersion:number;filename:string;sourceTime:string;capturedAt:string;clockUncertaintySeconds:number|null;method:string;expectedSha256:string;byteLength:number;kind:'supplied_file'|'field_note';scopeConfirmed:true};
+export type FieldCaptureReceipt={acceptance?:FieldAcceptance;capture:{id:string;caseId:string;deviceId:string;authorityId:string;authorityVersion:number;manifestSha256:string;receivedAt:string};evidence:Evidence};
 
 export type TranscriptClaimInput={id:string;transcriptId:string;segmentId:string;expectedVersion:number;text:string;startByte:number;endByte:number;quote:string};
 export type TranscriptClaim={
