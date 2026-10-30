@@ -1,3 +1,25 @@
+## Current checkpoint — review fixes integrated; hosted acceptance pending
+
+Product delivery remains **incomplete**. This section is authoritative; the earlier receipts below are historical, not current assignments.
+
+**Main:** PR116 remains merged as `ca899421bcd8c183eb645fc62ff20b9c57ca64bc`, with exact-head and resulting-main477 Node/203 Python, zero failures/skips,12 development-browser and actual Office/host checks. Root inspected final code/render artifacts; docs122 preserves its receipts. No production deployment.
+
+**Unmerged PR117:** `feat/platform-build-batch`, `/code/inveos-speech-casework`, integrates source-family acceptance040439ea at382b8dd5, independent Field/session review11cf59c5 at4ac01d0a, vault-browser correction09dbd12b at460194e0 and independent agency/portal reviewb4d943f6 at95bfda8f. Mandatory session checks now fence the reviewed Field/desktop/analysis/handling/invoice/composition transactions; original/audit rollback is tested. Agency review fixes current recipient/reviewer/source-use/owner acceptance and collaborator cursor privacy (docs149–151). Recovery/recipient intake argument positions, mandatory sharing hooks and historical byte formats remain intact.
+
+**Root executed checks:** complete local run at3407eafd passed510 Node with zero failures and53 explicit browser skips;203 Python passed (`/tmp/inveos-platform-{api,python}-third.log`). This predates the independent review fixes. After integration:20 actual session/Field/handling/portal checks pass at460194e0 (`/tmp/inveos-platform-session-integration.log`);24 agency review/compatibility/copied-verifier checks pass at95bfda8f (`/tmp/inveos-platform-agency-review-integration.log`). Full workspace types/lint/build pass after95bfda8f. Do not sum overlapping runs or call these a complete latest-branch pass.
+
+**Actual hosted worker:** e2f1f39d Tika run41082953925/job124156573886 passed4/4 with zero skips: actual worker and CLI parses, copied context verification, malformed/corrupt rejection, cancellation/authority/expired-lease handling and stale qualification. Existing28-parser research matrix passed too. Artifact12991140642 downloaded and qualification/application receipts inspected; docs146 has exact boundaries. Actual execution of these fictional fixtures does not qualify representative extraction quality or production/licence use.
+
+**Actual rendering/setup:** root16-test source-family replay plus20 LibreOffice/Poppler PDF/DOCX renders pass. Full/redacted Field/Tika and provenance-page renders inspected. Eight legacy PDF/DOCX byte comparisons against PR116 remain fixed regressions. Fresh restricted-schema-administrator setup applied all99 migration files twice, started the actual API and persisted a fictional case/authority through HTTP; temporary process/database/role/store removed. Reproducible instructions: docs148. Log `/tmp/inveos-runbook-smoke.log`.
+
+**Hosted batch failure retained:** e2f1f39d Checks41082953821/job124157228511 ran562 checks:555 pass,7 fail,zero skips (539seconds). Two browser failures: Field vault readiness/consent selectors (corrected09dbd12b), and searched speech navigation. Root reproduced the navigation logic: `go()` cleared the job set immediately beforehand; eb9c973d corrects ordering in both search and processing paths and extends the browser regression. Five report checks lacked `pdftotext`;3407eafd installs PDF/Office tools before API checks. The desktop batch browser and Field vault-v2 definition passed on this failed run. New invoice and Field Controls browser definitions still require hosted acceptance. Logs `/tmp/inveos-platform-checks-e2f1.log`. No failed or unrun check is labelled passed.
+
+**Next:** push integrated fixes, execute/inspect the new hosted run and render artifacts, fix remaining failures, complete focused UI acceptance and independent review before merging PR117. @thread:thr_gzfv5czq7n now builds actual composition/template browser definitions (docs152); @thread:thr_d5kgavmfyc builds new research-workbench browser acceptance (docs153). @thread:thr_2fsytqdbkm completed independent agency review. Root owns shared CI, integration, exact-head checks and merge verification. Local Chromium namespace isolation remains unavailable; no bypass. No claim of work between scheduled runs.
+
+Native iOS/Android, semantic AI, live provider activation, representative parser/language/codec qualification, production identity/MFA/KMS/WORM/PITR/offsite recovery and external licence/security/privacy/professional approvals remain open. Browser Field is not native delivery; cited literal rules are not semantic AI. Continue independent authorised engineering while those gates remain local to affected work.
+
+## Prior combined-batch receipts — historical
+
 ## Current checkpoint — combined implementation, actual acceptance in progress
 
 This section is authoritative; older checkpoints below are retained historical receipts, not current assignments. Product delivery remains **incomplete**.

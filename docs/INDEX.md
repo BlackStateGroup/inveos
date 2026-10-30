@@ -285,3 +285,8 @@ These feature documents distinguish implementation/compiler feedback from unrun 
 
 - [146 — Source-family acceptance and exact rendering evidence](146_SOURCE_FAMILY_ACCEPTANCE.md)
 - [147 — Workflow acceptance and remaining browser gates](147_WORKFLOW_ACCEPTANCE.md)
+
+- [148 — Reproducible local platform runbook](148_LOCAL_PLATFORM_RUNBOOK.md)
+- [149 — Independent Field/platform boundary review](149_INDEPENDENT_FIELD_PLATFORM_REVIEW.md)
+- [150 — Independent agency/portal integrity review](150_AGENCY_PORTAL_REVIEW.md)
+- [151 — Independent Field vault UI review](151_FIELD_VAULT_UI_REVIEW.md)
