@@ -4,13 +4,14 @@ import type {AttentionEntry,AttentionPreferences} from '@inveos/contracts';
 import type {Actor} from './app.js';
 import {inTransaction} from './db.js';
 import {ApiError,notFound} from './errors.js';
+import {assignmentJoin,assignmentSummary,registerReviewAssignments} from './review-assignments.js';
 type Services={pool:Pool;authenticate:(r:FastifyRequest)=>Promise<void>;requireCsrf:(r:FastifyRequest)=>Promise<void>;findCase:(c:PoolClient,a:Actor,id:string,lock?:boolean)=>Promise<unknown>;audit:(c:PoolClient,a:Actor,caseId:string|null,action:string,type:string,id:string,summary:string,metadata?:Record<string,unknown>)=>Promise<void>};
 const uuid={type:'string',pattern:'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'};
 const key={type:'string',minLength:1,maxLength:200,pattern:'^[a-z_]+:[0-9a-f:-]+$'};
 const defaults:AttentionPreferences={version:0,deadlines:true,failures:true,reviews:true,recordedAt:null};
 const preferences=(r?:QueryResultRow):AttentionPreferences=>r?{version:r.version,deadlines:r.deadlines,failures:r.failures,reviews:r.reviews,recordedAt:r.recorded_at.toISOString()}:defaults;
 // Current membership and current roles are joined inside the statement. No persisted notification payload grants access.
-const candidates=`WITH scope AS (
+export const attentionCandidates=`WITH scope AS (
  SELECT c.* FROM cases c JOIN case_memberships cm ON cm.tenant_id=c.tenant_id AND cm.case_id=c.id AND cm.user_id=$2
  JOIN memberships m ON m.tenant_id=cm.tenant_id AND m.user_id=cm.user_id AND m.role=$3 AND m.role IN ('reviewer','investigator')
  WHERE c.tenant_id=$1 AND ($4::uuid IS NULL OR c.id=$4)
@@ -93,6 +94,7 @@ function display(r:QueryResultRow):AttentionEntry{return {key:r.item_key,revisio
 export function registerAttention(app:FastifyInstance,s:Services){
  const internal=async(r:FastifyRequest)=>{await s.authenticate(r);if(r.actor!.role==='client')throw new ApiError(403,'Internal attention queue only.');};
  const tx=<T>(run:(c:PoolClient)=>Promise<T>)=>inTransaction(s.pool,async c=>{await c.query("SET LOCAL statement_timeout='2s'");await c.query("SET LOCAL lock_timeout='2s'");return run(c);});
+ registerReviewAssignments(app,s,attentionCandidates);
  const getPrefs=async(c:PoolClient,a:Actor)=>preferences((await c.query('SELECT * FROM attention_preferences WHERE tenant_id=$1 AND user_id=$2 ORDER BY version DESC LIMIT 1',[a.tenantId,a.userId])).rows[0]);
  app.get('/api/attention/preferences',{preHandler:internal},r=>tx(c=>getPrefs(c,r.actor!)));
  app.post('/api/attention/preferences',{preHandler:[s.requireCsrf,internal],schema:{body:{type:'object',additionalProperties:false,required:['requestId','expectedVersion','deadlines','failures','reviews'],properties:{requestId:uuid,expectedVersion:{type:'integer',minimum:0,maximum:2147483646},deadlines:{type:'boolean'},failures:{type:'boolean'},reviews:{type:'boolean'}}}}},r=>tx(async c=>{
@@ -105,19 +107,20 @@ export function registerAttention(app:FastifyInstance,s:Services){
   const row=(await c.query('INSERT INTO attention_preferences(tenant_id,user_id,version,request_id,expected_version,deadlines,failures,reviews) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[a.tenantId,a.userId,current.version+1,input.requestId,current.version,input.deadlines,input.failures,input.reviews])).rows[0];
   await s.audit(c,a,null,'attention.preferences_saved','attention_preferences',a.userId,'Personal attention preferences updated',{version:row.version,deadlines:input.deadlines,failures:input.failures,reviews:input.reviews});return preferences(row);
  }));
- app.get('/api/attention',{preHandler:internal,schema:{querystring:{type:'object',additionalProperties:false,properties:{after:key,category:{enum:['deadlines','failures','reviews']},acknowledged:{type:'boolean'}}}}},r=>tx(async c=>{
-  const a=r.actor!,input=r.query as {after?:string;category?:string;acknowledged?:boolean},prefs=await getPrefs(c,a);
+ app.get('/api/attention',{preHandler:internal,schema:{querystring:{type:'object',additionalProperties:false,properties:{after:key,category:{enum:['deadlines','failures','reviews']},acknowledged:{type:'boolean'},ownership:{enum:['all','mine','unassigned']}}}}},r=>tx(async c=>{
+  const a=r.actor!,input=r.query as {after?:string;category?:string;acknowledged?:boolean;ownership?:string},prefs=await getPrefs(c,a);
   const enabled=['deadlines','failures','reviews'].filter(k=>prefs[k as 'deadlines'|'failures'|'reviews']);
-  const rows=(await c.query(candidates+`SELECT x.*,EXISTS(SELECT 1 FROM attention_acknowledgements d WHERE d.tenant_id=$1 AND d.case_id=x.case_id AND d.user_id=$2 AND d.item_key=x.item_key AND d.revision=x.revision) acknowledged FROM current x
+  const rows=(await c.query(attentionCandidates+`SELECT x.*,ra.version assignment_version,ra.assignee_id,ra.assignee_name,ra.assignee_available,EXISTS(SELECT 1 FROM attention_acknowledgements d WHERE d.tenant_id=$1 AND d.case_id=x.case_id AND d.user_id=$2 AND d.item_key=x.item_key AND d.revision=x.revision AND d.assignment_version=COALESCE(ra.version,0)) acknowledged FROM current x ${assignmentJoin}
    WHERE ($5::text IS NULL OR x.item_key COLLATE "C">$5 COLLATE "C") AND x.category=ANY($6::text[]) AND ($7::text IS NULL OR x.category=$7)
-   AND ($8::boolean OR NOT EXISTS(SELECT 1 FROM attention_acknowledgements d WHERE d.tenant_id=$1 AND d.case_id=x.case_id AND d.user_id=$2 AND d.item_key=x.item_key AND d.revision=x.revision))
-   ORDER BY x.item_key COLLATE "C" LIMIT 51`,[a.tenantId,a.userId,a.role,null,input.after??null,enabled,input.category??null,input.acknowledged??false])).rows;
-  return {items:rows.slice(0,50).map(row=>({...display(row),acknowledged:row.acknowledged})),next:rows.length>50?rows[49].item_key:null,preferences:prefs,asOf:new Date().toISOString(),interpretation:'personal_attention_not_review'};
+   AND ($8::boolean OR NOT EXISTS(SELECT 1 FROM attention_acknowledgements d WHERE d.tenant_id=$1 AND d.case_id=x.case_id AND d.user_id=$2 AND d.item_key=x.item_key AND d.revision=x.revision AND d.assignment_version=COALESCE(ra.version,0)))
+   AND ($9='all' OR (x.category='reviews' AND (($9='mine' AND ra.assignee_id=$2 AND ra.assignee_available) OR ($9='unassigned' AND (ra.assignee_id IS NULL OR NOT ra.assignee_available)))))
+   ORDER BY x.item_key COLLATE "C" LIMIT 51`,[a.tenantId,a.userId,a.role,null,input.after??null,enabled,input.category??null,input.acknowledged??false,input.ownership??'all'])).rows;
+  return {items:rows.slice(0,50).map(row=>({...display(row),acknowledged:row.acknowledged,assignment:assignmentSummary(row)})),next:rows.length>50?rows[49].item_key:null,preferences:prefs,asOf:new Date().toISOString(),interpretation:'personal_attention_not_review'};
  }));
- app.post('/api/cases/:caseId/attention/acknowledge',{preHandler:[s.requireCsrf,internal],schema:{params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},body:{type:'object',additionalProperties:false,required:['key','revision'],properties:{key,revision:{type:'string',minLength:1,maxLength:100}}}}},r=>tx(async c=>{
-  const a=r.actor!,{caseId}=r.params as {caseId:string},input=r.body as {key:string;revision:string};await s.findCase(c,a,caseId,true);
-  const row=(await c.query(candidates+'SELECT * FROM current WHERE item_key=$5',[a.tenantId,a.userId,a.role,caseId,input.key])).rows[0];if(!row)notFound();if(row.revision!==input.revision)throw new ApiError(409,'This attention item changed. Refresh before acknowledging.');
-  const saved=await c.query('INSERT INTO attention_acknowledgements(tenant_id,case_id,user_id,item_key,revision) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING recorded_at',[a.tenantId,caseId,a.userId,input.key,input.revision]);
-  if(saved.rowCount)await s.audit(c,a,caseId,'attention.acknowledged','attention_item',row.id,'Personal acknowledgement only; underlying work remains unchanged',{key:input.key,revision:input.revision});return {acknowledged:true};
+ app.post('/api/cases/:caseId/attention/acknowledge',{preHandler:[s.requireCsrf,internal],schema:{params:{type:'object',required:['caseId'],additionalProperties:false,properties:{caseId:uuid}},body:{type:'object',additionalProperties:false,required:['key','revision'],properties:{key,revision:{type:'string',minLength:1,maxLength:100},assignmentVersion:{type:'integer',minimum:0,maximum:1000}}}}},r=>tx(async c=>{
+  const a=r.actor!,{caseId}=r.params as {caseId:string},input=r.body as {key:string;revision:string;assignmentVersion?:number};await s.findCase(c,a,caseId,true);
+  const row=(await c.query(attentionCandidates+`SELECT x.*,ra.version assignment_version FROM current x ${assignmentJoin} WHERE x.item_key=$5`,[a.tenantId,a.userId,a.role,caseId,input.key])).rows[0];if(!row)notFound();if(row.revision!==input.revision||(row.assignment_version??0)!==(input.assignmentVersion??0))throw new ApiError(409,'This attention item changed. Refresh before acknowledging.');
+  const saved=await c.query('INSERT INTO attention_acknowledgements(tenant_id,case_id,user_id,item_key,revision,assignment_version) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING recorded_at',[a.tenantId,caseId,a.userId,input.key,input.revision,row.assignment_version??0]);
+  if(saved.rowCount)await s.audit(c,a,caseId,'attention.acknowledged','attention_item',row.id,'Personal acknowledgement only; underlying work remains unchanged',{key:input.key,revision:input.revision,assignmentVersion:row.assignment_version??0});return {acknowledged:true};
  }));
 }

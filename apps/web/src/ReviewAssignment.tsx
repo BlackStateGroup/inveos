@@ -1,0 +1,29 @@
+import {useEffect,useRef,useState} from 'react';
+import type {AttentionEntry,ReviewAssignmentPage} from '@inveos/contracts';
+import {Notice} from './ui';
+export function ReviewAssignment({item,csrf,onChanged,onClose}:{item:AttentionEntry;csrf:string;onChanged:()=>void;onClose:()=>void}){
+ const [data,setData]=useState<ReviewAssignmentPage|null>(null),[assignee,setAssignee]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const root=useRef<HTMLElement|null>(null);
+ const pending=useRef<AbortController|null>(null),live=useRef(true),working=useRef(false),requestId=useRef<{fields:string;id:string}|null>(null);
+ useEffect(()=>{live.current=true;root.current?.focus();void load();return()=>{live.current=false;pending.current?.abort();};},[]);
+ function begin(){pending.current?.abort();const c=new AbortController();pending.current=c;working.current=true;setBusy(true);setError('');return c;}
+ function done(c:AbortController){if(!c.signal.aborted&&live.current){working.current=false;setBusy(false);}}
+ function failed(e:unknown,c:AbortController){if(!c.signal.aborted&&live.current){setData(null);setError((e as Error).message);}}
+ async function request<T>(c:AbortController,query='',body?:unknown):Promise<T>{const response=await fetch('/api/cases/'+item.caseId+'/review-assignments'+query,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal:AbortSignal.any([c.signal,AbortSignal.timeout(15000)]),headers:body?{'content-type':'application/json','x-csrf-token':csrf}:undefined,body:body?JSON.stringify(body):undefined});const result=await response.json();if(!response.ok)throw new Error(result.error||'Review assignment unavailable.');return result;}
+ async function load(mode:'refresh'|'people'|'history'='refresh'){
+  const old=data,c=begin();setData(null);const q=new URLSearchParams({key:item.key,revision:item.revision});if(mode==='people'&&old?.candidatesNext)q.set('after',old.candidatesNext);if(mode==='history'&&old?.next)q.set('before',String(old.next));
+  try{const value=await request<ReviewAssignmentPage>(c,'?'+q);if(c.signal.aborted||!live.current)return;const same=old?.current?.version===value.current?.version;
+   setData(mode==='people'&&same?{...value,candidates:[...old!.candidates,...value.candidates]}:mode==='history'&&same?{...value,history:[...old!.history,...value.history]}:value);
+   if(mode==='refresh'||!same){setAssignee(value.current?.assigneeId??'');setReason('');requestId.current=null;}
+  }catch(e){failed(e,c);}finally{done(c);}
+ }
+ async function save(){if(!data||working.current)return;const fields=JSON.stringify([data.current?.version??0,assignee,reason.trim()]);if(requestId.current?.fields!==fields)requestId.current={fields,id:crypto.randomUUID()};const c=begin();
+  try{await request(c,'',{id:requestId.current.id,key:item.key,revision:item.revision,expectedVersion:data.current?.version??0,assigneeId:assignee||null,reason:reason.trim()});if(!c.signal.aborted&&live.current)onChanged();}catch(e){failed(e,c);}finally{done(c);}
+ }
+ return <section ref={root} tabIndex={-1} className="work-record" aria-label="Review ownership"><div className="work-record-top"><h4>Review ownership: {item.title}</h4><button className="secondary" disabled={busy} onClick={onClose}>Close review ownership</button></div><p>{item.caseRef} · {item.caseTitle}</p><Notice>Ownership coordinates this exact pending version. It grants no access and records no review decision. Other eligible case reviewers may still review. Changed records need a fresh assignment.</Notice>
+ <button className="secondary" disabled={busy} onClick={()=>void load()}>Refresh review ownership</button>{busy&&<p role="status">Loading review ownership…</p>}{error&&<p className="form-error" role="alert">{error} Loaded assignment details have been cleared. Refresh to check the saved result before retrying.</p>}
+ {data&&<><p>{data.current?.assigneeId?'Assigned to '+data.current.assigneeName+(data.current.assigneeAvailable?'':' · No longer a current case reviewer; reassignment needed'):'Reviewer pool; no reviewer individually assigned'} · Assignment version {data.current?.version??0}</p>
+ {data.pending?<form className="work-form" aria-label="Assign independent review" onSubmit={e=>{e.preventDefault();void save();}}><label className="form-label">Reviewer<select value={assignee} disabled={busy} onChange={e=>setAssignee(e.target.value)}><option value="">Unassigned reviewer pool</option>{assignee&&!data.candidates.some(p=>p.id===assignee)&&<option value={assignee} disabled>{data.current?.assigneeName} · not in the loaded eligible list</option>}{data.candidates.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>{data.candidatesNext&&<button type="button" className="secondary" disabled={busy} onClick={()=>void load('people')}>More eligible reviewers</button>}<label className="form-label">Assignment reason<textarea required minLength={10} maxLength={2000} disabled={busy} value={reason} onChange={e=>setReason(e.target.value)}/></label><div className="work-form-actions"><button className="primary" disabled={busy||reason.trim().length<10||(data.current?.assigneeId??'')===assignee}>Save review assignment</button></div></form>:<p>This version is no longer pending for you. Assignment history is retained.</p>}
+ <h4>Assignment history</h4>{!data.history.length&&<p>No assignment decisions recorded for this version.</p>}{data.history.map(h=><article className="work-record" key={h.id}><p>v{h.version} · {h.assigneeId?'Assigned to '+h.assigneeName:'Returned to the reviewer pool'}</p><p>{h.reason}</p><p className="small muted">Recorded by {h.actorName} · {h.recordedAt}</p></article>)}{data.next&&<button className="secondary" disabled={busy} onClick={()=>void load('history')}>Earlier assignment history</button>}</>}
+ </section>;
+}

@@ -233,3 +233,5 @@
 - [115 — Authenticated archive publication indexes](115_AUTHENTICATED_ARCHIVE_INDEXES.md) — pinned signed-index correspondence before OCR research builds; actual acceptance and trust limits recorded separately.
 
 - [116 — Source, correspondence and expense review queue](116_SOURCE_EXPENSE_REVIEW_QUEUE.md) — independent pending records and exact context navigation; actual acceptance recorded separately.
+
+- [117 — Versioned independent-review ownership](117_REVIEW_OWNERSHIP.md) — exact-version assignments, independence, current access, history and personal filters.
